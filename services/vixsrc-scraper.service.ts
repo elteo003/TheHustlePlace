@@ -52,7 +52,7 @@ export class VixsrcScraperService {
                 const title = titleMatch ? titleMatch[1].trim() : `Film ${tmdbId}`
 
                 // Cerca metadati nel JSON-LD o altri tag meta
-                const jsonLdMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/is)
+                const jsonLdMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i)
                 let overview = `Film disponibile su vixsrc.to con ID ${tmdbId}`
                 let poster_path = '/placeholder-movie.svg'
                 let backdrop_path = '/placeholder-movie.svg'
@@ -123,7 +123,7 @@ export class VixsrcScraperService {
                 const name = titleMatch ? titleMatch[1].trim() : `Serie TV ${tmdbId}`
 
                 // Cerca metadati nel JSON-LD o altri tag meta
-                const jsonLdMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/is)
+                const jsonLdMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i)
                 let overview = `Serie TV disponibile su vixsrc.to con ID ${tmdbId}`
                 let poster_path = '/placeholder-movie.svg'
                 let backdrop_path = '/placeholder-movie.svg'

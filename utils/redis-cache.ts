@@ -171,10 +171,16 @@ export const redisCache = new RedisCacheService()
 if (typeof window === 'undefined') {
     setInterval(() => {
         const now = Date.now()
-        for (const [key, item] of redisCache['fallbackCache'].entries()) {
+        const keysToDelete: string[] = []
+        
+        redisCache['fallbackCache'].forEach((item, key) => {
             if (item.expires <= now) {
-                redisCache['fallbackCache'].delete(key)
+                keysToDelete.push(key)
             }
-        }
+        })
+        
+        keysToDelete.forEach(key => {
+            redisCache['fallbackCache'].delete(key)
+        })
     }, 3600000) // 1 hour
 }

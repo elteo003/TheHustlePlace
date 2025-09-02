@@ -63,11 +63,17 @@ class CacheService {
     async cleanup(): Promise<void> {
         try {
             const now = Date.now()
-            for (const [key, item] of this.memoryCache.entries()) {
+            const keysToDelete: string[] = []
+            
+            this.memoryCache.forEach((item, key) => {
                 if (item.expires <= now) {
-                    this.memoryCache.delete(key)
+                    keysToDelete.push(key)
                 }
-            }
+            })
+            
+            keysToDelete.forEach(key => {
+                this.memoryCache.delete(key)
+            })
         } catch (error) {
             logger.error('Cache cleanup error', { error })
         }
