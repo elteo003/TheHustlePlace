@@ -81,20 +81,11 @@ export default function HomePage() {
             )}
 
             <div className="px-4 py-8 space-y-12">
-                {/* Sezione Film Appena Usciti */}
-                {latestMovies.length > 0 && (
-                    <ContentCarousel
-                        title="Film Appena Usciti"
-                        items={latestMovies}
-                        type="movie"
-                    />
-                )}
-
-                {/* Sezione Top 10 Film */}
+                {/* Sezione Top 10 Film - come StreamingCommunity */}
                 {top10Movies.length > 0 && (
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white px-4">
-                            I Migliori 10 Film
+                            Top 10 Titoli Oggi
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-4">
                             {top10Movies.map((movie, index) => (
@@ -106,6 +97,24 @@ export default function HomePage() {
                             ))}
                         </div>
                     </section>
+                )}
+
+                {/* Sezione Film Appena Usciti al Cinema */}
+                {nowPlayingMovies.length > 0 && (
+                    <ContentCarousel
+                        title="Appena Usciti al Cinema"
+                        items={nowPlayingMovies}
+                        type="movie"
+                    />
+                )}
+
+                {/* Sezione Film Recenti */}
+                {latestMovies.length > 0 && (
+                    <ContentCarousel
+                        title="Aggiunti di Recente"
+                        items={latestMovies}
+                        type="movie"
+                    />
                 )}
 
                 {/* Sezione Serie TV Popolari */}

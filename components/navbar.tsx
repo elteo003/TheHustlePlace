@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Search, Menu } from 'lucide-react'
+import { SearchBar } from '@/components/search-bar'
+import { Menu } from 'lucide-react'
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
 
     return (
         <nav className="navbar-blur fixed top-0 left-0 right-0 z-50 px-4 py-3">
@@ -39,28 +38,11 @@ export function Navbar() {
 
                 {/* Search Bar */}
                 <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
-                    <div className="relative w-full">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="text"
-                            placeholder="Cerca film, serie TV..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-blue-400"
-                        />
-                    </div>
+                    <SearchBar />
                 </div>
 
                 {/* User Actions */}
                 <div className="flex items-center space-x-4">
-                    {/* Mobile Search */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="lg:hidden text-white hover:bg-white/10"
-                    >
-                        <Search className="w-5 h-5" />
-                    </Button>
 
 
 
@@ -80,16 +62,7 @@ export function Navbar() {
             {isMenuOpen && (
                 <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-t border-white/10">
                     <div className="px-4 py-4 space-y-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                                type="text"
-                                placeholder="Cerca film, serie TV..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                            />
-                        </div>
+                        <SearchBar />
                         <div className="space-y-2">
                             <Link
                                 href="/"
