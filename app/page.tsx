@@ -26,11 +26,11 @@ export default function HomePage() {
                     setNowPlayingMovies(nowPlayingData.data.slice(0, 5))
                 }
 
-                // Fetch latest movies
-                const latestMoviesRes = await fetch('/api/catalog/latest/movies?page=1')
-                const latestMoviesData = await latestMoviesRes.json()
-                if (latestMoviesData.success && latestMoviesData.data?.results) {
-                    setLatestMovies(latestMoviesData.data.results.slice(0, 20))
+                // Fetch recent movies (ultimi 2 anni)
+                const recentMoviesRes = await fetch('/api/catalog/recent')
+                const recentMoviesData = await recentMoviesRes.json()
+                if (recentMoviesData.success && recentMoviesData.data) {
+                    setLatestMovies(recentMoviesData.data.slice(0, 20))
                 }
 
                 // Fetch top 10 movies
@@ -96,14 +96,13 @@ export default function HomePage() {
                         <h2 className="text-2xl font-bold text-white px-4">
                             I Migliori 10 Film
                         </h2>
-                        <div className="flex space-x-4 overflow-x-auto pb-4 px-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-4">
                             {top10Movies.map((movie, index) => (
-                                <div key={movie.id} className="flex-shrink-0 w-48">
-                                    <Top10MovieCard 
-                                        movie={movie} 
-                                        rank={index + 1} 
-                                    />
-                                </div>
+                                <Top10MovieCard 
+                                    key={movie.id}
+                                    movie={movie} 
+                                    rank={index + 1} 
+                                />
                             ))}
                         </div>
                     </section>

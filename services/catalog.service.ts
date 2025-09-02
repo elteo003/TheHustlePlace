@@ -58,6 +58,48 @@ export class CatalogService {
         }
     }
 
+    // Nuovo metodo per film popolari (recenti e di successo)
+    async getPopularMovies(): Promise<Movie[]> {
+        try {
+            const cacheKey = 'popular-movies'
+            const cached = await cache.get<Movie[]>(cacheKey)
+            if (cached) {
+                return cached
+            }
+
+            // Usa direttamente TMDB API per i film popolari
+            const movies = await this.tmdbService.getPopularMovies()
+            
+            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+            logger.info('Film popolari recuperati con successo', { count: movies.length })
+            return movies
+        } catch (error) {
+            logger.error('Errore nel recupero film popolari', { error })
+            return []
+        }
+    }
+
+    // Nuovo metodo per film recenti (ultimi 2 anni)
+    async getRecentMovies(): Promise<Movie[]> {
+        try {
+            const cacheKey = 'recent-movies'
+            const cached = await cache.get<Movie[]>(cacheKey)
+            if (cached) {
+                return cached
+            }
+
+            // Usa direttamente TMDB API per i film recenti
+            const movies = await this.tmdbService.getRecentMovies()
+            
+            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+            logger.info('Film recenti recuperati con successo', { count: movies.length })
+            return movies
+        } catch (error) {
+            logger.error('Errore nel recupero film recenti', { error })
+            return []
+        }
+    }
+
     async getMovies(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<Movie>> {
         try {
             const cacheKey = this.generateCacheKey('movies', filters)
@@ -299,9 +341,7 @@ export class CatalogService {
         }
     }
 
-    async getPopularMovies(page: number = 1): Promise<PaginatedResponse<Movie>> {
-        return this.getMovies({ sortBy: 'popularity', sortOrder: 'desc', page })
-    }
+
 
     async getPopularTVShows(page: number = 1): Promise<PaginatedResponse<TVShow>> {
         return this.getTVShows({ sortBy: 'popularity', sortOrder: 'desc', page })

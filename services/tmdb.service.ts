@@ -162,6 +162,87 @@ export class TMDBService {
         return `${this.TMDB_IMAGE_BASE_URL}/${size}${path}`
     }
 
+    // Metodo per ottenere film popolari (recenti e di successo)
+    async getPopularMovies(): Promise<Movie[]> {
+        try {
+            const response = await axios.get(`${this.TMDB_BASE_URL}/movie/popular`, {
+                params: {
+                    api_key: this.TMDB_API_KEY,
+                    language: 'it-IT',
+                    page: 1
+                }
+            })
+
+            if (response.status === 200 && response.data.results) {
+                return response.data.results.map((movie: any) => ({
+                    id: movie.id,
+                    title: movie.title || `Film ${movie.id}`,
+                    overview: movie.overview || 'Descrizione non disponibile',
+                    release_date: movie.release_date || '',
+                    vote_average: movie.vote_average || 0,
+                    vote_count: movie.vote_count || 0,
+                    genre_ids: movie.genre_ids || [],
+                    adult: movie.adult || false,
+                    backdrop_path: movie.backdrop_path || '/placeholder-movie.svg',
+                    original_language: movie.original_language || 'en',
+                    original_title: movie.original_title || movie.title,
+                    popularity: movie.popularity || 0,
+                    poster_path: movie.poster_path || '/placeholder-movie.svg',
+                    video: movie.video || false,
+                    tmdb_id: movie.id
+                }))
+            }
+            return []
+        } catch (error) {
+            logger.error('Errore nel recupero film popolari da TMDB', { error })
+            return []
+        }
+    }
+
+    // Metodo per ottenere film recenti (ultimi 2 anni)
+    async getRecentMovies(): Promise<Movie[]> {
+        try {
+            const currentYear = new Date().getFullYear()
+            const twoYearsAgo = currentYear - 2
+            
+            const response = await axios.get(`${this.TMDB_BASE_URL}/discover/movie`, {
+                params: {
+                    api_key: this.TMDB_API_KEY,
+                    language: 'it-IT',
+                    page: 1,
+                    sort_by: 'release_date.desc',
+                    'primary_release_date.gte': `${twoYearsAgo}-01-01`,
+                    'primary_release_date.lte': `${currentYear}-12-31`,
+                    vote_count: { gte: 100 } // Solo film con almeno 100 voti
+                }
+            })
+
+            if (response.status === 200 && response.data.results) {
+                return response.data.results.map((movie: any) => ({
+                    id: movie.id,
+                    title: movie.title || `Film ${movie.id}`,
+                    overview: movie.overview || 'Descrizione non disponibile',
+                    release_date: movie.release_date || '',
+                    vote_average: movie.vote_average || 0,
+                    vote_count: movie.vote_count || 0,
+                    genre_ids: movie.genre_ids || [],
+                    adult: movie.adult || false,
+                    backdrop_path: movie.backdrop_path || '/placeholder-movie.svg',
+                    original_language: movie.original_language || 'en',
+                    original_title: movie.original_title || movie.title,
+                    popularity: movie.popularity || 0,
+                    poster_path: movie.poster_path || '/placeholder-movie.svg',
+                    video: movie.video || false,
+                    tmdb_id: movie.id
+                }))
+            }
+            return []
+        } catch (error) {
+            logger.error('Errore nel recupero film recenti da TMDB', { error })
+            return []
+        }
+    }
+
     // Metodo per testare se la chiave API funziona
     async testAPIKey(): Promise<boolean> {
         try {

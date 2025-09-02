@@ -74,30 +74,7 @@ export class CatalogController {
         }
     }
 
-    async getPopularMovies(request: NextRequest): Promise<NextResponse> {
-        try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
 
-            const movies = await this.catalogService.getPopularMovies(page)
-
-            return NextResponse.json({
-                success: true,
-                data: movies,
-                message: 'Film popolari recuperati con successo'
-            })
-        } catch (error) {
-            logger.error('Errore nel recupero film popolari', { error })
-
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: error instanceof Error ? error.message : 'Errore interno del server'
-                },
-                { status: 500 }
-            )
-        }
-    }
 
     async getPopularTVShows(request: NextRequest): Promise<NextResponse> {
         try {
@@ -297,6 +274,72 @@ export class CatalogController {
             })
         } catch (error) {
             logger.error('Errore nel recupero generi', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
+    async getTop10Movies(request: NextRequest): Promise<NextResponse> {
+        try {
+            const movies = await this.catalogService.getTop10Movies()
+
+            return NextResponse.json({
+                success: true,
+                data: movies,
+                message: 'Top 10 film recuperati con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero top 10 film', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
+    async getPopularMovies(request: NextRequest): Promise<NextResponse> {
+        try {
+            const movies = await this.catalogService.getPopularMovies()
+
+            return NextResponse.json({
+                success: true,
+                data: movies,
+                message: 'Film popolari recuperati con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero film popolari', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
+    async getRecentMovies(request: NextRequest): Promise<NextResponse> {
+        try {
+            const movies = await this.catalogService.getRecentMovies()
+
+            return NextResponse.json({
+                success: true,
+                data: movies,
+                message: 'Film recenti recuperati con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero film recenti', { error })
 
             return NextResponse.json(
                 {
