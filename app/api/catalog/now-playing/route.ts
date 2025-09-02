@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CatalogService } from '@/services/catalog.service'
+import { withRateLimit } from '@/middlewares/rate-limit.middleware'
 
 const catalogService = new CatalogService()
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
     try {
         const movies = await catalogService.getNowPlayingMovies()
         
@@ -19,3 +20,10 @@ export async function GET(request: NextRequest) {
         )
     }
 }
+
+// Rate limit: 50 requests per 15 minutes
+export const GET = withRateLimit(handler, {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 50,
+    message: 'Troppe richieste per i film now playing, riprova più tardi'
+})
