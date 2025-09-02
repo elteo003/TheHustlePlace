@@ -1,0 +1,10 @@
+# Ignore common files but allow .env files for development
+node_modules/
+.next/
+.git/
+*.log
+.env.production
+.env.development
+# Allow .env and .env.local for local development
+!.env
+!.env.local
