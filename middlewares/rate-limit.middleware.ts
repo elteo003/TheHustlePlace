@@ -25,11 +25,17 @@ class RateLimitService {
 
     private cleanup(): void {
         const now = Date.now()
-        for (const [key, data] of this.requests.entries()) {
+        const keysToDelete: string[] = []
+        
+        this.requests.forEach((data, key) => {
             if (data.resetTime <= now) {
-                this.requests.delete(key)
+                keysToDelete.push(key)
             }
-        }
+        })
+        
+        keysToDelete.forEach(key => {
+            this.requests.delete(key)
+        })
     }
 
     checkLimit(request: NextRequest, config: Partial<RateLimitConfig> = {}): {

@@ -58,7 +58,7 @@ export class CatalogService {
         }
     }
 
-    async getMovies(filters: CatalogFilters = {}): Promise<PaginatedResponse<Movie>> {
+    async getMovies(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<Movie>> {
         try {
             const cacheKey = this.generateCacheKey('movies', filters)
 
@@ -201,7 +201,7 @@ export class CatalogService {
         }
     }
 
-    async getTVShows(filters: CatalogFilters = {}): Promise<PaginatedResponse<TVShow>> {
+    async getTVShows(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<TVShow>> {
         try {
             const cacheKey = this.generateCacheKey('tv', filters)
 
@@ -312,7 +312,7 @@ export class CatalogService {
     }
 
     async getLatestTVShows(page: number = 1): Promise<PaginatedResponse<TVShow>> {
-        return this.getTVShows({ sortBy: 'first_air_date', sortOrder: 'desc', page })
+        return this.getTVShows({ sortBy: 'release_date', sortOrder: 'desc', page })
     }
 
     async getTopRatedMovies(page: number = 1): Promise<PaginatedResponse<Movie>> {

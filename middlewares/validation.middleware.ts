@@ -162,8 +162,11 @@ export const validationSchemas = {
         language: z.string().optional(),
         sortBy: z.enum(['popularity', 'vote_average', 'release_date', 'title']).optional(),
         sortOrder: z.enum(['asc', 'desc']).optional(),
-        page: z.string().transform(val => val ? parseInt(val) : 1).optional()
-    }),
+        page: z.string().transform(val => val ? parseInt(val) : 1).default('1')
+    }).transform(data => ({
+        ...data,
+        page: data.page || 1
+    })),
 
     searchQuery: z.object({
         query: z.string().min(1, 'Query di ricerca richiesta'),

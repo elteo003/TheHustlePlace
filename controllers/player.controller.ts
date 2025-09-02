@@ -12,15 +12,11 @@ export class PlayerController {
 
     async getMovieEmbed(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateParams(validationSchemas.tmdbId)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
-            }
-
-            const { data } = validationResult
-            const embed = await this.playerService.getMovieEmbed(data.id)
+            // Parse URL parameters manually for now
+            const url = new URL(request.url)
+            const pathParts = url.pathname.split('/')
+            const id = parseInt(pathParts[pathParts.length - 1])
+            const embed = await this.playerService.getMovieEmbed(id)
 
             return NextResponse.json({
                 success: true,
@@ -42,15 +38,13 @@ export class PlayerController {
 
     async getTVShowEmbed(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateParams(validationSchemas.tvEpisode)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
-            }
-
-            const { data } = validationResult
-            const embed = await this.playerService.getTVShowEmbed(data.id, data.season, data.episode)
+            // Parse URL parameters manually for now
+            const url = new URL(request.url)
+            const pathParts = url.pathname.split('/')
+            const id = parseInt(pathParts[pathParts.length - 1])
+            const season = url.searchParams.get('season') ? parseInt(url.searchParams.get('season')!) : 1
+            const episode = url.searchParams.get('episode') ? parseInt(url.searchParams.get('episode')!) : 1
+            const embed = await this.playerService.getTVShowEmbed(id, season, episode)
 
             return NextResponse.json({
                 success: true,

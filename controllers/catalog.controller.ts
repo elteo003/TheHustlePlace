@@ -12,14 +12,16 @@ export class CatalogController {
 
     async getMovies(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateQuery(validationSchemas.catalogFilters)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
+            // Parse query parameters manually for now
+            const url = new URL(request.url)
+            const filters = {
+                genre: url.searchParams.get('genre') ? parseInt(url.searchParams.get('genre')!) : undefined,
+                year: url.searchParams.get('year') ? parseInt(url.searchParams.get('year')!) : undefined,
+                language: url.searchParams.get('language') || undefined,
+                sortBy: url.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
+                sortOrder: url.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
+                page: url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
             }
-
-            const { data: filters } = validationResult
             const movies = await this.catalogService.getMovies(filters)
 
             return NextResponse.json({
@@ -42,14 +44,16 @@ export class CatalogController {
 
     async getTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateQuery(validationSchemas.catalogFilters)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
+            // Parse query parameters manually for now
+            const url = new URL(request.url)
+            const filters = {
+                genre: url.searchParams.get('genre') ? parseInt(url.searchParams.get('genre')!) : undefined,
+                year: url.searchParams.get('year') ? parseInt(url.searchParams.get('year')!) : undefined,
+                language: url.searchParams.get('language') || undefined,
+                sortBy: url.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
+                sortOrder: url.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
+                page: url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
             }
-
-            const { data: filters } = validationResult
             const tvShows = await this.catalogService.getTVShows(filters)
 
             return NextResponse.json({
@@ -222,15 +226,11 @@ export class CatalogController {
 
     async searchMovies(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateQuery(validationSchemas.searchQuery)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
-            }
-
-            const { data } = validationResult
-            const movies = await this.catalogService.searchMovies(data.query, data.page)
+            // Parse query parameters manually for now
+            const url = new URL(request.url)
+            const query = url.searchParams.get('query') || ''
+            const page = url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+            const movies = await this.catalogService.searchMovies(query, page)
 
             return NextResponse.json({
                 success: true,
@@ -252,15 +252,11 @@ export class CatalogController {
 
     async searchTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            const validation = ValidationMiddleware.validateQuery(validationSchemas.searchQuery)
-            const validationResult = validation(request)
-
-            if (validationResult instanceof NextResponse) {
-                return validationResult
-            }
-
-            const { data } = validationResult
-            const tvShows = await this.catalogService.searchTVShows(data.query, data.page)
+            // Parse query parameters manually for now
+            const url = new URL(request.url)
+            const query = url.searchParams.get('query') || ''
+            const page = url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+            const tvShows = await this.catalogService.searchTVShows(query, page)
 
             return NextResponse.json({
                 success: true,

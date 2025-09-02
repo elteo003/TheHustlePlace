@@ -64,7 +64,7 @@ export interface CatalogFilters {
     language?: string;
     sortBy?: 'popularity' | 'vote_average' | 'release_date' | 'title';
     sortOrder?: 'asc' | 'desc';
-    page?: number;
+    page: number;
 }
 
 export interface ApiResponse<T> {
@@ -118,6 +118,6 @@ export interface WatchHistory {
 
 
 export interface PlayerEvent {
-    type: 'play' | 'pause' | 'seeked' | 'ended' | 'timeupdate';
+    type: 'play' | 'pause' | 'seeked' | 'ended' | 'timeupdate' | 'loadeddata' | 'error';
     data?: any;
 }
