@@ -132,7 +132,7 @@ export default function TVPlayerPage() {
                 {/* Video Player */}
                 <div className="relative z-10 w-full h-full">
                     <iframe
-                        src={videoPlayerService.getPlayerUrl(tvShow.id, 'tv', season, episode)}
+                        src={videoPlayerService.getPlayerUrl(tvShow.id, 'tv', parseInt(season), parseInt(episode))}
                         className="w-full h-full border-0"
                         allowFullScreen
                         title={`${tvShow.name} - Stagione ${season}, Episodio ${episode}`}
