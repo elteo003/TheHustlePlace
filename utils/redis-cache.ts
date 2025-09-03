@@ -18,11 +18,25 @@ class RedisCacheService {
     private isRedisAvailable = false
 
     constructor() {
-        this.initializeRedis()
+        // Non inizializzare Redis durante il build
+        if (process.env.NEXT_PHASE !== 'phase-production-build') {
+            this.initializeRedis()
+        } else {
+            logger.info('Redis disabilitato durante il build - usando cache in-memory')
+            this.isRedisAvailable = false
+        }
     }
 
     private async initializeRedis(): Promise<void> {
         try {
+            // Disabilita Redis in ambiente di sviluppo locale o se non configurato
+            if ((process.env.NODE_ENV === 'development' && !process.env.REDIS_HOST) || 
+                (!process.env.REDIS_HOST && process.env.NODE_ENV !== 'production')) {
+                logger.info('Redis disabilitato - usando cache in-memory')
+                this.isRedisAvailable = false
+                return
+            }
+
             // Try to import redis (optional dependency)
             const redis = await import('redis')
             
@@ -71,7 +85,10 @@ class RedisCacheService {
                 )
             ])
         } catch (error) {
-            logger.warn('Redis not available, using in-memory cache', { error })
+            // Solo log di warning se Redis era configurato ma non disponibile
+            if (process.env.REDIS_HOST) {
+                logger.warn('Redis not available, using in-memory cache', { error })
+            }
             this.isRedisAvailable = false
         }
     }
