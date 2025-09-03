@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Movie } from '@/types'
 import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
+import { useAvailability } from '@/hooks/useAvailability'
 
 interface HeroSectionProps {
     featuredContent: Movie[]
@@ -142,6 +143,11 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
     }
 
     const currentMovie = featuredContent[currentIndex]
+    
+    // Controllo disponibilità reale per il film corrente
+    const initialBadge = currentMovie ? getAvailabilityBadge(currentMovie) : 'Disponibile'
+    const tmdbId = currentMovie ? (currentMovie.tmdb_id || currentMovie.id) : 0
+    const { availability } = useAvailability(tmdbId, 'movie', initialBadge)
 
     if (!currentMovie) return null
 
@@ -193,8 +199,8 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
                         <div className="flex items-center space-x-4 mb-6">
                             <div className="flex items-center space-x-2">
-                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(currentMovie))}`}>
-                                    {getAvailabilityBadge(currentMovie)}
+                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAvailabilityColor(availability.badge || 'Disponibile')}`}>
+                                    {availability.badge || 'Disponibile'}
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">

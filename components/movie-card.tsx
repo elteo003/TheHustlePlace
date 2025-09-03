@@ -9,6 +9,7 @@ import { Play, Plus, Heart, Bookmark } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
 import { getImageUrl, formatVoteAverage, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
 import { SkeletonLoader } from '@/components/skeleton-loader'
+import { useAvailability } from '@/hooks/useAvailability'
 
 interface MovieCardProps {
     item: Movie | TVShow
@@ -26,6 +27,11 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
     const title = 'title' in item ? item.title : item.name
     const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date
     const year = releaseDate ? new Date(releaseDate).getFullYear() : null
+    
+    // Controllo disponibilità reale
+    const initialBadge = getAvailabilityBadge(item)
+    const tmdbId = 'tmdb_id' in item && item.tmdb_id ? item.tmdb_id : item.id
+    const { availability } = useAvailability(tmdbId, type, initialBadge)
 
     // Intersection Observer per lazy loading
     useEffect(() => {
@@ -109,8 +115,8 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(item))}`}>
-                                    {getAvailabilityBadge(item)}
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(availability.badge || 'Disponibile')}`}>
+                                    {availability.badge || 'Disponibile'}
                                 </span>
                                 <span className="text-gray-300 text-sm">{year || 'N/A'}</span>
                             </div>

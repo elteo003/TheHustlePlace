@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
 import { Movie } from '@/types'
 import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
+import { useAvailability } from '@/hooks/useAvailability'
 
 interface Top10MovieCardProps {
     movie: Movie
@@ -15,6 +16,11 @@ interface Top10MovieCardProps {
 
 export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
     const [imageError, setImageError] = useState(false)
+    
+    // Controllo disponibilità reale
+    const initialBadge = getAvailabilityBadge(movie)
+    const tmdbId = movie.tmdb_id || movie.id
+    const { availability } = useAvailability(tmdbId, 'movie', initialBadge)
 
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault()
@@ -70,8 +76,8 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
                         {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                     </span>
                     <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(movie))}`}>
-                            {getAvailabilityBadge(movie)}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(availability.badge || 'Disponibile')}`}>
+                            {availability.badge || 'Disponibile'}
                         </span>
                         <div className="flex items-center space-x-1">
                             <span className="text-yellow-400 text-xs">★</span>

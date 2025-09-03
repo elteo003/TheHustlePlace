@@ -78,13 +78,16 @@ export interface MovieAvailability {
     reason?: string
 }
 
+// Cache per le verifiche di disponibilità
+const availabilityCache = new Map<string, { result: MovieAvailability, timestamp: number }>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minuti
+
 export function checkMovieAvailability(movie: any): MovieAvailability {
-    const releaseDate = new Date(movie.releaseDate || movie.firstAirDate)
+    const releaseDate = new Date(movie.releaseDate || movie.firstAirDate || movie.release_date)
     const today = new Date()
     const threeMonthsAgo = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000))
-    const sixMonthsAgo = new Date(today.getTime() - (180 * 24 * 60 * 60 * 1000))
     
-    // Se il film è uscito da meno di 3 mesi, probabilmente non è disponibile per streaming
+    // Se il film è uscito da meno di 3 mesi, è molto probabilmente "Al Cinema"
     if (releaseDate > threeMonthsAgo) {
         return {
             isAvailable: false,
@@ -93,20 +96,44 @@ export function checkMovieAvailability(movie: any): MovieAvailability {
         }
     }
     
-    // Se il film è uscito da meno di 6 mesi, potrebbe essere disponibile
-    if (releaseDate > sixMonthsAgo) {
-        return {
-            isAvailable: true,
-            badge: "Disponibile",
-            reason: "Film recente, potrebbe essere disponibile"
-        }
-    }
-    
-    // Film più vecchi sono probabilmente disponibili
+    // Per film più vecchi, assumiamo che siano disponibili
+    // Il controllo reale viene fatto nel player
     return {
         isAvailable: true,
         badge: "Disponibile",
-        reason: "Film con buona probabilità di disponibilità"
+        reason: "Film disponibile per streaming"
+    }
+}
+
+// Funzione per verificare disponibilità reale su VixSrc
+export async function checkRealAvailability(tmdbId: number, type: 'movie' | 'tv'): Promise<MovieAvailability> {
+    const cacheKey = `${type}-${tmdbId}`
+    const cached = availabilityCache.get(cacheKey)
+    
+    // Controlla se abbiamo una cache valida
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.result
+    }
+    
+    try {
+        const response = await fetch(`/api/player/check-availability?tmdbId=${tmdbId}&type=${type}`)
+        const data = await response.json()
+        
+        const result: MovieAvailability = {
+            isAvailable: data.success && data.data?.isAvailable,
+            badge: data.success && data.data?.isAvailable ? "Disponibile" : "Non Disponibile",
+            reason: data.success && data.data?.isAvailable 
+                ? "Verificato disponibile su VixSrc" 
+                : "Non disponibile su VixSrc"
+        }
+        
+        // Salva in cache
+        availabilityCache.set(cacheKey, { result, timestamp: Date.now() })
+        
+        return result
+    } catch (error) {
+        // In caso di errore, usa il sistema basato sulla data
+        return checkMovieAvailability({ tmdbId, releaseDate: new Date() })
     }
 }
 
@@ -130,6 +157,8 @@ export function getAvailabilityColor(badge: string): string {
             return "bg-blue-500 text-blue-900"
         case "Disponibile":
             return "bg-green-500 text-green-900"
+        case "Non Disponibile":
+            return "bg-red-500 text-red-900"
         default:
             return "bg-gray-500 text-gray-900"
     }
