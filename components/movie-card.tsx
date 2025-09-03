@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Play, Plus, Heart, Bookmark } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
-import { getImageUrl, formatVoteAverage } from '@/lib/utils'
+import { getImageUrl, formatVoteAverage, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
 import { SkeletonLoader } from '@/components/skeleton-loader'
 
 interface MovieCardProps {
@@ -108,7 +108,12 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                                     {formatVoteAverage(item.vote_average)}
                                 </span>
                             </div>
-                            <span className="text-gray-300 text-sm">{year || 'N/A'}</span>
+                            <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(item))}`}>
+                                    {getAvailabilityBadge(item)}
+                                </span>
+                                <span className="text-gray-300 text-sm">{year || 'N/A'}</span>
+                            </div>
                         </div>
 
                         <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">

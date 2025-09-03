@@ -186,8 +186,31 @@ export default function MoviePlayerPage() {
             console.log('🆔 TMDB ID utilizzato per vixsrc.to:', tmdbId)
             console.log('🔗 URL che verrà generato:', `https://vixsrc.to/movie/${tmdbId}`)
 
-            // Prova direttamente a caricare l'iframe di vixsrc.to
-            // Se non funziona, l'iframe mostrerà un errore che gestiremo
+            // Prima controlla se il film è disponibile su VixSrc
+            console.log('🔍 Controllo disponibilità su VixSrc...')
+            try {
+                const availabilityResponse = await fetch(`/api/player/check-availability?tmdbId=${tmdbId}&type=movie`)
+                const availabilityData = await availabilityResponse.json()
+
+                if (!availabilityData.success || !availabilityData.available) {
+                    console.log('❌ Film non disponibile su VixSrc')
+                    setIframeError(true)
+                    setUseEmbed(false)
+                    toast({
+                        title: "Film non disponibile",
+                        description: "Questo film non è disponibile su VixSrc",
+                        variant: "destructive"
+                    })
+                    return
+                }
+
+                console.log('✅ Film disponibile su VixSrc, caricamento iframe...')
+            } catch (availabilityError) {
+                console.log('⚠️ Errore nel controllo disponibilità, procedo comunque:', availabilityError)
+                // Se il controllo fallisce, procediamo comunque
+            }
+
+            // Prova a caricare l'iframe di vixsrc.to
             console.log('✅ Tentativo di caricamento iframe vixsrc.to')
             setUseEmbed(true)
             toast({
@@ -197,6 +220,7 @@ export default function MoviePlayerPage() {
         } catch (error) {
             console.error('❌ Errore nel caricamento del video:', error)
             setUseEmbed(false)
+            setIframeError(true)
             toast({
                 title: "Errore video",
                 description: "Impossibile caricare il player",
@@ -288,14 +312,48 @@ export default function MoviePlayerPage() {
                                 console.log('✅ Iframe caricato con successo')
                                 console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
                                 console.log('📊 Iframe event:', e)
-                                setIframeError(false)
-                                // Rimuovi il timeout quando l'iframe si carica
-                                const timeouts = document.querySelectorAll('[data-timeout-id]')
-                                timeouts.forEach(timeout => clearTimeout(parseInt(timeout.getAttribute('data-timeout-id')!)))
-                                toast({
-                                    title: "Player caricato",
-                                    description: "Il player di vixsrc.to è pronto"
-                                })
+
+                                // Verifica se l'iframe contiene effettivamente il player
+                                // Aspetta un po' per permettere al contenuto di caricarsi
+                                setTimeout(() => {
+                                    try {
+                                        const iframe = e.target as HTMLIFrameElement
+                                        if (iframe && iframe.contentDocument) {
+                                            // Se riusciamo ad accedere al contenuto, probabilmente è un errore 404
+                                            console.log('⚠️ Possibile errore 404 - iframe accessibile')
+                                            setIframeError(true)
+                                            toast({
+                                                title: "Film non disponibile",
+                                                description: "Il film non è disponibile su VixSrc",
+                                                variant: "destructive"
+                                            })
+                                        } else {
+                                            // Se non riusciamo ad accedere, probabilmente è il player VixSrc
+                                            console.log('✅ Player VixSrc caricato correttamente')
+                                            setIframeError(false)
+                                            if (timeoutId) {
+                                                clearTimeout(timeoutId)
+                                                setTimeoutId(null)
+                                            }
+                                            toast({
+                                                title: "Player caricato",
+                                                description: "Il player di vixsrc.to è pronto"
+                                            })
+                                        }
+                                    } catch (error) {
+                                        // Se c'è un errore di accesso, probabilmente è il player VixSrc (cross-origin)
+                                        console.log('✅ Player VixSrc caricato (cross-origin)')
+                                        setIframeError(false)
+                                        if (timeoutId) {
+                                            clearTimeout(timeoutId)
+                                            setTimeoutId(null)
+                                        }
+                                        toast({
+                                            title: "Player caricato",
+                                            description: "Il player di vixsrc.to è pronto"
+                                        })
+                                    }
+                                }, 2000) // Aspetta 2 secondi per permettere il caricamento
                             }}
                             onError={() => {
                                 console.log('❌ Errore nel caricamento iframe')

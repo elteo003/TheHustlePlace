@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
 import { Movie } from '@/types'
-import { getImageUrl } from '@/lib/utils'
+import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
 
 interface Top10MovieCardProps {
     movie: Movie
@@ -69,11 +69,16 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
                     <span className="text-gray-400 text-xs">
                         {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                     </span>
-                    <div className="flex items-center space-x-1">
-                        <span className="text-yellow-400 text-xs">★</span>
-                        <span className="text-gray-400 text-xs">
-                            {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+                    <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(movie))}`}>
+                            {getAvailabilityBadge(movie)}
                         </span>
+                        <div className="flex items-center space-x-1">
+                            <span className="text-yellow-400 text-xs">★</span>
+                            <span className="text-gray-400 text-xs">
+                                {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -28,8 +28,6 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
     // Gestione scroll con mouse wheel (con throttling)
     const handleWheel = (e: React.WheelEvent) => {
-        e.preventDefault()
-
         // Throttle per evitare scroll troppo veloce
         if (wheelTimeout) return
 
@@ -51,6 +49,42 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
         // Reset transitioning dopo l'animazione
         setTimeout(() => setIsTransitioning(false), 1000)
     }
+
+    // Gestione scroll con event listener non passivo per evitare warning
+    useEffect(() => {
+        const handleWheelNonPassive = (e: WheelEvent) => {
+            e.preventDefault()
+            
+            // Throttle per evitare scroll troppo veloce
+            if (wheelTimeout) return
+
+            const timeout = setTimeout(() => {
+                setWheelTimeout(null)
+            }, 800)
+
+            setWheelTimeout(timeout)
+            setIsTransitioning(true)
+
+            if (e.deltaY > 0) {
+                // Scroll down - vai al prossimo
+                setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
+            } else {
+                // Scroll up - vai al precedente
+                setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
+            }
+
+            // Reset transitioning dopo l'animazione
+            setTimeout(() => setIsTransitioning(false), 1000)
+        }
+
+        const container = document.getElementById('hero-container')
+        if (container) {
+            container.addEventListener('wheel', handleWheelNonPassive, { passive: false })
+            return () => {
+                container.removeEventListener('wheel', handleWheelNonPassive)
+            }
+        }
+    }, [featuredContent.length, wheelTimeout])
 
     // Gestione touch per mobile (con throttling)
     const handleTouchStart = (e: React.TouchEvent) => {
@@ -101,6 +135,7 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
     return (
         <section
+            id="hero-container"
             className="relative h-screen overflow-hidden"
             onWheel={handleWheel}
             onTouchStart={handleTouchStart}

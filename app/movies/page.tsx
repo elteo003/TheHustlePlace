@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/navbar'
 import { Movie } from '@/types'
+import { filterAvailableMovies } from '@/lib/utils'
 
 export default function MoviesPage() {
     const [movies, setMovies] = useState<Movie[]>([])
@@ -15,7 +16,9 @@ export default function MoviesPage() {
                 const response = await fetch('/api/catalog/movies?page=1')
                 const data = await response.json()
                 if (data.success && data.data?.results) {
-                    setMovies(data.data.results)
+                    // Filtra solo film disponibili per streaming
+                    const availableMovies = filterAvailableMovies(data.data.results)
+                    setMovies(availableMovies)
                 }
             } catch (error) {
                 console.error('Errore nel caricamento dei film:', error)

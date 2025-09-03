@@ -7,6 +7,7 @@ import { ContentCarousel } from '@/components/content-carousel'
 import { Top10MovieCard } from '@/components/top-10-movie-card'
 import { SkeletonLoader } from '@/components/skeleton-loader'
 import { Movie, TVShow } from '@/types'
+import { filterAvailableMovies } from '@/lib/utils'
 
 export default function HomePage() {
     const [nowPlayingMovies, setNowPlayingMovies] = useState<Movie[]>([])
@@ -31,14 +32,18 @@ export default function HomePage() {
                 const recentMoviesRes = await fetch('/api/catalog/recent')
                 const recentMoviesData = await recentMoviesRes.json()
                 if (recentMoviesData.success && recentMoviesData.data) {
-                    setLatestMovies(recentMoviesData.data.slice(0, 20))
+                    // Filtra solo film disponibili per streaming
+                    const availableMovies = filterAvailableMovies(recentMoviesData.data)
+                    setLatestMovies(availableMovies.slice(0, 20))
                 }
 
                 // Fetch top 10 movies
                 const top10Res = await fetch('/api/catalog/top-10')
                 const top10Data = await top10Res.json()
                 if (top10Data.success && top10Data.data) {
-                    setTop10Movies(top10Data.data)
+                    // Filtra solo film disponibili per streaming
+                    const availableTop10 = filterAvailableMovies(top10Data.data)
+                    setTop10Movies(availableTop10)
                 }
 
                 // Fetch popular TV shows

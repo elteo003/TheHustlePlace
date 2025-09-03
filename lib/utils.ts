@@ -70,3 +70,67 @@ export function throttle<T extends (...args: any[]) => any>(
         }
     }
 }
+
+// Funzioni per il filtro intelligente del catalogo
+export interface MovieAvailability {
+    isAvailable: boolean
+    badge?: string
+    reason?: string
+}
+
+export function checkMovieAvailability(movie: any): MovieAvailability {
+    const releaseDate = new Date(movie.releaseDate || movie.firstAirDate)
+    const today = new Date()
+    const threeMonthsAgo = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000))
+    const sixMonthsAgo = new Date(today.getTime() - (180 * 24 * 60 * 60 * 1000))
+    
+    // Se il film è uscito da meno di 3 mesi, probabilmente non è disponibile per streaming
+    if (releaseDate > threeMonthsAgo) {
+        return {
+            isAvailable: false,
+            badge: "Al Cinema",
+            reason: "Film recente, non ancora disponibile per streaming"
+        }
+    }
+    
+    // Se il film è uscito da meno di 6 mesi, potrebbe essere disponibile
+    if (releaseDate > sixMonthsAgo) {
+        return {
+            isAvailable: true,
+            badge: "Disponibile",
+            reason: "Film recente, potrebbe essere disponibile"
+        }
+    }
+    
+    // Film più vecchi sono probabilmente disponibili
+    return {
+        isAvailable: true,
+        badge: "Disponibile",
+        reason: "Film con buona probabilità di disponibilità"
+    }
+}
+
+export function filterAvailableMovies(movies: any[]): any[] {
+    return movies.filter(movie => {
+        const availability = checkMovieAvailability(movie)
+        return availability.isAvailable
+    })
+}
+
+export function getAvailabilityBadge(movie: any): string {
+    const availability = checkMovieAvailability(movie)
+    return availability.badge || "Disponibile"
+}
+
+export function getAvailabilityColor(badge: string): string {
+    switch (badge) {
+        case "Al Cinema":
+            return "bg-yellow-500 text-yellow-900"
+        case "Prossimamente":
+            return "bg-blue-500 text-blue-900"
+        case "Disponibile":
+            return "bg-green-500 text-green-900"
+        default:
+            return "bg-gray-500 text-gray-900"
+    }
+}
