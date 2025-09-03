@@ -9,6 +9,7 @@ import { VideoPlayerService, VideoSource } from '@/services/video-player.service
 
 interface Movie {
     id: number
+    tmdb_id?: number
     title: string
     overview: string
     poster_path: string
@@ -48,32 +49,57 @@ export default function MoviePlayerPage() {
 
     const fetchMovieDetails = async () => {
         try {
-            // Per ora usiamo dati mock, ma in futuro potremmo fare una chiamata API
-            const mockMovie: Movie = {
-                id: parseInt(movieId),
-                title: "Inception",
-                overview: "Un ladro esperto che ruba segreti dal subconscio durante lo stato di sogno.",
-                poster_path: "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
-                backdrop_path: "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
-                release_date: "2010-07-16",
-                vote_average: 8.4,
-                runtime: 148,
-                genres: [
-                    { id: 28, name: "Azione" },
-                    { id: 878, name: "Fantascienza" },
-                    { id: 53, name: "Thriller" }
-                ]
+            // Recupera i dati reali del film dal nostro catalogo
+            const response = await fetch(`/api/catalog/movies`)
+            if (!response.ok) {
+                throw new Error('Errore nel recupero del catalogo')
             }
 
-            setMovie(mockMovie)
+            const catalogData = await response.json()
+            if (!catalogData.success) {
+                throw new Error('Errore nel catalogo')
+            }
+
+            // Cerca il film con l'ID specificato
+            const foundMovie = catalogData.data.find((movie: any) => movie.id === parseInt(movieId))
+
+            if (foundMovie) {
+                setMovie(foundMovie)
+            } else {
+                // Fallback: usa dati minimi se il film non è trovato nel catalogo
+                const fallbackMovie: Movie = {
+                    id: parseInt(movieId),
+                    tmdb_id: parseInt(movieId), // Usa l'ID come tmdb_id per il fallback
+                    title: `Film ${movieId}`,
+                    overview: `Film disponibile su vixsrc.to con ID ${movieId}`,
+                    poster_path: "/placeholder-movie.svg",
+                    backdrop_path: "/placeholder-movie.svg",
+                    release_date: "",
+                    vote_average: 0,
+                    runtime: 0,
+                    genres: []
+                }
+                setMovie(fallbackMovie)
+            }
+
             setLoading(false)
         } catch (error) {
             console.error('Errore nel caricamento del film:', error)
-            toast({
-                title: "Errore",
-                description: "Impossibile caricare i dettagli del film",
-                variant: "destructive"
-            })
+
+            // Fallback: usa dati minimi in caso di errore
+            const fallbackMovie: Movie = {
+                id: parseInt(movieId),
+                tmdb_id: parseInt(movieId), // Usa l'ID come tmdb_id per il fallback
+                title: `Film ${movieId}`,
+                overview: `Film disponibile su vixsrc.to con ID ${movieId}`,
+                poster_path: "/placeholder-movie.svg",
+                backdrop_path: "/placeholder-movie.svg",
+                release_date: "",
+                vote_average: 0,
+                runtime: 0,
+                genres: []
+            }
+            setMovie(fallbackMovie)
             setLoading(false)
         }
     }
@@ -175,7 +201,7 @@ export default function MoviePlayerPage() {
                 {useEmbed ? (
                     <div className="relative z-10 w-full h-full">
                         <iframe
-                            src={videoPlayerService.getPlayerUrl(movie.id, 'movie')}
+                            src={videoPlayerService.getPlayerUrl(movie.tmdb_id || movie.id, 'movie')}
                             className="w-full h-full border-0"
                             allowFullScreen
                             title={movie.title}
