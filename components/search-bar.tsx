@@ -109,6 +109,14 @@ export function SearchBar() {
         setQuery('')
     }
 
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && query.trim()) {
+            // Naviga alla pagina di risultati di ricerca
+            window.location.href = `/search?q=${encodeURIComponent(query.trim())}`
+            setIsOpen(false)
+        }
+    }
+
     const clearSearch = () => {
         setQuery('')
         setResults([])
@@ -129,6 +137,7 @@ export function SearchBar() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
+                    onKeyPress={handleKeyPress}
                     placeholder="Cerca film e serie TV..."
                     className="w-full pl-12 pr-12 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />

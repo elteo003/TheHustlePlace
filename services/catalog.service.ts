@@ -373,25 +373,21 @@ export class CatalogService {
                 return cached
             }
 
-            const params = new URLSearchParams()
-            params.append('query', query)
-            params.append('page', page.toString())
-            params.append('lang', 'it')
+            // Usa TMDB API per la ricerca
+            const movies = await this.tmdbService.searchMovies(query, page)
 
-            const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/search/movie?${params}`)
-
-            if (response.status !== 200) {
-                throw new Error(`Errore API: ${response.status}`)
+            const result: PaginatedResponse<Movie> = {
+                results: movies,
+                page: page,
+                total_pages: Math.ceil(movies.length / 20),
+                total_results: movies.length
             }
 
-            const data = response.data
+            // Salva in cache
+            await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            // Salva in cache per 30 minuti (ricerche cambiano spesso)
-            await cache.set(cacheKey, data, { ttl: 1800 })
-
-            logger.info('Ricerca film completata', { query, count: data.results?.length || 0 })
-
-            return data
+            logger.info('Ricerca film completata', { query, count: movies.length })
+            return result
         } catch (error) {
             logger.error('Errore nella ricerca film', { error, query })
             throw new Error('Errore nella ricerca film')
@@ -408,25 +404,21 @@ export class CatalogService {
                 return cached
             }
 
-            const params = new URLSearchParams()
-            params.append('query', query)
-            params.append('page', page.toString())
-            params.append('lang', 'it')
+            // Usa TMDB API per la ricerca
+            const tvShows = await this.tmdbService.searchTVShows(query, page)
 
-            const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/search/tv?${params}`)
-
-            if (response.status !== 200) {
-                throw new Error(`Errore API: ${response.status}`)
+            const result: PaginatedResponse<TVShow> = {
+                results: tvShows,
+                page: page,
+                total_pages: Math.ceil(tvShows.length / 20),
+                total_results: tvShows.length
             }
 
-            const data = response.data
+            // Salva in cache
+            await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            // Salva in cache per 30 minuti
-            await cache.set(cacheKey, data, { ttl: 1800 })
-
-            logger.info('Ricerca serie TV completata', { query, count: data.results?.length || 0 })
-
-            return data
+            logger.info('Ricerca serie TV completata', { query, count: tvShows.length })
+            return result
         } catch (error) {
             logger.error('Errore nella ricerca serie TV', { error, query })
             throw new Error('Errore nella ricerca serie TV')

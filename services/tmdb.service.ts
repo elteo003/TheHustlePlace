@@ -243,6 +243,82 @@ export class TMDBService {
         }
     }
 
+    // Metodo per cercare film
+    async searchMovies(query: string, page: number = 1): Promise<Movie[]> {
+        try {
+            const response = await axios.get(`${this.TMDB_BASE_URL}/search/movie`, {
+                params: {
+                    api_key: this.TMDB_API_KEY,
+                    language: 'it-IT',
+                    query: query,
+                    page: page
+                }
+            })
+
+            if (response.status === 200 && response.data.results) {
+                return response.data.results.map((movie: any) => ({
+                    id: movie.id,
+                    title: movie.title || `Film ${movie.id}`,
+                    overview: movie.overview || 'Descrizione non disponibile',
+                    release_date: movie.release_date || '',
+                    vote_average: movie.vote_average || 0,
+                    vote_count: movie.vote_count || 0,
+                    genre_ids: movie.genre_ids || [],
+                    adult: movie.adult || false,
+                    backdrop_path: movie.backdrop_path || '/placeholder-movie.svg',
+                    original_language: movie.original_language || 'en',
+                    original_title: movie.original_title || movie.title,
+                    popularity: movie.popularity || 0,
+                    poster_path: movie.poster_path || '/placeholder-movie.svg',
+                    video: movie.video || false,
+                    tmdb_id: movie.id
+                }))
+            }
+            return []
+        } catch (error) {
+            logger.error('Errore nella ricerca film TMDB', { error, query })
+            return []
+        }
+    }
+
+    // Metodo per cercare serie TV
+    async searchTVShows(query: string, page: number = 1): Promise<TVShow[]> {
+        try {
+            const response = await axios.get(`${this.TMDB_BASE_URL}/search/tv`, {
+                params: {
+                    api_key: this.TMDB_API_KEY,
+                    language: 'it-IT',
+                    query: query,
+                    page: page
+                }
+            })
+
+            if (response.status === 200 && response.data.results) {
+                return response.data.results.map((tv: any) => ({
+                    id: tv.id,
+                    name: tv.name || `Serie TV ${tv.id}`,
+                    overview: tv.overview || 'Descrizione non disponibile',
+                    first_air_date: tv.first_air_date || '',
+                    vote_average: tv.vote_average || 0,
+                    vote_count: tv.vote_count || 0,
+                    genre_ids: tv.genre_ids || [],
+                    adult: tv.adult || false,
+                    backdrop_path: tv.backdrop_path || '/placeholder-movie.svg',
+                    origin_country: tv.origin_country || [],
+                    original_language: tv.original_language || 'en',
+                    original_name: tv.original_name || tv.name,
+                    popularity: tv.popularity || 0,
+                    poster_path: tv.poster_path || '/placeholder-movie.svg',
+                    tmdb_id: tv.id
+                }))
+            }
+            return []
+        } catch (error) {
+            logger.error('Errore nella ricerca serie TV TMDB', { error, query })
+            return []
+        }
+    }
+
     // Metodo per testare se la chiave API funziona
     async testAPIKey(): Promise<boolean> {
         try {
