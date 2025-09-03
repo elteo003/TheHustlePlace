@@ -47,12 +47,12 @@ export default function MoviePlayerPage() {
         }
     }, [movie])
 
-        const fetchMovieDetails = async () => {
+    const fetchMovieDetails = async () => {
         try {
             console.log('🔍 Recupero dettagli film per ID:', movieId)
-            
-            // Recupera i dati reali del film dal nostro catalogo
-            const response = await fetch(`/api/catalog/movies`)
+
+            // Recupera i dati reali del film dai film popolari (che sappiamo funzionare)
+            const response = await fetch(`/api/catalog/popular/movies`)
             if (!response.ok) {
                 throw new Error('Errore nel recupero del catalogo')
             }
@@ -62,36 +62,77 @@ export default function MoviePlayerPage() {
                 throw new Error('Errore nel catalogo')
             }
 
-            console.log('📊 Catalogo recuperato:', catalogData.data.length, 'film')
+            console.log('📊 Catalogo popolari recuperato:', catalogData.data)
+            console.log('📊 Tipo di dati:', typeof catalogData.data)
+            console.log('📊 È un array?', Array.isArray(catalogData.data))
+
+            // I film popolari sono già un array
+            const moviesArray = catalogData.data
+            console.log('📊 Array film popolari:', moviesArray.length, 'film')
 
             // Cerca il film con l'ID specificato
-            const foundMovie = catalogData.data.find((movie: any) => movie.id === parseInt(movieId))
-            
+            const foundMovie = moviesArray.find((movie: any) => movie.id === parseInt(movieId))
+
             if (foundMovie) {
-                console.log('✅ Film trovato nel catalogo:', foundMovie.title, 'TMDB ID:', foundMovie.tmdb_id)
+                console.log('✅ Film trovato nei popolari:', foundMovie.title, 'TMDB ID:', foundMovie.tmdb_id)
                 setMovie(foundMovie)
             } else {
-                console.log('❌ Film non trovato nel catalogo, uso fallback con ID:', movieId)
-                // Fallback: usa dati minimi se il film non è trovato nel catalogo
-                const fallbackMovie: Movie = {
-                    id: parseInt(movieId),
-                    tmdb_id: parseInt(movieId), // Usa l'ID come tmdb_id per il fallback
-                    title: `Film ${movieId}`,
-                    overview: `Film disponibile su vixsrc.to con ID ${movieId}`,
-                    poster_path: "/placeholder-movie.svg",
-                    backdrop_path: "/placeholder-movie.svg",
-                    release_date: "",
-                    vote_average: 0,
-                    runtime: 0,
-                    genres: []
+                console.log('❌ Film non trovato nei popolari, provo con i film recenti...')
+                
+                // Prova con i film recenti
+                try {
+                    const recentResponse = await fetch(`/api/catalog/recent`)
+                    if (recentResponse.ok) {
+                        const recentData = await recentResponse.json()
+                        if (recentData.success) {
+                            const recentMovies = recentData.data
+                            const foundInRecent = recentMovies.find((movie: any) => movie.id === parseInt(movieId))
+                            
+                            if (foundInRecent) {
+                                console.log('✅ Film trovato nei recenti:', foundInRecent.title, 'TMDB ID:', foundInRecent.tmdb_id)
+                                setMovie(foundInRecent)
+                            } else {
+                                console.log('❌ Film non trovato neanche nei recenti, uso fallback con ID:', movieId)
+                                // Fallback: usa dati minimi se il film non è trovato nel catalogo
+                                const fallbackMovie: Movie = {
+                                    id: parseInt(movieId),
+                                    tmdb_id: parseInt(movieId), // Usa l'ID come tmdb_id per il fallback
+                                    title: `Film ${movieId}`,
+                                    overview: `Film disponibile su vixsrc.to con ID ${movieId}`,
+                                    poster_path: "/placeholder-movie.svg",
+                                    backdrop_path: "/placeholder-movie.svg",
+                                    release_date: "",
+                                    vote_average: 0,
+                                    runtime: 0,
+                                    genres: []
+                                }
+                                setMovie(fallbackMovie)
+                            }
+                        }
+                    }
+                } catch (recentError) {
+                    console.log('❌ Errore nel recupero film recenti, uso fallback con ID:', movieId)
+                    // Fallback: usa dati minimi se il film non è trovato nel catalogo
+                    const fallbackMovie: Movie = {
+                        id: parseInt(movieId),
+                        tmdb_id: parseInt(movieId), // Usa l'ID come tmdb_id per il fallback
+                        title: `Film ${movieId}`,
+                        overview: `Film disponibile su vixsrc.to con ID ${movieId}`,
+                        poster_path: "/placeholder-movie.svg",
+                        backdrop_path: "/placeholder-movie.svg",
+                        release_date: "",
+                        vote_average: 0,
+                        runtime: 0,
+                        genres: []
+                    }
+                    setMovie(fallbackMovie)
                 }
-                setMovie(fallbackMovie)
             }
-            
+
             setLoading(false)
         } catch (error) {
             console.error('❌ Errore nel caricamento del film:', error)
-            
+
             // Fallback: usa dati minimi in caso di errore
             const fallbackMovie: Movie = {
                 id: parseInt(movieId),
@@ -115,7 +156,7 @@ export default function MoviePlayerPage() {
 
         try {
             setVideoLoading(true)
-            
+
             const tmdbId = movie.tmdb_id || movie.id
             console.log('🎬 Caricamento video source per film:', movie.title)
             console.log('🆔 ID utilizzato per vixsrc.to:', tmdbId)
