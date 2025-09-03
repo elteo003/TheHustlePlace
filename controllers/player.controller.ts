@@ -13,7 +13,7 @@ export class PlayerController {
     async getMovieEmbed(request: NextRequest): Promise<NextResponse> {
         try {
             // Parse URL parameters manually for now
-            const url = new URL(request.url)
+            const url = request.nextUrl
             const pathParts = url.pathname.split('/')
             const id = parseInt(pathParts[pathParts.length - 1])
             const embed = await this.playerService.getMovieEmbed(id)
@@ -39,11 +39,11 @@ export class PlayerController {
     async getTVShowEmbed(request: NextRequest): Promise<NextResponse> {
         try {
             // Parse URL parameters manually for now
-            const url = new URL(request.url)
+            const url = request.nextUrl
             const pathParts = url.pathname.split('/')
             const id = parseInt(pathParts[pathParts.length - 1])
-            const season = url.searchParams.get('season') ? parseInt(url.searchParams.get('season')!) : 1
-            const episode = url.searchParams.get('episode') ? parseInt(url.searchParams.get('episode')!) : 1
+            const season = request.nextUrl.searchParams.get('season') ? parseInt(request.nextUrl.searchParams.get('season')!) : 1
+            const episode = request.nextUrl.searchParams.get('episode') ? parseInt(request.nextUrl.searchParams.get('episode')!) : 1
             const embed = await this.playerService.getTVShowEmbed(id, season, episode)
 
             return NextResponse.json({

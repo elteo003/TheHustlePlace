@@ -12,15 +12,14 @@ export class CatalogController {
 
     async getMovies(request: NextRequest): Promise<NextResponse> {
         try {
-            // Parse query parameters manually for now
-            const url = new URL(request.url)
+            // Parse query parameters from request.nextUrl to avoid dynamic server usage
             const filters = {
-                genre: url.searchParams.get('genre') ? parseInt(url.searchParams.get('genre')!) : undefined,
-                year: url.searchParams.get('year') ? parseInt(url.searchParams.get('year')!) : undefined,
-                language: url.searchParams.get('language') || undefined,
-                sortBy: url.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
-                sortOrder: url.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
-                page: url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+                genre: request.nextUrl.searchParams.get('genre') ? parseInt(request.nextUrl.searchParams.get('genre')!) : undefined,
+                year: request.nextUrl.searchParams.get('year') ? parseInt(request.nextUrl.searchParams.get('year')!) : undefined,
+                language: request.nextUrl.searchParams.get('language') || undefined,
+                sortBy: request.nextUrl.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
+                sortOrder: request.nextUrl.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
+                page: request.nextUrl.searchParams.get('page') ? parseInt(request.nextUrl.searchParams.get('page')!) : 1
             }
             const movies = await this.catalogService.getMovies(filters)
 
@@ -44,15 +43,14 @@ export class CatalogController {
 
     async getTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            // Parse query parameters manually for now
-            const url = new URL(request.url)
+            // Parse query parameters from request.nextUrl to avoid dynamic server usage
             const filters = {
-                genre: url.searchParams.get('genre') ? parseInt(url.searchParams.get('genre')!) : undefined,
-                year: url.searchParams.get('year') ? parseInt(url.searchParams.get('year')!) : undefined,
-                language: url.searchParams.get('language') || undefined,
-                sortBy: url.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
-                sortOrder: url.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
-                page: url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+                genre: request.nextUrl.searchParams.get('genre') ? parseInt(request.nextUrl.searchParams.get('genre')!) : undefined,
+                year: request.nextUrl.searchParams.get('year') ? parseInt(request.nextUrl.searchParams.get('year')!) : undefined,
+                language: request.nextUrl.searchParams.get('language') || undefined,
+                sortBy: request.nextUrl.searchParams.get('sortBy') as 'popularity' | 'vote_average' | 'release_date' | 'title' || undefined,
+                sortOrder: request.nextUrl.searchParams.get('sortOrder') as 'asc' | 'desc' || undefined,
+                page: request.nextUrl.searchParams.get('page') ? parseInt(request.nextUrl.searchParams.get('page')!) : 1
             }
             const tvShows = await this.catalogService.getTVShows(filters)
 
@@ -78,8 +76,8 @@ export class CatalogController {
 
     async getPopularTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
+            const url = request.nextUrl
+            const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
 
             const tvShows = await this.catalogService.getPopularTVShows(page)
 
@@ -103,8 +101,8 @@ export class CatalogController {
 
     async getLatestMovies(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
+            const url = request.nextUrl
+            const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
 
             const movies = await this.catalogService.getLatestMovies(page)
 
@@ -128,8 +126,8 @@ export class CatalogController {
 
     async getLatestTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
+            const url = request.nextUrl
+            const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
 
             const tvShows = await this.catalogService.getLatestTVShows(page)
 
@@ -153,8 +151,8 @@ export class CatalogController {
 
     async getTopRatedMovies(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
+            const url = request.nextUrl
+            const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
 
             const movies = await this.catalogService.getTopRatedMovies(page)
 
@@ -178,8 +176,8 @@ export class CatalogController {
 
     async getTopRatedTVShows(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const page = parseInt(url.searchParams.get('page') || '1')
+            const url = request.nextUrl
+            const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
 
             const tvShows = await this.catalogService.getTopRatedTVShows(page)
 
@@ -204,9 +202,9 @@ export class CatalogController {
     async searchMovies(request: NextRequest): Promise<NextResponse> {
         try {
             // Parse query parameters manually for now
-            const url = new URL(request.url)
-            const query = url.searchParams.get('query') || ''
-            const page = url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+            const url = request.nextUrl
+            const query = request.nextUrl.searchParams.get('query') || ''
+            const page = request.nextUrl.searchParams.get('page') ? parseInt(request.nextUrl.searchParams.get('page')!) : 1
             const movies = await this.catalogService.searchMovies(query, page)
 
             return NextResponse.json({
@@ -230,9 +228,9 @@ export class CatalogController {
     async searchTVShows(request: NextRequest): Promise<NextResponse> {
         try {
             // Parse query parameters manually for now
-            const url = new URL(request.url)
-            const query = url.searchParams.get('query') || ''
-            const page = url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1
+            const url = request.nextUrl
+            const query = request.nextUrl.searchParams.get('query') || ''
+            const page = request.nextUrl.searchParams.get('page') ? parseInt(request.nextUrl.searchParams.get('page')!) : 1
             const tvShows = await this.catalogService.searchTVShows(query, page)
 
             return NextResponse.json({
@@ -255,8 +253,8 @@ export class CatalogController {
 
     async getGenres(request: NextRequest): Promise<NextResponse> {
         try {
-            const url = new URL(request.url)
-            const type = url.searchParams.get('type') as 'movie' | 'tv'
+            const url = request.nextUrl
+            const type = request.nextUrl.searchParams.get('type') as 'movie' | 'tv'
 
             if (!type || !['movie', 'tv'].includes(type)) {
                 return NextResponse.json(

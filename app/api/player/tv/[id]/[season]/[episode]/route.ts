@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string; season: string; episode: string } }
 ) {
   // Aggiunge i parametri alla richiesta per la validazione
-  const url = new URL(request.url)
+  const url = request.nextUrl
   url.pathname = `/api/player/tv/${params.id}/${params.season}/${params.episode}`
   
   const modifiedRequest = new NextRequest(url, {

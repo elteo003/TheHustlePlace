@@ -6,7 +6,7 @@ export async function GET(
 ) {
     try {
         const tvId = params.id
-        const url = new URL(request.url)
+        const url = request.nextUrl
         const season = url.searchParams.get('season') || '1'
         const episode = url.searchParams.get('episode') || '1'
 
