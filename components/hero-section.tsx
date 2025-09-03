@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Info, Plus, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Play, Info, Plus, Heart } from 'lucide-react'
 import { Movie } from '@/types'
 import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
 import { useAvailability } from '@/hooks/useAvailability'
@@ -264,28 +264,18 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
             {/* Indicators */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="flex flex-col items-center space-y-3">
-                    {/* Navigation hint */}
-                    <div className="flex items-center space-x-2 text-white/70 text-xs">
-                        <ChevronLeft className="w-4 h-4" />
-                        <span>Naviga</span>
-                        <ChevronRight className="w-4 h-4" />
-                    </div>
-                    
-                    {/* Dots */}
-                    <div className="flex space-x-2">
-                        {featuredContent.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => goToSlide(index)}
-                                disabled={isTransitioning}
-                                className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
-                                    ? 'bg-white scale-125'
-                                    : 'bg-white/50 hover:bg-white/75'
-                                    } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                            />
-                        ))}
-                    </div>
+                <div className="flex space-x-2">
+                    {featuredContent.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => goToSlide(index)}
+                            disabled={isTransitioning}
+                            className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
+                                ? 'bg-white scale-125'
+                                : 'bg-white/50 hover:bg-white/75'
+                                } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        />
+                    ))}
                 </div>
             </div>
 
