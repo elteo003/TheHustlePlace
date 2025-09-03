@@ -117,40 +117,59 @@ export class CatalogService {
                 if (response.status === 200 && Array.isArray(response.data)) {
                     const tmdbIds = response.data.map((item: any) => item.tmdb_id)
 
-                    // Usa i veri ID da vixsrc.to per ottenere dati reali da TMDB
-                    const movies: Movie[] = await Promise.all(
-                        tmdbIds.slice(0, 20).map(async (tmdbId: number) => {
-                            try {
-                                // Usa TMDB API per ottenere i dettagli reali
-                                const tmdbDetails = await this.tmdbService.getMovieDetails(tmdbId)
-                                if (tmdbDetails) {
-                                    logger.info('Dettagli film ottenuti da TMDB', { tmdbId, title: tmdbDetails.title })
-                                    return tmdbDetails
+                    // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
+                    const batchSize = 5 // Processa 5 film alla volta per evitare rate limiting
+                    const movies: Movie[] = []
+                    
+                    for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
+                        const batch = tmdbIds.slice(i, i + batchSize)
+                        
+                        const batchResults = await Promise.allSettled(
+                            batch.map(async (tmdbId: number) => {
+                                try {
+                                    // Usa TMDB API per ottenere i dettagli reali
+                                    const tmdbDetails = await this.tmdbService.getMovieDetails(tmdbId)
+                                    if (tmdbDetails) {
+                                        logger.info('Dettagli film ottenuti da TMDB', { tmdbId, title: tmdbDetails.title })
+                                        return tmdbDetails
+                                    }
+                                } catch (error) {
+                                    logger.warn('Errore nel recupero dettagli TMDB per film', { tmdbId, error })
                                 }
-                            } catch (error) {
-                                logger.warn('Errore nel recupero dettagli TMDB per film', { tmdbId, error })
-                            }
 
-                            // Fallback: usa dati minimi ma con ID reale per la riproduzione
-                            return {
-                                id: tmdbId,
-                                title: `Film ${tmdbId}`,
-                                overview: `Film disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
-                                release_date: '',
-                                vote_average: 0,
-                                vote_count: 0,
-                                genre_ids: [],
-                                adult: false,
-                                original_language: 'en',
-                                original_title: `Film ${tmdbId}`,
-                                popularity: 0,
-                                video: false,
-                                tmdb_id: tmdbId,
-                                poster_path: '/placeholder-movie.svg',
-                                backdrop_path: '/placeholder-movie.svg'
+                                // Fallback: usa dati minimi ma con ID reale per la riproduzione
+                                return {
+                                    id: tmdbId,
+                                    title: `Film ${tmdbId}`,
+                                    overview: `Film disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
+                                    release_date: '',
+                                    vote_average: 0,
+                                    vote_count: 0,
+                                    genre_ids: [],
+                                    adult: false,
+                                    original_language: 'en',
+                                    original_title: `Film ${tmdbId}`,
+                                    popularity: 0,
+                                    video: false,
+                                    tmdb_id: tmdbId,
+                                    poster_path: '/placeholder-movie.svg',
+                                    backdrop_path: '/placeholder-movie.svg'
+                                }
+                            })
+                        )
+                        
+                        // Aggiungi solo i risultati riusciti
+                        batchResults.forEach(result => {
+                            if (result.status === 'fulfilled') {
+                                movies.push(result.value)
                             }
                         })
-                    )
+                        
+                        // Piccola pausa tra i batch per evitare rate limiting
+                        if (i + batchSize < Math.min(tmdbIds.length, 20)) {
+                            await new Promise(resolve => setTimeout(resolve, 100))
+                        }
+                    }
 
                     const result: PaginatedResponse<Movie> = {
                         page: filters.page || 1,
@@ -260,40 +279,59 @@ export class CatalogService {
                 if (response.status === 200 && Array.isArray(response.data)) {
                     const tmdbIds = response.data.map((item: any) => item.tmdb_id)
 
-                    // Usa i veri ID da vixsrc.to per ottenere dati reali da TMDB
-                    const tvShows: TVShow[] = await Promise.all(
-                        tmdbIds.slice(0, 20).map(async (tmdbId: number) => {
-                            try {
-                                // Usa TMDB API per ottenere i dettagli reali
-                                const tmdbDetails = await this.tmdbService.getTVShowDetails(tmdbId)
-                                if (tmdbDetails) {
-                                    logger.info('Dettagli serie TV ottenuti da TMDB', { tmdbId, name: tmdbDetails.name })
-                                    return tmdbDetails
+                    // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
+                    const batchSize = 5 // Processa 5 serie TV alla volta per evitare rate limiting
+                    const tvShows: TVShow[] = []
+                    
+                    for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
+                        const batch = tmdbIds.slice(i, i + batchSize)
+                        
+                        const batchResults = await Promise.allSettled(
+                            batch.map(async (tmdbId: number) => {
+                                try {
+                                    // Usa TMDB API per ottenere i dettagli reali
+                                    const tmdbDetails = await this.tmdbService.getTVShowDetails(tmdbId)
+                                    if (tmdbDetails) {
+                                        logger.info('Dettagli serie TV ottenuti da TMDB', { tmdbId, name: tmdbDetails.name })
+                                        return tmdbDetails
+                                    }
+                                } catch (error) {
+                                    logger.warn('Errore nel recupero dettagli TMDB per serie TV', { tmdbId, error })
                                 }
-                            } catch (error) {
-                                logger.warn('Errore nel recupero dettagli TMDB per serie TV', { tmdbId, error })
-                            }
 
-                            // Fallback: usa dati minimi ma con ID reale per la riproduzione
-                            return {
-                                id: tmdbId,
-                                name: `Serie TV ${tmdbId}`,
-                                overview: `Serie TV disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
-                                first_air_date: '',
-                                vote_average: 0,
-                                vote_count: 0,
-                                genre_ids: [],
-                                adult: false,
-                                origin_country: [],
-                                original_language: 'en',
-                                original_name: `Serie TV ${tmdbId}`,
-                                popularity: 0,
-                                tmdb_id: tmdbId,
-                                poster_path: '/placeholder-movie.svg',
-                                backdrop_path: '/placeholder-movie.svg'
+                                // Fallback: usa dati minimi ma con ID reale per la riproduzione
+                                return {
+                                    id: tmdbId,
+                                    name: `Serie TV ${tmdbId}`,
+                                    overview: `Serie TV disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
+                                    first_air_date: '',
+                                    vote_average: 0,
+                                    vote_count: 0,
+                                    genre_ids: [],
+                                    adult: false,
+                                    origin_country: [],
+                                    original_language: 'en',
+                                    original_name: `Serie TV ${tmdbId}`,
+                                    popularity: 0,
+                                    tmdb_id: tmdbId,
+                                    poster_path: '/placeholder-movie.svg',
+                                    backdrop_path: '/placeholder-movie.svg'
+                                }
+                            })
+                        )
+                        
+                        // Aggiungi solo i risultati riusciti
+                        batchResults.forEach(result => {
+                            if (result.status === 'fulfilled') {
+                                tvShows.push(result.value)
                             }
                         })
-                    )
+                        
+                        // Piccola pausa tra i batch per evitare rate limiting
+                        if (i + batchSize < Math.min(tmdbIds.length, 20)) {
+                            await new Promise(resolve => setTimeout(resolve, 100))
+                        }
+                    }
 
                     const result: PaginatedResponse<TVShow> = {
                         page: filters.page || 1,

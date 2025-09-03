@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Play, Plus, Heart, Bookmark } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
 import { getImageUrl, formatVoteAverage } from '@/lib/utils'
+import { SkeletonLoader } from '@/components/skeleton-loader'
 
 interface MovieCardProps {
     item: Movie | TVShow
@@ -18,10 +19,32 @@ interface MovieCardProps {
 export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
     const [isHovered, setIsHovered] = useState(false)
     const [imageError, setImageError] = useState(false)
+    const [isInView, setIsInView] = useState(false)
+    const [imageLoaded, setImageLoaded] = useState(false)
+    const cardRef = useRef<HTMLDivElement>(null)
 
     const title = 'title' in item ? item.title : item.name
     const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date
     const year = new Date(releaseDate).getFullYear()
+
+    // Intersection Observer per lazy loading
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsInView(true)
+                    observer.disconnect()
+                }
+            },
+            { threshold: 0.1, rootMargin: '50px' }
+        )
+
+        if (cardRef.current) {
+            observer.observe(cardRef.current)
+        }
+
+        return () => observer.disconnect()
+    }, [])
 
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault()
@@ -38,27 +61,40 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
 
     return (
         <Card
+            ref={cardRef}
             className="movie-card bg-transparent border-0 p-0 group cursor-pointer"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
-                {/* Poster Image */}
-                <Image
-                    src={imageError ? '/placeholder-movie.svg' : getImageUrl(item.poster_path, 'w500')}
-                    alt={title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-110"
-                    onError={() => {
-                        console.log('Errore caricamento immagine:', item.poster_path)
-                        setImageError(true)
-                    }}
-                    onLoad={() => {
-                        console.log('Immagine caricata con successo:', item.poster_path)
-                    }}
-                    priority={false}
-                    unoptimized={true}
-                />
+                {/* Skeleton Loader */}
+                {!isInView && <SkeletonLoader type="movie" />}
+                
+                {/* Poster Image - Lazy Loading */}
+                {isInView && (
+                    <>
+                        {!imageLoaded && <SkeletonLoader type="movie" />}
+                        <Image
+                            src={imageError ? '/placeholder-movie.svg' : getImageUrl(item.poster_path, 'w500')}
+                            alt={title}
+                            fill
+                            className={`object-cover transition-all duration-300 group-hover:scale-110 ${
+                                imageLoaded ? 'opacity-100' : 'opacity-0'
+                            }`}
+                            onError={() => {
+                                console.log('Errore caricamento immagine:', item.poster_path)
+                                setImageError(true)
+                                setImageLoaded(true)
+                            }}
+                            onLoad={() => {
+                                console.log('Immagine caricata con successo:', item.poster_path)
+                                setImageLoaded(true)
+                            }}
+                            priority={false}
+                            unoptimized={true}
+                        />
+                    </>
+                )}
 
                 {/* Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'

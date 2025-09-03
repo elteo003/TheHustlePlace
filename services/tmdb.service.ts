@@ -6,17 +6,56 @@ export class TMDBService {
     private readonly TMDB_BASE_URL = 'https://api.themoviedb.org/3'
     private readonly TMDB_API_KEY = process.env.TMDB_API_KEY || 'demo'
     private readonly TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p'
+    private readonly MAX_RETRIES = 3
+    private readonly RETRY_DELAY = 1000 // 1 second
+    private readonly RATE_LIMIT_DELAY = 200 // 200ms between requests
+    private lastRequestTime = 0
+
+    // Rate limiting helper
+    private async rateLimit(): Promise<void> {
+        const now = Date.now()
+        const timeSinceLastRequest = now - this.lastRequestTime
+        
+        if (timeSinceLastRequest < this.RATE_LIMIT_DELAY) {
+            await new Promise(resolve => setTimeout(resolve, this.RATE_LIMIT_DELAY - timeSinceLastRequest))
+        }
+        
+        this.lastRequestTime = Date.now()
+    }
+
+    // Retry logic helper
+    private async makeRequestWithRetry<T>(requestFn: () => Promise<T>): Promise<T> {
+        let lastError: Error | null = null
+        
+        for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+            try {
+                await this.rateLimit()
+                return await requestFn()
+            } catch (error) {
+                lastError = error as Error
+                logger.warn(`TMDB API request failed (attempt ${attempt}/${this.MAX_RETRIES})`, { error })
+                
+                if (attempt < this.MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY * attempt))
+                }
+            }
+        }
+        
+        throw lastError || new Error('TMDB API request failed after all retries')
+    }
 
     // Metodo per ottenere film "now playing" (appena usciti al cinema)
     async getNowPlayingMovies(): Promise<Movie[]> {
         try {
-            const response = await axios.get(`${this.TMDB_BASE_URL}/movie/now_playing`, {
-                params: {
-                    api_key: this.TMDB_API_KEY,
-                    language: 'it-IT',
-                    page: 1
-                }
-            })
+            const response = await this.makeRequestWithRetry(() => 
+                axios.get(`${this.TMDB_BASE_URL}/movie/now_playing`, {
+                    params: {
+                        api_key: this.TMDB_API_KEY,
+                        language: 'it-IT',
+                        page: 1
+                    }
+                })
+            )
 
             if (response.status === 200 && response.data.results) {
                 return response.data.results.map((movie: any) => ({

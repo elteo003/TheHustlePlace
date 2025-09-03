@@ -36,7 +36,8 @@ class RedisCacheService {
             this.redis = redis.createClient({
                 socket: {
                     host: config.host,
-                    port: config.port
+                    port: config.port,
+                    connectTimeout: 5000 // 5 second timeout
                 },
                 password: config.password,
                 database: config.db
@@ -52,7 +53,23 @@ class RedisCacheService {
                 this.isRedisAvailable = true
             })
 
-            await this.redis.connect()
+            this.redis.on('reconnecting', () => {
+                logger.info('Redis reconnecting...')
+                this.isRedisAvailable = false
+            })
+
+            this.redis.on('ready', () => {
+                logger.info('Redis ready for operations')
+                this.isRedisAvailable = true
+            })
+
+            // Connect with timeout
+            await Promise.race([
+                this.redis.connect(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Redis connection timeout')), 5000)
+                )
+            ])
         } catch (error) {
             logger.warn('Redis not available, using in-memory cache', { error })
             this.isRedisAvailable = false

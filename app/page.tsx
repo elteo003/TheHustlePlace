@@ -5,6 +5,7 @@ import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import { ContentCarousel } from '@/components/content-carousel'
 import { Top10MovieCard } from '@/components/top-10-movie-card'
+import { SkeletonLoader } from '@/components/skeleton-loader'
 import { Movie, TVShow } from '@/types'
 
 export default function HomePage() {
@@ -62,10 +63,22 @@ export default function HomePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white text-lg">Loading...</p>
+            <div className="min-h-screen bg-black">
+                <Navbar />
+                <SkeletonLoader type="hero" />
+                <div className="px-4 py-8 space-y-12">
+                    <section className="space-y-6">
+                        <div className="h-8 w-48 bg-gray-700 rounded animate-pulse mx-4"></div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-4">
+                            <SkeletonLoader count={5} type="movie" />
+                        </div>
+                    </section>
+                    <section className="space-y-6">
+                        <div className="h-8 w-48 bg-gray-700 rounded animate-pulse mx-4"></div>
+                        <div className="flex space-x-4 px-4 overflow-x-auto">
+                            <SkeletonLoader count={10} type="movie" />
+                        </div>
+                    </section>
                 </div>
             </div>
         )
