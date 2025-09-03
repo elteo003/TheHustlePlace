@@ -36,6 +36,8 @@ export default function MoviePlayerPage() {
     const [currentTime, setCurrentTime] = useState(0)
     const [duration, setDuration] = useState(0)
     const [useEmbed, setUseEmbed] = useState(false)
+    const [iframeError, setIframeError] = useState(false)
+    const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         fetchMovieDetails()
@@ -46,6 +48,23 @@ export default function MoviePlayerPage() {
             loadVideoSource()
         }
     }, [movie])
+
+    // Timeout per rilevare se l'iframe non si carica (aumentato a 30 secondi)
+    useEffect(() => {
+        if (useEmbed && !iframeError) {
+            const timeout = setTimeout(() => {
+                console.log('⏰ Timeout: iframe non caricato entro 30 secondi')
+                setIframeError(true)
+                toast({
+                    title: "Timeout",
+                    description: "Il player non si è caricato in tempo",
+                    variant: "destructive"
+                })
+            }, 30000) // 30 secondi per dare più tempo a vixsrc.to
+
+            return () => clearTimeout(timeout)
+        }
+    }, [useEmbed, iframeError])
 
     const fetchMovieDetails = async () => {
         try {
@@ -167,25 +186,14 @@ export default function MoviePlayerPage() {
             console.log('🆔 TMDB ID utilizzato per vixsrc.to:', tmdbId)
             console.log('🔗 URL che verrà generato:', `https://vixsrc.to/movie/${tmdbId}`)
 
-            // Prima controlla se il film è disponibile su vixsrc.to
-            const isAvailable = await videoPlayerService.checkMovieAvailability(tmdbId)
-
-            if (isAvailable) {
-                console.log('✅ Film disponibile su vixsrc.to')
-                setUseEmbed(true)
-                toast({
-                    title: "Player caricato",
-                    description: "Loading vixsrc.to player..."
-                })
-            } else {
-                console.log('❌ Film non disponibile su vixsrc.to, uso fallback')
-                setUseEmbed(false)
-                toast({
-                    title: "Film non disponibile",
-                    description: "Questo film non è attualmente disponibile per lo streaming",
-                    variant: "destructive"
-                })
-            }
+            // Prova direttamente a caricare l'iframe di vixsrc.to
+            // Se non funziona, l'iframe mostrerà un errore che gestiremo
+            console.log('✅ Tentativo di caricamento iframe vixsrc.to')
+            setUseEmbed(true)
+            toast({
+                title: "Player caricato",
+                description: "Loading vixsrc.to player..."
+            })
         } catch (error) {
             console.error('❌ Errore nel caricamento del video:', error)
             setUseEmbed(false)
@@ -267,7 +275,7 @@ export default function MoviePlayerPage() {
                 />
 
                 {/* Video Player */}
-                {useEmbed ? (
+                {useEmbed && !iframeError ? (
                     <div className="relative z-10 w-full h-full">
                         <iframe
                             src={videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie')}
@@ -276,9 +284,14 @@ export default function MoviePlayerPage() {
                             title={movie.title}
                             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                             loading="lazy"
-                            onLoad={() => {
+                            onLoad={(e) => {
                                 console.log('✅ Iframe caricato con successo')
                                 console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
+                                console.log('📊 Iframe event:', e)
+                                setIframeError(false)
+                                // Rimuovi il timeout quando l'iframe si carica
+                                const timeouts = document.querySelectorAll('[data-timeout-id]')
+                                timeouts.forEach(timeout => clearTimeout(parseInt(timeout.getAttribute('data-timeout-id')!)))
                                 toast({
                                     title: "Player caricato",
                                     description: "Il player di vixsrc.to è pronto"
@@ -287,6 +300,7 @@ export default function MoviePlayerPage() {
                             onError={() => {
                                 console.log('❌ Errore nel caricamento iframe')
                                 console.log('🔗 URL che ha fallito:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
+                                setIframeError(true)
                                 toast({
                                     title: "Errore player",
                                     description: "Impossibile caricare il player",
@@ -295,7 +309,7 @@ export default function MoviePlayerPage() {
                             }}
                         />
                     </div>
-                ) : !useEmbed && !videoLoading ? (
+                ) : iframeError || (!useEmbed && !videoLoading) ? (
                     <div className="relative z-10 flex items-center justify-center h-full">
                         <div className="text-center max-w-2xl mx-auto px-8">
                             <div className="w-32 h-32 bg-red-500/20 rounded-full flex items-center justify-center mb-8 mx-auto backdrop-blur-sm">
@@ -394,57 +408,9 @@ export default function MoviePlayerPage() {
                     </div>
                 )}
 
-                {/* Player Controls */}
-                {!useEmbed && (
+                {/* Player Controls - Solo per video nativi, non per iframe */}
+                {!useEmbed && videoSource && (
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handlePlayPause}
-                                    className="text-white hover:bg-white/20"
-                                >
-                                    {isPlaying ? (
-                                        <Pause className="w-5 h-5" />
-                                    ) : (
-                                        <Play className="w-5 h-5" />
-                                    )}
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleMuteToggle}
-                                    className="text-white hover:bg-white/20"
-                                >
-                                    {isMuted ? (
-                                        <VolumeX className="w-5 h-5" />
-                                    ) : (
-                                        <Volume2 className="w-5 h-5" />
-                                    )}
-                                </Button>
-                            </div>
-
-                            <div className="flex items-center space-x-4">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-white hover:bg-white/20"
-                                >
-                                    <Settings className="w-5 h-5" />
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-white hover:bg-white/20"
-                                >
-                                    <Maximize className="w-5 h-5" />
-                                </Button>
-                            </div>
-                        </div>
-
                         {/* Progress Bar */}
                         <div className="mt-4">
                             <div className="w-full bg-white/20 h-1 rounded-full">

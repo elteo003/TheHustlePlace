@@ -60,7 +60,7 @@ export default function TVPage() {
                                         {show.name}
                                     </h3>
                                     <p className="text-gray-400 text-xs">
-                                        {new Date(show.first_air_date).getFullYear()}
+                                        {show.first_air_date ? new Date(show.first_air_date).getFullYear() : 'N/A'}
                                     </p>
                                 </div>
                             ))}

@@ -152,10 +152,10 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <span className="text-yellow-400">★</span>
-                                <span className="text-sm">{currentMovie.vote_average.toFixed(1)}</span>
+                                <span className="text-sm">{currentMovie.vote_average ? currentMovie.vote_average.toFixed(1) : 'N/A'}</span>
                             </div>
                             <span className="text-sm text-gray-300">
-                                {new Date(currentMovie.release_date).getFullYear()}
+                                {currentMovie.release_date ? new Date(currentMovie.release_date).getFullYear() : 'N/A'}
                             </span>
                         </div>
 

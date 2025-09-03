@@ -19,7 +19,10 @@ export function formatDuration(minutes: number): string {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
 }
 
-export function formatVoteAverage(vote: number): string {
+export function formatVoteAverage(vote: number | undefined | null): string {
+    if (vote === undefined || vote === null || isNaN(vote)) {
+        return 'N/A'
+    }
     return vote.toFixed(1)
 }
 

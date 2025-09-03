@@ -95,7 +95,7 @@ export default function CatalogPage() {
                                             {movie.title}
                                         </h3>
                                         <p className="text-gray-400 text-xs">
-                                            {new Date(movie.release_date).getFullYear()}
+                                            {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                                         </p>
                                     </div>
                                 ))
@@ -119,7 +119,7 @@ export default function CatalogPage() {
                                             {show.name}
                                         </h3>
                                         <p className="text-gray-400 text-xs">
-                                            {new Date(show.first_air_date).getFullYear()}
+                                            {show.first_air_date ? new Date(show.first_air_date).getFullYear() : 'N/A'}
                                         </p>
                                     </div>
                                 ))

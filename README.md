@@ -11,6 +11,9 @@ Un sito di streaming moderno e elegante, sviluppato con Next.js, TypeScript e Ta
 - **🎥 Player Video**: Player integrato con supporto per film e serie TV
 - **🏆 Top 10**: Sezione dedicata ai migliori film con ranking stile Netflix
 - **🎭 Hero Section**: Carosello dinamico con film appena usciti al cinema
+- **🛡️ Error Handling**: Gestione robusta degli errori con fallback intelligenti
+- **🔄 ID Mapping**: Sistema corretto di mapping tra ID interni e TMDB ID
+- **⏱️ Timeout Management**: Gestione intelligente dei timeout per iframe esterni
 
 ## 🛠️ Tecnologie
 
@@ -96,6 +99,7 @@ Un sito di streaming moderno e elegante, sviluppato con Next.js, TypeScript e Ta
 - `GET /api/player/movie/[id]` - Video source per film
 - `GET /api/player/tv/[id]` - Video source per serie TV
 - `GET /api/player/tv/[id]/[season]/[episode]` - Video source per episodio specifico
+- `GET /api/player/check-availability` - Verifica disponibilità contenuti su VixSrc
 - `POST /api/player/generate-url` - Genera URL player personalizzato
 
 ### Health Check
@@ -117,6 +121,9 @@ Un sito di streaming moderno e elegante, sviluppato con Next.js, TypeScript e Ta
 - Integrazione con VixSrc per streaming
 - Supporto per film e serie TV
 - Parametri di personalizzazione (lingua, colori)
+- Gestione errori intelligente con fallback
+- Timeout management per iframe esterni
+- Controlli nativi di VixSrc (senza duplicazioni)
 
 ## 📚 Documentazione
 
@@ -126,7 +133,9 @@ Consulta la cartella `doc/` per documentazione dettagliata:
 - [Animazioni](doc/animations.md)
 - [Homepage](doc/homepage.md)
 - [Player](doc/player.md)
+- [Sistema Player](doc/player-system.md) - **NUOVO**
 - [Catalog](doc/catalog.md)
+- [Sistema API](doc/api-system.md) - **NUOVO**
 - [Integrazione API](doc/api-integration.md)
 - [Configurazione](doc/configuration.md)
 - [Infrastruttura](doc/infrastructure.md)

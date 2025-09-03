@@ -60,7 +60,7 @@ export default function MoviesPage() {
                                         {movie.title}
                                     </h3>
                                     <p className="text-gray-400 text-xs">
-                                        {new Date(movie.release_date).getFullYear()}
+                                        {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                                     </p>
                                 </div>
                             ))}
