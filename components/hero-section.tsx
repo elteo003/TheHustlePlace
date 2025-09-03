@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Movie } from '@/types'
-import { getImageUrl } from '@/lib/utils'
+import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
 
 interface HeroSectionProps {
     featuredContent: Movie[]
@@ -50,39 +50,51 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
         setTimeout(() => setIsTransitioning(false), 1000)
     }
 
-    // Gestione scroll con event listener non passivo per evitare warning
+    // Gestione scroll intelligente - solo quando l'utente è nella hero section
     useEffect(() => {
-        const handleWheelNonPassive = (e: WheelEvent) => {
-            e.preventDefault()
-            
-            // Throttle per evitare scroll troppo veloce
-            if (wheelTimeout) return
+        const handleWheelIntelligent = (e: WheelEvent) => {
+            const container = document.getElementById('hero-container')
+            if (!container) return
 
-            const timeout = setTimeout(() => {
-                setWheelTimeout(null)
-            }, 800)
+            // Controlla se il mouse è sopra la hero section
+            const rect = container.getBoundingClientRect()
+            const isInHeroSection = (
+                e.clientX >= rect.left &&
+                e.clientX <= rect.right &&
+                e.clientY >= rect.top &&
+                e.clientY <= rect.bottom
+            )
 
-            setWheelTimeout(timeout)
-            setIsTransitioning(true)
+            // Solo se il mouse è nella hero section E c'è scroll orizzontale significativo
+            if (isInHeroSection && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                e.preventDefault()
+                
+                // Throttle per evitare scroll troppo veloce
+                if (wheelTimeout) return
 
-            if (e.deltaY > 0) {
-                // Scroll down - vai al prossimo
-                setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
-            } else {
-                // Scroll up - vai al precedente
-                setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
+                const timeout = setTimeout(() => {
+                    setWheelTimeout(null)
+                }, 800)
+
+                setWheelTimeout(timeout)
+                setIsTransitioning(true)
+
+                if (e.deltaX > 0) {
+                    // Scroll right - vai al prossimo
+                    setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
+                } else {
+                    // Scroll left - vai al precedente
+                    setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
+                }
+
+                // Reset transitioning dopo l'animazione
+                setTimeout(() => setIsTransitioning(false), 1000)
             }
-
-            // Reset transitioning dopo l'animazione
-            setTimeout(() => setIsTransitioning(false), 1000)
         }
 
-        const container = document.getElementById('hero-container')
-        if (container) {
-            container.addEventListener('wheel', handleWheelNonPassive, { passive: false })
-            return () => {
-                container.removeEventListener('wheel', handleWheelNonPassive)
-            }
+        document.addEventListener('wheel', handleWheelIntelligent, { passive: false })
+        return () => {
+            document.removeEventListener('wheel', handleWheelIntelligent)
         }
     }, [featuredContent.length, wheelTimeout])
 
@@ -137,7 +149,6 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
         <section
             id="hero-container"
             className="relative h-screen overflow-hidden"
-            onWheel={handleWheel}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
         >
@@ -182,8 +193,9 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
                         <div className="flex items-center space-x-4 mb-6">
                             <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-sm text-gray-300">Disponibile ora</span>
+                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAvailabilityColor(getAvailabilityBadge(currentMovie))}`}>
+                                    {getAvailabilityBadge(currentMovie)}
+                                </span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <span className="text-yellow-400">★</span>
@@ -246,18 +258,28 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
 
             {/* Indicators */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="flex space-x-2">
-                    {featuredContent.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => goToSlide(index)}
-                            disabled={isTransitioning}
-                            className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
-                                ? 'bg-white scale-125'
-                                : 'bg-white/50 hover:bg-white/75'
-                                } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                        />
-                    ))}
+                <div className="flex flex-col items-center space-y-3">
+                    {/* Navigation hint */}
+                    <div className="flex items-center space-x-2 text-white/70 text-xs">
+                        <ChevronLeft className="w-4 h-4" />
+                        <span>Naviga</span>
+                        <ChevronRight className="w-4 h-4" />
+                    </div>
+                    
+                    {/* Dots */}
+                    <div className="flex space-x-2">
+                        {featuredContent.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => goToSlide(index)}
+                                disabled={isTransitioning}
+                                className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
+                                    ? 'bg-white scale-125'
+                                    : 'bg-white/50 hover:bg-white/75'
+                                    } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
 
