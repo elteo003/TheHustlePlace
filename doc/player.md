@@ -41,12 +41,15 @@ const MoviePlayer = ({ params }: { params: { id: string } }) => {
       try {
         setIsLoading(true);
         
-        // Carica dettagli del film
-        const movieResponse = await fetch(`/api/catalog/movie/${params.id}`);
-        const movieData = await movieResponse.json();
+        // Carica dettagli del film dal catalogo
+        const movieResponse = await fetch(`/api/catalog/movies`);
+        const catalogData = await movieResponse.json();
         
-        if (movieData.success) {
-          setMovie(movieData.data);
+        // Cerca il film con l'ID specificato
+        const movieData = catalogData.data.find((movie: any) => movie.id === parseInt(params.id));
+        
+        if (movieData) {
+          setMovie(movieData);
         }
 
         // Prova a caricare video source diretto
@@ -96,7 +99,7 @@ const MoviePlayer = ({ params }: { params: { id: string } }) => {
       <div className="relative w-full h-screen">
         {useEmbed ? (
           <iframe
-            src={videoPlayerService.getPlayerUrl(parseInt(params.id), 'movie')}
+            src={videoPlayerService.getPlayerUrl(movie.tmdb_id || parseInt(params.id), 'movie')}
             className="w-full h-full border-0"
             allow="autoplay; fullscreen; encrypted-media; web-share"
             loading="lazy"
@@ -202,7 +205,7 @@ const TVPlayer = ({ params }: { params: { id: string } }) => {
       <div className="relative w-full h-screen">
         <iframe
           src={videoPlayerService.getPlayerUrl(
-            parseInt(params.id),
+            tvShow.tmdb_id || parseInt(params.id),
             'tv',
             currentSeason,
             currentEpisode

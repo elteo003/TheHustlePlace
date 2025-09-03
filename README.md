@@ -77,7 +77,7 @@ Un sito di streaming moderno e elegante, sviluppato con Next.js, TypeScript e Ta
 
 ## 🔌 API Endpoints
 
-### Catalog
+### Catalog (Tutte le route sono dinamiche per evitare errori di build)
 - `GET /api/catalog/now-playing` - Film appena usciti al cinema
 - `GET /api/catalog/top-10` - Top 10 film
 - `GET /api/catalog/popular/movies` - Film popolari
@@ -86,10 +86,20 @@ Un sito di streaming moderno e elegante, sviluppato con Next.js, TypeScript e Ta
 - `GET /api/catalog/latest/tv` - Ultime serie TV
 - `GET /api/catalog/top-rated/movies` - Film meglio votati
 - `GET /api/catalog/top-rated/tv` - Serie TV meglio votate
+- `GET /api/catalog/movies` - Catalogo completo film
+- `GET /api/catalog/tv` - Catalogo completo serie TV
+- `GET /api/catalog/search/movies` - Ricerca film
+- `GET /api/catalog/search/tv` - Ricerca serie TV
+- `GET /api/catalog/genres` - Lista generi
 
 ### Player
 - `GET /api/player/movie/[id]` - Video source per film
 - `GET /api/player/tv/[id]` - Video source per serie TV
+- `GET /api/player/tv/[id]/[season]/[episode]` - Video source per episodio specifico
+- `POST /api/player/generate-url` - Genera URL player personalizzato
+
+### Health Check
+- `GET /api/health` - Stato del sistema
 
 ## 🎯 Funzionalità Principali
 
@@ -119,6 +129,8 @@ Consulta la cartella `doc/` per documentazione dettagliata:
 - [Catalog](doc/catalog.md)
 - [Integrazione API](doc/api-integration.md)
 - [Configurazione](doc/configuration.md)
+- [Infrastruttura](doc/infrastructure.md)
+- [Troubleshooting](doc/troubleshooting.md)
 
 ## 🔧 Configurazione
 
