@@ -169,24 +169,7 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
                 <div className="absolute inset-0 hero-gradient"></div>
             </div>
 
-            {/* Navigation Arrows */}
-            <button
-                onClick={() => goToSlide((currentIndex - 1 + featuredContent.length) % featuredContent.length)}
-                disabled={isTransitioning}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100'
-                    }`}
-            >
-                <ChevronLeft className="w-6 h-6" />
-            </button>
 
-            <button
-                onClick={() => goToSlide((currentIndex + 1) % featuredContent.length)}
-                disabled={isTransitioning}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-300 ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'opacity-100'
-                    }`}
-            >
-                <ChevronRight className="w-6 h-6" />
-            </button>
 
             {/* Content */}
             <div className="relative z-10 h-full flex items-center">
