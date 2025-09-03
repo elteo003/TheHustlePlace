@@ -47,8 +47,10 @@ export default function MoviePlayerPage() {
         }
     }, [movie])
 
-    const fetchMovieDetails = async () => {
+        const fetchMovieDetails = async () => {
         try {
+            console.log('🔍 Recupero dettagli film per ID:', movieId)
+            
             // Recupera i dati reali del film dal nostro catalogo
             const response = await fetch(`/api/catalog/movies`)
             if (!response.ok) {
@@ -60,12 +62,16 @@ export default function MoviePlayerPage() {
                 throw new Error('Errore nel catalogo')
             }
 
+            console.log('📊 Catalogo recuperato:', catalogData.data.length, 'film')
+
             // Cerca il film con l'ID specificato
             const foundMovie = catalogData.data.find((movie: any) => movie.id === parseInt(movieId))
-
+            
             if (foundMovie) {
+                console.log('✅ Film trovato nel catalogo:', foundMovie.title, 'TMDB ID:', foundMovie.tmdb_id)
                 setMovie(foundMovie)
             } else {
+                console.log('❌ Film non trovato nel catalogo, uso fallback con ID:', movieId)
                 // Fallback: usa dati minimi se il film non è trovato nel catalogo
                 const fallbackMovie: Movie = {
                     id: parseInt(movieId),
@@ -81,11 +87,11 @@ export default function MoviePlayerPage() {
                 }
                 setMovie(fallbackMovie)
             }
-
+            
             setLoading(false)
         } catch (error) {
-            console.error('Errore nel caricamento del film:', error)
-
+            console.error('❌ Errore nel caricamento del film:', error)
+            
             // Fallback: usa dati minimi in caso di errore
             const fallbackMovie: Movie = {
                 id: parseInt(movieId),
@@ -109,6 +115,11 @@ export default function MoviePlayerPage() {
 
         try {
             setVideoLoading(true)
+            
+            const tmdbId = movie.tmdb_id || movie.id
+            console.log('🎬 Caricamento video source per film:', movie.title)
+            console.log('🆔 ID utilizzato per vixsrc.to:', tmdbId)
+            console.log('🔗 URL che verrà generato:', `https://vixsrc.to/movie/${tmdbId}`)
 
             // Usa sempre l'iframe embed di vixsrc.to per la riproduzione
             // Questo è più affidabile delle API di estrazione video
@@ -118,7 +129,7 @@ export default function MoviePlayerPage() {
                 description: "Loading vixsrc.to player..."
             })
         } catch (error) {
-            console.error('Errore nel caricamento del video:', error)
+            console.error('❌ Errore nel caricamento del video:', error)
             setUseEmbed(true)
             toast({
                 title: "Errore video",
@@ -208,12 +219,16 @@ export default function MoviePlayerPage() {
                             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
                             loading="lazy"
                             onLoad={() => {
+                                console.log('✅ Iframe caricato con successo')
+                                console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(movie.tmdb_id || movie.id, 'movie'))
                                 toast({
                                     title: "Player caricato",
                                     description: "Il player di vixsrc.to è pronto"
                                 })
                             }}
                             onError={() => {
+                                console.log('❌ Errore nel caricamento iframe')
+                                console.log('🔗 URL che ha fallito:', videoPlayerService.getPlayerUrl(movie.tmdb_id || movie.id, 'movie'))
                                 toast({
                                     title: "Errore player",
                                     description: "Impossibile caricare il player",
