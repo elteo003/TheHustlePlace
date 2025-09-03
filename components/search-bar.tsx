@@ -6,6 +6,7 @@ import { Movie, TVShow } from '@/types'
 
 interface SearchResult {
     id: number
+    tmdb_id?: number
     title: string
     type: 'movie' | 'tv'
     poster_path: string
@@ -67,6 +68,7 @@ export function SearchBar() {
                 moviesData.data.results.slice(0, 5).forEach((movie: Movie) => {
                     searchResults.push({
                         id: movie.id,
+                        tmdb_id: movie.tmdb_id,
                         title: movie.title,
                         type: 'movie',
                         poster_path: movie.poster_path || '/placeholder-movie.svg',
@@ -80,6 +82,7 @@ export function SearchBar() {
                 tvData.data.results.slice(0, 5).forEach((tv: TVShow) => {
                     searchResults.push({
                         id: tv.id,
+                        tmdb_id: tv.tmdb_id,
                         title: tv.name,
                         type: 'tv',
                         poster_path: tv.poster_path || '/placeholder-movie.svg',
@@ -100,10 +103,12 @@ export function SearchBar() {
     }
 
     const handleResultClick = (result: SearchResult) => {
-        const url = result.type === 'movie' 
-            ? `/player/movie/${result.id}` 
-            : `/player/tv/${result.id}`
-        
+        // Usa tmdb_id se disponibile, altrimenti id
+        const itemId = result.tmdb_id || result.id
+        const url = result.type === 'movie'
+            ? `/player/movie/${itemId}`
+            : `/player/tv/${itemId}`
+
         window.location.href = url
         setIsOpen(false)
         setQuery('')

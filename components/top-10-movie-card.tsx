@@ -19,7 +19,9 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        window.location.href = `/player/movie/${movie.id}`
+        // Usa tmdb_id se disponibile, altrimenti id
+        const movieId = movie.tmdb_id || movie.id
+        window.location.href = `/player/movie/${movieId}`
     }
 
     return (
@@ -65,12 +67,12 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
                 </h3>
                 <div className="flex items-center justify-between mt-1">
                     <span className="text-gray-400 text-xs">
-                        {new Date(movie.release_date).getFullYear()}
+                        {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                     </span>
                     <div className="flex items-center space-x-1">
                         <span className="text-yellow-400 text-xs">★</span>
                         <span className="text-gray-400 text-xs">
-                            {movie.vote_average.toFixed(1)}
+                            {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
                         </span>
                     </div>
                 </div>

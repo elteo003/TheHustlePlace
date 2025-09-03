@@ -25,7 +25,7 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
 
     const title = 'title' in item ? item.title : item.name
     const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date
-    const year = new Date(releaseDate).getFullYear()
+    const year = releaseDate ? new Date(releaseDate).getFullYear() : null
 
     // Intersection Observer per lazy loading
     useEffect(() => {
@@ -50,12 +50,14 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
         e.preventDefault()
         e.stopPropagation()
 
-        // Naviga al player
+        // Naviga al player usando tmdb_id se disponibile, altrimenti id
+        const movieId = 'tmdb_id' in item && item.tmdb_id ? item.tmdb_id : item.id
+
         if (type === 'movie') {
-            window.location.href = `/player/movie/${item.id}`
+            window.location.href = `/player/movie/${movieId}`
         } else {
             // Per le serie TV, naviga al player con prima stagione/episodio
-            window.location.href = `/player/tv/${item.id}?season=1&episode=1`
+            window.location.href = `/player/tv/${movieId}?season=1&episode=1`
         }
     }
 
@@ -69,7 +71,7 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
                 {/* Skeleton Loader */}
                 {!isInView && <SkeletonLoader type="movie" />}
-                
+
                 {/* Poster Image - Lazy Loading */}
                 {isInView && (
                     <>
@@ -78,9 +80,8 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                             src={imageError ? '/placeholder-movie.svg' : getImageUrl(item.poster_path, 'w500')}
                             alt={title}
                             fill
-                            className={`object-cover transition-all duration-300 group-hover:scale-110 ${
-                                imageLoaded ? 'opacity-100' : 'opacity-0'
-                            }`}
+                            className={`object-cover transition-all duration-300 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+                                }`}
                             onError={() => {
                                 console.log('Errore caricamento immagine:', item.poster_path)
                                 setImageError(true)
@@ -107,7 +108,7 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                                     {formatVoteAverage(item.vote_average)}
                                 </span>
                             </div>
-                            <span className="text-gray-300 text-sm">{year}</span>
+                            <span className="text-gray-300 text-sm">{year || 'N/A'}</span>
                         </div>
 
                         <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
