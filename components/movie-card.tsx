@@ -107,6 +107,10 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                 <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
                     }`}>
                     <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
+                            {title}
+                        </h3>
+
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                                 <span className="text-yellow-400 text-sm">★</span>
@@ -121,10 +125,6 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
                                 <span className="text-gray-300 text-sm">{year || 'N/A'}</span>
                             </div>
                         </div>
-
-                        <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
-                            {title}
-                        </h3>
 
                         {showDetails && (
                             <p className="text-gray-300 text-xs line-clamp-2 mb-3">
