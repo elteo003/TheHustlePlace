@@ -43,16 +43,7 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
                     </span>
                 </div>
 
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100 bg-black/20">
-                    <Button
-                        size="lg"
-                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30"
-                        onClick={handlePlay}
-                    >
-                        <Play className="w-6 h-6" />
-                    </Button>
-                </div>
+
 
                 {/* Gradient Overlay Bottom */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent"></div>

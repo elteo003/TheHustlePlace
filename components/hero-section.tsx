@@ -167,21 +167,6 @@ export function HeroSection({ featuredContent }: HeroSectionProps) {
                         <div className={`flex items-center space-x-4 transition-all duration-1000 ease-in-out delay-300 ${isTransitioning ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'
                             }`}>
                             <Button
-                                size="lg"
-                                className="premium-button flex items-center space-x-2"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    window.location.href = `/player/movie/${currentMovie.id}`
-                                }}
-                            >
-                                <Play className="w-5 h-5" />
-                                <span>Guarda ora</span>
-                            </Button>
-
-
-
-                            <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-white hover:bg-white/10"

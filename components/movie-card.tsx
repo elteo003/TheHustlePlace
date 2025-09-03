@@ -86,15 +86,6 @@ export function MovieCard({ item, type, showDetails = true }: MovieCardProps) {
 
                         <div className="flex items-center space-x-2">
                             <Button
-                                size="sm"
-                                className="flex-1 bg-white text-black hover:bg-gray-200"
-                                onClick={handlePlay}
-                            >
-                                <Play className="w-4 h-4 mr-1" />
-                                Guarda
-                            </Button>
-
-                            <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-white hover:bg-white/20"
