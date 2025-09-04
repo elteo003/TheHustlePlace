@@ -146,8 +146,9 @@ class TraktService {
             this.isRedisConnected = true
             logger.info('Redis connesso con successo per Trakt.tv cache')
         } catch (error) {
-            logger.warn('Redis non disponibile per Trakt.tv cache:', error)
+            logger.warn('Redis non disponibile per Trakt.tv cache, funzionamento senza cache:', error)
             this.isRedisConnected = false
+            // Non bloccare il servizio se Redis non è disponibile
         }
     }
 
@@ -378,36 +379,62 @@ class TraktService {
 
             logger.info('Recupero nuove uscite cinema da Trakt.tv API...')
             
-            // Calcola date per il prossimo mese
-            const startDate = new Date()
-            const endDate = new Date()
-            endDate.setMonth(endDate.getMonth() + 1)
-            
-            const startStr = startDate.toISOString().split('T')[0]
-            const endStr = endDate.toISOString().split('T')[0]
+            // Prova prima con l'endpoint delle nuove uscite
+            try {
+                // Calcola date per il prossimo mese
+                const startDate = new Date()
+                const endDate = new Date()
+                endDate.setMonth(endDate.getMonth() + 1)
+                
+                const startStr = startDate.toISOString().split('T')[0]
+                const endStr = endDate.toISOString().split('T')[0]
 
-            // Chiamata API Trakt.tv
-            const response: AxiosResponse = await this.client.get(
-                `/calendars/movies/premieres/${startStr}/${endStr}`,
-                {
+                // Chiamata API Trakt.tv
+                const response: AxiosResponse = await this.client.get(
+                    `/calendars/movies/premieres/${startStr}/${endStr}`,
+                    {
+                        params: {
+                            extended: 'full'
+                        }
+                    }
+                )
+
+                // Formatta i dati
+                const upcomingMovies: TraktUpcomingMovie[] = response.data.map((item: any) => ({
+                    movie: this.formatMovieData(item.movie),
+                    released: item.released || '',
+                    country: item.country || ''
+                }))
+
+                // Salva in cache
+                await this.setCache(cacheKey, upcomingMovies)
+
+                logger.info(`Recuperate ${upcomingMovies.length} nuove uscite da Trakt.tv`)
+                return upcomingMovies
+
+            } catch (premieresError) {
+                logger.warn('Endpoint premieres non disponibile, fallback su film recenti:', premieresError)
+                
+                // Fallback: usa film recenti invece di nuove uscite
+                const recentResponse: AxiosResponse = await this.client.get('/movies/trending', {
                     params: {
+                        limit: 10,
                         extended: 'full'
                     }
-                }
-            )
+                })
 
-            // Formatta i dati
-            const upcomingMovies: TraktUpcomingMovie[] = response.data.map((item: any) => ({
-                movie: this.formatMovieData(item.movie),
-                released: item.released || '',
-                country: item.country || ''
-            }))
+                const upcomingMovies: TraktUpcomingMovie[] = recentResponse.data.map((item: any) => ({
+                    movie: this.formatMovieData(item.movie),
+                    released: new Date().toISOString().split('T')[0],
+                    country: 'US'
+                }))
 
-            // Salva in cache
-            await this.setCache(cacheKey, upcomingMovies)
+                // Salva in cache
+                await this.setCache(cacheKey, upcomingMovies)
 
-            logger.info(`Recuperate ${upcomingMovies.length} nuove uscite da Trakt.tv`)
-            return upcomingMovies
+                logger.info(`Recuperati ${upcomingMovies.length} film trending come fallback`)
+                return upcomingMovies
+            }
 
         } catch (error) {
             logger.error('Errore nel recupero nuove uscite da Trakt.tv:', error)
