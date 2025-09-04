@@ -37,20 +37,57 @@ export class CatalogService {
         }
     }
 
-    // Nuovo metodo per i top 10 film
+    // Nuovo metodo per i top 10 film - ora usa Trakt.tv
     async getTop10Movies(): Promise<Movie[]> {
         try {
-            const cacheKey = 'top-10-movies'
+            const cacheKey = 'top-10-movies-trakt'
             const cached = await cache.get<Movie[]>(cacheKey)
             if (cached) {
                 return cached
             }
 
-            // Usa direttamente TMDB API per i film top rated
+            // Prova prima Trakt.tv per i film popolari
+            try {
+                const { getTop10Movies } = await import('./trakt.service')
+                const traktMovies = await getTop10Movies()
+                
+                if (traktMovies && traktMovies.length > 0) {
+                    // Converte i dati Trakt.tv nel formato Movie
+                    const movies: Movie[] = traktMovies.map((traktMovie, index) => ({
+                        id: traktMovie.ids.tmdb || traktMovie.ids.trakt,
+                        tmdb_id: traktMovie.ids.tmdb,
+                        title: traktMovie.title,
+                        overview: traktMovie.overview,
+                        release_date: traktMovie.year ? `${traktMovie.year}-01-01` : undefined,
+                        vote_average: traktMovie.rating,
+                        vote_count: traktMovie.votes,
+                        poster_path: traktMovie.images.poster.medium || traktMovie.images.poster.full,
+                        backdrop_path: traktMovie.images.fanart.medium || traktMovie.images.fanart.full,
+                        genre_ids: [], // Trakt.tv non fornisce genre_ids
+                        adult: false,
+                        original_language: traktMovie.language || 'en',
+                        original_title: traktMovie.title,
+                        popularity: 0,
+                        video: false,
+                        first_air_date: undefined,
+                        name: undefined,
+                        origin_country: [traktMovie.country || 'US'],
+                        original_name: undefined
+                    }))
+
+                    await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+                    logger.info('Top 10 film recuperati da Trakt.tv', { count: movies.length })
+                    return movies
+                }
+            } catch (traktError) {
+                logger.warn('Errore nel recupero da Trakt.tv, fallback su TMDB:', traktError)
+            }
+
+            // Fallback su TMDB se Trakt.tv non funziona
             const movies = await this.tmdbService.getTopRatedMovies(10)
             
             await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-            logger.info('Top 10 film recuperati con successo', { count: movies.length })
+            logger.info('Top 10 film recuperati da TMDB (fallback)', { count: movies.length })
             return movies
         } catch (error) {
             logger.error('Errore nel recupero top 10 film', { error })
