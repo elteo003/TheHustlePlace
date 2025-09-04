@@ -31,39 +31,50 @@ export function Top10MovieCard({ movie, rank }: Top10MovieCardProps) {
     }
 
     return (
-        <Card className="bg-transparent border-0 p-0 group cursor-pointer relative">
+        <Card className="group relative bg-transparent border border-transparent p-0 cursor-pointer 
+                       transition-all duration-300 ease-out
+                       hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/25
+                       hover:border-white/10
+                       will-change-transform">
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
-                {/* Poster Image */}
+                {/* Poster Image - Optimized */}
                 <Image
                     src={imageError ? '/placeholder-movie.svg' : getImageUrl(movie.poster_path, 'w500')}
                     alt={movie.title}
                     fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-110"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     onError={() => setImageError(true)}
                     priority={false}
-                    unoptimized={true}
+                    loading="lazy"
+                    quality={85}
                 />
 
                 {/* Rank Number - Stile Netflix */}
-                <div className="absolute top-0 left-0 w-16 h-20 bg-gradient-to-br from-gray-800/90 to-gray-900/90 flex items-center justify-center z-10">
+                <div className="absolute top-0 left-0 w-16 h-20 bg-gradient-to-br from-gray-800/90 to-gray-900/90 
+                               flex items-center justify-center z-10 backdrop-blur-sm">
                     <span className="text-white font-bold text-2xl drop-shadow-lg">
                         {rank}
                     </span>
                 </div>
 
+                {/* Gradient Overlay - Always Present */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent 
+                               opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+
                 {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100 bg-black/20">
+                <div className="absolute inset-0 flex items-center justify-center 
+                               opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out">
                     <Button
                         size="lg"
-                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30"
+                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 
+                                 border border-white/30 transition-all duration-200 ease-out
+                                 hover:scale-105 hover:shadow-lg"
                         onClick={handlePlay}
                     >
                         <Play className="w-6 h-6" />
                     </Button>
                 </div>
-
-                {/* Gradient Overlay Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent"></div>
             </div>
 
             {/* Title below card */}
