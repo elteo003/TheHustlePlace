@@ -121,3 +121,26 @@ export interface PlayerEvent {
     type: 'play' | 'pause' | 'seeked' | 'ended' | 'timeupdate' | 'loadeddata' | 'error';
     data?: any;
 }
+
+// Tipo unificato per contenuti nella top 10 (film e serie TV)
+export interface Top10Content {
+    id: number;
+    title: string;
+    overview: string;
+    poster_path?: string;
+    backdrop_path?: string;
+    release_date: string; // Per film
+    first_air_date?: string; // Per serie TV
+    vote_average: number;
+    vote_count: number;
+    genre_ids: number[];
+    adult: boolean;
+    original_language: string;
+    original_title?: string; // Per film
+    original_name?: string; // Per serie TV
+    popularity: number;
+    video?: boolean; // Solo per film
+    origin_country?: string[]; // Solo per serie TV
+    tmdb_id?: number;
+    type: 'movie' | 'tv'; // Campo per distinguere il tipo
+}

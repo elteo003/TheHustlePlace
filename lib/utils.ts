@@ -86,7 +86,7 @@ export function checkMovieAvailability(movie: any): MovieAvailability {
     const releaseDate = new Date(movie.releaseDate || movie.firstAirDate || movie.release_date)
     const today = new Date()
     const threeMonthsAgo = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000))
-    
+
     // Se il film è uscito da meno di 3 mesi, è molto probabilmente "Al Cinema"
     if (releaseDate > threeMonthsAgo) {
         return {
@@ -95,7 +95,7 @@ export function checkMovieAvailability(movie: any): MovieAvailability {
             reason: "Film recente, non ancora disponibile per streaming"
         }
     }
-    
+
     // Per film più vecchi, assumiamo che siano disponibili
     // Il controllo reale viene fatto nel player
     return {
@@ -109,27 +109,27 @@ export function checkMovieAvailability(movie: any): MovieAvailability {
 export async function checkRealAvailability(tmdbId: number, type: 'movie' | 'tv'): Promise<MovieAvailability> {
     const cacheKey = `${type}-${tmdbId}`
     const cached = availabilityCache.get(cacheKey)
-    
+
     // Controlla se abbiamo una cache valida
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
         return cached.result
     }
-    
+
     try {
         const response = await fetch(`/api/player/check-availability?tmdbId=${tmdbId}&type=${type}`)
         const data = await response.json()
-        
+
         const result: MovieAvailability = {
             isAvailable: data.success && data.data?.isAvailable,
             badge: data.success && data.data?.isAvailable ? "Disponibile" : "Non Disponibile",
-            reason: data.success && data.data?.isAvailable 
-                ? "Verificato disponibile su VixSrc" 
+            reason: data.success && data.data?.isAvailable
+                ? "Verificato disponibile su VixSrc"
                 : "Non disponibile su VixSrc"
         }
-        
+
         // Salva in cache
         availabilityCache.set(cacheKey, { result, timestamp: Date.now() })
-        
+
         return result
     } catch (error) {
         // In caso di errore, usa il sistema basato sulla data
@@ -161,5 +161,18 @@ export function getAvailabilityColor(badge: string): string {
             return "bg-red-500 text-red-900"
         default:
             return "bg-gray-500 text-gray-900"
+    }
+}
+
+// Logger semplice
+export const logger = {
+    info: (message: string, data?: any) => {
+        console.log(`[INFO] ${message}`, data || '')
+    },
+    error: (message: string, data?: any) => {
+        console.error(`[ERROR] ${message}`, data || '')
+    },
+    warn: (message: string, data?: any) => {
+        console.warn(`[WARN] ${message}`, data || '')
     }
 }

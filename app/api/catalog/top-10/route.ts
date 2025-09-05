@@ -5,16 +5,16 @@ const catalogService = new CatalogService()
 
 export async function GET(request: NextRequest) {
     try {
-        const movies = await catalogService.getTop10Movies()
-        
+        const top10Content = await catalogService.getTop10Mixed()
+
         return NextResponse.json({
             success: true,
-            data: movies
+            data: top10Content
         })
     } catch (error) {
-        console.error('Errore nel recupero top 10 film:', error)
+        console.error('Errore nel recupero top 10 mista:', error)
         return NextResponse.json(
-            { success: false, error: 'Errore nel recupero dei film' },
+            { success: false, error: 'Errore nel recupero della top 10 mista' },
             { status: 500 }
         )
     }

@@ -77,7 +77,7 @@
     }
 
     .premium-button {
-        @apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl;
+        @apply bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl;
     }
 
     .glass-effect {
@@ -85,7 +85,11 @@
     }
 
     .text-gradient {
-        @apply bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent;
+        @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
+    }
+
+    .logo-gradient {
+        @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
     }
 
     .movie-card {

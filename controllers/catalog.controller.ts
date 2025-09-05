@@ -305,6 +305,28 @@ export class CatalogController {
         }
     }
 
+    async getTop10Mixed(request: NextRequest): Promise<NextResponse> {
+        try {
+            const top10Content = await this.catalogService.getTop10Mixed()
+
+            return NextResponse.json({
+                success: true,
+                data: top10Content,
+                message: 'Top 10 mista (film e serie TV) recuperata con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero top 10 mista', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
     async getPopularMovies(request: NextRequest): Promise<NextResponse> {
         try {
             const movies = await this.catalogService.getPopularMovies()

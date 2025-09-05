@@ -2,268 +2,244 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Info, Plus, Heart } from 'lucide-react'
-import { Movie } from '@/types'
-import { getImageUrl, getAvailabilityBadge, getAvailabilityColor } from '@/lib/utils'
-import { useAvailability } from '@/hooks/useAvailability'
+import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
+import { TMDBMovie, getTrendingMoviesDay, getMovieVideos, findMainTrailer, getTMDBImageUrl, getYouTubeEmbedUrl } from '@/lib/tmdb'
 
-interface HeroSectionProps {
-    featuredContent: Movie[]
-}
-
-export function HeroSection({ featuredContent }: HeroSectionProps) {
-    const [currentIndex, setCurrentIndex] = useState(0)
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [isTransitioning, setIsTransitioning] = useState(false)
-    const [wheelTimeout, setWheelTimeout] = useState<NodeJS.Timeout | null>(null)
+export function HeroSection() {
+    const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
+    const [trailer, setTrailer] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [isHovered, setIsHovered] = useState(false)
+    const [isMuted, setIsMuted] = useState(true)
+    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            if (!isTransitioning) {
-                setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
-            }
-        }, 8000) // Cambia ogni 8 secondi
+        loadFeaturedMovie()
+    }, [])
 
-        return () => clearInterval(interval)
-    }, [featuredContent.length, isTransitioning])
-
-    // Gestione scroll con mouse wheel (con throttling)
-    const handleWheel = (e: React.WheelEvent) => {
-        // Throttle per evitare scroll troppo veloce
-        if (wheelTimeout) return
-
-        const timeout = setTimeout(() => {
-            setWheelTimeout(null)
-        }, 800) // Aspetta 800ms tra un cambio e l'altro
-
-        setWheelTimeout(timeout)
-        setIsTransitioning(true)
-
-        if (e.deltaY > 0) {
-            // Scroll down - prossimo film
-            setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
-        } else {
-            // Scroll up - film precedente
-            setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
-        }
-
-        // Reset transitioning dopo l'animazione
-        setTimeout(() => setIsTransitioning(false), 1000)
-    }
-
-    // Gestione scroll intelligente - solo quando l'utente è nella hero section
     useEffect(() => {
-        const handleWheelIntelligent = (e: WheelEvent) => {
-            const container = document.getElementById('hero-container')
-            if (!container) return
-
-            // Controlla se il mouse è sopra la hero section
-            const rect = container.getBoundingClientRect()
-            const isInHeroSection = (
-                e.clientX >= rect.left &&
-                e.clientX <= rect.right &&
-                e.clientY >= rect.top &&
-                e.clientY <= rect.bottom
-            )
-
-            // Solo se il mouse è nella hero section E c'è scroll orizzontale significativo
-            if (isInHeroSection && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-                e.preventDefault()
-                
-                // Throttle per evitare scroll troppo veloce
-                if (wheelTimeout) return
-
-                const timeout = setTimeout(() => {
-                    setWheelTimeout(null)
-                }, 800)
-
-                setWheelTimeout(timeout)
-                setIsTransitioning(true)
-
-                if (e.deltaX > 0) {
-                    // Scroll right - vai al prossimo
-                    setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
-                } else {
-                    // Scroll left - vai al precedente
-                    setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
-                }
-
-                // Reset transitioning dopo l'animazione
-                setTimeout(() => setIsTransitioning(false), 1000)
-            }
-        }
-
-        document.addEventListener('wheel', handleWheelIntelligent, { passive: false })
         return () => {
-            document.removeEventListener('wheel', handleWheelIntelligent)
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout)
+            }
         }
-    }, [featuredContent.length, wheelTimeout])
+    }, [hoverTimeout])
 
-    // Gestione touch per mobile (con throttling)
-    const handleTouchStart = (e: React.TouchEvent) => {
-        const touch = e.touches[0]
-        setTouchStart(touch.clientX)
-    }
+    const loadFeaturedMovie = async () => {
+        try {
+            setLoading(true)
+            setError(null)
 
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        if (!touchStart || isTransitioning) return
+            // Recupera film trending del giorno
+            const trendingResponse = await getTrendingMoviesDay()
+            const movies = trendingResponse.results
 
-        const touch = e.changedTouches[0]
-        const diff = touchStart - touch.clientX
-
-        if (Math.abs(diff) > 50) { // Soglia minima per swipe
-            setIsTransitioning(true)
-
-            if (diff > 0) {
-                // Swipe left - prossimo film
-                setCurrentIndex((prev) => (prev + 1) % featuredContent.length)
-            } else {
-                // Swipe right - film precedente
-                setCurrentIndex((prev) => (prev - 1 + featuredContent.length) % featuredContent.length)
+            if (movies.length === 0) {
+                throw new Error('Nessun film trending trovato')
             }
 
-            // Reset transitioning dopo l'animazione
-            setTimeout(() => setIsTransitioning(false), 1000)
+            // Seleziona un film random
+            const randomIndex = Math.floor(Math.random() * movies.length)
+            const selectedMovie = movies[randomIndex]
+            setFeaturedMovie(selectedMovie)
+
+            // Recupera il trailer
+            try {
+                const videosResponse = await getMovieVideos(selectedMovie.id)
+                const mainTrailer = findMainTrailer(videosResponse.results)
+
+                if (mainTrailer) {
+                    setTrailer(mainTrailer.key)
+                }
+            } catch (trailerError) {
+                console.warn('Trailer non trovato:', trailerError)
+                // Continua senza trailer
+            }
+
+        } catch (err) {
+            console.error('Errore nel caricamento film hero:', err)
+            setError('Errore nel caricamento del film in evidenza')
+        } finally {
+            setLoading(false)
         }
-
-        setTouchStart(null)
     }
 
-    const [touchStart, setTouchStart] = useState<number | null>(null)
-
-    // Funzione per cambiare slide con animazione smooth
-    const goToSlide = (index: number) => {
-        if (isTransitioning) return
-
-        setIsTransitioning(true)
-        setCurrentIndex(index)
-
-        // Reset transitioning dopo l'animazione
-        setTimeout(() => setIsTransitioning(false), 1000)
+    const handleWatchNow = () => {
+        if (featuredMovie) {
+            window.location.href = `/player/movie/${featuredMovie.id}`
+        }
     }
 
-    const currentMovie = featuredContent[currentIndex]
-    
-    // Controllo disponibilità reale per il film corrente
-    const initialBadge = currentMovie ? getAvailabilityBadge(currentMovie) : 'Disponibile'
-    const tmdbId = currentMovie ? (currentMovie.tmdb_id || currentMovie.id) : 0
-    const { availability } = useAvailability(tmdbId, 'movie', initialBadge)
+    const handleMoreInfo = () => {
+        // Implementa modal con dettagli del film
+        console.log('More info per:', featuredMovie?.title)
+    }
 
-    if (!currentMovie) return null
+    const handleMouseEnter = () => {
+        if (hoverTimeout) {
+            clearTimeout(hoverTimeout)
+            setHoverTimeout(null)
+        }
+        setIsHovered(true)
+    }
+
+    const handleMouseLeave = () => {
+        const timeout = setTimeout(() => {
+            setIsHovered(false)
+        }, 100) // Piccolo delay per evitare flickering
+        setHoverTimeout(timeout)
+    }
+
+    if (loading) {
+        return (
+            <div className="relative h-screen bg-black">
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error || !featuredMovie) {
+        return (
+            <div className="relative h-screen bg-black flex items-center justify-center">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
+                    <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
+                    <Button onClick={loadFeaturedMovie} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+                        Riprova
+                    </Button>
+                </div>
+            </div>
+        )
+    }
 
     return (
-        <section
-            id="hero-container"
-            className="relative h-screen overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-        >
-            {/* Background Image con transizione smooth */}
+        <div className="relative h-screen overflow-hidden">
+            {/* Background Video/Image */}
             <div className="absolute inset-0">
-                <img
-                    src={getImageUrl(currentMovie.backdrop_path, 'w1280')}
-                    alt={currentMovie.title}
-                    className={`w-full h-full object-cover transition-all duration-1000 ease-in-out ${isTransitioning ? 'scale-105 opacity-90' : 'scale-100 opacity-100'
-                        }`}
-                />
-                <div className="absolute inset-0 hero-gradient"></div>
+                {trailer ? (
+                    <iframe
+                        src={getYouTubeEmbedUrl(trailer, true, isMuted)}
+                        className="w-full h-full object-cover transition-all duration-500"
+                        allow="autoplay; encrypted-media; fullscreen"
+                        allowFullScreen
+                        style={{
+                            transform: 'scale(1.1)',
+                            filter: isHovered ? 'brightness(0.9)' : 'brightness(0.5)'
+                        }}
+                    />
+                ) : (
+                    <div
+                        className="w-full h-full bg-cover bg-center transition-all duration-500"
+                        style={{
+                            backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
+                            filter: isHovered ? 'brightness(0.8)' : 'brightness(0.4)'
+                        }}
+                    />
+                )}
             </div>
 
-
+            {/* Overlay Gradient */}
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className="relative z-10 h-full flex items-center">
-                <div className="max-w-7xl mx-auto px-4 w-full">
-                    <div className="max-w-2xl">
-                        <h1 className={`text-5xl md:text-7xl font-bold mb-6 leading-tight transition-all duration-1000 ease-in-out ${isTransitioning ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'
-                            }`}>
-                            {currentMovie.title}
+            <div className={`relative z-10 h-full flex items-center transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <div className="container mx-auto px-4">
+                    <div
+                        className="max-w-2xl"
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                    >
+                        {/* Title */}
+                        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                            {featuredMovie.title}
                         </h1>
 
-                        <div className="flex items-center space-x-4 mb-6">
-                            <div className="flex items-center space-x-2">
-                                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAvailabilityColor(availability.badge || 'Disponibile')}`}>
-                                    {availability.badge || 'Disponibile'}
-                                </span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <span className="text-yellow-400">★</span>
-                                <span className="text-sm">{currentMovie.vote_average ? currentMovie.vote_average.toFixed(1) : 'N/A'}</span>
-                            </div>
-                            <span className="text-sm text-gray-300">
-                                {currentMovie.release_date ? new Date(currentMovie.release_date).getFullYear() : 'N/A'}
-                            </span>
-                        </div>
-
-                        <p className={`text-lg text-gray-300 mb-8 leading-relaxed line-clamp-3 transition-all duration-1000 ease-in-out delay-200 ${isTransitioning ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'
-                            }`}>
-                            {currentMovie.overview}
+                        {/* Overview */}
+                        <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
+                            {featuredMovie.overview}
                         </p>
 
-                        <div className={`flex items-center space-x-4 transition-all duration-1000 ease-in-out delay-300 ${isTransitioning ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'
-                            }`}>
+                        {/* Rating */}
+                        <div className="flex items-center mb-8">
+                            <div className="flex items-center">
+                                <div className="text-yellow-400 text-2xl mr-2">★</div>
+                                <span className="text-white text-xl font-semibold">
+                                    {featuredMovie.vote_average.toFixed(1)}
+                                </span>
+                                <span className="text-gray-400 ml-2">
+                                    ({featuredMovie.vote_count.toLocaleString()} voti)
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4">
                             <Button
+                                onClick={handleWatchNow}
                                 size="lg"
-                                className="premium-button flex items-center space-x-2"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    window.location.href = `/player/movie/${currentMovie.id}`
-                                }}
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                                <Play className="w-5 h-5" />
-                                <span>Guarda ora</span>
+                                <Play className="w-6 h-6" />
+                                Guarda Ora
                             </Button>
 
                             <Button
+                                onClick={handleMoreInfo}
+                                variant="outline"
+                                size="lg"
+                                className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                            >
+                                <Info className="w-6 h-6" />
+                                Altre Info
+                            </Button>
+
+                            {/* Mute/Unmute Button */}
+                            {trailer && (
+                                <Button
+                                    onClick={() => setIsMuted(!isMuted)}
+                                    variant="ghost"
+                                    size="lg"
+                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                >
+                                    {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                                    {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
+                                </Button>
+                            )}
+
+                            <Button
                                 variant="ghost"
-                                size="icon"
-                                className="text-white hover:bg-white/10"
+                                size="lg"
+                                className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
                             >
                                 <Plus className="w-6 h-6" />
                             </Button>
 
                             <Button
                                 variant="ghost"
-                                size="icon"
-                                className="text-white hover:bg-white/10"
+                                size="lg"
+                                className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
                             >
                                 <Heart className="w-6 h-6" />
                             </Button>
                         </div>
+
+                        {/* Release Date */}
+                        {featuredMovie.release_date && (
+                            <div className="mt-6">
+                                <span className="text-gray-300 text-lg">
+                                    Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-10 w-32 h-1 bg-white/20 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
-                    style={{
-                        width: `${((currentIndex + 1) / featuredContent.length) * 100}%`
-                    }}
-                />
-            </div>
-
-            {/* Indicators */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="flex space-x-2">
-                    {featuredContent.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => goToSlide(index)}
-                            disabled={isTransitioning}
-                            className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
-                                ? 'bg-white scale-125'
-                                : 'bg-white/50 hover:bg-white/75'
-                                } ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Gradient Overlay Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-10"></div>
-        </section>
+            {/* Bottom Gradient */}
+            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
+        </div>
     )
 }

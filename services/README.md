@@ -2,84 +2,140 @@
 
 ## 📋 Panoramica
 
-Questa directory contiene tutti i servizi di integrazione con API esterne e servizi di terze parti utilizzati dalla piattaforma di streaming.
+Questa directory contiene tutti i servizi di integrazione con API esterne e servizi di terze parti utilizzati dalla piattaforma di streaming TheHustlePlace. I servizi sono progettati per essere modulari, riutilizzabili e robusti.
 
 ## 📁 Struttura
 
 ```
 services/
-├── README.md                 # Questa documentazione
-├── trakt.service.ts          # Servizio Trakt.tv
-├── tmdb.service.ts           # Servizio TMDB
-├── catalog.service.ts        # Servizio catalogo
-├── player.service.ts         # Servizio player
-└── video-player.service.ts   # Servizio video player
+├── README.md                     # Questa documentazione
+├── catalog.service.ts            # Servizio catalogo principale
+├── tmdb.service.ts               # Servizio TMDB base
+├── tmdb-movies.service.ts        # Servizio TMDB per film
+├── tmdb-wrapper.service.ts       # Wrapper TMDB con gestione errori
+├── video-player.service.ts       # Servizio video player
+├── vixsrc-scraper.service.ts     # Servizio scraping VixSrc
+└── player.service.ts             # Servizio player (deprecato)
 ```
 
 ## 🔧 Servizi Disponibili
 
-### 1. Trakt.tv Service (`trakt.service.ts`)
+### 1. TMDB Movies Service (`tmdb-movies.service.ts`)
 
-**Scopo**: Integrazione con Trakt.tv API per dati aggiornati su film e serie TV
+**Scopo**: Integrazione completa con The Movie Database API per film e serie TV
 
 **Funzionalità**:
-- Top 10 film popolari
-- Top 10 serie TV popolari  
-- Nuove uscite cinema
-- Cache Redis con TTL 1 ora
-- Gestione errori robusta
+- Recupero film popolari, top-rated, now-playing, upcoming
+- Dettagli completi film con runtime e generi
+- Ricerca film e serie TV
+- Recupero trailer e video
+- Gestione errori robusta con fallback
+- Cache intelligente per performance
 
 **Utilizzo**:
 ```typescript
-import { getTop10Movies, getTop10Shows, getUpcomingMovies } from '@/services/trakt.service'
+import { TMDBMoviesService } from '@/services/tmdb-movies.service'
 
-const movies = await getTop10Movies()
-const shows = await getTop10Shows()
-const upcoming = await getUpcomingMovies()
+const tmdbService = new TMDBMoviesService()
+const movies = await tmdbService.getPopularMovies(1)
+const movieDetails = await tmdbService.getMovieDetails(12345)
+const trailers = await tmdbService.getMovieTrailers(12345)
 ```
 
-**Documentazione**: [Trakt.tv Integration](doc/trakt-integration.md)
+**Configurazione**:
+```env
+TMDB_API_KEY=your-tmdb-api-key
+NEXT_PUBLIC_TMDB_API_KEY=your-tmdb-api-key
+```
 
-### 2. TMDB Service (`tmdb.service.ts`)
+### 2. TMDB Wrapper Service (`tmdb-wrapper.service.ts`)
 
-**Scopo**: Integrazione con The Movie Database API
+**Scopo**: Wrapper singleton per TMDBMoviesService con gestione errori avanzata
 
 **Funzionalità**:
-- Ricerca film e serie TV
-- Dettagli completi
-- Immagini e poster
-- Cast e crew
-- Recensioni e rating
+- Singleton pattern per istanza unica
+- Gestione errori centralizzata
+- Fallback automatici
+- Logging dettagliato
+- Metodi di convenienza
 
-### 3. Catalog Service (`catalog.service.ts`)
+**Utilizzo**:
+```typescript
+import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
 
-**Scopo**: Gestione del catalogo di contenuti
+const movies = await tmdbWrapperService.getPopularMovies(1)
+const top10 = await tmdbWrapperService.getTop10Movies()
+const upcoming = await tmdbWrapperService.getUpcomingMovies(1)
+```
+
+### 3. Video Player Service (`video-player.service.ts`)
+
+**Scopo**: Gestione del player video e integrazione con VixSrc
+
+**Funzionalità**:
+- Controllo disponibilità contenuti su VixSrc
+- Generazione URL player personalizzati
+- Gestione parametri player (colori, lingua, autoplay)
+- Fallback per contenuti non disponibili
+- Timeout management
+
+**Utilizzo**:
+```typescript
+import { VideoPlayerService } from '@/services/video-player.service'
+
+const playerService = new VideoPlayerService()
+const isAvailable = await playerService.checkMovieAvailability(12345)
+const videoSource = await playerService.getMovieVideoSource(12345)
+```
+
+**Configurazione**:
+```env
+VIXSRC_BASE_URL=https://vixsrc.to
+VIXSRC_PRIMARY_COLOR=B20710
+VIXSRC_SECONDARY_COLOR=170000
+VIXSRC_AUTOPLAY=false
+VIXSRC_LANG=it
+```
+
+### 4. VixSrc Scraper Service (`vixsrc-scraper.service.ts`)
+
+**Scopo**: Scraping e parsing di dati da VixSrc
+
+**Funzionalità**:
+- Scraping HTML da VixSrc
+- Parsing metadati film e serie TV
+- Estrazione titoli, overview, poster
+- Gestione errori di scraping
+- User-Agent personalizzato
+
+**Utilizzo**:
+```typescript
+import { VixsrcScraperService } from '@/services/vixsrc-scraper.service'
+
+const scraper = new VixsrcScraperService()
+const movieDetails = await scraper.getMovieDetails(12345)
+const tvDetails = await scraper.getTVShowDetails(12345, 1, 1)
+```
+
+### 5. Catalog Service (`catalog.service.ts`)
+
+**Scopo**: Gestione del catalogo di contenuti aggregato
 
 **Funzionalità**:
 - Aggregazione dati da multiple fonti
-- Filtri e ricerca
-- Paginazione
-- Cache intelligente
+- Filtri e ricerca avanzata
+- Paginazione intelligente
+- Cache Redis per performance
+- Gestione generi e categorie
 
-### 4. Player Service (`player.service.ts`)
+**Utilizzo**:
+```typescript
+import { CatalogService } from '@/services/catalog.service'
 
-**Scopo**: Gestione del player video
-
-**Funzionalità**:
-- Generazione URL player
-- Controllo disponibilità
-- Gestione stream
-- Fallback automatici
-
-### 5. Video Player Service (`video-player.service.ts`)
-
-**Scopo**: Integrazione con servizi di streaming
-
-**Funzionalità**:
-- VixSrc integration
-- URL generation
-- Stream validation
-- Error handling
+const catalogService = new CatalogService()
+const popularMovies = await catalogService.getPopularMovies()
+const searchResults = await catalogService.searchMovies('query')
+```
 
 ## 🏗️ Architettura
 
@@ -92,29 +148,41 @@ Tutti i servizi seguono pattern comuni:
 3. **Cache Pattern**: Redis per performance
 4. **Error Handling**: Fallback graceful
 5. **Logging**: Monitoraggio completo
+6. **TypeScript**: Tipizzazione forte
 
 ### Struttura Standard
 
 ```typescript
 class ServiceName {
-    private client: AxiosInstance
-    private redis: RedisClientType
-    private config: ServiceConfig
+    private readonly apiKey: string
+    private readonly baseUrl: string
+    private readonly timeout: number
 
     constructor() {
-        // Inizializzazione
+        // Inizializzazione con fallback
+        this.apiKey = process.env.API_KEY || 
+                     process.env.NEXT_PUBLIC_API_KEY || 
+                     'fallback-key'
     }
 
-    private async getFromCache<T>(key: string): Promise<T | null> {
-        // Cache logic
+    private checkApiKey(): void {
+        if (!this.apiKey) {
+            throw new Error('API key non configurata')
+        }
     }
 
-    private async setCache<T>(key: string, data: T, ttl: number): Promise<void> {
-        // Cache logic
+    private async makeRequest<T>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
+        this.checkApiKey()
+        // Implementazione richiesta
     }
 
     async getData(): Promise<DataType[]> {
-        // Business logic
+        try {
+            // Business logic
+        } catch (error) {
+            console.error('Errore servizio:', error)
+            return []
+        }
     }
 }
 ```
@@ -124,18 +192,22 @@ class ServiceName {
 ### Variabili d'Ambiente
 
 ```env
-# TMDB
-TMDB_API_KEY="your_tmdb_api_key"
+# TMDB API (Obbligatorio)
+TMDB_API_KEY=your_tmdb_api_key
+NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key
 
-# Trakt.tv
-TRAKT_CLIENT_ID="your_trakt_client_id"
-TRAKT_CLIENT_SECRET="your_trakt_client_secret"
+# VixSrc Configuration
+VIXSRC_BASE_URL=https://vixsrc.to
+VIXSRC_PRIMARY_COLOR=B20710
+VIXSRC_SECONDARY_COLOR=170000
+VIXSRC_AUTOPLAY=false
+VIXSRC_LANG=it
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+# Redis (Opzionale)
+REDIS_URL=redis://localhost:6379
 
-# VixSrc
-VIXSRC_BASE_URL="https://vixsrc.to"
+# Environment
+NODE_ENV=development
 ```
 
 ### Dipendenze
@@ -158,28 +230,28 @@ VIXSRC_BASE_URL="https://vixsrc.to"
 
 ```typescript
 // Import singolo
-import { getTop10Movies } from '@/services/trakt.service'
+import { TMDBMoviesService } from '@/services/tmdb-movies.service'
 
-// Import multiplo
-import { 
-    getTop10Movies, 
-    getTop10Shows, 
-    getUpcomingMovies 
-} from '@/services/trakt.service'
+// Import wrapper
+import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
 
-// Import servizio completo
-import { traktService } from '@/services/trakt.service'
+// Import video player
+import { VideoPlayerService } from '@/services/video-player.service'
 ```
 
 ### Utilizzo in API Routes
 
 ```typescript
-// app/api/movies/route.ts
-import { getTop10Movies } from '@/services/trakt.service'
+// app/api/tmdb/movies/route.ts
+import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
 
-export async function GET() {
-    const movies = await getTop10Movies()
-    return NextResponse.json({ movies })
+export async function GET(request: NextRequest) {
+    try {
+        const movies = await tmdbWrapperService.getPopularMovies(1)
+        return NextResponse.json({ success: true, data: movies })
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message })
+    }
 }
 ```
 
@@ -193,16 +265,17 @@ export function MovieList() {
     const [movies, setMovies] = useState([])
 
     useEffect(() => {
-        fetch('/api/movies')
+        fetch('/api/tmdb/movies?type=popular')
             .then(res => res.json())
-            .then(data => setMovies(data.movies))
+            .then(data => setMovies(data.data))
     }, [])
 
     return (
         <div>
             {movies.map(movie => (
-                <div key={movie.ids.trakt}>
+                <div key={movie.id}>
                     <h3>{movie.title}</h3>
+                    <p>{movie.overview}</p>
                 </div>
             ))}
         </div>
@@ -212,12 +285,12 @@ export function MovieList() {
 
 ## 🗄️ Cache Strategy
 
-### Redis Cache
+### Cache In-Memory
 
-Tutti i servizi utilizzano Redis per cache:
+Per default, i servizi utilizzano cache in-memory:
 
 ```typescript
-// Chiavi cache standardizzate
+// Cache keys standardizzate
 'service:endpoint:params'  // Formato chiave
 'ttl:3600'                // TTL in secondi
 ```
@@ -225,49 +298,65 @@ Tutti i servizi utilizzano Redis per cache:
 ### Cache Keys
 
 ```typescript
-// Trakt.tv
-'trakt:top10:movies'
-'trakt:top10:shows'
-'trakt:upcoming:movies'
-
 // TMDB
+'tmdb:popular:movies:1'
 'tmdb:movie:12345'
-'tmdb:search:query'
+'tmdb:trailers:12345'
+
+// VixSrc
+'vixsrc:movie:12345'
+'vixsrc:availability:12345'
 
 // Catalog
-'catalog:popular:movies'
-'catalog:recent:shows'
+'catalog:top10:movies'
+'catalog:upcoming:movies'
+```
+
+### Redis Cache (Opzionale)
+
+```typescript
+// utils/redis-cache.ts
+import { Redis } from 'ioredis'
+
+const redis = new Redis(process.env.REDIS_URL)
+
+export const cache = {
+    async get<T>(key: string): Promise<T | null> {
+        const data = await redis.get(key)
+        return data ? JSON.parse(data) : null
+    },
+    
+    async set<T>(key: string, data: T, ttl: number = 3600): Promise<void> {
+        await redis.setex(key, ttl, JSON.stringify(data))
+    }
+}
 ```
 
 ## 🚨 Error Handling
 
 ### Strategia Standard
 
-1. **Cache First**: Controlla Redis
-2. **API Fallback**: Chiama API esterna
-3. **Graceful Degradation**: Restituisce array vuoto
-4. **Logging**: Registra errori per debugging
+1. **API Key Check**: Verifica chiavi API
+2. **Timeout Management**: 10 secondi per evitare blocchi
+3. **Retry Logic**: Tentativi automatici per errori temporanei
+4. **Graceful Degradation**: Restituisce array vuoto
+5. **Logging**: Registra errori per debugging
 
 ### Esempio
 
 ```typescript
 async getData(): Promise<DataType[]> {
     try {
-        // 1. Controlla cache
-        const cached = await this.getFromCache<DataType[]>(cacheKey)
-        if (cached) return cached
-
-        // 2. Chiama API
-        const response = await this.client.get(endpoint)
-        const data = this.formatData(response.data)
-
-        // 3. Salva in cache
-        await this.setCache(cacheKey, data)
-
-        return data
+        this.checkApiKey()
+        
+        const response = await this.makeRequest<ApiResponse>(endpoint)
+        return this.formatData(response.results)
+        
     } catch (error) {
-        logger.error('Errore servizio:', error)
-        return [] // Fallback
+        console.error('Errore servizio:', error)
+        
+        // Fallback graceful
+        return []
     }
 }
 ```
@@ -280,13 +369,13 @@ Tutti i servizi includono logging dettagliato:
 
 ```typescript
 // Log di successo
-logger.info('Dati recuperati con successo', { count: data.length })
+console.log('✅ Dati recuperati con successo', { count: data.length })
 
 // Log di errore
-logger.error('Errore recupero dati:', error)
+console.error('❌ Errore recupero dati:', error)
 
-// Log di cache
-logger.info('Cache hit', { key: cacheKey })
+// Log di configurazione
+console.log('✅ API Key configurata correttamente')
 ```
 
 ### Metriche
@@ -295,20 +384,35 @@ logger.info('Cache hit', { key: cacheKey })
 - **Cache Hit Rate**: Percentuale cache hits
 - **Error Rate**: Percentuale errori
 - **Data Volume**: Quantità dati recuperati
+- **API Key Status**: Stato configurazione
 
 ## 🧪 Testing
 
 ### Test Unitari
 
 ```typescript
-// test/services/trakt.service.test.ts
-import { getTop10Movies } from '@/services/trakt.service'
+// test/services/tmdb-movies.service.test.ts
+import { TMDBMoviesService } from '@/services/tmdb-movies.service'
 
-describe('TraktService', () => {
+describe('TMDBMoviesService', () => {
+    let service: TMDBMoviesService
+
+    beforeEach(() => {
+        service = new TMDBMoviesService()
+    })
+
     it('should return movies array', async () => {
-        const movies = await getTop10Movies()
+        const movies = await service.getPopularMovies(1)
         expect(Array.isArray(movies)).toBe(true)
         expect(movies.length).toBeGreaterThan(0)
+    })
+
+    it('should handle API key errors', async () => {
+        process.env.TMDB_API_KEY = ''
+        const service = new TMDBMoviesService()
+        
+        await expect(service.getPopularMovies(1))
+            .rejects.toThrow('API key non configurata')
     })
 })
 ```
@@ -317,12 +421,13 @@ describe('TraktService', () => {
 
 ```typescript
 // test/integration/services.test.ts
-import { traktService } from '@/services/trakt.service'
+import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
 
 describe('Services Integration', () => {
-    it('should connect to external APIs', async () => {
-        const movies = await traktService.getTop10Movies()
+    it('should connect to TMDB API', async () => {
+        const movies = await tmdbWrapperService.getPopularMovies(1)
         expect(movies).toBeDefined()
+        expect(Array.isArray(movies)).toBe(true)
     })
 })
 ```
@@ -332,9 +437,10 @@ describe('Services Integration', () => {
 ### Ottimizzazioni
 
 - **Parallel Requests**: `Promise.all()` per chiamate multiple
-- **Cache Strategy**: Redis per ridurre chiamate API
+- **Cache Strategy**: Cache per ridurre chiamate API
 - **Timeout**: 10 secondi per evitare blocchi
 - **Retry Logic**: Tentativi automatici per errori temporanei
+- **Fallback Keys**: Multiple chiavi API per ridondanza
 
 ### Best Practices
 
@@ -343,34 +449,28 @@ describe('Services Integration', () => {
 3. **Logging**: Registra operazioni importanti
 4. **TypeScript**: Usa tipizzazione forte
 5. **Testing**: Testa tutti i servizi
+6. **Fallback**: Chiavi API multiple per ridondanza
 
-## 🔄 Aggiornamenti
+## 🔄 Aggiornamenti Recenti
 
-### Versioning
+### v2.0.0 - Major Update
+- ✅ Aggiunto TMDB Wrapper Service con gestione errori
+- ✅ Implementato fallback per chiavi API multiple
+- ✅ Migliorata gestione errori con logging dettagliato
+- ✅ Aggiunto supporto per runtime e generi nei film
+- ✅ Ottimizzato sistema di cache
 
-I servizi seguono semantic versioning:
+### v1.5.0 - Player Improvements
+- ✅ Integrazione completa con VixSrc
+- ✅ Controllo disponibilità contenuti
+- ✅ Gestione parametri player personalizzati
+- ✅ Timeout management per iframe
 
-- **Major**: Breaking changes
-- **Minor**: Nuove funzionalità
-- **Patch**: Bug fixes
-
-### Changelog
-
-Mantieni un changelog per ogni servizio:
-
-```markdown
-## [1.2.0] - 2024-01-15
-### Added
-- Nuova funzione getUpcomingMovies()
-- Supporto cache Redis
-
-### Changed
-- Migliorata gestione errori
-- Ottimizzate performance
-
-### Fixed
-- Bug fix per timeout API
-```
+### v1.0.0 - Initial Release
+- ✅ Base TMDB Movies Service
+- ✅ Video Player Service
+- ✅ VixSrc Scraper Service
+- ✅ Catalog Service
 
 ## 🤝 Contributi
 
@@ -390,14 +490,19 @@ Per contribuire ai servizi:
 - Documenta modifiche importanti
 - Usa TypeScript per tipizzazione
 - Mantieni backward compatibility
+- Implementa fallback per robustezza
 
 ## 📚 Risorse
 
-- [API Documentation](doc/)
-- [Testing Guide](doc/testing.md)
-- [Deployment Guide](doc/deployment.md)
-- [Performance Guide](doc/performance.md)
+- [API Documentation](../doc/)
+- [TMDB API Docs](https://developers.themoviedb.org/)
+- [VixSrc Integration](../doc/api-integration.md)
+- [Troubleshooting](../doc/troubleshooting.md)
 
 ## 📄 Licenza
 
-Questi servizi sono parte della piattaforma di streaming e seguono la stessa licenza del progetto principale.
+Questi servizi sono parte della piattaforma di streaming TheHustlePlace e seguono la stessa licenza del progetto principale.
+
+---
+
+**TheHustlePlace Services** - *Servizi di integrazione robusti e performanti* 🔧✨

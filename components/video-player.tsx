@@ -34,36 +34,47 @@ export function VideoPlayer({
 
     // Genera l'URL del player
     const generatePlayerUrl = useCallback(() => {
-        let baseUrl = ''
+        try {
+            let baseUrl = ''
 
-        if (type === 'movie') {
-            baseUrl = `https://vixsrc.to/movie/${tmdbId}`
-        } else if (type === 'tv' && season && episode) {
-            baseUrl = `https://vixsrc.to/tv/${tmdbId}/${season}/${episode}`
-        } else {
-            setError('Parametri mancanti per il tipo TV')
+            if (type === 'movie') {
+                baseUrl = `https://vixsrc.to/movie/${tmdbId}`
+            } else if (type === 'tv' && season && episode) {
+                baseUrl = `https://vixsrc.to/tv/${tmdbId}/${season}/${episode}`
+            } else {
+                setError('Parametri mancanti per il tipo TV')
+                return ''
+            }
+
+            const url = new URL(baseUrl)
+            url.searchParams.set('primaryColor', primaryColor.replace('#', ''))
+            url.searchParams.set('secondaryColor', secondaryColor.replace('#', ''))
+            url.searchParams.set('lang', lang)
+
+            if (autoplay) {
+                url.searchParams.set('autoplay', 'true')
+            }
+
+            if (startAt > 0) {
+                url.searchParams.set('startAt', startAt.toString())
+            }
+
+            return url.toString()
+        } catch (error) {
+            console.error('Errore nella generazione URL player:', error)
+            setError('Errore nella configurazione del player')
             return ''
         }
-
-        const url = new URL(baseUrl)
-        url.searchParams.set('primaryColor', primaryColor)
-        url.searchParams.set('secondaryColor', secondaryColor)
-        url.searchParams.set('lang', lang)
-
-        if (autoplay) {
-            url.searchParams.set('autoplay', 'true')
-        }
-
-        if (startAt > 0) {
-            url.searchParams.set('startAt', startAt.toString())
-        }
-
-        return url.toString()
     }, [tmdbId, type, season, episode, primaryColor, secondaryColor, autoplay, startAt, lang])
 
     // Gestisce gli eventi del player
     const handlePlayerEvent = useCallback((event: MessageEvent) => {
         try {
+            // Verifica che l'evento provenga da vixsrc.to
+            if (!event.origin || !event.origin.includes('vixsrc.to')) {
+                return
+            }
+
             if (!event.data || typeof event.data !== 'object') {
                 return
             }
@@ -204,9 +215,17 @@ export function VideoPlayer({
                     ref={iframeRef}
                     src={playerUrl}
                     className="w-full h-full"
-                    allow="autoplay; fullscreen; encrypted-media"
+                    allow="autoplay; fullscreen; encrypted-media; web-share"
                     allowFullScreen
-                    onLoad={() => setIsLoading(false)}
+                    onLoad={(e) => {
+                        console.log('Iframe loaded successfully')
+                        setIsLoading(false)
+                    }}
+                    onError={(e) => {
+                        console.error('Iframe loading error:', e)
+                        setError('Errore nel caricamento del player')
+                        setIsLoading(false)
+                    }}
                 />
 
                 {/* Overlay Controls */}

@@ -1,19 +1,58 @@
 import axios from 'axios'
 import { cache } from '@/utils/cache'
 import { logger } from '@/utils/logger'
-import { Movie, TVShow, Genre, CatalogFilters, PaginatedResponse } from '@/types'
+import { Movie, TVShow, Genre, CatalogFilters, PaginatedResponse, Top10Content } from '@/types'
 import { VixsrcScraperService } from './vixsrc-scraper.service'
-import { TMDBService } from './tmdb.service'
+import { tmdbWrapperService } from './tmdb-wrapper.service'
+import { TMDBMovie } from './tmdb-movies.service'
 
 export class CatalogService {
     private readonly VIXSRC_BASE_URL = process.env.VIXSRC_BASE_URL || 'https://vixsrc.to'
     private readonly CACHE_TTL = 3600 // 1 hour
     private readonly vixsrcScraper: VixsrcScraperService
-    private readonly tmdbService: TMDBService
 
     constructor() {
         this.vixsrcScraper = new VixsrcScraperService()
-        this.tmdbService = new TMDBService()
+    }
+
+    private convertTMDBMovieToMovie(tmdbMovie: TMDBMovie): Movie {
+        return {
+            id: tmdbMovie.id,
+            title: tmdbMovie.title,
+            overview: tmdbMovie.overview,
+            poster_path: tmdbMovie.poster_path || undefined,
+            backdrop_path: tmdbMovie.backdrop_path || undefined,
+            release_date: tmdbMovie.release_date,
+            vote_average: tmdbMovie.vote_average,
+            vote_count: tmdbMovie.vote_count,
+            genre_ids: tmdbMovie.genre_ids,
+            adult: tmdbMovie.adult,
+            original_language: tmdbMovie.original_language,
+            original_title: tmdbMovie.original_title,
+            popularity: tmdbMovie.popularity,
+            video: tmdbMovie.video,
+            tmdb_id: tmdbMovie.id
+        }
+    }
+
+    private convertTMDBTVShowToTVShow(tmdbTVShow: any): TVShow {
+        return {
+            id: tmdbTVShow.id,
+            name: tmdbTVShow.name,
+            overview: tmdbTVShow.overview,
+            poster_path: tmdbTVShow.poster_path || undefined,
+            backdrop_path: tmdbTVShow.backdrop_path || undefined,
+            first_air_date: tmdbTVShow.first_air_date,
+            vote_average: tmdbTVShow.vote_average,
+            vote_count: tmdbTVShow.vote_count,
+            genre_ids: tmdbTVShow.genre_ids || [],
+            adult: tmdbTVShow.adult || false,
+            original_language: tmdbTVShow.original_language,
+            original_name: tmdbTVShow.original_name,
+            popularity: tmdbTVShow.popularity || 0,
+            origin_country: tmdbTVShow.origin_country || [],
+            tmdb_id: tmdbTVShow.id
+        }
     }
 
     // Nuovo metodo per film "now playing" (appena usciti al cinema)
@@ -26,71 +65,143 @@ export class CatalogService {
             }
 
             // Usa direttamente TMDB API per i film "now playing"
-            const movies = await this.tmdbService.getNowPlayingMovies()
-            
-            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-            logger.info('Film now playing recuperati con successo', { count: movies.length })
-            return movies
+            const response = await tmdbWrapperService.getNowPlayingMovies()
+
+            if (response && response.results) {
+                const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
+                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+                logger.info('Film now playing recuperati con successo', { count: movies.length })
+                return movies
+            }
+
+            return []
         } catch (error) {
             logger.error('Errore nel recupero film now playing', { error })
             return []
         }
     }
 
-    // Nuovo metodo per i top 10 film - ora usa Trakt.tv
+    // Nuovo metodo per i top 10 film - usa TMDB
     async getTop10Movies(): Promise<Movie[]> {
         try {
-            const cacheKey = 'top-10-movies-trakt'
+            const cacheKey = 'top-10-movies'
             const cached = await cache.get<Movie[]>(cacheKey)
             if (cached) {
                 return cached
             }
 
-            // Prova prima Trakt.tv per i film popolari
-            try {
-                const { getTop10Movies } = await import('./trakt.service')
-                const traktMovies = await getTop10Movies()
-                
-                if (traktMovies && traktMovies.length > 0) {
-                    // Converte i dati Trakt.tv nel formato Movie
-                    const movies: Movie[] = traktMovies.map((traktMovie, index) => ({
-                        id: traktMovie.ids.tmdb || traktMovie.ids.trakt,
-                        tmdb_id: traktMovie.ids.tmdb,
-                        title: traktMovie.title,
-                        overview: traktMovie.overview,
-                        release_date: traktMovie.year ? `${traktMovie.year}-01-01` : undefined,
-                        vote_average: traktMovie.rating,
-                        vote_count: traktMovie.votes,
-                        poster_path: traktMovie.images.poster.medium || traktMovie.images.poster.full,
-                        backdrop_path: traktMovie.images.fanart.medium || traktMovie.images.fanart.full,
-                        genre_ids: [], // Trakt.tv non fornisce genre_ids
-                        adult: false,
-                        original_language: traktMovie.language || 'en',
-                        original_title: traktMovie.title,
-                        popularity: 0,
-                        video: false,
-                        first_air_date: undefined,
-                        name: undefined,
-                        origin_country: [traktMovie.country || 'US'],
-                        original_name: undefined
-                    }))
+            // Usa TMDB per i top 10 film
+            const response = await tmdbWrapperService.getTopRatedMovies(10)
 
-                    await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-                    logger.info('Top 10 film recuperati da Trakt.tv', { count: movies.length })
-                    return movies
-                }
-            } catch (traktError) {
-                logger.warn('Errore nel recupero da Trakt.tv, fallback su TMDB:', traktError)
+            if (response && response.results) {
+                const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
+                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+                logger.info('Top 10 film recuperati da TMDB', { count: movies.length })
+                return movies
             }
 
-            // Fallback su TMDB se Trakt.tv non funziona
-            const movies = await this.tmdbService.getTopRatedMovies(10)
-            
-            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-            logger.info('Top 10 film recuperati da TMDB (fallback)', { count: movies.length })
-            return movies
+            return []
         } catch (error) {
             logger.error('Errore nel recupero top 10 film', { error })
+            return []
+        }
+    }
+
+    // Metodi di conversione per Top10Content
+    private convertMovieToTop10Content(movie: Movie): Top10Content {
+        return {
+            id: movie.id,
+            title: movie.title,
+            overview: movie.overview,
+            poster_path: movie.poster_path,
+            backdrop_path: movie.backdrop_path,
+            release_date: movie.release_date,
+            vote_average: movie.vote_average,
+            vote_count: movie.vote_count,
+            genre_ids: movie.genre_ids,
+            adult: movie.adult,
+            original_language: movie.original_language,
+            original_title: movie.original_title,
+            popularity: movie.popularity,
+            video: movie.video,
+            tmdb_id: movie.tmdb_id,
+            type: 'movie'
+        }
+    }
+
+    private convertTVShowToTop10Content(tvShow: TVShow): Top10Content {
+        return {
+            id: tvShow.id,
+            title: tvShow.name,
+            overview: tvShow.overview,
+            poster_path: tvShow.poster_path,
+            backdrop_path: tvShow.backdrop_path,
+            release_date: tvShow.first_air_date,
+            first_air_date: tvShow.first_air_date,
+            vote_average: tvShow.vote_average,
+            vote_count: tvShow.vote_count,
+            genre_ids: tvShow.genre_ids,
+            adult: tvShow.adult,
+            original_language: tvShow.original_language,
+            original_name: tvShow.original_name,
+            popularity: tvShow.popularity,
+            origin_country: tvShow.origin_country,
+            tmdb_id: tvShow.tmdb_id,
+            type: 'tv'
+        }
+    }
+
+    // Nuovo metodo per top 10 mista (5 film + 5 serie TV)
+    async getTop10Mixed(): Promise<Top10Content[]> {
+        try {
+            const cacheKey = 'top-10-mixed'
+            const cached = await cache.get<Top10Content[]>(cacheKey)
+            if (cached) {
+                return cached
+            }
+
+            // Recupera i top film e serie TV in parallelo
+            const [moviesResponse, tvShowsResponse] = await Promise.all([
+                tmdbWrapperService.getTopRatedMovies(10), // Prendiamo i top 10 film
+                tmdbWrapperService.getTopRatedTVShows(10) // Prendiamo i top 10 serie TV
+            ])
+
+            const allContent: Top10Content[] = []
+
+            // Converti i top 5 film
+            if (moviesResponse?.results) {
+                const movies = moviesResponse.results
+                    .slice(0, 5) // Prendi solo i primi 5
+                    .map((tmdbMovie: any) =>
+                        this.convertMovieToTop10Content(this.convertTMDBMovieToMovie(tmdbMovie))
+                    )
+                allContent.push(...movies)
+            }
+
+            // Converti i top 5 serie TV
+            if (tvShowsResponse && (tvShowsResponse as any).results) {
+                const tvShows = (tvShowsResponse as any).results
+                    .slice(0, 5) // Prendi solo i primi 5
+                    .map((tmdbTVShow: any) =>
+                        this.convertTVShowToTop10Content(this.convertTMDBTVShowToTVShow(tmdbTVShow))
+                    )
+                allContent.push(...tvShows)
+            }
+
+            // Ordina per popularity per mescolare i risultati
+            const top10Mixed = allContent
+                .sort((a, b) => b.popularity - a.popularity)
+
+            await cache.set(cacheKey, top10Mixed, { ttl: this.CACHE_TTL })
+            logger.info('Top 10 mista recuperata con successo', {
+                count: top10Mixed.length,
+                movies: top10Mixed.filter(item => item.type === 'movie').length,
+                tvShows: top10Mixed.filter(item => item.type === 'tv').length
+            })
+
+            return top10Mixed
+        } catch (error) {
+            logger.error('Errore nel recupero top 10 mista', { error })
             return []
         }
     }
@@ -105,11 +216,16 @@ export class CatalogService {
             }
 
             // Usa direttamente TMDB API per i film popolari
-            const movies = await this.tmdbService.getPopularMovies()
-            
-            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-            logger.info('Film popolari recuperati con successo', { count: movies.length })
-            return movies
+            const response = await tmdbWrapperService.getPopularMovies()
+
+            if (response && response.results) {
+                const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
+                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+                logger.info('Film popolari recuperati con successo', { count: movies.length })
+                return movies
+            }
+
+            return []
         } catch (error) {
             logger.error('Errore nel recupero film popolari', { error })
             return []
@@ -126,11 +242,16 @@ export class CatalogService {
             }
 
             // Usa direttamente TMDB API per i film recenti
-            const movies = await this.tmdbService.getRecentMovies()
-            
-            await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-            logger.info('Film recenti recuperati con successo', { count: movies.length })
-            return movies
+            const response = await tmdbWrapperService.getUpcomingMovies()
+
+            if (response && response.results) {
+                const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
+                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
+                logger.info('Film recenti recuperati con successo', { count: movies.length })
+                return movies
+            }
+
+            return []
         } catch (error) {
             logger.error('Errore nel recupero film recenti', { error })
             return []
@@ -157,15 +278,15 @@ export class CatalogService {
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 film alla volta per evitare rate limiting
                     const movies: Movie[] = []
-                    
+
                     for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
                         const batch = tmdbIds.slice(i, i + batchSize)
-                        
+
                         const batchResults = await Promise.allSettled(
                             batch.map(async (tmdbId: number) => {
                                 try {
                                     // Usa TMDB API per ottenere i dettagli reali
-                                    const tmdbDetails = await this.tmdbService.getMovieDetails(tmdbId)
+                                    const tmdbDetails = await tmdbWrapperService.getMovieDetails(tmdbId)
                                     if (tmdbDetails) {
                                         logger.info('Dettagli film ottenuti da TMDB', { tmdbId, title: tmdbDetails.title })
                                         return tmdbDetails
@@ -194,14 +315,14 @@ export class CatalogService {
                                 }
                             })
                         )
-                        
+
                         // Aggiungi solo i risultati riusciti
                         batchResults.forEach(result => {
                             if (result.status === 'fulfilled') {
-                                movies.push(result.value)
+                                movies.push(this.convertTMDBMovieToMovie(result.value))
                             }
                         })
-                        
+
                         // Piccola pausa tra i batch per evitare rate limiting
                         if (i + batchSize < Math.min(tmdbIds.length, 20)) {
                             await new Promise(resolve => setTimeout(resolve, 100))
@@ -319,15 +440,15 @@ export class CatalogService {
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 serie TV alla volta per evitare rate limiting
                     const tvShows: TVShow[] = []
-                    
+
                     for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
                         const batch = tmdbIds.slice(i, i + batchSize)
-                        
+
                         const batchResults = await Promise.allSettled(
                             batch.map(async (tmdbId: number) => {
                                 try {
                                     // Usa TMDB API per ottenere i dettagli reali
-                                    const tmdbDetails = await this.tmdbService.getTVShowDetails(tmdbId)
+                                    const tmdbDetails = await tmdbWrapperService.getTVShowDetails(tmdbId)
                                     if (tmdbDetails) {
                                         logger.info('Dettagli serie TV ottenuti da TMDB', { tmdbId, name: tmdbDetails.name })
                                         return tmdbDetails
@@ -356,14 +477,14 @@ export class CatalogService {
                                 }
                             })
                         )
-                        
+
                         // Aggiungi solo i risultati riusciti
                         batchResults.forEach(result => {
                             if (result.status === 'fulfilled') {
-                                tvShows.push(result.value)
+                                tvShows.push(this.convertTMDBTVShowToTVShow(result.value))
                             }
                         })
-                        
+
                         // Piccola pausa tra i batch per evitare rate limiting
                         if (i + batchSize < Math.min(tmdbIds.length, 20)) {
                             await new Promise(resolve => setTimeout(resolve, 100))
@@ -449,19 +570,19 @@ export class CatalogService {
             }
 
             // Usa TMDB API per la ricerca
-            const movies = await this.tmdbService.searchMovies(query, page)
+            const response = await tmdbWrapperService.searchMovies(query, page)
 
             const result: PaginatedResponse<Movie> = {
-                results: movies,
+                results: response && response.results ? response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie)) : [],
                 page: page,
-                total_pages: Math.ceil(movies.length / 20),
-                total_results: movies.length
+                total_pages: response ? response.total_pages : 0,
+                total_results: response ? response.total_results : 0
             }
 
             // Salva in cache
             await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            logger.info('Ricerca film completata', { query, count: movies.length })
+            logger.info('Ricerca film completata', { query, count: response?.results?.length || 0 })
             return result
         } catch (error) {
             logger.error('Errore nella ricerca film', { error, query })
@@ -480,19 +601,19 @@ export class CatalogService {
             }
 
             // Usa TMDB API per la ricerca
-            const tvShows = await this.tmdbService.searchTVShows(query, page)
+            const tvShows = await tmdbWrapperService.searchTVShows(query, page)
 
             const result: PaginatedResponse<TVShow> = {
-                results: tvShows,
+                results: tvShows ? tvShows.map(tmdbTVShow => this.convertTMDBTVShowToTVShow(tmdbTVShow)) : [],
                 page: page,
-                total_pages: Math.ceil(tvShows.length / 20),
-                total_results: tvShows.length
+                total_pages: Math.ceil((tvShows?.length || 0) / 20),
+                total_results: tvShows?.length || 0
             }
 
             // Salva in cache
             await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            logger.info('Ricerca serie TV completata', { query, count: tvShows.length })
+            logger.info('Ricerca serie TV completata', { query, count: tvShows?.length || 0 })
             return result
         } catch (error) {
             logger.error('Errore nella ricerca serie TV', { error, query })

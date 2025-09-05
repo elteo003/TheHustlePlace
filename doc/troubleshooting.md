@@ -4,28 +4,137 @@ Questa guida ti aiuterà a risolvere i problemi più comuni che potresti incontr
 
 ## 🚨 Errori Comuni
 
-### 1. Errori 404 nel Player
+### 1. "TMDB_API_KEY non configurata"
 
-**Problema**: Il player mostra errore 404 quando si tenta di riprodurre un film.
+**Problema**: L'applicazione mostra errori di API key non configurata.
 
-**Cause Possibili**:
-- L'ID del film non è valido su vixsrc.to
-- Il film non è disponibile nella piattaforma
-- Problemi di connessione con vixsrc.to
-
-**Soluzioni**:
-1. **Verifica l'ID del film**: Assicurati che l'ID sia un TMDB ID valido
-2. **Controlla la disponibilità**: Non tutti i film sono disponibili su vixsrc.to
-3. **Usa un film diverso**: Prova con un film popolare e recente
-4. **Controlla la console**: Verifica eventuali errori JavaScript
-
-**Codice di Debug**:
-```javascript
-// Nel browser console, verifica l'URL dell'iframe
-console.log(document.querySelector('iframe').src);
+**Sintomi**:
+```
+❌ TMDB_API_KEY non configurata!
+📝 Segui le istruzioni in SETUP.md per configurare la API key
 ```
 
-### 2. Errori Redis durante il Build
+**Soluzioni**:
+1. **Verifica il file .env.local**:
+   ```bash
+   cat .env.local | grep TMDB_API_KEY
+   ```
+
+2. **Aggiungi entrambe le chiavi**:
+   ```env
+   TMDB_API_KEY=your-tmdb-api-key-here
+   NEXT_PUBLIC_TMDB_API_KEY=your-tmdb-api-key-here
+   ```
+
+3. **Riavvia il server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Verifica la configurazione**:
+   ```bash
+   curl http://localhost:3000/api/tmdb/movies?type=popular
+   ```
+
+### 2. "Please disable sandbox"
+
+**Problema**: VixSrc mostra il messaggio "Please disable sandbox".
+
+**Sintomi**:
+```
+Please disable sandbox
+```
+
+**Soluzione**: ✅ **RISOLTO**
+- Sandbox rimosso da tutti gli iframe
+- VixSrc ora funziona correttamente
+- Nessuna configurazione aggiuntiva richiesta
+
+### 3. "Film non disponibile"
+
+**Problema**: Il player mostra "Film non disponibile" anche se il film esiste.
+
+**Sintomi**:
+```
+❌ Film non disponibile su VixSrc
+```
+
+**Soluzioni**:
+1. **Verifica disponibilità**:
+   ```bash
+   curl "http://localhost:3000/api/player/check-availability?tmdbId=755898&type=movie"
+   ```
+
+2. **Controlla i log del server** per dettagli
+
+3. **Prova con un film diverso** (popolare e recente)
+
+4. **Verifica che il film esista su VixSrc**:
+   ```bash
+   curl -I "https://vixsrc.to/movie/755898"
+   ```
+
+### 4. Film non si vedono nella homepage
+
+**Problema**: La homepage è vuota o non mostra i film.
+
+**Sintomi**:
+- Homepage vuota
+- Sezioni senza contenuto
+- Loading infinito
+
+**Soluzioni**:
+1. **Pulisci la cache Next.js**:
+   ```bash
+   rm -rf .next
+   npm run dev
+   ```
+
+2. **Reinstalla le dipendenze**:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+3. **Verifica le API**:
+   ```bash
+   curl http://localhost:3000/api/tmdb/movies?type=popular
+   ```
+
+4. **Controlla la console del browser** per errori JavaScript
+
+### 5. Errori di Build
+
+**Problema**: `npm run build` fallisce con errori.
+
+**Sintomi**:
+```
+Error: Cannot find module './vendor-chunks/next.js'
+Dynamic server usage: Route couldn't be rendered statically
+```
+
+**Soluzioni**:
+1. **Pulisci tutto**:
+   ```bash
+   rm -rf .next node_modules package-lock.json
+   ```
+
+2. **Reinstalla**:
+   ```bash
+   npm install
+   ```
+
+3. **Pulisci cache npm**:
+   ```bash
+   npm cache clean --force
+   ```
+
+4. **Riavvia**:
+   ```bash
+   npm run dev
+   ```
+
+### 6. Errori Redis durante il Build
 
 **Problema**: Errori di connessione Redis durante `npm run build`.
 
@@ -36,11 +145,11 @@ console.log(document.querySelector('iframe').src);
 ```
 
 **Soluzione**: ✅ **RISOLTO**
-- Redis è ora disabilitato automaticamente durante il build
+- Redis è disabilitato automaticamente durante il build
 - Viene usata la cache in-memory come fallback
 - Nessuna configurazione Redis richiesta per lo sviluppo locale
 
-### 3. Errori Dynamic Server Usage
+### 7. Errori Dynamic Server Usage
 
 **Problema**: Errori durante il build per route che usano `request.url`.
 
@@ -50,182 +159,251 @@ Route /api/catalog/movies couldn't be rendered statically because it used `reque
 ```
 
 **Soluzione**: ✅ **RISOLTO**
-- Tutte le API routes ora usano `export const dynamic = 'force-dynamic'`
-- Sostituito `new URL(request.url)` con `request.nextUrl`
-- Build ora funziona senza errori
+- Tutte le route API sono marcate come dinamiche
+- Aggiunto `export const dynamic = 'force-dynamic'`
+- Build ora funziona correttamente
 
-### 4. Errori di Moduli Mancanti
+### 8. Iframe non si carica
 
-**Problema**: Errori "Cannot find module" durante lo sviluppo.
+**Problema**: L'iframe del player non si carica o mostra errori.
 
 **Sintomi**:
-```
-Error: Cannot find module './vendor-chunks/next.js'
-```
+- Iframe vuoto
+- Timeout di caricamento
+- Errori di cross-origin
 
 **Soluzioni**:
-1. **Pulisci la cache**:
+1. **Verifica l'URL VixSrc**:
    ```bash
-   rm -rf .next
-   rm -rf node_modules
-   npm install
+   curl -I "https://vixsrc.to/movie/755898"
    ```
 
-2. **Riavvia il server**:
+2. **Controlla i log del server** per dettagli
+
+3. **Prova con un film diverso**
+
+4. **Verifica la connessione internet**
+
+### 9. Errori di Navigazione
+
+**Problema**: I pulsanti play non navigano correttamente.
+
+**Sintomi**:
+- Click su play non funziona
+- Navigazione a pagina sbagliata
+- Errori di routing
+
+**Soluzioni**:
+1. **Verifica i componenti**:
+   - `MovieCard` usa `window.location.href`
+   - `HeroFilm` naviga correttamente
+
+2. **Controlla i log** per errori JavaScript
+
+3. **Verifica che le route esistano**:
+   - `/player/movie/[id]`
+   - `/player/tv/[id]`
+
+### 10. Errori di Stile/CSS
+
+**Problema**: Gli stili non si applicano correttamente.
+
+**Sintomi**:
+- Componenti senza stile
+- Layout rotto
+- Colori sbagliati
+
+**Soluzioni**:
+1. **Verifica Tailwind CSS**:
+   ```bash
+   npm run build
+   ```
+
+2. **Controlla i file CSS**:
+   - `app/globals.css`
+   - `tailwind.config.js`
+
+3. **Riavvia il server**:
    ```bash
    npm run dev
    ```
 
-### 5. Problemi di Performance
+## 🔍 Debug e Diagnostica
 
-**Problema**: Caricamento lento delle pagine o delle immagini.
+### 1. Log del Server
 
-**Soluzioni Implementate**:
-- ✅ **Lazy Loading**: Immagini caricate solo quando visibili
-- ✅ **Skeleton Loading**: Placeholder durante il caricamento
-- ✅ **API Parallelization**: Chiamate API in batch per migliori performance
-- ✅ **Rate Limiting**: Controllo delle chiamate API esterne
-- ✅ **Caching**: Cache in-memory e Redis (opzionale)
-
-### 6. Problemi di CORS
-
-**Problema**: Errori CORS quando si fanno chiamate API dirette dal browser.
-
-**Soluzione**: ✅ **RISOLTO**
-- Tutte le chiamate API esterne sono fatte dal server
-- Endpoint proxy per evitare problemi CORS
-- Client fa chiamate solo ai nostri endpoint interni
-
-## 🔍 Debug e Logging
-
-### Abilitare Log Dettagliati
-
-Il sistema usa un logger strutturato. Per abilitare log dettagliati:
-
-```javascript
-// In utils/logger.ts
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+I log mostrano informazioni dettagliate:
+```
+✅ TMDB_API_KEY configurata correttamente
+🎬 Recupero dettagli film TMDB per ID: 755898
+✅ Film trovato: La guerra dei mondi
+GET /api/tmdb/movies/755898 200 in 209ms
 ```
 
-### Log Disponibili
+### 2. Console del Browser
 
-- **INFO**: Operazioni normali (caricamento film, API calls)
-- **WARN**: Situazioni anomale ma gestibili
-- **ERROR**: Errori che richiedono attenzione
+Apri F12 → Console per vedere:
+- Errori JavaScript
+- Log di debug
+- Chiamate API
 
-### Esempi di Log
+### 3. Network Tab
 
-```javascript
-// Log di successo
-logger.info('Film popolari recuperati con successo', { count: 20 });
+F12 → Network per vedere:
+- Chiamate API
+- Tempi di risposta
+- Errori HTTP
 
-// Log di errore
-logger.error('Errore nel recupero film', { error: error.message });
-
-// Log di warning
-logger.warn('Redis not available, using in-memory cache', { error });
-```
-
-## 🛠️ Strumenti di Debug
-
-### 1. Browser DevTools
-
-**Console**: Controlla errori JavaScript
-**Network**: Verifica chiamate API e tempi di risposta
-**Performance**: Analizza performance del sito
-
-### 2. Next.js DevTools
+### 4. Test API
 
 ```bash
-# Avvia con debug mode
+# Test TMDB
+curl http://localhost:3000/api/tmdb/movies?type=popular
+
+# Test VixSrc
+curl "http://localhost:3000/api/player/check-availability?tmdbId=755898&type=movie"
+
+# Test Player
+curl http://localhost:3000/api/player/movie/755898
+```
+
+## 🛠️ Soluzioni Rapide
+
+### Reset Completo
+
+```bash
+# 1. Ferma il server
+Ctrl+C
+
+# 2. Pulisci tutto
+rm -rf .next node_modules package-lock.json
+
+# 3. Pulisci cache
+npm cache clean --force
+
+# 4. Reinstalla
+npm install
+
+# 5. Riavvia
+npm run dev
+```
+
+### Verifica Configurazione
+
+```bash
+# 1. Verifica variabili d'ambiente
+cat .env.local
+
+# 2. Testa API TMDB
+curl http://localhost:3000/api/tmdb/movies?type=popular
+
+# 3. Testa VixSrc
+curl "http://localhost:3000/api/player/check-availability?tmdbId=755898&type=movie"
+```
+
+### Debug Mode
+
+```bash
+# Server con debug
 npm run dev -- --debug
-```
 
-### 3. API Testing
-
-```bash
-# Test endpoint API
-curl http://localhost:3000/api/health
-curl http://localhost:3000/api/catalog/popular/movies
+# Build con debug
+npm run build -- --debug
 ```
 
 ## 📊 Monitoraggio
 
-### Health Check
+### Metriche Importanti
 
-Endpoint per verificare lo stato del sistema:
-```
-GET /api/health
-```
+- **API Response Time**: < 2 secondi
+- **Cache Hit Rate**: > 80%
+- **Error Rate**: < 5%
+- **Build Time**: < 30 secondi
 
-Risposta:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-09-03T15:00:00.000Z",
-  "services": {
-    "tmdb": "connected",
-    "vixsrc": "connected",
-    "redis": "disabled"
-  }
-}
+### Log da Monitorare
+
+```
+✅ TMDB_API_KEY configurata correttamente
+🎬 Film trovati: 20
+✅ Film disponibile su VixSrc
+✅ Iframe caricato con successo
 ```
 
-### Metriche Performance
+## 🚨 Errori Critici
 
-- **Build Time**: Tempo di build di produzione
-- **API Response Time**: Tempo di risposta delle API
-- **Cache Hit Rate**: Percentuale di hit della cache
+### 1. Server non si avvia
 
-## 🚀 Ottimizzazioni
+**Cause**:
+- Porta 3000 occupata
+- Dipendenze mancanti
+- Errori di configurazione
 
-### 1. Build Optimization
-
+**Soluzioni**:
 ```bash
-# Build di produzione ottimizzato
-npm run build
+# Cambia porta
+npm run dev -- --port 3001
 
-# Analizza bundle size
-npm run build -- --analyze
+# Reinstalla dipendenze
+rm -rf node_modules package-lock.json
+npm install
 ```
 
-### 2. Runtime Optimization
+### 2. Build fallisce completamente
 
-- **Image Optimization**: Usa `next/image` per immagini ottimizzate
-- **Code Splitting**: Caricamento lazy dei componenti
-- **Memoization**: `useMemo` e `useCallback` per componenti pesanti
+**Cause**:
+- Errori TypeScript
+- Dipendenze mancanti
+- Configurazione errata
 
-### 3. API Optimization
+**Soluzioni**:
+```bash
+# Pulisci tutto
+rm -rf .next node_modules package-lock.json
 
-- **Batch Processing**: Chiamate API in gruppi
-- **Rate Limiting**: Controllo frequenza chiamate
-- **Caching**: Cache intelligente per ridurre chiamate
+# Reinstalla
+npm install
+
+# Verifica configurazione
+npm run build
+```
+
+### 3. API non risponde
+
+**Cause**:
+- Chiavi API mancanti
+- Connessione internet
+- Rate limiting
+
+**Soluzioni**:
+1. Verifica `.env.local`
+2. Controlla connessione internet
+3. Aspetta e riprova
 
 ## 📞 Supporto
 
 ### Prima di Chiedere Aiuto
 
-1. ✅ Controlla questa guida
-2. ✅ Verifica i log nella console
-3. ✅ Testa con un film diverso
-4. ✅ Riavvia il server di sviluppo
-5. ✅ Pulisci cache e node_modules
+1. **Leggi questa guida** completamente
+2. **Prova le soluzioni** suggerite
+3. **Controlla i log** del server
+4. **Verifica la configurazione**
 
-### Informazioni Utili da Fornire
+### Informazioni da Fornire
 
+Quando chiedi aiuto, includi:
+- **Sistema operativo**
 - **Versione Node.js**: `node --version`
-- **Versione npm**: `npm --version`
-- **Sistema Operativo**: Windows/Mac/Linux
-- **Messaggi di errore completi**
-- **Passi per riprodurre il problema**
+- **Log del server** completi
+- **Messaggi di errore** esatti
+- **Passi per riprodurre** il problema
 
 ### Risorse Utili
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TMDB API Documentation](https://developers.themoviedb.org/)
-- [VixSrc Documentation](https://vixsrc.to/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [README Principale](../README.md)
+- [Setup Guide](../SETUP.md)
+- [API Documentation](./api-integration.md)
+- [Player System](./player-system.md)
 
 ---
 
-**Nota**: La maggior parte dei problemi comuni sono già stati risolti nelle ultime versioni. Se incontri un problema non documentato, apri una issue su GitHub con tutti i dettagli necessari.
+**TheHustlePlace Troubleshooting** - *Risoluzione problemi completa* 🔧✨

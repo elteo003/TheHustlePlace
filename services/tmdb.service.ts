@@ -15,18 +15,18 @@ export class TMDBService {
     private async rateLimit(): Promise<void> {
         const now = Date.now()
         const timeSinceLastRequest = now - this.lastRequestTime
-        
+
         if (timeSinceLastRequest < this.RATE_LIMIT_DELAY) {
             await new Promise(resolve => setTimeout(resolve, this.RATE_LIMIT_DELAY - timeSinceLastRequest))
         }
-        
+
         this.lastRequestTime = Date.now()
     }
 
     // Retry logic helper
     private async makeRequestWithRetry<T>(requestFn: () => Promise<T>): Promise<T> {
         let lastError: Error | null = null
-        
+
         for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
             try {
                 await this.rateLimit()
@@ -34,20 +34,20 @@ export class TMDBService {
             } catch (error) {
                 lastError = error as Error
                 logger.warn(`TMDB API request failed (attempt ${attempt}/${this.MAX_RETRIES})`, { error })
-                
+
                 if (attempt < this.MAX_RETRIES) {
                     await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY * attempt))
                 }
             }
         }
-        
+
         throw lastError || new Error('TMDB API request failed after all retries')
     }
 
     // Metodo per ottenere film "now playing" (appena usciti al cinema)
     async getNowPlayingMovies(): Promise<Movie[]> {
         try {
-            const response = await this.makeRequestWithRetry(() => 
+            const response = await this.makeRequestWithRetry(() =>
                 axios.get(`${this.TMDB_BASE_URL}/movie/now_playing`, {
                     params: {
                         api_key: this.TMDB_API_KEY,
@@ -243,7 +243,7 @@ export class TMDBService {
         try {
             const currentYear = new Date().getFullYear()
             const twoYearsAgo = currentYear - 2
-            
+
             const response = await axios.get(`${this.TMDB_BASE_URL}/discover/movie`, {
                 params: {
                     api_key: this.TMDB_API_KEY,
@@ -317,6 +317,44 @@ export class TMDBService {
         } catch (error) {
             logger.error('Errore nella ricerca film TMDB', { error, query })
             return []
+        }
+    }
+
+    // Metodo per ottenere le serie TV top rated
+    async getTopRatedTVShows(limit: number = 10): Promise<{ results: TVShow[] }> {
+        try {
+            const response = await axios.get(`${this.TMDB_BASE_URL}/tv/top_rated`, {
+                params: {
+                    api_key: this.TMDB_API_KEY,
+                    language: 'it-IT',
+                    page: 1
+                }
+            })
+
+            if (response.status === 200 && response.data.results) {
+                const tvShows = response.data.results.slice(0, limit).map((tv: any) => ({
+                    id: tv.id,
+                    name: tv.name || `Serie TV ${tv.id}`,
+                    overview: tv.overview || 'Descrizione non disponibile',
+                    first_air_date: tv.first_air_date || '',
+                    vote_average: tv.vote_average || 0,
+                    vote_count: tv.vote_count || 0,
+                    genre_ids: tv.genre_ids || [],
+                    adult: tv.adult || false,
+                    backdrop_path: tv.backdrop_path || '/placeholder-movie.svg',
+                    origin_country: tv.origin_country || [],
+                    original_language: tv.original_language || 'en',
+                    original_name: tv.original_name || tv.name,
+                    popularity: tv.popularity || 0,
+                    poster_path: tv.poster_path || '/placeholder-movie.svg',
+                    tmdb_id: tv.id
+                }))
+                return { results: tvShows }
+            }
+            return { results: [] }
+        } catch (error) {
+            logger.error('Errore nel recupero serie TV top rated da TMDB', { error })
+            return { results: [] }
         }
     }
 

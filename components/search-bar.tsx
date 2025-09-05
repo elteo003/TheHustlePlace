@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, X } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
+import { getTMDBImageUrl } from '@/lib/tmdb'
 
 interface SearchResult {
     id: number
@@ -134,7 +135,7 @@ export function SearchBar() {
             {/* Barra di ricerca */}
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
+                    <Search className="h-5 w-5 text-gray-300" />
                 </div>
                 <input
                     ref={inputRef}
@@ -144,24 +145,24 @@ export function SearchBar() {
                     onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
                     onKeyPress={handleKeyPress}
                     placeholder="Cerca film e serie TV..."
-                    className="w-full pl-12 pr-12 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
                 />
                 {query && (
                     <button
                         onClick={clearSearch}
                         className="absolute inset-y-0 right-0 pr-4 flex items-center"
                     >
-                        <X className="h-5 w-5 text-gray-400 hover:text-white" />
+                        <X className="h-5 w-5 text-gray-300 hover:text-white transition-colors" />
                     </button>
                 )}
             </div>
 
             {/* Dropdown risultati */}
             {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto">
                     {isLoading ? (
-                        <div className="p-4 text-center text-gray-400">
-                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <div className="p-4 text-center text-gray-300">
+                            <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                             Ricerca in corso...
                         </div>
                     ) : results.length > 0 ? (
@@ -170,12 +171,12 @@ export function SearchBar() {
                                 <button
                                     key={`${result.type}-${result.id}`}
                                     onClick={() => handleResultClick(result)}
-                                    className="w-full px-4 py-3 flex items-center space-x-3 hover:bg-gray-800 transition-colors"
+                                    className="w-full px-4 py-3 flex items-center space-x-3 hover:bg-white/10 transition-colors"
                                 >
                                     <div className="flex-shrink-0 w-12 h-16 bg-gray-700 rounded overflow-hidden">
                                         {result.poster_path && result.poster_path !== '/placeholder-movie.svg' ? (
                                             <img
-                                                src={result.poster_path}
+                                                src={getTMDBImageUrl(result.poster_path, 'w500')}
                                                 alt={result.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -187,7 +188,7 @@ export function SearchBar() {
                                     </div>
                                     <div className="flex-1 text-left">
                                         <div className="text-white font-medium">{result.title}</div>
-                                        <div className="text-sm text-gray-400">
+                                        <div className="text-sm text-gray-300">
                                             {result.type === 'movie' ? 'Film' : 'Serie TV'}
                                             {result.release_date && ` • ${new Date(result.release_date).getFullYear()}`}
                                             {result.first_air_date && ` • ${new Date(result.first_air_date).getFullYear()}`}
@@ -197,7 +198,7 @@ export function SearchBar() {
                             ))}
                         </div>
                     ) : query.length >= 2 ? (
-                        <div className="p-4 text-center text-gray-400">
+                        <div className="p-4 text-center text-gray-300">
                             Nessun risultato trovato per "{query}"
                         </div>
                     ) : null}

@@ -10,14 +10,16 @@ export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
     return (
-        <nav className="navbar-blur fixed top-0 left-0 right-0 z-50 px-4 py-3">
+        <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/20 backdrop-blur-md border-b border-white/10">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">H</span>
+                <Link href="/" className="flex items-center space-x-3 group">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
+                        <span className="text-white font-bold text-xl">H</span>
                     </div>
-                    <span className="text-xl font-bold text-gradient">TheHustlePlace</span>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-500 transition-all duration-300">
+                        TheHustlePlace
+                    </span>
                 </Link>
 
                 {/* Navigation Links */}
@@ -25,20 +27,25 @@ export function Navbar() {
                     <Link href="/" className="text-white hover:text-blue-400 transition-colors">
                         Home
                     </Link>
-                    <Link href="/catalog" className="text-white hover:text-blue-400 transition-colors">
-                        Catalogo
-                    </Link>
                     <Link href="/movies" className="text-white hover:text-blue-400 transition-colors">
                         Film
                     </Link>
                     <Link href="/tv" className="text-white hover:text-blue-400 transition-colors">
                         Serie TV
                     </Link>
+                    <Link href="/anime" className="text-white hover:text-blue-400 transition-colors">
+                        Anime
+                    </Link>
+                    <Link href="/request" className="text-white hover:text-blue-400 transition-colors">
+                        Richiedi un titolo
+                    </Link>
                 </div>
 
                 {/* Search Bar */}
                 <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
-                    <SearchBar />
+                    <div className="w-full">
+                        <SearchBar />
+                    </div>
                 </div>
 
                 {/* User Actions */}
@@ -72,13 +79,6 @@ export function Navbar() {
                                 Home
                             </Link>
                             <Link
-                                href="/catalog"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
-                                onClick={() => setIsMenuOpen(false)}
-                            >
-                                Catalogo
-                            </Link>
-                            <Link
                                 href="/movies"
                                 className="block text-white hover:text-blue-400 transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
@@ -91,6 +91,20 @@ export function Navbar() {
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Serie TV
+                            </Link>
+                            <Link
+                                href="/anime"
+                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Anime
+                            </Link>
+                            <Link
+                                href="/request"
+                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Richiedi un titolo
                             </Link>
                         </div>
                     </div>
