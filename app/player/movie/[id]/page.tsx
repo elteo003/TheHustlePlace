@@ -39,6 +39,7 @@ export default function MoviePlayerPage() {
     const [useEmbed, setUseEmbed] = useState(false)
     const [iframeError, setIframeError] = useState(false)
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+    const [iframeLoaded, setIframeLoaded] = useState(false)
 
     useEffect(() => {
         fetchMovieDetails()
@@ -50,9 +51,19 @@ export default function MoviePlayerPage() {
         }
     }, [movie])
 
+    // Cleanup timeout quando il componente viene smontato
+    useEffect(() => {
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId)
+                console.log('🧹 Timeout pulito al dismount')
+            }
+        }
+    }, [timeoutId])
+
     // Timeout per rilevare se l'iframe non si carica (aumentato a 30 secondi)
     useEffect(() => {
-        if (useEmbed && !iframeError) {
+        if (useEmbed && !iframeError && !iframeLoaded) {
             const timeout = setTimeout(() => {
                 console.log('⏰ Timeout: iframe non caricato entro 30 secondi')
                 setIframeError(true)
@@ -63,12 +74,24 @@ export default function MoviePlayerPage() {
                 })
             }, 30000) // 30 secondi per dare più tempo a vixsrc.to
 
+            // Salva il timeout ID per poterlo cancellare
+            setTimeoutId(timeout)
+
             return () => clearTimeout(timeout)
         }
-    }, [useEmbed, iframeError])
+    }, [useEmbed, iframeError, iframeLoaded])
 
     const fetchMovieDetails = async () => {
         try {
+            // Reset degli stati quando si carica un nuovo film
+            setIframeLoaded(false)
+            setIframeError(false)
+            setUseEmbed(false)
+            if (timeoutId) {
+                clearTimeout(timeoutId)
+                setTimeoutId(null)
+            }
+
             console.log('🔍 Recupero dettagli film per ID:', movieId)
 
             // Usa direttamente l'API TMDB per ottenere i dettagli del film
@@ -281,48 +304,40 @@ export default function MoviePlayerPage() {
                                     console.log('✅ Iframe caricato con successo')
                                     console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
 
-                                    // Clear timeout se l'iframe si carica correttamente
+                                    // Cancella il timeout immediatamente quando l'iframe si carica
                                     if (timeoutId) {
                                         clearTimeout(timeoutId)
                                         setTimeoutId(null)
+                                        console.log('✅ Timeout cancellato - iframe caricato')
                                     }
 
-                                    // Aspetta un po' per permettere al contenuto di caricarsi
+                                    // Marca l'iframe come caricato
+                                    setIframeLoaded(true)
+                                    setIframeError(false)
+
+                                    // Per VixSrc, assumiamo che se l'iframe si carica senza errori, il contenuto è disponibile
+                                    // Non possiamo accedere al contentDocument per motivi di cross-origin
+                                    console.log('✅ Player VixSrc caricato correttamente')
+
+                                    // Mostra toast di successo dopo un breve delay per evitare spam
                                     setTimeout(() => {
-                                        try {
-                                            const iframe = e.target as HTMLIFrameElement
-                                            if (iframe && iframe.contentDocument) {
-                                                // Se riusciamo ad accedere al contenuto, probabilmente è un errore 404
-                                                console.log('⚠️ Possibile errore 404 - iframe accessibile')
-                                                setIframeError(true)
-                                                toast({
-                                                    title: "Film non disponibile",
-                                                    description: "Il film non è disponibile su VixSrc",
-                                                    variant: "destructive"
-                                                })
-                                            } else {
-                                                // Se non riusciamo ad accedere, probabilmente è il player VixSrc
-                                                console.log('✅ Player VixSrc caricato correttamente')
-                                                setIframeError(false)
-                                                toast({
-                                                    title: "Player caricato",
-                                                    description: "Il player di vixsrc.to è pronto"
-                                                })
-                                            }
-                                        } catch (error) {
-                                            // Se c'è un errore di accesso, probabilmente è il player VixSrc (cross-origin)
-                                            console.log('✅ Player VixSrc caricato (cross-origin)')
-                                            setIframeError(false)
-                                            toast({
-                                                title: "Player caricato",
-                                                description: "Il player di vixsrc.to è pronto"
-                                            })
-                                        }
-                                    }, 3000) // Aspetta 3 secondi per permettere il caricamento
+                                        toast({
+                                            title: "Player caricato",
+                                            description: "Il player di vixsrc.to è pronto"
+                                        })
+                                    }, 1000)
                                 }}
                                 onError={(e) => {
                                     console.error('❌ Errore nel caricamento iframe:', e)
                                     console.log('🔗 URL che ha fallito:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
+
+                                    // Cancella il timeout anche in caso di errore
+                                    if (timeoutId) {
+                                        clearTimeout(timeoutId)
+                                        setTimeoutId(null)
+                                        console.log('✅ Timeout cancellato - errore iframe')
+                                    }
+
                                     setIframeError(true)
                                     toast({
                                         title: "Errore player",
