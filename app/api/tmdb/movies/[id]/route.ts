@@ -19,8 +19,11 @@ export async function GET(
 
         console.log('🎬 Recupero dettagli film TMDB per ID:', movieId)
 
-        // Ottieni i dettagli del film da TMDB
-        const movieDetails = await tmdbWrapperService.getMovieDetails(movieId)
+        // Ottieni i dettagli del film e i video da TMDB
+        const [movieDetails, movieTrailers] = await Promise.all([
+            tmdbWrapperService.getMovieDetails(movieId),
+            tmdbWrapperService.getMovieTrailers(movieId)
+        ])
 
         if (!movieDetails) {
             return NextResponse.json({
@@ -30,10 +33,14 @@ export async function GET(
         }
 
         console.log('✅ Film trovato:', movieDetails.title)
+        console.log('🎬 Video trovati:', movieTrailers?.results?.length || 0)
 
         return NextResponse.json({
             success: true,
-            data: movieDetails
+            data: {
+                ...movieDetails,
+                videos: movieTrailers || { results: [] }
+            }
         })
 
     } catch (error) {

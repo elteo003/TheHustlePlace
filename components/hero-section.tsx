@@ -1,21 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
-import { TMDBMovie, getTrendingMoviesDay, getMovieVideos, findMainTrailer, getTMDBImageUrl, getYouTubeEmbedUrl } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 
-export function HeroSection() {
+interface HeroSectionProps {
+    onControlsVisibilityChange?: (visible: boolean) => void
+    navbarHovered?: boolean
+}
+
+export function HeroSection({ onControlsVisibilityChange, navbarHovered = false }: HeroSectionProps) {
     const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
     const [trailer, setTrailer] = useState<string | null>(null)
-    const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isHovered, setIsHovered] = useState(false)
     const [isMuted, setIsMuted] = useState(true)
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+    const [isScrolled, setIsScrolled] = useState(false)
+    const [showControls, setShowControls] = useState(true)
+    const [initialLoad, setInitialLoad] = useState(true)
+    const [currentMovieIndex, setCurrentMovieIndex] = useState(0)
+    const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
+    const [autoChangeTimer, setAutoChangeTimer] = useState<NodeJS.Timeout | null>(null)
+
+    // Fallback movie
+    const fallbackMovie: TMDBMovie = {
+        id: 157336,
+        title: 'Interstellar',
+        original_title: 'Interstellar',
+        overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
+        poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
+        backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
+        release_date: '2014-11-05',
+        vote_average: 8.46,
+        vote_count: 37772,
+        popularity: 46.5648,
+        adult: false,
+        video: false,
+        genre_ids: [18, 878],
+        original_language: 'en'
+    }
 
     useEffect(() => {
-        loadFeaturedMovie()
+        loadPopularMovies()
+        // Imposta initialLoad a false dopo 2 secondi per permettere la scomparsa automatica
+        const timer = setTimeout(() => {
+            setInitialLoad(false)
+        }, 2000)
+        return () => clearTimeout(timer)
     }, [])
 
     useEffect(() => {
@@ -23,46 +56,263 @@ export function HeroSection() {
             if (hoverTimeout) {
                 clearTimeout(hoverTimeout)
             }
+            if (autoChangeTimer) {
+                clearTimeout(autoChangeTimer)
+            }
         }
-    }, [hoverTimeout])
+    }, [hoverTimeout, autoChangeTimer])
+
+    // Funzioni per gestire l'hover
+    const handleMouseEnter = useCallback(() => {
+        if (hoverTimeout) {
+            clearTimeout(hoverTimeout)
+            setHoverTimeout(null)
+        }
+        setIsHovered(true)
+        setShowControls(true)
+        onControlsVisibilityChange?.(true)
+    }, [hoverTimeout, onControlsVisibilityChange])
+
+    const handleMouseLeave = useCallback(() => {
+        const timeout = setTimeout(() => {
+            setIsHovered(false)
+        }, 100) // Piccolo delay per evitare flickering
+        setHoverTimeout(timeout)
+
+        if (!isScrolled && !navbarHovered && !initialLoad) {
+            const hideTimeout = setTimeout(() => {
+                setShowControls(false)
+                onControlsVisibilityChange?.(false)
+            }, 3000)
+            setHoverTimeout(hideTimeout)
+        }
+    }, [isScrolled, navbarHovered, initialLoad, onControlsVisibilityChange])
+
+    // Scroll detection per nascondere/mostrare i controlli
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY
+            const heroHeight = window.innerHeight
+
+            // Se siamo nella hero section (primi 100vh)
+            if (scrollY < heroHeight) {
+                setIsScrolled(false)
+                // Nascondi i controlli dopo 3 secondi se non c'è hover e non c'è hover sulla navbar
+                // Ma solo se non è il caricamento iniziale
+                if (!isHovered && !navbarHovered && !initialLoad) {
+                    const timeout = setTimeout(() => {
+                        setShowControls(false)
+                        onControlsVisibilityChange?.(false)
+                    }, 3000)
+                    return () => clearTimeout(timeout)
+                }
+            } else {
+                setIsScrolled(true)
+                setShowControls(true)
+                onControlsVisibilityChange?.(true)
+            }
+        }
+
+        window.addEventListener('scroll', handleScroll)
+        window.addEventListener('mouseenter', handleMouseEnter)
+        window.addEventListener('mouseleave', handleMouseLeave)
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll)
+            window.removeEventListener('mouseenter', handleMouseEnter)
+            window.removeEventListener('mouseleave', handleMouseLeave)
+        }
+    }, [isHovered, isScrolled, navbarHovered, initialLoad, onControlsVisibilityChange])
+
+    // Gestisce l'hover della navbar
+    useEffect(() => {
+        if (navbarHovered) {
+            setShowControls(true)
+            onControlsVisibilityChange?.(true)
+        } else if (!isScrolled) {
+            // Se non c'è hover sulla navbar e non siamo scrollati, nascondi dopo 3 secondi
+            const timeout = setTimeout(() => {
+                setShowControls(false)
+                onControlsVisibilityChange?.(false)
+            }, 3000)
+            return () => clearTimeout(timeout)
+        }
+    }, [navbarHovered, isScrolled, onControlsVisibilityChange])
 
     const loadFeaturedMovie = async () => {
         try {
-            setLoading(true)
             setError(null)
 
-            // Recupera film trending del giorno
-            const trendingResponse = await getTrendingMoviesDay()
-            const movies = trendingResponse.results
+            // Carica un film trending reale da TMDB
+            const response = await fetch('/api/catalog/popular/movies')
+            const data = await response.json()
 
-            if (movies.length === 0) {
-                throw new Error('Nessun film trending trovato')
-            }
+            console.log('Hero Section - Dati API ricevuti:', data)
 
-            // Seleziona un film random
-            const randomIndex = Math.floor(Math.random() * movies.length)
-            const selectedMovie = movies[randomIndex]
-            setFeaturedMovie(selectedMovie)
+            if (data.success && data.data?.length > 0) {
+                // Prova diversi film finché non ne trova uno con trailer
+                let featuredMovie = null
+                let trailerFound = false
 
-            // Recupera il trailer
-            try {
-                const videosResponse = await getMovieVideos(selectedMovie.id)
-                const mainTrailer = findMainTrailer(videosResponse.results)
+                for (let i = 0; i < Math.min(5, data.data.length); i++) {
+                    const movie = data.data[i]
+                    console.log(`Hero Section - Provando film ${i + 1}:`, movie.title)
 
-                if (mainTrailer) {
-                    setTrailer(mainTrailer.key)
+                    try {
+                        const trailerResponse = await fetch(`/api/tmdb/movies/${movie.id}`)
+                        const trailerData = await trailerResponse.json()
+
+                        if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
+                            const mainTrailer = findMainTrailer(trailerData.data.videos.results)
+                            if (mainTrailer) {
+                                featuredMovie = movie
+                                setFeaturedMovie(movie)
+                                setTrailer(mainTrailer.key)
+                                console.log('Hero Section - Film con trailer trovato:', movie.title)
+                                console.log('Hero Section - Trailer impostato:', mainTrailer.key)
+                                trailerFound = true
+                                break
+                            }
+                        }
+                    } catch (trailerErr) {
+                        console.log(`Hero Section - Errore per film ${movie.title}:`, trailerErr)
+                    }
                 }
-            } catch (trailerError) {
-                console.warn('Trailer non trovato:', trailerError)
-                // Continua senza trailer
+
+                // Se non trova nessun film con trailer, usa il primo
+                if (!trailerFound && data.data.length > 0) {
+                    featuredMovie = data.data[0]
+                    setFeaturedMovie(featuredMovie)
+                    console.log('Hero Section - Nessun trailer trovato, usando primo film:', featuredMovie.title)
+                }
+            } else {
+                // Fallback con film hardcoded se l'API non funziona
+                const fallbackMovie: TMDBMovie = {
+                    id: 157336,
+                    title: 'Interstellar',
+                    original_title: 'Interstellar',
+                    overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
+                    poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
+                    backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
+                    release_date: '2014-11-05',
+                    vote_average: 8.46,
+                    vote_count: 37772,
+                    popularity: 46.5648,
+                    adult: false,
+                    video: false,
+                    genre_ids: [18, 878],
+                    original_language: 'en'
+                }
+                setFeaturedMovie(fallbackMovie)
             }
 
         } catch (err) {
             console.error('Errore nel caricamento film hero:', err)
-            setError('Errore nel caricamento del film in evidenza')
-        } finally {
-            setLoading(false)
+            // Fallback con film hardcoded anche in caso di errore
+            const fallbackMovie: TMDBMovie = {
+                id: 157336,
+                title: 'Interstellar',
+                original_title: 'Interstellar',
+                overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
+                poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
+                backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
+                release_date: '2014-11-05',
+                vote_average: 8.46,
+                vote_count: 37772,
+                popularity: 46.5648,
+                adult: false,
+                video: false,
+                genre_ids: [18, 878],
+                original_language: 'en'
+            }
+            setFeaturedMovie(fallbackMovie)
         }
+    }
+
+    const loadPopularMovies = async () => {
+        try {
+            setError(null)
+            console.log('🎬 Caricando film popolari...')
+            const response = await fetch('/api/catalog/popular/movies')
+            const data = await response.json()
+
+            if (data.success && data.data?.length > 0) {
+                console.log(`✅ Caricati ${data.data.length} film popolari`)
+                setPopularMovies(data.data)
+                setCurrentMovieIndex(0)
+                loadMovieAtIndex(0, data.data)
+            } else {
+                console.log('❌ Nessun film popolare trovato, usando fallback')
+                setFeaturedMovie(fallbackMovie)
+            }
+        } catch (err) {
+            console.error('❌ Errore nel caricamento dei film popolari:', err)
+            setFeaturedMovie(fallbackMovie)
+        }
+    }
+
+    const loadMovieAtIndex = async (index: number, movies: TMDBMovie[]) => {
+        if (index >= movies.length) {
+            // Se arriviamo alla fine, ricomincia dall'inizio
+            loadMovieAtIndex(0, movies)
+            return
+        }
+
+        const movie = movies[index]
+        try {
+            const trailerResponse = await fetch(`/api/tmdb/movies/${movie.id}`)
+            const trailerData = await trailerResponse.json()
+
+            if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
+                const mainTrailer = findMainTrailer(trailerData.data.videos.results)
+                if (mainTrailer) {
+                    console.log(`🎬 Film caricato: ${movie.title} con trailer: ${mainTrailer.key}`)
+                    setFeaturedMovie(movie)
+                    setTrailer(mainTrailer.key)
+                    startAutoChangeTimer()
+                    return
+                } else {
+                    console.log(`⚠️ Film ${movie.title} ha video ma nessun trailer valido`)
+                }
+            } else {
+                console.log(`⚠️ Film ${movie.title} non ha video disponibili`)
+            }
+
+            // Se non trova trailer, prova il prossimo film
+            loadMovieAtIndex(index + 1, movies)
+        } catch (err) {
+            console.error(`Errore per film ${movie.title}:`, err)
+            loadMovieAtIndex(index + 1, movies)
+        }
+    }
+
+    const startAutoChangeTimer = () => {
+        // Pulisce timer esistenti
+        if (autoChangeTimer) {
+            clearTimeout(autoChangeTimer)
+        }
+
+        console.log('🎬 Avviando timer per cambio automatico film in 30 secondi...')
+
+        // Imposta timer per cambio automatico (30 secondi per test)
+        const timer = setTimeout(() => {
+            console.log('⏰ Timer scaduto, cambiando film...')
+            changeToNextMovie()
+        }, 30000) // 30 secondi per test
+
+        setAutoChangeTimer(timer)
+    }
+
+    const changeToNextMovie = () => {
+        if (popularMovies.length === 0) {
+            console.log('❌ Nessun film popolare disponibile')
+            return
+        }
+
+        const nextIndex = (currentMovieIndex + 1) % popularMovies.length
+        console.log(`🔄 Cambiando da film ${currentMovieIndex} a ${nextIndex} (${popularMovies[nextIndex]?.title})`)
+        setCurrentMovieIndex(nextIndex)
+        loadMovieAtIndex(nextIndex, popularMovies)
     }
 
     const handleWatchNow = () => {
@@ -76,30 +326,7 @@ export function HeroSection() {
         console.log('More info per:', featuredMovie?.title)
     }
 
-    const handleMouseEnter = () => {
-        if (hoverTimeout) {
-            clearTimeout(hoverTimeout)
-            setHoverTimeout(null)
-        }
-        setIsHovered(true)
-    }
 
-    const handleMouseLeave = () => {
-        const timeout = setTimeout(() => {
-            setIsHovered(false)
-        }, 100) // Piccolo delay per evitare flickering
-        setHoverTimeout(timeout)
-    }
-
-    if (loading) {
-        return (
-            <div className="relative h-screen bg-black">
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-                </div>
-            </div>
-        )
-    }
 
     if (error || !featuredMovie) {
         return (
@@ -116,9 +343,9 @@ export function HeroSection() {
     }
 
     return (
-        <div className="relative h-screen overflow-hidden">
+        <div className="relative h-screen w-full overflow-hidden -mt-20">
             {/* Background Video/Image */}
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 w-full h-full">
                 {trailer ? (
                     <iframe
                         src={getYouTubeEmbedUrl(trailer, true, isMuted)}
@@ -126,8 +353,13 @@ export function HeroSection() {
                         allow="autoplay; encrypted-media; fullscreen"
                         allowFullScreen
                         style={{
-                            transform: 'scale(1.1)',
-                            filter: isHovered ? 'brightness(0.9)' : 'brightness(0.5)'
+                            filter: isHovered ? 'brightness(0.9)' : 'brightness(0.5)',
+                            width: '100vw',
+                            height: '100vh',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%) scale(1.1)'
                         }}
                     />
                 ) : (
@@ -135,17 +367,21 @@ export function HeroSection() {
                         className="w-full h-full bg-cover bg-center transition-all duration-500"
                         style={{
                             backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
-                            filter: isHovered ? 'brightness(0.8)' : 'brightness(0.4)'
+                            filter: isHovered ? 'brightness(0.8)' : 'brightness(0.4)',
+                            width: '100vw',
+                            height: '100vh',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center center'
                         }}
                     />
                 )}
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls || navbarHovered ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${showControls || navbarHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingTop: '80px' }}>
                 <div className="container mx-auto px-4">
                     <div
                         className="max-w-2xl"
@@ -208,6 +444,16 @@ export function HeroSection() {
                                     {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
                                 </Button>
                             )}
+
+                            {/* Next Movie Button */}
+                            <Button
+                                onClick={changeToNextMovie}
+                                variant="outline"
+                                size="lg"
+                                className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                            >
+                                Prossimo Film
+                            </Button>
 
                             <Button
                                 variant="ghost"

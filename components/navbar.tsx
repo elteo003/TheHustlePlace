@@ -6,11 +6,30 @@ import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/search-bar'
 import { Menu } from 'lucide-react'
 
-export function Navbar() {
+interface NavbarProps {
+    isVisible?: boolean
+    onHoverChange?: (hovered: boolean) => void
+}
+
+export function Navbar({ isVisible = true, onHoverChange }: NavbarProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isHovered, setIsHovered] = useState(false)
+
+    // La navbar è visibile se isVisible è true (gestito dalla homepage)
+    const shouldShow = isVisible
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/20 backdrop-blur-md border-b border-white/10">
+        <nav
+            className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/20 backdrop-blur-md border-b border-white/10 transition-all duration-500 ${shouldShow ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
+            onMouseEnter={() => {
+                setIsHovered(true)
+                onHoverChange?.(true)
+            }}
+            onMouseLeave={() => {
+                setIsHovered(false)
+                onHoverChange?.(false)
+            }}
+        >
             <div className="max-w-7xl mx-auto flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center space-x-3 group">
@@ -24,19 +43,19 @@ export function Navbar() {
 
                 {/* Navigation Links */}
                 <div className="hidden md:flex items-center space-x-8">
-                    <Link href="/" className="text-white hover:text-blue-400 transition-colors">
+                    <Link href="/" className="text-gray-300 hover:text-white transition-colors">
                         Home
                     </Link>
-                    <Link href="/movies" className="text-white hover:text-blue-400 transition-colors">
+                    <Link href="/movies" className="text-gray-300 hover:text-white transition-colors">
                         Film
                     </Link>
-                    <Link href="/tv" className="text-white hover:text-blue-400 transition-colors">
+                    <Link href="/tv" className="text-gray-300 hover:text-white transition-colors">
                         Serie TV
                     </Link>
-                    <Link href="/anime" className="text-white hover:text-blue-400 transition-colors">
+                    <Link href="/anime" className="text-gray-300 hover:text-white transition-colors">
                         Anime
                     </Link>
-                    <Link href="/request" className="text-white hover:text-blue-400 transition-colors">
+                    <Link href="/request" className="text-gray-300 hover:text-white transition-colors">
                         Richiedi un titolo
                     </Link>
                 </div>
@@ -73,35 +92,35 @@ export function Navbar() {
                         <div className="space-y-2">
                             <Link
                                 href="/"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                className="block text-gray-300 hover:text-white transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Home
                             </Link>
                             <Link
                                 href="/movies"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                className="block text-gray-300 hover:text-white transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Film
                             </Link>
                             <Link
                                 href="/tv"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                className="block text-gray-300 hover:text-white transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Serie TV
                             </Link>
                             <Link
                                 href="/anime"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                className="block text-gray-300 hover:text-white transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Anime
                             </Link>
                             <Link
                                 href="/request"
-                                className="block text-white hover:text-blue-400 transition-colors py-2"
+                                className="block text-gray-300 hover:text-white transition-colors py-2"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 Richiedi un titolo

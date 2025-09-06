@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import { MovieCard } from './movie-card'
 import { Top10MovieCard } from './top-10-movie-card'
-import { TMDBMovie, TMDBTVShow, fetchFromTMDB, getTMDBImageUrl } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl } from '@/lib/tmdb'
 import { Top10Content } from '@/types'
 
 interface MoviesSectionProps {
@@ -22,60 +21,43 @@ export function MoviesSection({
     const [top10Content, setTop10Content] = useState<Top10Content[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isMounted, setIsMounted] = useState(false)
 
-    useEffect(() => {
-        setIsMounted(true)
-        fetchMovies()
-    }, [type])
-
-    const fetchMovies = async () => {
+    const fetchMovies = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
 
+            let apiUrl = ''
+
+            // Mappa i tipi di sezione con le API corrette
+            switch (type) {
+                case 'top10':
+                    apiUrl = '/api/catalog/top-10'
+                    break
+                case 'recent':
+                    apiUrl = '/api/catalog/recent'
+                    break
+                case 'trending':
+                    apiUrl = '/api/catalog/popular/movies' // Usa popular come trending
+                    break
+                case 'upcoming':
+                    apiUrl = '/api/catalog/now-playing' // Usa now-playing come upcoming
+                    break
+                default:
+                    throw new Error(`Tipo di sezione non supportato: ${type}`)
+            }
+
+            const response = await fetch(apiUrl)
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Errore nel caricamento dei dati')
+            }
+
             if (type === 'top10') {
-                // Top 10 mista (film e serie TV) - usa l'API interna
-                const response = await fetch('/api/catalog/top-10')
-                if (!response.ok) {
-                    throw new Error('Errore nel recupero della top 10')
-                }
-                const data = await response.json()
-                if (data.success) {
-                    setTop10Content(data.data)
-                } else {
-                    throw new Error(data.error || 'Errore nel recupero della top 10')
-                }
+                setTop10Content(data.data || [])
             } else {
-                let moviesData: TMDBMovie[] = []
-
-                switch (type) {
-                    case 'recent':
-                        // Aggiunti di recente - movie/now_playing ordinato per release_date
-                        const nowPlayingResponse = await fetchFromTMDB('movie/now_playing')
-                        moviesData = (nowPlayingResponse as any).results
-                            .sort((a: any, b: any) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
-                        break
-
-                    case 'trending':
-                        // Titoli del momento - trending/all/week
-                        const trendingWeekResponse = await fetchFromTMDB('trending/all/week')
-                        // Filtra solo i film (escludi serie TV per questa sezione)
-                        moviesData = (trendingWeekResponse as any).results
-                            .filter((item: any): item is TMDBMovie => 'title' in item)
-                            .slice(0, 20)
-                        break
-
-                    case 'upcoming':
-                        // In arrivo - movie/upcoming ordinato per release_date crescente
-                        const upcomingResponse = await fetchFromTMDB('movie/upcoming')
-                        moviesData = (upcomingResponse as any).results
-                            .sort((a: any, b: any) => new Date(a.release_date).getTime() - new Date(b.release_date).getTime())
-                            .slice(0, 20)
-                        break
-                }
-
-                setMovies(moviesData)
+                setMovies(data.data?.results || data.data || [])
             }
         } catch (err) {
             setError('Errore nel caricamento dei contenuti')
@@ -83,28 +65,71 @@ export function MoviesSection({
         } finally {
             setLoading(false)
         }
+    }, [type])
+
+    useEffect(() => {
+        fetchMovies()
+    }, [fetchMovies])
+
+    // Renderizza le card direttamente per permettere le animazioni hover
+    const renderTop10Cards = () => {
+        return top10Content.map((content, index) => (
+            <div key={`${content.type}-${content.id}`} className="flex-shrink-0 w-48">
+                <Top10MovieCard
+                    movie={{
+                        id: content.id,
+                        title: content.title,
+                        overview: content.overview,
+                        poster_path: content.poster_path || null,
+                        backdrop_path: content.backdrop_path || null,
+                        release_date: content.release_date,
+                        vote_average: content.vote_average,
+                        popularity: content.popularity,
+                        adult: content.adult,
+                        video: content.video || false,
+                        genre_ids: content.genre_ids,
+                        original_language: content.original_language,
+                        original_title: content.original_title || content.title,
+                        vote_count: content.vote_count
+                    }}
+                    rank={index + 1}
+                    showRank={true}
+                />
+            </div>
+        ))
     }
 
-    if (!isMounted) {
-        return (
-            <div className={`${className}`}>
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-700 rounded w-48 mb-6"></div>
-                    <div className="flex space-x-4">
-                        {Array.from({ length: 5 }, (_, i) => (
-                            <div key={i} className="w-48 h-72 bg-gray-800 rounded-lg"></div>
-                        ))}
-                    </div>
-                </div>
+    const renderMovieCards = () => {
+        return movies.map((movie) => (
+            <div key={movie.id} className="flex-shrink-0 w-48">
+                <MovieCard
+                    movie={{
+                        id: movie.id,
+                        title: movie.title,
+                        overview: movie.overview,
+                        poster_path: movie.poster_path,
+                        backdrop_path: movie.backdrop_path,
+                        release_date: movie.release_date,
+                        vote_average: movie.vote_average,
+                        popularity: movie.popularity,
+                        adult: movie.adult,
+                        video: movie.video,
+                        genre_ids: movie.genre_ids,
+                        original_language: movie.original_language,
+                        original_title: movie.original_title,
+                        vote_count: movie.vote_count
+                    }}
+                    showReleaseDate={type === 'upcoming'}
+                />
             </div>
-        )
+        ))
     }
 
     if (loading) {
         return (
             <div className={`${className}`}>
                 <div className="flex items-center justify-center h-64">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                     <span className="ml-2 text-gray-400">Caricamento {title.toLowerCase()}...</span>
                 </div>
             </div>
@@ -143,65 +168,21 @@ export function MoviesSection({
     }
 
     return (
-        <div className={`${className}`}>
+        <div className={`py-4 ${className}`}>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">{title}</h2>
             </div>
 
             {/* Movies Grid */}
-            <div className="flex space-x-4 overflow-x-auto scrollbar-thin pb-4"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {type === 'top10' ? (
-                    top10Content.map((content, index) => (
-                        <div key={`${content.type}-${content.id}`} className="flex-shrink-0 w-48">
-                            <Top10MovieCard
-                                movie={{
-                                    id: content.id,
-                                    title: content.title,
-                                    overview: content.overview,
-                                    poster_path: content.poster_path || null,
-                                    backdrop_path: content.backdrop_path || null,
-                                    release_date: content.release_date,
-                                    vote_average: content.vote_average,
-                                    popularity: content.popularity,
-                                    adult: content.adult,
-                                    video: content.video || false,
-                                    genre_ids: content.genre_ids,
-                                    original_language: content.original_language,
-                                    original_title: content.original_title || content.title,
-                                    vote_count: content.vote_count
-                                }}
-                                rank={index + 1}
-                                showRank={true}
-                            />
-                        </div>
-                    ))
-                ) : (
-                    movies.map((movie, index) => (
-                        <div key={movie.id} className="flex-shrink-0 w-48">
-                            <MovieCard
-                                movie={{
-                                    id: movie.id,
-                                    title: movie.title,
-                                    overview: movie.overview,
-                                    poster_path: movie.poster_path,
-                                    backdrop_path: movie.backdrop_path,
-                                    release_date: movie.release_date,
-                                    vote_average: movie.vote_average,
-                                    popularity: movie.popularity,
-                                    adult: movie.adult,
-                                    video: movie.video,
-                                    genre_ids: movie.genre_ids,
-                                    original_language: movie.original_language,
-                                    original_title: movie.original_title,
-                                    vote_count: movie.vote_count
-                                }}
-                                showReleaseDate={type === 'upcoming'}
-                            />
-                        </div>
-                    ))
-                )}
+            <div className="flex space-x-6 overflow-x-auto scrollbar-thin py-8 px-2"
+                style={{
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    scrollBehavior: 'smooth',
+                    willChange: 'transform'
+                }}>
+                {type === 'top10' ? renderTop10Cards() : renderMovieCards()}
             </div>
         </div>
     )

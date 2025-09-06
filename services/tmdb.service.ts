@@ -52,6 +52,7 @@ export class TMDBService {
                     params: {
                         api_key: this.TMDB_API_KEY,
                         language: 'it-IT',
+                        region: 'IT',
                         page: 1
                     }
                 })
@@ -90,6 +91,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     page: 1
                 }
             })
@@ -120,17 +122,29 @@ export class TMDBService {
         }
     }
 
-    async getMovieDetails(tmdbId: number): Promise<Movie | null> {
+    async getMovieDetails(tmdbId: number): Promise<any> {
         try {
-            const response = await axios.get(`${this.TMDB_BASE_URL}/movie/${tmdbId}`, {
-                params: {
-                    api_key: this.TMDB_API_KEY,
-                    language: 'it-IT'
-                }
-            })
+            // Recupera dettagli del film e video in parallelo
+            const [movieResponse, videosResponse] = await Promise.all([
+                axios.get(`${this.TMDB_BASE_URL}/movie/${tmdbId}`, {
+                    params: {
+                        api_key: this.TMDB_API_KEY,
+                        language: 'it-IT',
+                        region: 'IT'
+                    }
+                }),
+                axios.get(`${this.TMDB_BASE_URL}/movie/${tmdbId}/videos`, {
+                    params: {
+                        api_key: this.TMDB_API_KEY,
+                        language: 'it-IT',
+                        region: 'IT'
+                    }
+                })
+            ])
 
-            if (response.status === 200) {
-                const data = response.data
+            if (movieResponse.status === 200) {
+                const data = movieResponse.data
+                const videos = videosResponse.status === 200 ? videosResponse.data : { results: [] }
 
                 return {
                     id: tmdbId,
@@ -147,7 +161,8 @@ export class TMDBService {
                     popularity: data.popularity || 0,
                     poster_path: data.poster_path || '/placeholder-movie.svg',
                     video: data.video || false,
-                    tmdb_id: tmdbId
+                    tmdb_id: tmdbId,
+                    videos: videos
                 }
             }
 
@@ -163,7 +178,8 @@ export class TMDBService {
             const response = await axios.get(`${this.TMDB_BASE_URL}/tv/${tmdbId}`, {
                 params: {
                     api_key: this.TMDB_API_KEY,
-                    language: 'it-IT'
+                    language: 'it-IT',
+                    region: 'IT'
                 }
             })
 
@@ -208,6 +224,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     page: 1
                 }
             })
@@ -248,6 +265,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     page: 1,
                     sort_by: 'release_date.desc',
                     'primary_release_date.gte': `${twoYearsAgo}-01-01`,
@@ -289,6 +307,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     query: query,
                     page: page
                 }
@@ -327,6 +346,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     page: 1
                 }
             })
@@ -365,6 +385,7 @@ export class TMDBService {
                 params: {
                     api_key: this.TMDB_API_KEY,
                     language: 'it-IT',
+                    region: 'IT',
                     query: query,
                     page: page
                 }

@@ -8,37 +8,58 @@ import { ApiKeyError } from '@/components/api-key-error'
 
 export default function HomePage() {
     const [hasApiKey, setHasApiKey] = useState(true)
+    const [isCheckingApi, setIsCheckingApi] = useState(false)
+    const [navbarVisible, setNavbarVisible] = useState(true)
+    const [initialLoad, setInitialLoad] = useState(true)
+    const [navbarHovered, setNavbarHovered] = useState(false)
+
+    // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
+    const shouldShowNavbar = navbarVisible || navbarHovered
 
     useEffect(() => {
-        // Verifica se l'API key è configurata
-        const checkApiKey = async () => {
-            try {
-                const response = await fetch('/api/test-api-key')
-                const data = await response.json()
-                setHasApiKey(data.hasApiKey || false)
-            } catch (error) {
-                console.error('Errore verifica API key:', error)
-                setHasApiKey(false)
-            }
-        }
-
-        checkApiKey()
+        // Controllo API key in background, non blocca il rendering
+        setIsCheckingApi(true)
+        fetch('/api/test-api-key')
+            .then(res => res.json())
+            .then(data => setHasApiKey(data.hasApiKey))
+            .catch(() => setHasApiKey(false))
+            .finally(() => setIsCheckingApi(false))
     }, [])
 
-    if (!hasApiKey) {
+    // Gestisce la scomparsa della navbar dopo il caricamento iniziale
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setInitialLoad(false)
+            // Nascondi la navbar dopo 2 secondi se non c'è hover
+            if (!navbarHovered) {
+                setNavbarVisible(false)
+            }
+        }, 2000)
+        return () => clearTimeout(timer)
+    }, [navbarHovered])
+
+
+    // Mostra errore solo se API key mancante e controllo completato
+    if (!hasApiKey && !isCheckingApi) {
         return <ApiKeyError />
     }
 
     return (
         <main className="min-h-screen bg-black">
             {/* Navbar */}
-            <Navbar />
+            <Navbar
+                isVisible={shouldShowNavbar}
+                onHoverChange={setNavbarHovered}
+            />
 
             {/* Hero Section */}
-            <HeroSection />
+            <HeroSection
+                onControlsVisibilityChange={setNavbarVisible}
+                navbarHovered={navbarHovered}
+            />
 
             {/* Content Sections */}
-            <div className="container mx-auto px-4 py-8 space-y-12">
+            <div className="container mx-auto px-4 py-12 space-y-16">
                 {/* Top 10 titoli oggi */}
                 <MoviesSection
                     title="Top 10 Titoli Oggi"

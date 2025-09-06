@@ -73,6 +73,7 @@ export class TMDBMoviesService {
                 params: {
                     api_key: this.apiKey,
                     language: 'it-IT',
+                    region: 'IT',
                     ...params
                 },
                 timeout: this.timeout

@@ -12,11 +12,12 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     // Nascondi la navbar nelle pagine del player
     const isPlayerPage = pathname?.startsWith('/player/')
+    const isHomePage = pathname === '/'
 
     return (
         <>
-            {!isPlayerPage && <Navbar />}
-            <div className={!isPlayerPage ? 'pt-20' : ''}>
+            {!isPlayerPage && !isHomePage && <Navbar />}
+            <div className={!isPlayerPage && !isHomePage ? 'pt-20' : ''}>
                 {children}
             </div>
         </>

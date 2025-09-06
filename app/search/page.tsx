@@ -29,6 +29,7 @@ function SearchContent() {
     const [error, setError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv'>('all')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+    const [isTransitioning, setIsTransitioning] = useState(false)
 
     useEffect(() => {
         if (query) {
@@ -77,6 +78,18 @@ function SearchContent() {
 
     const filteredResults = getFilteredResults()
     const totalResults = results.totalMovies + results.totalTVShows
+
+    const handleViewModeChange = (newViewMode: 'grid' | 'list') => {
+        if (newViewMode === viewMode) return
+
+        setIsTransitioning(true)
+        setTimeout(() => {
+            setViewMode(newViewMode)
+            setTimeout(() => {
+                setIsTransitioning(false)
+            }, 50)
+        }, 300)
+    }
 
     if (loading) {
         return (
@@ -162,20 +175,22 @@ function SearchContent() {
                     {/* Controlli vista */}
                     <div className="flex items-center space-x-2">
                         <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
-                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                                : 'text-gray-300 hover:text-white hover:bg-white/10'
-                                }`}
+                            onClick={() => handleViewModeChange('grid')}
+                            disabled={isTransitioning}
+                            className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'grid'
+                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white scale-110'
+                                : 'text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105'
+                                } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                             <Grid className="w-5 h-5" />
                         </button>
                         <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md transition-colors ${viewMode === 'list'
-                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                                : 'text-gray-300 hover:text-white hover:bg-white/10'
-                                }`}
+                            onClick={() => handleViewModeChange('list')}
+                            disabled={isTransitioning}
+                            className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'list'
+                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white scale-110'
+                                : 'text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105'
+                                } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                             <List className="w-5 h-5" />
                         </button>
@@ -207,12 +222,25 @@ function SearchContent() {
                                 <h2 className="text-xl font-semibold text-white mb-4">
                                     Film ({filteredResults.movies.length})
                                 </h2>
-                                <div className={`${viewMode === 'grid'
-                                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
-                                    : 'space-y-4'
+                                <div className={`transition-all duration-500 ease-in-out ${isTransitioning
+                                        ? 'opacity-0 scale-95 transform translate-y-4'
+                                        : 'opacity-100 scale-100 transform translate-y-0'
+                                    } ${viewMode === 'grid'
+                                        ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+                                        : 'space-y-4'
                                     }`}>
-                                    {filteredResults.movies.map((movie) => (
-                                        <div key={movie.id} className={viewMode === 'list' ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors' : ''}>
+                                    {filteredResults.movies.map((movie, index) => (
+                                        <div
+                                            key={movie.id}
+                                            className={`transition-all duration-700 ease-out ${viewMode === 'list'
+                                                    ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
+                                                    : ''
+                                                }`}
+                                            style={{
+                                                animationDelay: `${index * 50}ms`,
+                                                animation: isTransitioning ? 'none' : 'fadeInUp 0.6s ease-out forwards'
+                                            }}
+                                        >
                                             {viewMode === 'list' ? (
                                                 <div className="flex items-center space-x-4 w-full">
                                                     <div className="flex-shrink-0 w-16 h-24 bg-gray-700 rounded overflow-hidden">
@@ -261,12 +289,25 @@ function SearchContent() {
                                 <h2 className="text-xl font-semibold text-white mb-4">
                                     Serie TV ({filteredResults.tvShows.length})
                                 </h2>
-                                <div className={`${viewMode === 'grid'
-                                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
-                                    : 'space-y-4'
+                                <div className={`transition-all duration-500 ease-in-out ${isTransitioning
+                                        ? 'opacity-0 scale-95 transform translate-y-4'
+                                        : 'opacity-100 scale-100 transform translate-y-0'
+                                    } ${viewMode === 'grid'
+                                        ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+                                        : 'space-y-4'
                                     }`}>
-                                    {filteredResults.tvShows.map((tvShow) => (
-                                        <div key={tvShow.id} className={viewMode === 'list' ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors' : ''}>
+                                    {filteredResults.tvShows.map((tvShow, index) => (
+                                        <div
+                                            key={tvShow.id}
+                                            className={`transition-all duration-700 ease-out ${viewMode === 'list'
+                                                    ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
+                                                    : ''
+                                                }`}
+                                            style={{
+                                                animationDelay: `${index * 50}ms`,
+                                                animation: isTransitioning ? 'none' : 'fadeInUp 0.6s ease-out forwards'
+                                            }}
+                                        >
                                             {viewMode === 'list' ? (
                                                 <div className="flex items-center space-x-4 w-full">
                                                     <div className="flex-shrink-0 w-16 h-24 bg-gray-700 rounded overflow-hidden">

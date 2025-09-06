@@ -181,3 +181,4 @@ export function HeroTrailer({ movie, isVisible, onClose }: HeroTrailerProps) {
     )
 }
 
+
