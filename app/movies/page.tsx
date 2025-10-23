@@ -33,7 +33,7 @@ export default function MoviesPage() {
         return (
             <LoadingScreen
                 onComplete={() => setShowLoadingScreen(false)}
-                duration={3500} // 3.5 seconds
+                duration={3000} // 3 seconds
             />
         )
     }

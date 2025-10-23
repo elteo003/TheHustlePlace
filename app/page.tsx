@@ -64,7 +64,7 @@ export default function HomePage() {
         return (
             <LoadingScreen
                 onComplete={() => setShowLoadingScreen(false)}
-                duration={5000} // 5 seconds
+                duration={4000} // 4 seconds
             />
         )
     }

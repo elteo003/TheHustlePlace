@@ -8,18 +8,18 @@ interface LoadingScreenProps {
   duration?: number // Durata totale dell'animazione in ms
 }
 
-export function LoadingScreen({ onComplete, duration = 3000 }: LoadingScreenProps) {
+export function LoadingScreen({ onComplete, duration = 4000 }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0)
   const [showLogo, setShowLogo] = useState(false)
   const [showText, setShowText] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
 
   useEffect(() => {
-    // Sequenza di animazioni più lunga e fluida
+    // Sequenza di animazioni più veloce
     const timeline = [
       { delay: 0, action: () => setShowLogo(true) },
-      { delay: 800, action: () => setShowText(true) },
-      { delay: 1500, action: () => setShowProgress(true) },
+      { delay: 500, action: () => setShowText(true) },
+      { delay: 1000, action: () => setShowProgress(true) },
       { delay: duration, action: onComplete }
     ]
 
@@ -28,20 +28,20 @@ export function LoadingScreen({ onComplete, duration = 3000 }: LoadingScreenProp
       setTimeout(action, delay)
     })
 
-    // Simula progresso di caricamento più realistico
+    // Simula progresso di caricamento più veloce
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(progressInterval)
           return 100
         }
-        // Progresso più lento e realistico
-        const increment = prev < 30 ? Math.random() * 8 :
-                         prev < 70 ? Math.random() * 12 :
-                         Math.random() * 6
+        // Progresso più veloce
+        const increment = prev < 30 ? Math.random() * 15 :
+                         prev < 70 ? Math.random() * 20 :
+                         Math.random() * 12
         return prev + increment
       })
-    }, 150)
+    }, 100)
 
     return () => clearInterval(progressInterval)
   }, [onComplete, duration])
