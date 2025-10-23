@@ -11,7 +11,6 @@ import { filterAvailableMovies } from '@/lib/utils'
 
 export default function MoviesPage() {
     const router = useRouter()
-    const [showLoadingScreen, setShowLoadingScreen] = useState(true)
 
     const handlePlay = (id: number, type?: 'movie' | 'tv') => {
         if (type === 'tv') {
@@ -29,14 +28,6 @@ export default function MoviesPage() {
         }
     }
 
-    if (showLoadingScreen) {
-        return (
-            <LoadingScreen
-                onComplete={() => setShowLoadingScreen(false)}
-                duration={4000} // 4 seconds
-            />
-        )
-    }
 
     return (
         <div className="min-h-screen bg-black">

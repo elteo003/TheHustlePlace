@@ -139,6 +139,11 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
         }
     }, [navbarHovered, isScrolled, onControlsVisibilityChange])
 
+    // Carica il film featured al mount del componente
+    useEffect(() => {
+        loadFeaturedMovie()
+    }, [])
+
     const loadFeaturedMovie = async () => {
         try {
             setError(null)
@@ -304,6 +309,9 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
     }
 
     const changeToNextMovie = () => {
+        console.log('🎬 Click su Prossimo Film - popularMovies.length:', popularMovies.length)
+        console.log('🎬 currentMovieIndex:', currentMovieIndex)
+        
         if (popularMovies.length === 0) {
             console.log('❌ Nessun film popolare disponibile')
             return

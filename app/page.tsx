@@ -16,12 +16,19 @@ export default function HomePage() {
     const [navbarVisible, setNavbarVisible] = useState(true)
     const [initialLoad, setInitialLoad] = useState(true)
     const [navbarHovered, setNavbarHovered] = useState(false)
-    const [showLoadingScreen, setShowLoadingScreen] = useState(true)
+    const [showLoadingScreen, setShowLoadingScreen] = useState(false)
 
     // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
     const shouldShowNavbar = navbarVisible || navbarHovered
 
     useEffect(() => {
+        // Mostra loading screen solo al primo accesso
+        const hasSeenLoading = sessionStorage.getItem('hasSeenLoading')
+        if (!hasSeenLoading) {
+            setShowLoadingScreen(true)
+            sessionStorage.setItem('hasSeenLoading', 'true')
+        }
+
         // Controllo API key in background, non blocca il rendering
         setIsCheckingApi(true)
         fetch('/api/test-api-key')

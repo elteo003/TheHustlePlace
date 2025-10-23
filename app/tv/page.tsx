@@ -10,7 +10,6 @@ import { TVShow } from '@/types'
 
 export default function TVPage() {
     const router = useRouter()
-    const [showLoadingScreen, setShowLoadingScreen] = useState(true)
 
     const handlePlay = (id: number, type?: 'movie' | 'tv') => {
         if (type === 'tv') {
@@ -28,14 +27,6 @@ export default function TVPage() {
         }
     }
 
-    if (showLoadingScreen) {
-        return (
-            <LoadingScreen
-                onComplete={() => setShowLoadingScreen(false)}
-                duration={4000} // 4 seconds
-            />
-        )
-    }
 
     return (
         <div className="min-h-screen bg-black">
