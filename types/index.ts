@@ -144,3 +144,63 @@ export interface Top10Content {
     tmdb_id?: number;
     type: 'movie' | 'tv'; // Campo per distinguere il tipo
 }
+
+// Nuovi tipi per le funzionalità Netflix-style
+export interface Episode {
+    id: number;
+    episode_number: number;
+    name: string;
+    overview: string;
+    air_date: string;
+    still_path?: string;
+    runtime?: number;
+    vote_average: number;
+    season_number: number;
+}
+
+export interface Season {
+    id: number;
+    season_number: number;
+    name: string;
+    overview: string;
+    air_date: string;
+    poster_path?: string;
+    episode_count: number;
+    episodes: Episode[];
+}
+
+export interface TVShowDetails extends TVShow {
+    number_of_seasons: number;
+    number_of_episodes: number;
+    seasons: Season[];
+    genres: Genre[];
+    created_by?: Array<{
+        id: number;
+        name: string;
+        profile_path?: string;
+    }>;
+    networks?: Array<{
+        id: number;
+        name: string;
+        logo_path?: string;
+    }>;
+}
+
+export interface MoviePreviewProps {
+    movie: Movie | TVShow;
+    type: 'movie' | 'tv';
+    onPlay: (id: number) => void;
+    onDetails: (id: number) => void;
+    isHovered: boolean;
+    onHover: (hovered: boolean) => void;
+}
+
+export interface SeriesPlayerProps {
+    tvShow: TVShowDetails;
+    currentSeason: number;
+    currentEpisode: number;
+    onSeasonChange: (season: number) => void;
+    onEpisodeChange: (episode: number) => void;
+    onPlay: (season: number, episode: number) => void;
+    onAutoplayNext: (season: number, episode: number) => void;
+}

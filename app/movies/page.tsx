@@ -1,13 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
+import { MoviePreview } from '@/components/movie-preview'
 import { Movie } from '@/types'
 import { filterAvailableMovies } from '@/lib/utils'
 
 export default function MoviesPage() {
     const [movies, setMovies] = useState<Movie[]>([])
     const [loading, setLoading] = useState(true)
+    const [hoveredItem, setHoveredItem] = useState<number | null>(null)
+    const router = useRouter()
 
     useEffect(() => {
         const fetchMovies = async () => {
@@ -30,6 +34,16 @@ export default function MoviesPage() {
         fetchMovies()
     }, [])
 
+    const handlePlay = (id: number) => {
+        router.push(`/player/movie/${id}`)
+    }
+
+    const handleDetails = (id: number) => {
+        // Per i film, potremmo creare una pagina dettagli o usare un modal
+        // Per ora naviga direttamente al player
+        router.push(`/player/movie/${id}`)
+    }
+
     return (
         <div className="min-h-screen bg-black">
             <Navbar />
@@ -45,27 +59,15 @@ export default function MoviesPage() {
                     ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                             {movies.map((movie) => (
-                                <div key={movie.id} className="group cursor-pointer">
-                                    <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden mb-2">
-                                        {movie.poster_path ? (
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                                                alt={movie.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                <span>Nessuna immagine</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <h3 className="text-white text-sm font-medium truncate">
-                                        {movie.title}
-                                    </h3>
-                                    <p className="text-gray-400 text-xs">
-                                        {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
-                                    </p>
-                                </div>
+                                <MoviePreview
+                                    key={movie.id}
+                                    movie={movie}
+                                    type="movie"
+                                    onPlay={handlePlay}
+                                    onDetails={handleDetails}
+                                    isHovered={hoveredItem === movie.id}
+                                    onHover={(hovered) => setHoveredItem(hovered ? movie.id : null)}
+                                />
                             ))}
                         </div>
                     )}

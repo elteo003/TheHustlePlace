@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { MovieCard } from './movie-card'
 import { Top10MovieCard } from './top-10-movie-card'
+import { MoviePreview } from './movie-preview'
 import { TMDBMovie, getTMDBImageUrl } from '@/lib/tmdb'
 import { Top10Content } from '@/types'
 
@@ -21,6 +23,8 @@ export function MoviesSection({
     const [top10Content, setTop10Content] = useState<Top10Content[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [hoveredItem, setHoveredItem] = useState<number | null>(null)
+    const router = useRouter()
 
     const fetchMovies = useCallback(async () => {
         try {
@@ -99,16 +103,24 @@ export function MoviesSection({
         ))
     }
 
+    const handlePlay = (id: number) => {
+        router.push(`/player/movie/${id}`)
+    }
+
+    const handleDetails = (id: number) => {
+        router.push(`/player/movie/${id}`)
+    }
+
     const renderMovieCards = () => {
         return movies.map((movie) => (
             <div key={movie.id} className="flex-shrink-0 w-48">
-                <MovieCard
+                <MoviePreview
                     movie={{
                         id: movie.id,
                         title: movie.title,
                         overview: movie.overview,
-                        poster_path: movie.poster_path,
-                        backdrop_path: movie.backdrop_path,
+                        poster_path: movie.poster_path || undefined,
+                        backdrop_path: movie.backdrop_path || undefined,
                         release_date: movie.release_date,
                         vote_average: movie.vote_average,
                         popularity: movie.popularity,
@@ -117,9 +129,14 @@ export function MoviesSection({
                         genre_ids: movie.genre_ids,
                         original_language: movie.original_language,
                         original_title: movie.original_title,
-                        vote_count: movie.vote_count
+                        vote_count: movie.vote_count,
+                        tmdb_id: movie.id
                     }}
-                    showReleaseDate={type === 'upcoming'}
+                    type="movie"
+                    onPlay={handlePlay}
+                    onDetails={handleDetails}
+                    isHovered={hoveredItem === movie.id}
+                    onHover={(hovered) => setHoveredItem(hovered ? movie.id : null)}
                 />
             </div>
         ))

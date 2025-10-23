@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
+import { MoviePreview } from '@/components/movie-preview'
 import { TVShow } from '@/types'
 
 export default function TVPage() {
     const [tvShows, setTVShows] = useState<TVShow[]>([])
     const [loading, setLoading] = useState(true)
+    const [hoveredItem, setHoveredItem] = useState<number | null>(null)
+    const router = useRouter()
 
     useEffect(() => {
         const fetchTVShows = async () => {
@@ -27,6 +31,14 @@ export default function TVPage() {
         fetchTVShows()
     }, [])
 
+    const handlePlay = (id: number) => {
+        router.push(`/player/tv/${id}`)
+    }
+
+    const handleDetails = (id: number) => {
+        router.push(`/series/${id}`)
+    }
+
     return (
         <div className="min-h-screen bg-black">
             <Navbar />
@@ -42,27 +54,15 @@ export default function TVPage() {
                     ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                             {tvShows.map((show) => (
-                                <div key={show.id} className="group cursor-pointer">
-                                    <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden mb-2">
-                                        {show.poster_path ? (
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w500${show.poster_path}`}
-                                                alt={show.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                <span>Nessuna immagine</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <h3 className="text-white text-sm font-medium truncate">
-                                        {show.name}
-                                    </h3>
-                                    <p className="text-gray-400 text-xs">
-                                        {show.first_air_date ? new Date(show.first_air_date).getFullYear() : 'N/A'}
-                                    </p>
-                                </div>
+                                <MoviePreview
+                                    key={show.id}
+                                    movie={show}
+                                    type="tv"
+                                    onPlay={handlePlay}
+                                    onDetails={handleDetails}
+                                    isHovered={hoveredItem === show.id}
+                                    onHover={(hovered) => setHoveredItem(hovered ? show.id : null)}
+                                />
                             ))}
                         </div>
                     )}
