@@ -177,28 +177,35 @@ export default function MoviePlayerPage() {
             console.log('🆔 TMDB ID utilizzato per vixsrc.to:', tmdbId)
             console.log('🔗 URL che verrà generato:', `https://vixsrc.to/movie/${tmdbId}`)
 
-            // Prima controlla se il film è disponibile su VixSrc
+            // Prima controlla se il film è disponibile su VixSrc (opzionale)
             console.log('🔍 Controllo disponibilità su VixSrc...')
+            let isAvailable = true // Assume disponibile di default
+            
             try {
                 const availabilityResponse = await fetch(`/api/player/check-availability?tmdbId=${tmdbId}&type=movie`)
                 const availabilityData = await availabilityResponse.json()
 
-                if (!availabilityData.success || !availabilityData.data?.isAvailable) {
-                    console.log('❌ Film non disponibile su VixSrc')
-                    setIframeError(true)
-                    setUseEmbed(false)
-                    toast({
-                        title: "Film non disponibile",
-                        description: `Il film con ID ${tmdbId} non è disponibile su VixSrc. Prova con un altro film.`,
-                        variant: "destructive"
-                    })
-                    return
+                if (availabilityData.success && availabilityData.data?.isAvailable === false) {
+                    console.log('❌ Film non disponibile su VixSrc secondo il controllo')
+                    isAvailable = false
+                } else {
+                    console.log('✅ Film disponibile su VixSrc secondo il controllo')
+                    isAvailable = true
                 }
-
-                console.log('✅ Film disponibile su VixSrc, caricamento iframe...')
             } catch (availabilityError) {
                 console.log('⚠️ Errore nel controllo disponibilità, procedo comunque:', availabilityError)
-                // Se il controllo fallisce, procediamo comunque
+                // Se il controllo fallisce, assumiamo che sia disponibile e procediamo
+                isAvailable = true
+            }
+
+            // Se il controllo dice che non è disponibile, mostra un warning ma procedi comunque
+            if (!isAvailable) {
+                console.log('⚠️ Controllo dice non disponibile, ma provo comunque...')
+                toast({
+                    title: "Controllo disponibilità",
+                    description: "Il film potrebbe non essere disponibile, ma provo comunque a caricarlo...",
+                    variant: "default"
+                })
             }
 
             // Prova a caricare l'iframe di vixsrc.to
