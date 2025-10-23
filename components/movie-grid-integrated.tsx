@@ -34,6 +34,12 @@ export default function MovieGridIntegrated({
           endpoint = `/api/catalog/top-10`
         } else if (section === 'now-playing') {
           endpoint = `/api/catalog/now-playing`
+        } else if (section === 'popular') {
+          endpoint = type === 'movie' ? `/api/catalog/popular/movies` : `/api/catalog/popular/tv`
+        } else if (section === 'recent') {
+          endpoint = type === 'movie' ? `/api/catalog/recent` : `/api/catalog/latest/tv`
+        } else if (section === 'top-rated') {
+          endpoint = type === 'movie' ? `/api/catalog/top-rated/movies` : `/api/catalog/top-rated/tv`
         } else {
           endpoint = `/api/catalog/${section}/${type}`
         }
@@ -41,11 +47,24 @@ export default function MovieGridIntegrated({
         const response = await fetch(endpoint)
         const data = await response.json()
 
-        if (data.success && data.data?.results) {
-          const results = data.data.results.slice(0, limit)
-          setMovies(results)
+        if (data.success) {
+          // Gestisce diversi formati di risposta
+          let results = []
+          if (data.data?.results) {
+            results = data.data.results
+          } else if (Array.isArray(data.data)) {
+            results = data.data
+          } else if (data.data) {
+            results = [data.data]
+          }
+          
+          if (results.length > 0) {
+            setMovies(results.slice(0, limit))
+          } else {
+            setError('Nessun contenuto disponibile')
+          }
         } else {
-          setError('Errore nel caricamento dei contenuti')
+          setError(data.error || 'Errore nel caricamento dei contenuti')
         }
       } catch (err) {
         console.error('Errore nel fetch dei film:', err)
