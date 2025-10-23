@@ -149,14 +149,19 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                     e.stopPropagation()
                     onPlay(movie.id)
                   }}
-                  className="group relative px-6 py-3 bg-transparent border-2 border-white text-white rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center gap-2 font-semibold backdrop-blur-sm hover:bg-white/10"
+                  className="group relative w-12 h-12 bg-transparent border-2 border-white text-white rounded-full transition-all duration-300 transform hover:scale-110 hover:shadow-lg flex items-center justify-center backdrop-blur-sm hover:bg-white/10"
                 >
-                  {/* Play Emoji */}
-                  <span className="text-lg transition-transform duration-200 group-hover:scale-110">▶️</span>
-                  <span>Guarda</span>
+                  {/* Play Logo SVG */}
+                  <svg 
+                    className="w-6 h-6 transition-transform duration-200 group-hover:scale-110 ml-1" 
+                    fill="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
                   
                   {/* Hover Effect */}
-                  <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </button>
               )}
               {onDetails && (
