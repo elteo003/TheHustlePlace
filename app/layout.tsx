@@ -32,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it" className="dark">
-      <body className={inter.className}>
+      <body className={`${inter.className} scrollbar-vertical`}>
         <HLSConfigProvider>
           <div className="min-h-screen bg-black text-white">
             <ConditionalLayout>
