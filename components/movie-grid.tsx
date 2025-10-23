@@ -142,16 +142,29 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
             </p>
             
             {/* Bottoni azione */}
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               {onPlay && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     onPlay(movie.id)
                   }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                  className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center gap-2 font-semibold"
                 >
-                  Guarda
+                  {/* Play Icon */}
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <svg 
+                      className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" 
+                      fill="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                  <span>Guarda</span>
+                  
+                  {/* Hover Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
                 </button>
               )}
               {onDetails && (
@@ -160,7 +173,7 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                     e.stopPropagation()
                     onDetails(movie.id)
                   }}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+                  className="px-4 py-3 bg-gray-600/80 hover:bg-gray-700/80 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-gray-500/30"
                 >
                   Dettagli
                 </button>
