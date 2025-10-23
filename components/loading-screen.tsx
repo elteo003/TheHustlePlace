@@ -60,75 +60,259 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)] animate-pulse" />
       </div>
 
-      {/* Logo TheHustlePlace - Netflix style */}
+      {/* Logo TheHustlePlace - Elegant Animation */}
       <motion.div 
         className="relative mb-12"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={showLogo ? { scale: 1, opacity: 1 } : {}}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+        initial={{ scale: 0, opacity: 0, rotateY: -180 }}
+        animate={showLogo ? { 
+          scale: 1, 
+          opacity: 1, 
+          rotateY: 0,
+          y: [0, -10, 0]
+        } : {}}
+        transition={{ 
+          duration: 2,
+          ease: "easeOut",
+          y: {
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        }}
       >
         <div className="relative">
+          {/* Outer Glow Ring */}
+          <motion.div 
+            className="absolute inset-0 w-40 h-40 mx-auto -top-4 -left-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="w-full h-full border-2 border-transparent rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 bg-clip-border animate-pulse" />
+          </motion.div>
+
+          {/* Middle Glow Ring */}
+          <motion.div 
+            className="absolute inset-0 w-36 h-36 mx-auto -top-2 -left-2"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="w-full h-full border border-transparent rounded-full bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 bg-clip-border" />
+          </motion.div>
+
           {/* Main Logo Container */}
           <div className="relative w-32 h-32 mx-auto">
-            {/* Background Glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl blur-2xl opacity-60 animate-pulse" />
+            {/* Animated Background Glow */}
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl blur-xl"
+              animate={{ 
+                opacity: [0.3, 0.8, 0.3],
+                scale: [1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
             
-            {/* Logo Box */}
-            <div className="relative w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-              {/* H Letter */}
-              <span className="text-6xl font-black text-white drop-shadow-lg">H</span>
-            </div>
+            {/* Logo Box with 3D Effect */}
+            <motion.div 
+              className="relative w-full h-full bg-gradient-to-br from-blue-500 via-purple-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-2xl"
+              animate={{ 
+                boxShadow: [
+                  "0 0 20px rgba(59, 130, 246, 0.5)",
+                  "0 0 40px rgba(147, 51, 234, 0.8)",
+                  "0 0 20px rgba(59, 130, 246, 0.5)"
+                ]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              {/* H Letter with 3D Effect */}
+              <motion.span 
+                className="text-6xl font-black text-white drop-shadow-2xl"
+                animate={{ 
+                  textShadow: [
+                    "0 0 10px rgba(255, 255, 255, 0.5)",
+                    "0 0 20px rgba(255, 255, 255, 0.8)",
+                    "0 0 10px rgba(255, 255, 255, 0.5)"
+                  ]
+                }}
+                transition={{ 
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                H
+              </motion.span>
+            </motion.div>
             
             {/* Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-2xl animate-shine" />
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-2xl"
+              animate={{ 
+                x: ["-100%", "100%"],
+                opacity: [0, 1, 0]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 1,
+                ease: "easeInOut"
+              }}
+            />
+            
+            {/* Particle Effects */}
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 bg-white rounded-full"
+                style={{
+                  left: `${20 + (i * 12)}%`,
+                  top: `${20 + (i * 8)}%`,
+                }}
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  y: [0, -20, 0]
+                }}
+                transition={{
+                  duration: 2,
+                  delay: i * 0.3,
+                  repeat: Infinity,
+                  repeatDelay: 2
+                }}
+              />
+            ))}
           </div>
         </div>
       </motion.div>
 
-      {/* Text - Netflix style */}
+      {/* Text - Elegant Animation */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={showText ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+        initial={{ opacity: 0, y: 50, scale: 0.8 }}
+        animate={showText ? { 
+          opacity: 1, 
+          y: 0, 
+          scale: 1 
+        } : {}}
+        transition={{ 
+          duration: 1.5, 
+          ease: "easeOut", 
+          delay: 0.5 
+        }}
         className="text-center mb-16"
       >
-        <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 mb-4 tracking-wider">
+        <motion.h1 
+          className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 mb-4 tracking-wider"
+          animate={{
+            backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          style={{
+            backgroundSize: "200% 100%"
+          }}
+        >
           TheHustlePlace
-        </h1>
-        <div className="text-lg text-gray-400 font-light tracking-widest">
+        </motion.h1>
+        
+        <motion.div 
+          className="text-lg text-gray-400 font-light tracking-widest"
+          animate={{
+            opacity: [0.5, 1, 0.5]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
           STREAMING PREMIUM
-        </div>
+        </motion.div>
       </motion.div>
 
-      {/* Progress Bar - Netflix style */}
+      {/* Progress Bar - Elegant Animation */}
       <motion.div 
         className="w-96 max-w-md mx-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={showProgress ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+        animate={showProgress ? { 
+          opacity: 1, 
+          y: 0, 
+          scale: 1 
+        } : {}}
+        transition={{ 
+          duration: 1, 
+          ease: "easeOut" 
+        }}
       >
         <div className="relative">
-          {/* Background */}
-          <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-            {/* Progress Fill */}
+          {/* Background with glow */}
+          <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+            {/* Progress Fill with animated gradient */}
             <motion.div
-              className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-full relative"
+              className="h-full rounded-full relative overflow-hidden"
               style={{ width: `${Math.min(progress, 100)}%` }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(progress, 100)}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              {/* Shine effect on progress */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full animate-shine" />
+              {/* Animated gradient background */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"
+                animate={{
+                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                style={{
+                  backgroundSize: "200% 100%"
+                }}
+              />
+              
+              {/* Shine effect */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full"
+                animate={{ 
+                  x: ["-100%", "100%"],
+                  opacity: [0, 1, 0]
+                }}
+                transition={{ 
+                  duration: 1.5,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                  ease: "easeInOut"
+                }}
+              />
             </motion.div>
           </div>
           
-          {/* Progress percentage */}
-          <div className="text-center mt-4">
-            <span className="text-sm text-gray-400 font-mono">
+          {/* Progress percentage with animation */}
+          <motion.div 
+            className="text-center mt-4"
+            animate={{
+              scale: [1, 1.05, 1]
+            }}
+            transition={{
+              duration: 0.5,
+              repeat: Infinity,
+              repeatDelay: 1
+            }}
+          >
+            <span className="text-sm text-gray-400 font-mono bg-gray-800 px-3 py-1 rounded-full">
               {Math.round(progress)}%
             </span>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
 
