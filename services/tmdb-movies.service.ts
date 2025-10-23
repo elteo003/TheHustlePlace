@@ -151,7 +151,20 @@ export class TMDBMoviesService {
      * Ottiene i dettagli di una serie TV
      */
     async getTVShowDetails(tvShowId: number): Promise<any> {
-        return this.makeRequest(`/tv/${tvShowId}`)
+        const response = await this.makeRequest(`/tv/${tvShowId}`)
+
+        if (response) {
+            // Aggiungi i campi mancanti per compatibilità
+            return {
+                ...response,
+                tmdb_id: tvShowId,
+                number_of_seasons: (response as any).number_of_seasons || 1,
+                number_of_episodes: (response as any).number_of_episodes || 1,
+                genres: (response as any).genres || []
+            }
+        }
+
+        return response
     }
 
     /**

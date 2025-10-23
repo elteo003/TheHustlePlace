@@ -223,8 +223,8 @@ function SearchContent() {
                                     Film ({filteredResults.movies.length})
                                 </h2>
                                 <div className={`transition-all duration-500 ease-in-out ${isTransitioning
-                                        ? 'opacity-0 scale-95 transform translate-y-4'
-                                        : 'opacity-100 scale-100 transform translate-y-0'
+                                    ? 'opacity-0 scale-95 transform translate-y-4'
+                                    : 'opacity-100 scale-100 transform translate-y-0'
                                     } ${viewMode === 'grid'
                                         ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
                                         : 'space-y-4'
@@ -233,8 +233,8 @@ function SearchContent() {
                                         <div
                                             key={movie.id}
                                             className={`transition-all duration-700 ease-out ${viewMode === 'list'
-                                                    ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
-                                                    : ''
+                                                ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
+                                                : ''
                                                 }`}
                                             style={{
                                                 animationDelay: `${index * 50}ms`,
@@ -264,7 +264,11 @@ function SearchContent() {
                                                         </div>
                                                     </div>
                                                     <button
-                                                        onClick={() => window.location.href = `/player/movie/${movie.id}`}
+                                                        onClick={() => {
+                                                            // Usa tmdb_id se disponibile, altrimenti id
+                                                            const itemId = (movie as any).tmdb_id || movie.id
+                                                            window.location.href = `/player/movie/${itemId}`
+                                                        }}
                                                         className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
                                                     >
                                                         Guarda
@@ -290,8 +294,8 @@ function SearchContent() {
                                     Serie TV ({filteredResults.tvShows.length})
                                 </h2>
                                 <div className={`transition-all duration-500 ease-in-out ${isTransitioning
-                                        ? 'opacity-0 scale-95 transform translate-y-4'
-                                        : 'opacity-100 scale-100 transform translate-y-0'
+                                    ? 'opacity-0 scale-95 transform translate-y-4'
+                                    : 'opacity-100 scale-100 transform translate-y-0'
                                     } ${viewMode === 'grid'
                                         ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
                                         : 'space-y-4'
@@ -300,8 +304,8 @@ function SearchContent() {
                                         <div
                                             key={tvShow.id}
                                             className={`transition-all duration-700 ease-out ${viewMode === 'list'
-                                                    ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
-                                                    : ''
+                                                ? 'flex items-center space-x-4 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors'
+                                                : ''
                                                 }`}
                                             style={{
                                                 animationDelay: `${index * 50}ms`,
@@ -331,7 +335,11 @@ function SearchContent() {
                                                         </div>
                                                     </div>
                                                     <button
-                                                        onClick={() => window.location.href = `/player/tv/${tvShow.id}`}
+                                                        onClick={() => {
+                                                            // Usa tmdb_id se disponibile, altrimenti id
+                                                            const itemId = (tvShow as any).tmdb_id || tvShow.id
+                                                            window.location.href = `/player/tv/${itemId}`
+                                                        }}
                                                         className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
                                                     >
                                                         Guarda

@@ -43,32 +43,78 @@ export default function TVPlayerPage() {
 
     const fetchTVShowDetails = async () => {
         try {
-            // Per ora usiamo dati mock, ma in futuro potremmo fare una chiamata API
-            const mockTVShow: TVShow = {
-                id: parseInt(tvId),
-                name: "Breaking Bad",
-                overview: "Un insegnante di chimica malato di cancro si trasforma in un produttore di metanfetamine.",
-                poster_path: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
-                backdrop_path: "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
-                first_air_date: "2008-01-20",
-                vote_average: 9.5,
-                number_of_seasons: 5,
-                number_of_episodes: 62,
-                genres: [
-                    { id: 80, name: "Crime" },
-                    { id: 18, name: "Drama" }
-                ]
+            console.log('🔍 Recupero dettagli serie TV per ID:', tvId)
+
+            // Usa direttamente l'API TMDB per ottenere i dettagli della serie TV
+            const response = await fetch(`/api/tmdb/tv/${tvId}`)
+
+            if (!response.ok) {
+                throw new Error('Errore nel recupero serie TV da TMDB')
             }
 
-            setTVShow(mockTVShow)
+            const data = await response.json()
+            console.log('📊 Dati serie TV TMDB:', data)
+
+            if (data.success && data.data) {
+                const tmdbTVShow = data.data
+                console.log('✅ Serie TV trovata su TMDB:', tmdbTVShow.name)
+
+                // Converti i dati TMDB nel formato del player
+                const tvShowData: TVShow = {
+                    id: tmdbTVShow.id,
+                    tmdb_id: tmdbTVShow.id,
+                    name: tmdbTVShow.name,
+                    overview: tmdbTVShow.overview,
+                    poster_path: tmdbTVShow.poster_path,
+                    backdrop_path: tmdbTVShow.backdrop_path,
+                    first_air_date: tmdbTVShow.first_air_date,
+                    vote_average: tmdbTVShow.vote_average,
+                    number_of_seasons: tmdbTVShow.number_of_seasons || 1,
+                    number_of_episodes: tmdbTVShow.number_of_episodes || 1,
+                    genres: tmdbTVShow.genres || []
+                }
+
+                setTVShow(tvShowData)
+                console.log('✅ Serie TV configurata:', tvShowData.name, 'TMDB ID:', tvShowData.tmdb_id)
+            } else {
+                console.log('❌ Serie TV non trovata su TMDB, uso fallback con TMDB ID:', tvId)
+
+                // Fallback: usa dati minimi se la serie TV non è trovata
+                const fallbackTVShow: TVShow = {
+                    id: parseInt(tvId),
+                    tmdb_id: parseInt(tvId),
+                    name: `Serie TV ${tvId}`,
+                    overview: `Serie TV disponibile su vixsrc.to con TMDB ID ${tvId}. Se la serie non si carica, potrebbe non essere disponibile su VixSrc.`,
+                    poster_path: "/placeholder-movie.svg",
+                    backdrop_path: "/placeholder-movie.svg",
+                    first_air_date: "",
+                    vote_average: 0,
+                    number_of_seasons: 1,
+                    number_of_episodes: 1,
+                    genres: []
+                }
+                setTVShow(fallbackTVShow)
+            }
+
             setLoading(false)
         } catch (error) {
-            console.error('Errore nel caricamento della serie TV:', error)
-            toast({
-                title: "Errore",
-                description: "Impossibile caricare i dettagli della serie TV",
-                variant: "destructive"
-            })
+            console.error('❌ Errore nel caricamento della serie TV:', error)
+
+            // Fallback: usa dati minimi in caso di errore
+            const fallbackTVShow: TVShow = {
+                id: parseInt(tvId),
+                tmdb_id: parseInt(tvId),
+                name: `Serie TV ${tvId}`,
+                overview: `Serie TV disponibile su vixsrc.to con TMDB ID ${tvId}. Se la serie non si carica, potrebbe non essere disponibile su VixSrc.`,
+                poster_path: "/placeholder-movie.svg",
+                backdrop_path: "/placeholder-movie.svg",
+                first_air_date: "",
+                vote_average: 0,
+                number_of_seasons: 1,
+                number_of_episodes: 1,
+                genres: []
+            }
+            setTVShow(fallbackTVShow)
             setLoading(false)
         }
     }

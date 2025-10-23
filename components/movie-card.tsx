@@ -33,10 +33,11 @@ export function MovieCard({
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        // Naviga direttamente al player del contenuto
+        // Usa tmdb_id se disponibile, altrimenti id
+        const itemId = (movie as any).tmdb_id || movie.id
         const url = type === 'movie'
-            ? `/player/movie/${movie.id}`
-            : `/player/tv/${movie.id}`
+            ? `/player/movie/${itemId}`
+            : `/player/tv/${itemId}`
         window.location.href = url
     }
 

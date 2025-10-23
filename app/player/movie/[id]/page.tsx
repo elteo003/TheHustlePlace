@@ -132,7 +132,7 @@ export default function MoviePlayerPage() {
                     id: parseInt(movieId),
                     tmdb_id: parseInt(movieId),
                     title: `Film ${movieId}`,
-                    overview: `Film disponibile su vixsrc.to con TMDB ID ${movieId}`,
+                    overview: `Film disponibile su vixsrc.to con TMDB ID ${movieId}. Se il film non si carica, potrebbe non essere disponibile su VixSrc.`,
                     poster_path: "/placeholder-movie.svg",
                     backdrop_path: "/placeholder-movie.svg",
                     release_date: "",
@@ -152,7 +152,7 @@ export default function MoviePlayerPage() {
                 id: parseInt(movieId),
                 tmdb_id: parseInt(movieId),
                 title: `Film ${movieId}`,
-                overview: `Film disponibile su vixsrc.to con TMDB ID ${movieId}`,
+                overview: `Film disponibile su vixsrc.to con TMDB ID ${movieId}. Se il film non si carica, potrebbe non essere disponibile su VixSrc.`,
                 poster_path: "/placeholder-movie.svg",
                 backdrop_path: "/placeholder-movie.svg",
                 release_date: "",
@@ -172,7 +172,7 @@ export default function MoviePlayerPage() {
             setVideoLoading(true)
 
             // Usa l'ID TMDB corretto dal film caricato
-            const tmdbId = movie.tmdb_id
+            const tmdbId = movie.tmdb_id || movie.id
             console.log('🎬 Caricamento video source per film:', movie.title)
             console.log('🆔 TMDB ID utilizzato per vixsrc.to:', tmdbId)
             console.log('🔗 URL che verrà generato:', `https://vixsrc.to/movie/${tmdbId}`)
@@ -189,7 +189,7 @@ export default function MoviePlayerPage() {
                     setUseEmbed(false)
                     toast({
                         title: "Film non disponibile",
-                        description: "Questo film non è disponibile su VixSrc",
+                        description: `Il film con ID ${tmdbId} non è disponibile su VixSrc. Prova con un altro film.`,
                         variant: "destructive"
                     })
                     return
@@ -294,7 +294,7 @@ export default function MoviePlayerPage() {
                     {useEmbed && !iframeError ? (
                         <div className="relative z-10 w-full h-full">
                             <iframe
-                                src={videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie')}
+                                src={videoPlayerService.getPlayerUrl(movie.tmdb_id || parseInt(movieId), 'movie')}
                                 className="w-full h-full border-0"
                                 allowFullScreen
                                 title={movie.title}
@@ -302,7 +302,7 @@ export default function MoviePlayerPage() {
                                 loading="lazy"
                                 onLoad={(e) => {
                                     console.log('✅ Iframe caricato con successo')
-                                    console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
+                                    console.log('🔗 URL iframe:', videoPlayerService.getPlayerUrl(movie.tmdb_id || parseInt(movieId), 'movie'))
 
                                     // Cancella il timeout immediatamente quando l'iframe si carica
                                     if (timeoutId) {
@@ -329,7 +329,7 @@ export default function MoviePlayerPage() {
                                 }}
                                 onError={(e) => {
                                     console.error('❌ Errore nel caricamento iframe:', e)
-                                    console.log('🔗 URL che ha fallito:', videoPlayerService.getPlayerUrl(parseInt(movieId), 'movie'))
+                                    console.log('🔗 URL che ha fallito:', videoPlayerService.getPlayerUrl(movie.tmdb_id || parseInt(movieId), 'movie'))
 
                                     // Cancella il timeout anche in caso di errore
                                     if (timeoutId) {
@@ -360,12 +360,12 @@ export default function MoviePlayerPage() {
                                     Questo film non è attualmente disponibile per lo streaming su vixsrc.to
                                 </p>
                                 <p className="text-lg text-gray-400 mb-8">
-                                    Potrebbe essere temporaneamente non disponibile o non essere presente nel catalogo.
+                                    ID Film: {movie.tmdb_id || movie.id}. Potrebbe essere temporaneamente non disponibile o non essere presente nel catalogo di VixSrc.
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <Button
                                         size="lg"
-                                        onClick={() => window.open(`https://vixsrc.to/movie/${movieId}`, '_blank')}
+                                        onClick={() => window.open(`https://vixsrc.to/movie/${movie.tmdb_id || movie.id}`, '_blank')}
                                         className="bg-red-600 hover:bg-red-700 text-white"
                                     >
                                         <Play className="w-5 h-5 mr-2" />

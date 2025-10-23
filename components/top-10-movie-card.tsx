@@ -21,7 +21,9 @@ export function Top10MovieCard({ movie, rank, showRank = true, className = '' }:
     const handlePlay = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
-        window.location.href = `/player/movie/${movie.id}`
+        // Usa tmdb_id se disponibile, altrimenti id
+        const itemId = (movie as any).tmdb_id || movie.id
+        window.location.href = `/player/movie/${itemId}`
     }
 
     return (

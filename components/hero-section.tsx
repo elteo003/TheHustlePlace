@@ -317,7 +317,9 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
 
     const handleWatchNow = () => {
         if (featuredMovie) {
-            window.location.href = `/player/movie/${featuredMovie.id}`
+            // Usa tmdb_id se disponibile, altrimenti id
+            const itemId = (featuredMovie as any).tmdb_id || featuredMovie.id
+            window.location.href = `/player/movie/${itemId}`
         }
     }
 
