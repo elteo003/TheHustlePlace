@@ -32,7 +32,7 @@ export default function TVPage() {
         return (
             <LoadingScreen
                 onComplete={() => setShowLoadingScreen(false)}
-                duration={3000} // 3 seconds
+                duration={4000} // 4 seconds
             />
         )
     }

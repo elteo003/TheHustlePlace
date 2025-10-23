@@ -307,6 +307,20 @@ body::-webkit-scrollbar-thumb:hover {
     animation: fadeInScale 1s ease-out forwards;
 }
 
+/* Netflix-style shine effect */
+@keyframes shine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-shine {
+    animation: shine 2s ease-in-out infinite;
+}
+
 /* View mode transition animations */
 @keyframes fadeInUp {
     0% {
