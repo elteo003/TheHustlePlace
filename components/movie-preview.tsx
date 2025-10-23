@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { MoviePreviewProps } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 
-export function MoviePreview({ 
-    movie, 
-    type, 
-    onPlay, 
-    onDetails, 
-    isHovered, 
-    onHover 
+export function MoviePreview({
+    movie,
+    type,
+    onPlay,
+    onDetails,
+    isHovered,
+    onHover
 }: MoviePreviewProps) {
     const [showPreview, setShowPreview] = useState(false)
     const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
@@ -58,10 +58,34 @@ export function MoviePreview({
 
         setIsLoading(true)
         try {
-            // Simula il caricamento di un trailer (in un'app reale, faresti una chiamata API)
-            // Per ora usiamo un video di esempio o un placeholder
-            const mockTrailerUrl = `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`
-            setTrailerUrl(mockTrailerUrl)
+            const itemId = (movie as any).tmdb_id || movie.id
+
+            // Carica i trailer reali dall'API TMDB
+            const response = await fetch(`/api/tmdb/${type}/${itemId}/videos`)
+            const data = await response.json()
+
+            if (data.success && data.data?.results && data.data.results.length > 0) {
+                // Cerca il primo trailer disponibile
+                const trailer = data.data.results.find((video: any) =>
+                    video.type === 'Trailer' &&
+                    video.site === 'YouTube' &&
+                    video.official === true
+                )
+
+                if (trailer) {
+                    setTrailerUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&playlist=${trailer.key}`)
+                } else {
+                    // Se non c'è un trailer ufficiale, prova con il primo video disponibile
+                    const firstVideo = data.data.results[0]
+                    if (firstVideo && firstVideo.site === 'YouTube') {
+                        setTrailerUrl(`https://www.youtube.com/embed/${firstVideo.key}?autoplay=1&mute=1&loop=1&playlist=${firstVideo.key}`)
+                    } else {
+                        console.log('Nessun trailer YouTube disponibile per questo contenuto')
+                    }
+                }
+            } else {
+                console.log('Nessun trailer disponibile per questo contenuto')
+            }
         } catch (error) {
             console.error('Errore nel caricamento del trailer:', error)
         } finally {
@@ -98,7 +122,7 @@ export function MoviePreview({
     }
 
     return (
-        <div 
+        <div
             className="relative group cursor-pointer"
             onMouseEnter={() => onHover(true)}
             onMouseLeave={() => onHover(false)}
@@ -118,13 +142,12 @@ export function MoviePreview({
                     {/* Backdrop con trailer */}
                     <div className="relative aspect-video bg-gray-800">
                         {trailerUrl && !isLoading ? (
-                            <video
+                            <iframe
                                 src={trailerUrl}
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                className="w-full h-full object-cover"
+                                className="w-full h-full"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
                             />
                         ) : (
                             <img
@@ -133,7 +156,7 @@ export function MoviePreview({
                                 className="w-full h-full object-cover"
                             />
                         )}
-                        
+
                         {/* Overlay con controlli */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
                             <div className="absolute bottom-4 left-4 right-4">
@@ -170,7 +193,7 @@ export function MoviePreview({
                         </p>
                         <div className="flex items-center justify-between text-sm text-gray-400">
                             <span>
-                                {type === 'movie' 
+                                {type === 'movie'
                                     ? (movie as any).release_date ? new Date((movie as any).release_date).getFullYear() : 'N/A'
                                     : (movie as any).first_air_date ? new Date((movie as any).first_air_date).getFullYear() : 'N/A'
                                 }

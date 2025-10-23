@@ -229,6 +229,32 @@ export class TMDBMoviesService {
     }
 
     /**
+     * Ottiene tutti i video di un film (trailer, teaser, clip, etc.)
+     */
+    async getMovieVideos(movieId: number): Promise<TMDBTrailerResponse | null> {
+        try {
+            const response = await this.makeRequest(`/movie/${movieId}/videos`)
+            return response as TMDBTrailerResponse
+        } catch (error) {
+            logger.error('Errore nel recupero video film', { movieId, error })
+            return null
+        }
+    }
+
+    /**
+     * Ottiene tutti i video di una serie TV (trailer, teaser, clip, etc.)
+     */
+    async getTVShowVideos(tvShowId: number): Promise<TMDBTrailerResponse | null> {
+        try {
+            const response = await this.makeRequest(`/tv/${tvShowId}/videos`)
+            return response as TMDBTrailerResponse
+        } catch (error) {
+            logger.error('Errore nel recupero video serie TV', { tvShowId, error })
+            return null
+        }
+    }
+
+    /**
      * Genera URL VixSrc personalizzato per un film
      */
     getVixSrcUrl(movieId: number): string {

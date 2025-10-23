@@ -90,6 +90,14 @@ class TMDBWrapperService {
         return this.safeCall(() => this.service!.getMainTrailer(movieId))
     }
 
+    async getMovieVideos(movieId: number) {
+        return this.safeCall(() => this.service!.getMovieVideos(movieId))
+    }
+
+    async getTVShowVideos(tvShowId: number) {
+        return this.safeCall(() => this.service!.getTVShowVideos(tvShowId))
+    }
+
     getVixSrcUrl(movieId: number): string {
         this.initializeService()
 
