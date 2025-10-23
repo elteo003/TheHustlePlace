@@ -149,7 +149,7 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                     e.stopPropagation()
                     onPlay(movie.id)
                   }}
-                  className="group relative w-12 h-12 bg-transparent border-2 border-white text-white rounded-full transition-all duration-300 transform hover:scale-110 hover:shadow-lg flex items-center justify-center backdrop-blur-sm hover:bg-white/10"
+                  className="group relative w-12 h-12 bg-transparent border-2 border-white text-white rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-lg flex items-center justify-center backdrop-blur-sm hover:bg-white/10"
                 >
                   {/* Play Logo SVG */}
                   <svg 
@@ -161,7 +161,7 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                   </svg>
                   
                   {/* Hover Effect */}
-                  <div className="absolute inset-0 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </button>
               )}
               {onDetails && (
