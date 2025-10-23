@@ -151,20 +151,6 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
               </motion.span>
             </motion.div>
             
-            {/* Shine Effect */}
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-2xl"
-              animate={{ 
-                x: ["-100%", "100%"],
-                opacity: [0, 1, 0]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                repeatDelay: 1,
-                ease: "easeInOut"
-              }}
-            />
             
             {/* Particle Effects */}
             {[...Array(6)].map((_, i) => (
@@ -280,20 +266,6 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
                 }}
               />
               
-              {/* Shine effect */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full"
-                animate={{ 
-                  x: ["-100%", "100%"],
-                  opacity: [0, 1, 0]
-                }}
-                transition={{ 
-                  duration: 1.5,
-                  repeat: Infinity,
-                  repeatDelay: 1,
-                  ease: "easeInOut"
-                }}
-              />
             </motion.div>
           </div>
           
