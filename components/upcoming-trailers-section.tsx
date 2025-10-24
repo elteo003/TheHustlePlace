@@ -33,6 +33,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     // Funzione stabile per selezionare film
     const handleMovieSelect = useCallback((originalIndex: number) => {
+        console.log('🎬 Film selezionato:', originalIndex, 'Titolo:', movies[originalIndex]?.title)
         onMovieSelect(originalIndex)
         setIsAutoPlaying(false)
         setCountdown(10)
@@ -41,7 +42,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
         addTimeout(setTimeout(() => {
             setIsAutoPlaying(true)
         }, 3000))
-    }, [onMovieSelect, addTimeout])
+    }, [onMovieSelect, addTimeout, movies])
 
     // Countdown logic migliorata
     useEffect(() => {
@@ -73,6 +74,9 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
             return () => clearTimeout(initTimer)
         }
     }, [isInitialized, addTimeout])
+
+    // Debug per vedere i film disponibili
+    console.log('🎬 UpcomingTrailersSection - Film disponibili:', upcomingMovies.length, 'Movies totali:', movies.length)
 
     return (
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
@@ -106,12 +110,16 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     ? 'w-64 h-36 scale-110 z-10'
                                     : 'w-48 h-28 hover:scale-105'
                                     }`}
-                                onClick={() => handleMovieSelect(originalIndex)}
+                                onClick={() => {
+                                    console.log('🖱️ Click su film:', originalIndex, movie.title)
+                                    handleMovieSelect(originalIndex)
+                                }}
                                 onMouseEnter={handleMouseEnter}
                                 onMouseLeave={handleMouseLeave}
                                 style={{
                                     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                                     zIndex: isHovered ? 10 : 1,
+                                    border: '2px solid red', // Debug: bordo rosso per vedere i clickable areas
                                 }}
                             >
                                 <div className="relative w-full h-full group">
