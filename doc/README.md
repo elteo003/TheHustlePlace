@@ -89,17 +89,28 @@ TheHustlePlace/
 
 ## 📚 **Documentazione Disponibile**
 
+### 🎯 **Guide Principali**
 - [🎨 **Design System**](./design-system.md) - Stili, colori e componenti UI
 - [🎭 **Animazioni**](./animations.md) - Transizioni e effetti visivi
 - [🏠 **Homepage**](./homepage.md) - Struttura e funzionalità della home
 - [📺 **Player**](./player.md) - Sistema di riproduzione video
 - [📋 **Catalogo**](./catalog.md) - Gestione film e serie TV
 - [🔧 **API Integration**](./api-integration.md) - VixSrc e TMDB APIs
+
+### 🔧 **Guide Tecniche**
 - [⚙️ **Configurazione**](./configuration.md) - Setup e variabili ambiente
 - [🏗️ **Infrastruttura**](./infrastructure.md) - Architettura del sistema
-- [🐛 **Troubleshooting**](./troubleshooting.md) - Risoluzione problemi
 - [🎬 **Player System**](./player-system.md) - Sistema player avanzato
 - [📊 **API System**](./api-system.md) - Sistema API completo
+- [🏗️ **Architecture Diagrams**](./architecture-diagrams.md) - Diagrammi Mermaid completi
+
+### 🐛 **Debug e Troubleshooting**
+- [🐛 **Troubleshooting**](./troubleshooting.md) - Risoluzione problemi
+- [📝 **Recent Updates**](./recent-updates.md) - Ultimi aggiornamenti e miglioramenti
+
+### 📚 **Navigazione e Indici**
+- [📋 **INDEX**](./INDEX.md) - Indice completo di tutta la documentazione
+- [📊 **Documentation Summary**](./DOCUMENTATION_SUMMARY.md) - Riepilogo completo della documentazione
 
 ## 🛠️ **Setup Rapido**
 
