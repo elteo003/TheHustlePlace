@@ -39,7 +39,8 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
     setIsLoading(true)
     try {
       const itemId = (movie as any).tmdb_id || movie.id
-      const response = await fetch(`/api/tmdb/${type}/${itemId}/videos`)
+      const apiType = type === 'movie' ? 'movies' : 'tv'
+      const response = await fetch(`/api/tmdb/${apiType}/${itemId}/videos`)
       const data = await response.json()
 
       if (data.success && data.data?.results?.length > 0) {

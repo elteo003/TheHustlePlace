@@ -62,7 +62,8 @@ export function MoviePreview({
             console.log(`🎬 Caricamento trailer per ${type} ID: ${itemId}`)
 
             // Carica i trailer reali dall'API TMDB
-            const response = await fetch(`/api/tmdb/${type}/${itemId}/videos`)
+            const apiType = type === 'movie' ? 'movies' : 'tv'
+            const response = await fetch(`/api/tmdb/${apiType}/${itemId}/videos`)
             const data = await response.json()
 
             console.log(`📊 Risposta API video per ${itemId}:`, data)
