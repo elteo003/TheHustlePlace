@@ -33,8 +33,17 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     // Funzione stabile per selezionare film
     const handleMovieSelect = useCallback((originalIndex: number) => {
+        console.log('🎬 handleMovieSelect chiamata con index:', originalIndex)
         console.log('🎬 Film selezionato:', originalIndex, 'Titolo:', movies[originalIndex]?.title)
-        onMovieSelect(originalIndex)
+        console.log('🎬 onMovieSelect function:', typeof onMovieSelect)
+        
+        if (typeof onMovieSelect === 'function') {
+            onMovieSelect(originalIndex)
+            console.log('🎬 onMovieSelect chiamata con successo')
+        } else {
+            console.error('🎬 onMovieSelect non è una funzione!')
+        }
+        
         setIsAutoPlaying(false)
         setCountdown(10)
 
@@ -77,6 +86,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     // Debug per vedere i film disponibili
     console.log('🎬 UpcomingTrailersSection - Film disponibili:', upcomingMovies.length, 'Movies totali:', movies.length)
+    console.log('🎬 UpcomingTrailersSection - Current index:', currentMovieIndex)
+    console.log('🎬 UpcomingTrailersSection - Upcoming movies:', upcomingMovies.map(m => ({ id: m.movie.id, title: m.movie.title, originalIndex: m.originalIndex })))
 
     return (
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
@@ -110,8 +121,10 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     ? 'w-64 h-36 scale-110 z-10'
                                     : 'w-48 h-28 hover:scale-105'
                                     }`}
-                                onClick={() => {
-                                    console.log('🖱️ Click su film:', originalIndex, movie.title)
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    console.log('🖱️ Click su film:', originalIndex, movie.title, 'Event:', e)
                                     handleMovieSelect(originalIndex)
                                 }}
                                 onMouseEnter={handleMouseEnter}
