@@ -9,14 +9,23 @@ import { Menu } from 'lucide-react'
 interface NavbarProps {
     isVisible?: boolean
     onHoverChange?: (hovered: boolean) => void
+    searchFocused?: boolean
+    onSearchFocusChange?: (focused: boolean) => void
 }
 
-export function Navbar({ isVisible = true, onHoverChange }: NavbarProps) {
+export function Navbar({ isVisible = true, onHoverChange, searchFocused = false, onSearchFocusChange }: NavbarProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
+    const [isSearchFocused, setIsSearchFocused] = useState(false)
 
-    // La navbar è visibile se isVisible è true (gestito dalla homepage)
-    const shouldShow = isVisible
+    // La navbar è visibile se isVisible è true OPPURE se la ricerca è attiva
+    const shouldShow = isVisible || isSearchFocused
+
+    // Gestisce il focus della ricerca e comunica alla homepage
+    const handleSearchFocusChange = (focused: boolean) => {
+        setIsSearchFocused(focused)
+        onSearchFocusChange?.(focused)
+    }
 
     return (
         <nav
@@ -63,7 +72,7 @@ export function Navbar({ isVisible = true, onHoverChange }: NavbarProps) {
                 {/* Search Bar */}
                 <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
                     <div className="w-full">
-                        <SearchBar />
+                        <SearchBar onFocusChange={handleSearchFocusChange} />
                     </div>
                 </div>
 
@@ -88,7 +97,7 @@ export function Navbar({ isVisible = true, onHoverChange }: NavbarProps) {
             {isMenuOpen && (
                 <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-t border-white/10">
                     <div className="px-4 py-4 space-y-4">
-                        <SearchBar />
+                        <SearchBar onFocusChange={handleSearchFocusChange} />
                         <div className="space-y-2">
                             <Link
                                 href="/home"

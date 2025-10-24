@@ -14,13 +14,14 @@ export default function HomePage() {
     const [navbarVisible, setNavbarVisible] = useState(true)
     const [initialLoad, setInitialLoad] = useState(true)
     const [navbarHovered, setNavbarHovered] = useState(false)
+    const [searchFocused, setSearchFocused] = useState(false)
     const [heroSectionLoaded, setHeroSectionLoaded] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
     const [pageLoaded, setPageLoaded] = useState(false)
 
-    // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
-    const shouldShowNavbar = navbarVisible || navbarHovered
+    // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover OPPURE se la ricerca è attiva
+    const shouldShowNavbar = navbarVisible || navbarHovered || searchFocused
 
     // La Hero Section ora gestisce internamente il caricamento dei film con trailer
 
@@ -40,7 +41,7 @@ export default function HomePage() {
                 console.log('Pre-caricamento dati in background:', error)
             }
         }
-        
+
         preloadData()
     }, [])
 
@@ -67,7 +68,7 @@ export default function HomePage() {
                 hoverTimeout = null
             }
         }
-        
+
         const handleNavbarLeave = () => {
             // Nascondi dopo 2 secondi
             hoverTimeout = setTimeout(() => {
@@ -157,6 +158,10 @@ export default function HomePage() {
         }
     }
 
+    const handleSearchFocusChange = (focused: boolean) => {
+        setSearchFocused(focused)
+    }
+
     // Mostra errore solo se API key mancante e controllo completato
     if (!hasApiKey && !isCheckingApi) {
         return <ApiKeyError />
@@ -168,6 +173,8 @@ export default function HomePage() {
             <Navbar
                 isVisible={shouldShowNavbar}
                 onHoverChange={setNavbarHovered}
+                searchFocused={searchFocused}
+                onSearchFocusChange={handleSearchFocusChange}
             />
 
             {/* Hero Section */}

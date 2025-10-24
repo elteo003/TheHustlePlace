@@ -15,19 +15,30 @@ interface SearchResult {
     first_air_date?: string
 }
 
-export function SearchBar() {
+interface SearchBarProps {
+    onFocusChange?: (focused: boolean) => void
+}
+
+export function SearchBar({ onFocusChange }: SearchBarProps) {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<SearchResult[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [isFocused, setIsFocused] = useState(false)
     const searchRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    // Gestisce il focus e comunica alla navbar
+    useEffect(() => {
+        onFocusChange?.(isFocused)
+    }, [isFocused, onFocusChange])
 
     // Chiudi dropdown quando clicchi fuori
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
                 setIsOpen(false)
+                setIsFocused(false)
             }
         }
 
@@ -127,6 +138,7 @@ export function SearchBar() {
         setQuery('')
         setResults([])
         setIsOpen(false)
+        setIsFocused(false)
         inputRef.current?.focus()
     }
 
@@ -142,7 +154,16 @@ export function SearchBar() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
+                    onFocus={() => {
+                        setIsFocused(true)
+                        if (query.length >= 2 && results.length > 0) {
+                            setIsOpen(true)
+                        }
+                    }}
+                    onBlur={() => {
+                        // Ritarda il blur per permettere click sui risultati
+                        setTimeout(() => setIsFocused(false), 150)
+                    }}
                     onKeyPress={handleKeyPress}
                     placeholder="Cerca film e serie TV..."
                     className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
