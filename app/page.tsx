@@ -22,11 +22,15 @@ export default function HomePage() {
     const shouldShowNavbar = navbarVisible || navbarHovered
 
     useEffect(() => {
-        // Mostra loading screen solo al primo accesso
-        const hasSeenLoading = sessionStorage.getItem('hasSeenLoading')
-        if (!hasSeenLoading) {
+        // Mostra loading screen solo al primo accesso o dopo riavvio server
+        const lastSeenLoading = localStorage.getItem('lastSeenLoading')
+        const now = Date.now()
+        const oneHour = 60 * 60 * 1000 // 1 ora in millisecondi
+        
+        // Se non c'è timestamp o è passata più di un'ora, mostra l'animazione
+        if (!lastSeenLoading || (now - parseInt(lastSeenLoading)) > oneHour) {
             setShowLoadingScreen(true)
-            sessionStorage.setItem('hasSeenLoading', 'true')
+            localStorage.setItem('lastSeenLoading', now.toString())
         }
 
         // Controllo API key in background, non blocca il rendering
