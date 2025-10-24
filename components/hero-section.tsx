@@ -126,7 +126,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
-    }, [setNavbarVisible])
+    }, [])
 
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || navbarHovered || isScrolled || initialLoad
@@ -144,7 +144,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             }, 5000))
             return () => clearTimeout(timeout)
         }
-    }, [shouldShowControls, addTimeout, setNavbarVisible])
+    }, [shouldShowControls, addTimeout])
 
 
     // Gestisce il cambio film dall'esterno
