@@ -15,15 +15,27 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
     const [countdown, setCountdown] = useState(10)
     const [isAutoPlaying, setIsAutoPlaying] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
+    const [hoveredMovieId, setHoveredMovieId] = useState<number | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
-    const { isHovered, handleMouseEnter, handleMouseLeave } = useSmartHover({
+    const { isHovered: sectionHovered, handleMouseEnter: sectionMouseEnter, handleMouseLeave: sectionMouseLeave } = useSmartHover({
         onEnter: () => setIsAutoPlaying(false),
         onLeave: () => setIsAutoPlaying(true)
     })
+
+    // Funzioni per gestire hover individuale sui film
+    const handleMovieMouseEnter = (movieId: number) => {
+        setHoveredMovieId(movieId)
+        setIsAutoPlaying(false)
+    }
+
+    const handleMovieMouseLeave = () => {
+        setHoveredMovieId(null)
+        setIsAutoPlaying(true)
+    }
 
     // Filtra i film escludendo quello attuale e mantieni gli indici originali
     const upcomingMovies = movies
@@ -90,7 +102,11 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
     console.log('🎬 UpcomingTrailersSection - Upcoming movies:', upcomingMovies.map(m => ({ id: m.movie.id, title: m.movie.title, originalIndex: m.originalIndex })))
 
     return (
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
+        <div 
+            className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent"
+            onMouseEnter={sectionMouseEnter}
+            onMouseLeave={sectionMouseLeave}
+        >
             <div className="container mx-auto">
                 {/* Countdown */}
                 <div className="flex items-center justify-center mb-4">
@@ -113,25 +129,27 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                     {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path
+                        const isMovieHovered = hoveredMovieId === movie.id
 
                         return (
                             <div
                                 key={movie.id}
-                                className={`flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-out ${isHovered
-                                    ? 'w-64 h-36 scale-110 z-10'
-                                    : 'w-48 h-28 hover:scale-105'
-                                    }`}
+                                className={`flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-out ${
+                                    isMovieHovered
+                                        ? 'w-64 h-36 scale-110 z-10'
+                                        : 'w-48 h-28 hover:scale-105'
+                                }`}
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
                                     console.log('🖱️ Click su film:', originalIndex, movie.title, 'Event:', e)
                                     handleMovieSelect(originalIndex)
                                 }}
-                                onMouseEnter={handleMouseEnter}
-                                onMouseLeave={handleMouseLeave}
+                                onMouseEnter={() => handleMovieMouseEnter(movie.id)}
+                                onMouseLeave={handleMovieMouseLeave}
                                 style={{
-                                    transform: isHovered ? 'scale(1.1)' : 'scale(1)',
-                                    zIndex: isHovered ? 10 : 1,
+                                    transform: isMovieHovered ? 'scale(1.1)' : 'scale(1)',
+                                    zIndex: isMovieHovered ? 10 : 1,
                                     border: '2px solid red', // Debug: bordo rosso per vedere i clickable areas
                                     pointerEvents: 'auto', // Forza i pointer events
                                     position: 'relative', // Assicura che sia posizionato correttamente
@@ -146,16 +164,16 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     />
 
                                     {/* Overlay */}
-                                    <div className={`absolute inset-0 transition-all duration-300 ${isHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
+                                    <div className={`absolute inset-0 transition-all duration-300 ${isMovieHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
                                         }`} />
 
                                     {/* Play Button */}
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className={`p-3 rounded-full backdrop-blur-sm border border-white/30 transition-all duration-300 ${isHovered
+                                        <div className={`p-3 rounded-full backdrop-blur-sm border border-white/30 transition-all duration-300 ${isMovieHovered
                                             ? 'bg-black/80 scale-110'
                                             : 'bg-black/60 group-hover:bg-black/80'
                                             }`}>
-                                            <svg className={`text-white fill-white transition-all duration-300 ${isHovered ? 'w-6 h-6' : 'w-4 h-4'
+                                            <svg className={`text-white fill-white transition-all duration-300 ${isMovieHovered ? 'w-6 h-6' : 'w-4 h-4'
                                                 }`} viewBox="0 0 24 24">
                                                 <path d="M8 5v14l11-7z" />
                                             </svg>
@@ -164,11 +182,11 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
                                     {/* Title */}
                                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
-                                        <h4 className={`text-white font-semibold truncate transition-all duration-300 ${isHovered ? 'text-sm' : 'text-xs'
+                                        <h4 className={`text-white font-semibold truncate transition-all duration-300 ${isMovieHovered ? 'text-sm' : 'text-xs'
                                             }`}>
                                             {title}
                                         </h4>
-                                        {isHovered && (
+                                        {isMovieHovered && (
                                             <p className="text-gray-300 text-xs mt-1 line-clamp-2">
                                                 {movie.overview || 'Descrizione non disponibile'}
                                             </p>
@@ -176,7 +194,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     </div>
 
                                     {/* Hover Indicator */}
-                                    {isHovered && (
+                                    {isMovieHovered && (
                                         <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
                                     )}
                                 </div>
