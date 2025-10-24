@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { ApiKeyError } from '@/components/api-key-error'
+import { MovieProvider } from '@/contexts/MovieContext'
 
 export default function HomePage() {
     const router = useRouter()
@@ -168,96 +169,98 @@ export default function HomePage() {
     }
 
     return (
-        <main className="min-h-screen bg-black">
-            {/* Navbar */}
-            <Navbar
-                isVisible={shouldShowNavbar}
-                onHoverChange={setNavbarHovered}
-                searchFocused={searchFocused}
-                onSearchFocusChange={handleSearchFocusChange}
-            />
+        <MovieProvider>
+            <main className="min-h-screen bg-black">
+                {/* Navbar */}
+                <Navbar
+                    isVisible={shouldShowNavbar}
+                    onHoverChange={setNavbarHovered}
+                    searchFocused={searchFocused}
+                    onSearchFocusChange={handleSearchFocusChange}
+                />
 
-            {/* Hero Section */}
-            <HeroSection
-                onControlsVisibilityChange={setNavbarVisible}
-                navbarHovered={navbarHovered}
-                onTrailerEnded={handleTrailerEnded}
-                onMovieChange={handleHeroMovieChange}
-                showUpcomingTrailers={showUpcomingTrailers}
-                onLoaded={handleHeroSectionLoaded}
-                currentHeroMovieIndex={currentHeroMovieIndex}
-            />
+                {/* Hero Section */}
+                <HeroSection
+                    onControlsVisibilityChange={setNavbarVisible}
+                    navbarHovered={navbarHovered}
+                    onTrailerEnded={handleTrailerEnded}
+                    onMovieChange={handleHeroMovieChange}
+                    showUpcomingTrailers={showUpcomingTrailers}
+                    onLoaded={handleHeroSectionLoaded}
+                    currentHeroMovieIndex={currentHeroMovieIndex}
+                />
 
-            {/* La sezione Upcoming Trailers è ora gestita internamente dalla Hero Section */}
+                {/* La sezione Upcoming Trailers è ora gestita internamente dalla Hero Section */}
 
-            {/* Main Content */}
-            <div className={`relative z-10 transition-all duration-1000 delay-300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {/* Top 10 Movies Section */}
-                <section className={`py-8 transition-all duration-1000 delay-500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="container mx-auto px-4">
-                        <h2 className="text-2xl font-bold text-white mb-6">Top 10 Titoli Oggi</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="trending"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                        />
-                    </div>
-                </section>
+                {/* Main Content */}
+                <div className={`relative z-10 transition-all duration-1000 delay-300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    {/* Top 10 Movies Section */}
+                    <section className={`py-8 transition-all duration-1000 delay-500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-2xl font-bold text-white mb-6">Top 10 Titoli Oggi</h2>
+                            <MovieGridIntegrated
+                                type="movie"
+                                section="trending"
+                                onPlay={handlePlay}
+                                onDetails={handleDetails}
+                            />
+                        </div>
+                    </section>
 
-                {/* Popular Movies Section */}
-                <section className={`py-8 transition-all duration-1000 delay-700 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="container mx-auto px-4">
-                        <h2 className="text-2xl font-bold text-white mb-6">Film Popolari</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="popular"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                        />
-                    </div>
-                </section>
+                    {/* Popular Movies Section */}
+                    <section className={`py-8 transition-all duration-1000 delay-700 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-2xl font-bold text-white mb-6">Film Popolari</h2>
+                            <MovieGridIntegrated
+                                type="movie"
+                                section="popular"
+                                onPlay={handlePlay}
+                                onDetails={handleDetails}
+                            />
+                        </div>
+                    </section>
 
-                {/* Recent Movies Section */}
-                <section className={`py-8 transition-all duration-1000 delay-900 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="container mx-auto px-4">
-                        <h2 className="text-2xl font-bold text-white mb-6">Film Recenti</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="recent"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                        />
-                    </div>
-                </section>
+                    {/* Recent Movies Section */}
+                    <section className={`py-8 transition-all duration-1000 delay-900 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-2xl font-bold text-white mb-6">Film Recenti</h2>
+                            <MovieGridIntegrated
+                                type="movie"
+                                section="recent"
+                                onPlay={handlePlay}
+                                onDetails={handleDetails}
+                            />
+                        </div>
+                    </section>
 
-                {/* Popular TV Shows Section */}
-                <section className={`py-8 transition-all duration-1000 delay-1100 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="container mx-auto px-4">
-                        <h2 className="text-2xl font-bold text-white mb-6">Serie TV Popolari</h2>
-                        <MovieGridIntegrated
-                            type="tv"
-                            section="popular"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                        />
-                    </div>
-                </section>
+                    {/* Popular TV Shows Section */}
+                    <section className={`py-8 transition-all duration-1000 delay-1100 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-2xl font-bold text-white mb-6">Serie TV Popolari</h2>
+                            <MovieGridIntegrated
+                                type="tv"
+                                section="popular"
+                                onPlay={handlePlay}
+                                onDetails={handleDetails}
+                            />
+                        </div>
+                    </section>
 
-                {/* Recent TV Shows Section */}
-                <section className={`py-8 transition-all duration-1000 delay-1300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <div className="container mx-auto px-4">
-                        <h2 className="text-2xl font-bold text-white mb-6">Serie TV Recenti</h2>
-                        <MovieGridIntegrated
-                            type="tv"
-                            section="recent"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                        />
-                    </div>
-                </section>
-            </div>
-        </main>
+                    {/* Recent TV Shows Section */}
+                    <section className={`py-8 transition-all duration-1000 delay-1300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <div className="container mx-auto px-4">
+                            <h2 className="text-2xl font-bold text-white mb-6">Serie TV Recenti</h2>
+                            <MovieGridIntegrated
+                                type="tv"
+                                section="recent"
+                                onPlay={handlePlay}
+                                onDetails={handleDetails}
+                            />
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </MovieProvider>
     )
 
 }

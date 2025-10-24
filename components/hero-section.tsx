@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
+import { useMovieContext } from '@/contexts/MovieContext'
+import { useTrailerTimer } from '@/hooks/useTrailerTimer'
+import { useSmartHover } from '@/hooks/useSmartHover'
+import { useCleanup } from '@/hooks/useCleanup'
 
 interface HeroSectionProps {
     onControlsVisibilityChange?: (visible: boolean) => void
@@ -18,47 +22,47 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
-    const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
+    // Usa il context per stato globale
+    const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
+
+    // Stati locali
     const [trailer, setTrailer] = useState<string | null>(null)
-    const [error, setError] = useState<string | null>(null)
-    const [isHovered, setIsHovered] = useState(false)
     const [isMuted, setIsMuted] = useState(true)
-    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
     const [isScrolled, setIsScrolled] = useState(false)
     const [showControls, setShowControls] = useState(true)
     const [initialLoad, setInitialLoad] = useState(true)
     const [isNavbarHovered, setIsNavbarHovered] = useState(false)
-    const [currentMovieIndex, setCurrentMovieIndex] = useState(0)
-    const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
-    const [autoChangeTimer, setAutoChangeTimer] = useState<NodeJS.Timeout | null>(null)
-    const [trailerEnded, setTrailerEnded] = useState(false)
 
-    // Fallback movie
-    const fallbackMovie: TMDBMovie = {
-        id: 157336,
-        title: 'Interstellar',
-        original_title: 'Interstellar',
-        overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
-        poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
-        backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
-        release_date: '2014-11-05',
-        vote_average: 8.46,
-        vote_count: 37772,
-        popularity: 46.5648,
-        adult: false,
-        video: false,
-        genre_ids: [18, 878],
-        original_language: 'en'
-    }
+    // Hooks personalizzati
+    const { addTimeout } = useCleanup()
+    const { isHovered, handleMouseEnter, handleMouseLeave } = useSmartHover({
+        onHoverStart: () => {
+            setShowControls(true)
+            onControlsVisibilityChange?.(true)
+        },
+        onHoverEnd: () => {
+            if (!isScrolled && !navbarHovered && !initialLoad) {
+                setShowControls(false)
+                onControlsVisibilityChange?.(false)
+            }
+        }
+    })
 
+    const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
+        trailer,
+        onTrailerEnded: () => {
+            setTrailer(null)
+            onTrailerEnded?.()
+        }
+    })
+
+    // Inizializzazione
     useEffect(() => {
-        loadPopularMovies()
-        // Imposta initialLoad a false dopo 2 secondi per permettere la scomparsa automatica
-        const timer = setTimeout(() => {
+        const timer = addTimeout(setTimeout(() => {
             setInitialLoad(false)
-        }, 2000)
+        }, 2000))
         return () => clearTimeout(timer)
-    }, [])
+    }, [addTimeout])
 
     // Notifica quando la Hero Section è caricata
     useEffect(() => {
@@ -67,94 +71,48 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         }
     }, [featuredMovie, onLoaded])
 
-    // Gestisce la fine del trailer
+    // Carica trailer quando cambia il film
     useEffect(() => {
-        if (trailer && !trailerEnded) {
-            // Simula la fine del trailer dopo 30 secondi (durata media di un trailer)
-            const trailerTimer = setTimeout(() => {
-                console.log('🎬 Trailer finito, mostrando prossimi film')
-                setTrailerEnded(true)
-                // Ferma il trailer attuale
+        if (featuredMovie) {
+            loadTrailerForMovie(featuredMovie)
+            resetTimer() // Reset timer quando cambia film
+        }
+    }, [featuredMovie, resetTimer])
+
+    // Funzione per caricare trailer
+    const loadTrailerForMovie = useCallback(async (movie: TMDBMovie) => {
+        try {
+            console.log(`🎬 Caricamento trailer per: ${movie.title}`)
+            const response = await fetch(`/api/tmdb/movies/${movie.id}/videos`)
+            const data = await response.json()
+
+            if (data.success && data.data?.results?.length > 0) {
+                const mainTrailer = findMainTrailer(data.data.results)
+                if (mainTrailer) {
+                    setTrailer(mainTrailer.key)
+                    console.log(`✅ Trailer trovato: ${mainTrailer.key}`)
+                } else {
+                    console.log(`⚠️ Nessun trailer valido per ${movie.title}`)
+                    setTrailer(null)
+                }
+            } else {
+                console.log(`⚠️ Nessun video disponibile per ${movie.title}`)
                 setTrailer(null)
-                if (onTrailerEnded) {
-                    onTrailerEnded()
-                }
-            }, 30000) // 30 secondi
-
-            return () => clearTimeout(trailerTimer)
-        }
-    }, [trailer, trailerEnded, onTrailerEnded])
-
-    // Mostra la sezione prossimi film anche se non c'è trailer (dopo 15 secondi)
-    useEffect(() => {
-        if (!trailer && !trailerEnded && popularMovies.length > 0) {
-            const fallbackTimer = setTimeout(() => {
-                console.log('🎬 Nessun trailer, mostrando prossimi film dopo timeout')
-                setTrailerEnded(true)
-                if (onTrailerEnded) {
-                    onTrailerEnded()
-                }
-            }, 15000) // 15 secondi
-
-            return () => clearTimeout(fallbackTimer)
-        }
-    }, [trailer, trailerEnded, popularMovies.length, onTrailerEnded])
-
-    useEffect(() => {
-        return () => {
-            if (hoverTimeout) {
-                clearTimeout(hoverTimeout)
             }
-            if (autoChangeTimer) {
-                clearTimeout(autoChangeTimer)
-            }
+        } catch (error) {
+            console.error(`❌ Errore caricamento trailer per ${movie.title}:`, error)
+            setTrailer(null)
         }
-    }, [hoverTimeout, autoChangeTimer])
+    }, [])
 
-    // Funzioni per gestire l'hover
-    const handleMouseEnter = useCallback(() => {
-        if (hoverTimeout) {
-            clearTimeout(hoverTimeout)
-            setHoverTimeout(null)
-        }
-        setIsHovered(true)
-        setShowControls(true)
-        onControlsVisibilityChange?.(true)
-    }, [hoverTimeout, onControlsVisibilityChange])
-
-    const handleMouseLeave = useCallback(() => {
-        const timeout = setTimeout(() => {
-            setIsHovered(false)
-        }, 100) // Piccolo delay per evitare flickering
-        setHoverTimeout(timeout)
-
-        if (!isScrolled && !navbarHovered && !initialLoad) {
-            const hideTimeout = setTimeout(() => {
-                setShowControls(false)
-                onControlsVisibilityChange?.(false)
-            }, 3000)
-            setHoverTimeout(hideTimeout)
-        }
-    }, [isScrolled, navbarHovered, initialLoad, onControlsVisibilityChange])
-
-    // Scroll detection per nascondere/mostrare i controlli
+    // Scroll detection semplificato
     useEffect(() => {
         const handleScroll = () => {
             const scrollY = window.scrollY
             const heroHeight = window.innerHeight
 
-            // Se siamo nella hero section (primi 100vh)
             if (scrollY < heroHeight) {
                 setIsScrolled(false)
-                // Nascondi i controlli dopo 3 secondi se non c'è hover e non c'è hover sulla navbar
-                // Ma solo se non è il caricamento iniziale
-                if (!isHovered && !navbarHovered && !initialLoad) {
-                    const timeout = setTimeout(() => {
-                        setShowControls(false)
-                        onControlsVisibilityChange?.(false)
-                    }, 3000)
-                    return () => clearTimeout(timeout)
-                }
             } else {
                 setIsScrolled(true)
                 setShowControls(true)
@@ -163,17 +121,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         }
 
         window.addEventListener('scroll', handleScroll)
-        window.addEventListener('mouseenter', handleMouseEnter)
-        window.addEventListener('mouseleave', handleMouseLeave)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [onControlsVisibilityChange])
 
-        return () => {
-            window.removeEventListener('scroll', handleScroll)
-            window.removeEventListener('mouseenter', handleMouseEnter)
-            window.removeEventListener('mouseleave', handleMouseLeave)
-        }
-    }, [isHovered, isScrolled, navbarHovered, initialLoad, onControlsVisibilityChange])
-
-    // Logica unificata per visibilità navbar e dettagli
+    // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isNavbarHovered || navbarHovered || isScrolled || initialLoad
 
     // Gestisce la visibilità unificata
@@ -182,229 +133,20 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             setShowControls(true)
             onControlsVisibilityChange?.(true)
         } else {
-            // Nascondi dopo 2 secondi se non c'è hover
-            const timeout = setTimeout(() => {
+            const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
                 onControlsVisibilityChange?.(false)
-            }, 2000)
+            }, 2000))
             return () => clearTimeout(timeout)
         }
-    }, [shouldShowControls, onControlsVisibilityChange])
+    }, [shouldShowControls, onControlsVisibilityChange, addTimeout])
 
-    // Gestisce hover sulla navbar
-    const handleNavbarHover = () => {
-        setIsNavbarHovered(true)
-    }
-
-    const handleNavbarLeave = () => {
-        setIsNavbarHovered(false)
-    }
-
-    // Carica il film featured al mount del componente
-    useEffect(() => {
-        loadFeaturedMovie()
-    }, [])
-
-    const loadFeaturedMovie = async () => {
-        try {
-            setError(null)
-
-            // Carica solo film con trailer disponibili
-            const response = await fetch('/api/catalog/popular/movies-with-trailers')
-            const data = await response.json()
-
-            console.log('Hero Section - Film con trailer ricevuti:', data)
-
-            if (data.success && data.data?.length > 0) {
-                // Salva i film popolari per il tasto "Prossimo Film" e sezione "prossimi da guardare"
-                setPopularMovies(data.data)
-                console.log(`Hero Section - Salvati ${data.data.length} film con trailer`)
-
-                // Usa il primo film (che sicuramente ha trailer)
-                const featuredMovie = data.data[0]
-                setFeaturedMovie(featuredMovie)
-                console.log('Hero Section - Film selezionato:', featuredMovie.title)
-
-                // Carica il trailer del film selezionato
-                try {
-                    const trailerResponse = await fetch(`/api/tmdb/movies/${featuredMovie.id}`)
-                    const trailerData = await trailerResponse.json()
-
-                    if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
-                        const mainTrailer = findMainTrailer(trailerData.data.videos.results)
-                        if (mainTrailer) {
-                            setTrailer(mainTrailer.key)
-                            console.log('Hero Section - Trailer impostato:', mainTrailer.key)
-                        }
-                    }
-                } catch (trailerErr) {
-                    console.log('Hero Section - Errore caricamento trailer:', trailerErr)
-                }
-            } else {
-                // Fallback con film hardcoded se l'API non funziona
-                const fallbackMovie: TMDBMovie = {
-                    id: 157336,
-                    title: 'Interstellar',
-                    original_title: 'Interstellar',
-                    overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
-                    poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
-                    backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
-                    release_date: '2014-11-05',
-                    vote_average: 8.46,
-                    vote_count: 37772,
-                    popularity: 46.5648,
-                    adult: false,
-                    video: false,
-                    genre_ids: [18, 878],
-                    original_language: 'en'
-                }
-                setFeaturedMovie(fallbackMovie)
-            }
-
-        } catch (err) {
-            console.error('Errore nel caricamento film hero:', err)
-            // Fallback con film hardcoded anche in caso di errore
-            const fallbackMovie: TMDBMovie = {
-                id: 157336,
-                title: 'Interstellar',
-                original_title: 'Interstellar',
-                overview: 'In seguito alla scoperta di un cunicolo spazio-temporale, un gruppo di esploratori si avventura in una eroica missione per tentare di superare i limiti della conquista spaziale.',
-                poster_path: '/bMKiLh0mES4Uiococ240lbbTGXQ.jpg',
-                backdrop_path: '/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg',
-                release_date: '2014-11-05',
-                vote_average: 8.46,
-                vote_count: 37772,
-                popularity: 46.5648,
-                adult: false,
-                video: false,
-                genre_ids: [18, 878],
-                original_language: 'en'
-            }
-            setFeaturedMovie(fallbackMovie)
-        }
-    }
-
-    const loadPopularMovies = async () => {
-        try {
-            setError(null)
-            console.log('🎬 Caricando film popolari...')
-            const response = await fetch('/api/catalog/popular/movies')
-            const data = await response.json()
-
-            if (data.success && data.data?.length > 0) {
-                console.log(`✅ Caricati ${data.data.length} film popolari`)
-                setPopularMovies(data.data)
-                setCurrentMovieIndex(0)
-                loadMovieAtIndex(0, data.data)
-            } else {
-                console.log('❌ Nessun film popolare trovato, usando fallback')
-                setFeaturedMovie(fallbackMovie)
-            }
-        } catch (err) {
-            console.error('❌ Errore nel caricamento dei film popolari:', err)
-            setFeaturedMovie(fallbackMovie)
-        }
-    }
-
-    const loadMovieAtIndex = async (index: number, movies: TMDBMovie[]) => {
-        if (index >= movies.length) {
-            // Se arriviamo alla fine, ricomincia dall'inizio
-            loadMovieAtIndex(0, movies)
-            return
-        }
-
-        const movie = movies[index]
-        try {
-            const trailerResponse = await fetch(`/api/tmdb/movies/${movie.id}`)
-            const trailerData = await trailerResponse.json()
-
-            if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
-                const mainTrailer = findMainTrailer(trailerData.data.videos.results)
-                if (mainTrailer) {
-                    console.log(`🎬 Film caricato: ${movie.title} con trailer: ${mainTrailer.key}`)
-                    setFeaturedMovie(movie)
-                    setTrailer(mainTrailer.key)
-                    startAutoChangeTimer()
-                    return
-                } else {
-                    console.log(`⚠️ Film ${movie.title} ha video ma nessun trailer valido`)
-                }
-            } else {
-                console.log(`⚠️ Film ${movie.title} non ha video disponibili`)
-            }
-
-            // Se non trova trailer, prova il prossimo film
-            loadMovieAtIndex(index + 1, movies)
-        } catch (err) {
-            console.error(`Errore per film ${movie.title}:`, err)
-            loadMovieAtIndex(index + 1, movies)
-        }
-    }
-
-    const startAutoChangeTimer = () => {
-        // Pulisce timer esistenti
-        if (autoChangeTimer) {
-            clearTimeout(autoChangeTimer)
-        }
-
-        console.log('🎬 Avviando timer per cambio automatico film in 30 secondi...')
-
-        // Imposta timer per cambio automatico (30 secondi per test)
-        const timer = setTimeout(() => {
-            console.log('⏰ Timer scaduto, cambiando film...')
-            changeToNextMovie()
-        }, 30000) // 30 secondi per test
-
-        setAutoChangeTimer(timer)
-    }
-
-    const changeToNextMovie = () => {
-        console.log('🎬 Click su Prossimo Film - popularMovies.length:', popularMovies.length)
-        console.log('🎬 currentMovieIndex:', currentMovieIndex)
-
-        if (popularMovies.length === 0) {
-            console.log('❌ Nessun film popolare disponibile')
-            return
-        }
-
-        const nextIndex = (currentMovieIndex + 1) % popularMovies.length
-        console.log(`🔄 Cambiando da film ${currentMovieIndex} a ${nextIndex} (${popularMovies[nextIndex]?.title})`)
-        setCurrentMovieIndex(nextIndex)
-        setTrailerEnded(false) // Reset trailer ended state
-        loadMovieAtIndex(nextIndex, popularMovies)
-
-        // Notifica il componente padre del cambio film
-        if (onMovieChange) {
-            onMovieChange(nextIndex)
-        }
-    }
-
-    // Funzione per cambiare film dall'esterno
-    const changeToMovie = (index: number) => {
-        if (popularMovies.length === 0 || index < 0 || index >= popularMovies.length) {
-            return
-        }
-
-        console.log(`🔄 Cambiando a film ${index} (${popularMovies[index]?.title})`)
-        setCurrentMovieIndex(index)
-        setTrailerEnded(false) // Reset trailer ended state
-
-        // Carica solo i dettagli del film, non il trailer
-        const movie = popularMovies[index]
-        setFeaturedMovie(movie)
-        setTrailer(null) // Non carica il trailer automaticamente
-        setError(null)
-
-        console.log(`✅ Film cambiato: ${movie.title}`)
-    }
-
-    // Espone la funzione per il componente padre
+    // Gestisce il cambio film dall'esterno
     useEffect(() => {
         if (onMovieChange) {
-            // Crea una funzione che il componente padre può chiamare
-            (window as any).changeHeroMovie = changeToMovie
+            onMovieChange(currentIndex)
         }
-    }, [popularMovies, onMovieChange])
+    }, [currentIndex, onMovieChange])
 
     const handleWatchNow = () => {
         if (featuredMovie) {
@@ -421,13 +163,31 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
 
 
 
+    // Mostra loading durante verifica trailer
+    if (loading) {
+        return (
+            <div className="relative h-screen bg-black flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                    <h2 className="text-3xl font-bold text-white mb-4">Caricamento film con trailer...</h2>
+                    <p className="text-gray-400 text-lg">Verifico disponibilità trailer YouTube</p>
+                    <div className="mt-4 flex items-center justify-center space-x-2">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     if (error || !featuredMovie) {
         return (
             <div className="relative h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
-                    <Button onClick={loadFeaturedMovie} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+                    <Button onClick={() => window.location.reload()} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
                         Riprova
                     </Button>
                 </div>
@@ -583,10 +343,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
-            {trailerEnded && popularMovies.length > 0 && (
+            {trailerEnded && movies.length > 0 && (
                 <UpcomingTrailersSection
-                    movies={popularMovies}
-                    currentMovieIndex={currentMovieIndex}
+                    movies={movies}
+                    currentMovieIndex={currentIndex}
                     onMovieSelect={changeToMovie}
                 />
             )}
