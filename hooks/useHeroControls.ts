@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useCleanup } from './useCleanup'
 
 export function useHeroControls() {
   const [showControls, setShowControls] = useState(true)
@@ -9,17 +8,15 @@ export function useHeroControls() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
 
-  const { addTimeout } = useCleanup()
-
   // Timer per nascondere controlli quando non c'è interazione
   useEffect(() => {
     if (!isHovered && !isScrolled && !initialLoad) {
-      const timeout = addTimeout(setTimeout(() => {
+      const timeout = setTimeout(() => {
         setShowControls(false)
-      }, 1000))
+      }, 1000)
       return () => clearTimeout(timeout)
     }
-  }, [isHovered, isScrolled, initialLoad, addTimeout])
+  }, [isHovered, isScrolled, initialLoad])
 
   // Gestione scroll detection
   useEffect(() => {
@@ -41,11 +38,11 @@ export function useHeroControls() {
 
   // Timer per initialLoad
   useEffect(() => {
-    const timer = addTimeout(setTimeout(() => {
+    const timer = setTimeout(() => {
       setInitialLoad(false)
-    }, 2000))
+    }, 2000)
     return () => clearTimeout(timer)
-  }, [addTimeout])
+  }, [])
 
   // Logica unificata per visibilità controlli
   const shouldShowControls = isHovered || isScrolled || initialLoad

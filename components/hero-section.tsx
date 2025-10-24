@@ -29,7 +29,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Hook personalizzati
     const { parallaxRef, scrollY } = useParallax()
     const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
-    
+
     const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
         delay: 300,
         onEnter: () => {
@@ -103,7 +103,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             isScrolled,
             initialLoad,
             shouldShowControls,
-            showControls
+            showControls,
+            'showControls === true': showControls === true,
+            'initialLoad === true': initialLoad === true
         })
     }, [isHovered, smartHovered, isScrolled, initialLoad, shouldShowControls, showControls])
 
@@ -239,7 +241,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     }
                 }
             `}</style>
-            <div 
+            <div
                 ref={hoverRef}
                 className="relative h-screen w-full overflow-hidden -mt-20"
                 onMouseEnter={handleMouseEnter}
@@ -252,218 +254,218 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                            transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
                        }}
                    >
-                       <Navbar isVisible={true} />
+                       <Navbar isVisible={showControls} />
                    </div>
 
-            {/* Background Video/Image */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden">
-                {trailer ? (
-                    <iframe
-                        src={getYouTubeEmbedUrl(trailer, true, isMuted)}
-                        className="w-full h-full object-cover transition-all duration-700 ease-out"
-                        allow="autoplay; encrypted-media; fullscreen"
-                        allowFullScreen
-                        style={{
-                            filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
-                            width: '100vw',
-                            height: '100vh',
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: isHovered 
-                                ? 'translate(-50%, -50%) scale(1.05) rotate(0.5deg)' 
-                                : 'translate(-50%, -50%) scale(1.1) rotate(0deg)',
-                            transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                        }}
-                    />
-                ) : (
-                    <div
-                        className="w-full h-full bg-cover bg-center transition-all duration-700 ease-out"
-                        style={{
-                            backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
-                            filter: isHovered ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.4) saturate(0.8) contrast(0.9)',
-                            width: '100vw',
-                            height: '100vh',
-                            backgroundSize: isHovered ? '105%' : '110%',
-                            backgroundPosition: isHovered ? 'center 45%' : 'center 50%',
-                            transform: isHovered ? 'scale(1.02) rotate(0.3deg)' : 'scale(1) rotate(0deg)',
-                            transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                        }}
-                    />
-                )}
-            </div>
+                {/* Background Video/Image */}
+                <div className="absolute inset-0 w-full h-full overflow-hidden">
+                    {trailer ? (
+                        <iframe
+                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
+                            className="w-full h-full object-cover transition-all duration-700 ease-out"
+                            allow="autoplay; encrypted-media; fullscreen"
+                            allowFullScreen
+                            style={{
+                                filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
+                                width: '100vw',
+                                height: '100vh',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: isHovered
+                                    ? 'translate(-50%, -50%) scale(1.05) rotate(0.5deg)'
+                                    : 'translate(-50%, -50%) scale(1.1) rotate(0deg)',
+                                transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                            }}
+                        />
+                    ) : (
+                        <div
+                            className="w-full h-full bg-cover bg-center transition-all duration-700 ease-out"
+                            style={{
+                                backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
+                                filter: isHovered ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.4) saturate(0.8) contrast(0.9)',
+                                width: '100vw',
+                                height: '100vh',
+                                backgroundSize: isHovered ? '105%' : '110%',
+                                backgroundPosition: isHovered ? 'center 45%' : 'center 50%',
+                                transform: isHovered ? 'scale(1.02) rotate(0.3deg)' : 'scale(1) rotate(0deg)',
+                                transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                            }}
+                        />
+                    )}
+                </div>
 
-            {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-all duration-700 ease-out ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
+                {/* Overlay Gradient */}
+                <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-all duration-700 ease-out ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
 
-            {/* Content */}
-            <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {showControls && (
-                    <div 
-                        className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
-                        style={{
-                            animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                            transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)'
-                        }}
-                    >
-                    <div className="max-w-2xl">
-                            {/* Title */}
-                            <h1 
-                                className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
-                                style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.2s both',
-                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                                }}
-                            >
-                                {featuredMovie.title}
-                            </h1>
+                {/* Content */}
+                <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    {showControls && (
+                        <div
+                            className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
+                            style={{
+                                animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                                transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)'
+                            }}
+                        >
+                            <div className="max-w-2xl">
+                                {/* Title */}
+                                <h1
+                                    className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+                                    style={{
+                                        animation: 'fadeIn 0.6s ease-out 0.2s both',
+                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
+                                        transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                    }}
+                                >
+                                    {featuredMovie.title}
+                                </h1>
 
-                            {/* Overview */}
-                            <p 
-                                className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3"
-                                style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.4s both',
-                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
-                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
-                                }}
-                            >
-                                {featuredMovie.overview}
-                            </p>
+                                {/* Overview */}
+                                <p
+                                    className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3"
+                                    style={{
+                                        animation: 'fadeIn 0.6s ease-out 0.4s both',
+                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
+                                        transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
+                                    }}
+                                >
+                                    {featuredMovie.overview}
+                                </p>
 
-                            {/* Rating */}
-                            <div 
-                                className="flex items-center mb-8"
-                                style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.6s both',
-                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
-                                }}
-                            >
-                                <div className="flex items-center">
-                                    <div className="text-yellow-400 text-2xl mr-2">★</div>
-                                    <span className="text-white text-xl font-semibold">
-                                        {featuredMovie.vote_average.toFixed(1)}
-                                    </span>
-                                    <span className="text-gray-400 ml-2">
-                                        ({featuredMovie.vote_count.toLocaleString()} voti)
-                                    </span>
+                                {/* Rating */}
+                                <div
+                                    className="flex items-center mb-8"
+                                    style={{
+                                        animation: 'fadeIn 0.6s ease-out 0.6s both',
+                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
+                                        transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
+                                    }}
+                                >
+                                    <div className="flex items-center">
+                                        <div className="text-yellow-400 text-2xl mr-2">★</div>
+                                        <span className="text-white text-xl font-semibold">
+                                            {featuredMovie.vote_average.toFixed(1)}
+                                        </span>
+                                        <span className="text-gray-400 ml-2">
+                                            ({featuredMovie.vote_count.toLocaleString()} voti)
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Buttons */}
-                            <div 
-                                className="flex flex-col sm:flex-row gap-4"
-                                style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.8s both',
-                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
-                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
-                                }}
-                            >
-                                <Button
-                                    onClick={handleWatchNow}
-                                    size="lg"
-                                    className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                {/* Buttons */}
+                                <div
+                                    className="flex flex-col sm:flex-row gap-4"
                                     style={{
-                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                        animation: 'fadeIn 0.6s ease-out 0.8s both',
+                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
+                                        transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
                                     }}
                                 >
-                                    <Play className="w-6 h-6" />
-                                    Play
-                                </Button>
-
-                                <Button
-                                    onClick={handleMoreInfo}
-                                    variant="outline"
-                                    size="lg"
-                                    className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
-                                    style={{
-                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
-                                    }}
-                                >
-                                    <Info className="w-6 h-6" />
-                                    Altre Info
-                                </Button>
-
-                                {/* Mute/Unmute Button */}
-                                {trailer && (
                                     <Button
-                                        onClick={() => setIsMuted(!isMuted)}
+                                        onClick={handleWatchNow}
+                                        size="lg"
+                                        className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                        style={{
+                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
+                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                        }}
+                                    >
+                                        <Play className="w-6 h-6" />
+                                        Play
+                                    </Button>
+
+                                    <Button
+                                        onClick={handleMoreInfo}
+                                        variant="outline"
+                                        size="lg"
+                                        className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
+                                        style={{
+                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
+                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
+                                        }}
+                                    >
+                                        <Info className="w-6 h-6" />
+                                        Altre Info
+                                    </Button>
+
+                                    {/* Mute/Unmute Button */}
+                                    {trailer && (
+                                        <Button
+                                            onClick={() => setIsMuted(!isMuted)}
+                                            variant="ghost"
+                                            size="lg"
+                                            className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                            style={{
+                                                transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
+                                                transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
+                                            }}
+                                        >
+                                            {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                                            {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
+                                        </Button>
+                                    )}
+
+                                    {/* Next Movie Button */}
+                                    <Button
+                                        onClick={changeToNextMovie}
+                                        variant="outline"
+                                        size="lg"
+                                        className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
+                                        style={{
+                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
+                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s'
+                                        }}
+                                    >
+                                        Prossimo Film
+                                    </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="lg"
+                                        className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                    >
+                                        <Plus className="w-6 h-6" />
+                                    </Button>
+
+                                    <Button
                                         variant="ghost"
                                         size="lg"
                                         className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
                                         style={{
                                             transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
+                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                         }}
                                     >
-                                        {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                                        {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
+                                        <Heart className="w-6 h-6" />
                                     </Button>
-                                )}
-
-                                {/* Next Movie Button */}
-                                <Button
-                                    onClick={changeToNextMovie}
-                                    variant="outline"
-                                    size="lg"
-                                    className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
-                                    style={{
-                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s'
-                                    }}
-                                >
-                                    Prossimo Film
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="lg"
-                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
-                                >
-                                    <Plus className="w-6 h-6" />
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="lg"
-                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
-                                    style={{
-                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
-                                    }}
-                                >
-                                    <Heart className="w-6 h-6" />
-                                </Button>
-                            </div>
-
-                            {/* Release Date */}
-                            {featuredMovie.release_date && (
-                                <div className="mt-6">
-                                    <span className="text-gray-300 text-lg">
-                                        Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
-                                    </span>
                                 </div>
-                            )}
-                    </div>
+
+                                {/* Release Date */}
+                                {featuredMovie.release_date && (
+                                    <div className="mt-6">
+                                        <span className="text-gray-300 text-lg">
+                                            Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+                {/* Bottom Gradient */}
+                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} />
+
+                {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
+                {trailerEnded && movies.length > 0 && (
+                    <UpcomingTrailersSection
+                        movies={movies}
+                        currentMovieIndex={currentIndex}
+                        onMovieSelect={changeToMovie}
+                    />
                 )}
-            </div>
-
-            {/* Bottom Gradient */}
-            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} />
-
-            {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
-            {trailerEnded && movies.length > 0 && (
-                <UpcomingTrailersSection
-                    movies={movies}
-                    currentMovieIndex={currentIndex}
-                    onMovieSelect={changeToMovie}
-                />
-            )}
             </div>
         </>
     )
