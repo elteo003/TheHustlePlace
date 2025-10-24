@@ -59,12 +59,17 @@ export function MoviePreview({
         setIsLoading(true)
         try {
             const itemId = (movie as any).tmdb_id || movie.id
+            console.log(`🎬 Caricamento trailer per ${type} ID: ${itemId}`)
 
             // Carica i trailer reali dall'API TMDB
             const response = await fetch(`/api/tmdb/${type}/${itemId}/videos`)
             const data = await response.json()
 
+            console.log(`📊 Risposta API video per ${itemId}:`, data)
+
             if (data.success && data.data?.results && data.data.results.length > 0) {
+                console.log(`📹 Trovati ${data.data.results.length} video per ${itemId}`)
+                
                 // Cerca il primo trailer disponibile
                 const trailer = data.data.results.find((video: any) =>
                     video.type === 'Trailer' &&
@@ -73,21 +78,28 @@ export function MoviePreview({
                 )
 
                 if (trailer) {
+                    console.log(`✅ Trailer ufficiale trovato: ${trailer.name} (${trailer.key})`)
                     setTrailerUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&playlist=${trailer.key}`)
                 } else {
+                    console.log(`⚠️ Nessun trailer ufficiale, cerco altri video YouTube...`)
                     // Se non c'è un trailer ufficiale, prova con il primo video disponibile
-                    const firstVideo = data.data.results[0]
-                    if (firstVideo && firstVideo.site === 'YouTube') {
+                    const firstVideo = data.data.results.find((video: any) => video.site === 'YouTube')
+                    if (firstVideo) {
+                        console.log(`✅ Video YouTube trovato: ${firstVideo.name} (${firstVideo.key})`)
                         setTrailerUrl(`https://www.youtube.com/embed/${firstVideo.key}?autoplay=1&mute=1&loop=1&playlist=${firstVideo.key}`)
                     } else {
-                        console.log('Nessun trailer YouTube disponibile per questo contenuto')
+                        console.log(`❌ Nessun video YouTube disponibile per ${itemId}`)
+                        console.log(`📋 Video disponibili:`, data.data.results.map((v: any) => ({ type: v.type, site: v.site, name: v.name })))
                     }
                 }
             } else {
-                console.log('Nessun trailer disponibile per questo contenuto')
+                console.log(`❌ Nessun video disponibile per ${itemId}`)
+                if (!data.success) {
+                    console.log(`❌ Errore API: ${data.error}`)
+                }
             }
         } catch (error) {
-            console.error('Errore nel caricamento del trailer:', error)
+            console.error('❌ Errore nel caricamento del trailer:', error)
         } finally {
             setIsLoading(false)
         }
@@ -95,6 +107,7 @@ export function MoviePreview({
 
     const handlePlay = () => {
         const itemId = (movie as any).tmdb_id || movie.id
+        console.log(`🎬 Play button clicked - Movie ID: ${movie.id}, TMDB ID: ${(movie as any).tmdb_id}, Using: ${itemId}`)
         onPlay(itemId)
     }
 
