@@ -41,7 +41,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // La logica di nascondere sarà gestita dal useEffect principale
+        // Nascondi dopo un breve delay quando esce dall'area specifica
+        const timeout = addTimeout(setTimeout(() => {
+            setShowControls(false)
+        }, 800))
+        return () => clearTimeout(timeout)
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -119,12 +123,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    // Timer per nascondere quando il cursore esce dall'area
+    // Timer globale per nascondere quando non c'è interazione
     useEffect(() => {
         if (!isHovered && !isScrolled && !initialLoad) {
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, 1500))
+            }, 3000))
             return () => clearTimeout(timeout)
         }
     }, [isHovered, isScrolled, initialLoad, addTimeout])
@@ -209,42 +213,76 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         <>
             <style jsx>{`
                 @keyframes slideInUp {
-                    from {
+                    0% {
                         opacity: 0;
-                        transform: translateY(30px);
+                        transform: translateY(40px) scale(0.95);
                     }
-                    to {
+                    50% {
+                        opacity: 0.8;
+                        transform: translateY(20px) scale(0.98);
+                    }
+                    100% {
                         opacity: 1;
-                        transform: translateY(0);
+                        transform: translateY(0) scale(1);
                     }
                 }
                 
                 @keyframes slideOutDown {
-                    from {
+                    0% {
                         opacity: 1;
-                        transform: translateY(0);
+                        transform: translateY(0) scale(1);
                     }
-                    to {
+                    50% {
+                        opacity: 0.8;
+                        transform: translateY(20px) scale(0.98);
+                    }
+                    100% {
                         opacity: 0;
-                        transform: translateY(30px);
+                        transform: translateY(40px) scale(0.95);
                     }
                 }
                 
                 @keyframes fadeIn {
-                    from {
+                    0% {
                         opacity: 0;
+                        transform: scale(0.95);
                     }
-                    to {
+                    100% {
                         opacity: 1;
+                        transform: scale(1);
                     }
                 }
                 
                 @keyframes fadeOut {
-                    from {
+                    0% {
                         opacity: 1;
+                        transform: scale(1);
                     }
-                    to {
+                    100% {
                         opacity: 0;
+                        transform: scale(0.95);
+                    }
+                }
+                
+                @keyframes slideInFromTop {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(-100%);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes slideOutToTop {
+                    0% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translateY(-100%);
                     }
                 }
             `}</style>
@@ -288,11 +326,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-all duration-700 ease-out ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
-            {/* Area di hover unificata per navbar e dettagli */}
+            {/* Area di hover per navbar */}
             <div 
-                className="absolute inset-0 z-20"
+                className="absolute top-0 left-0 right-0 h-20 z-30"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             />
@@ -303,22 +341,43 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     <div 
                         className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
                         style={{
-                            animation: 'slideInUp 0.7s ease-out'
+                            animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                         }}
                     >
+                        {/* Area di hover per dettagli */}
+                        <div 
+                            className="absolute inset-0 z-20"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                        />
                         <div className="max-w-2xl">
                             {/* Title */}
-                            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                            <h1 
+                                className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+                                style={{
+                                    animation: 'fadeIn 0.6s ease-out 0.2s both'
+                                }}
+                            >
                                 {featuredMovie.title}
                             </h1>
 
                             {/* Overview */}
-                            <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
+                            <p 
+                                className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3"
+                                style={{
+                                    animation: 'fadeIn 0.6s ease-out 0.4s both'
+                                }}
+                            >
                                 {featuredMovie.overview}
                             </p>
 
                             {/* Rating */}
-                            <div className="flex items-center mb-8">
+                            <div 
+                                className="flex items-center mb-8"
+                                style={{
+                                    animation: 'fadeIn 0.6s ease-out 0.6s both'
+                                }}
+                            >
                                 <div className="flex items-center">
                                     <div className="text-yellow-400 text-2xl mr-2">★</div>
                                     <span className="text-white text-xl font-semibold">
@@ -331,7 +390,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             </div>
 
                             {/* Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-4">
+                            <div 
+                                className="flex flex-col sm:flex-row gap-4"
+                                style={{
+                                    animation: 'fadeIn 0.6s ease-out 0.8s both'
+                                }}
+                            >
                                 <Button
                                     onClick={handleWatchNow}
                                     size="lg"
@@ -406,7 +470,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
 
             {/* Bottom Gradient */}
-            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-30'}`} />
+            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
             {trailerEnded && movies.length > 0 && (
