@@ -12,6 +12,8 @@ export default function HomePage() {
     const router = useRouter()
     const [hasApiKey, setHasApiKey] = useState(true)
     const [isCheckingApi, setIsCheckingApi] = useState(false)
+    const [navbarVisible, setNavbarVisible] = useState(false)
+    const [navbarHovered, setNavbarHovered] = useState(false)
     const [heroSectionLoaded, setHeroSectionLoaded] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
@@ -58,6 +60,26 @@ export default function HomePage() {
         }
         
         preloadData()
+    }, [])
+
+    // Gestisce l'hover della navbar
+    useEffect(() => {
+        const handleNavbarHover = () => {
+            setNavbarHovered(true)
+        }
+        
+        const handleNavbarLeave = () => {
+            setNavbarHovered(false)
+        }
+
+        // Aggiungi event listeners per l'hover della navbar
+        document.addEventListener('mouseenter', handleNavbarHover, true)
+        document.addEventListener('mouseleave', handleNavbarLeave, true)
+
+        return () => {
+            document.removeEventListener('mouseenter', handleNavbarHover, true)
+            document.removeEventListener('mouseleave', handleNavbarLeave, true)
+        }
     }, [])
 
     // Gestisce il caricamento della Hero Section
@@ -120,6 +142,8 @@ export default function HomePage() {
         <div className={`min-h-screen bg-black transition-all duration-1500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             {/* Hero Section */}
             <HeroSection
+                onControlsVisibilityChange={setNavbarVisible}
+                navbarHovered={navbarHovered}
                 onTrailerEnded={handleTrailerEnded}
                 onMovieChange={handleHeroMovieChange}
                 showUpcomingTrailers={showUpcomingTrailers}
