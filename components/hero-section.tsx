@@ -6,7 +6,6 @@ import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
-import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useCleanup } from '@/hooks/useCleanup'
 
@@ -22,7 +21,6 @@ interface HeroSectionProps {
 export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
-    const { isVisible: navbarVisible, isHovered: navbarHovered, setIsVisible: setNavbarVisible } = useNavbarContext()
 
     // Stati locali
     const [trailer, setTrailer] = useState<string | null>(null)
@@ -38,7 +36,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const handleMouseEnter = () => {
         setIsHovered(true)
         setShowControls(true)
-        setNavbarVisible(true)
     }
 
     const handleMouseLeave = () => {
@@ -114,7 +111,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             } else {
                 setIsScrolled(true)
                 setShowControls(true)
-                setNavbarVisible(true)
             }
         }
 
@@ -123,18 +119,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }, [])
 
     // Logica unificata per visibilità controlli
-    const shouldShowControls = isHovered || navbarHovered || isScrolled || initialLoad
+    const shouldShowControls = isHovered || isScrolled || initialLoad
 
     // Gestisce la visibilità unificata con delay per zone neutre
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-            setNavbarVisible(true)
         } else if (!initialLoad) {
             // Solo se non è il caricamento iniziale, nascondi dopo delay
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-                setNavbarVisible(false)
             }, 2000))
             return () => clearTimeout(timeout)
         }
