@@ -25,21 +25,21 @@ export default function HomePage() {
     // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
     const shouldShowNavbar = navbarVisible || navbarHovered
 
-    // Carica i film popolari per la Hero Section
+    // Carica i film popolari con trailer per la Hero Section
     const loadPopularMovies = async () => {
         try {
-            console.log('🎬 Caricando film popolari...')
-            const response = await fetch('/api/catalog/popular/movies')
+            console.log('🎬 Caricando film popolari con trailer...')
+            const response = await fetch('/api/catalog/popular/movies-with-trailers')
             const data = await response.json()
-
+            
             if (data.success && data.data) {
-                console.log('✅ Caricati 20 film popolari')
+                console.log(`✅ Caricati ${data.count} film con trailer`)
                 setPopularMovies(data.data)
             } else {
-                console.error('❌ Nessun film popolare disponibile')
+                console.error('❌ Nessun film con trailer disponibile')
             }
         } catch (error) {
-            console.error('Errore nel fetch dei film:', error)
+            console.error('Errore nel fetch dei film con trailer:', error)
         }
     }
 
