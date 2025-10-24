@@ -289,37 +289,50 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             <div 
                 className="relative h-screen w-full overflow-hidden -mt-20"
             >
-            {/* Navbar che appare/scompare insieme ai dettagli */}
-            <Navbar isVisible={showControls} />
+                   {/* Navbar che appare/scompare insieme ai dettagli */}
+                   <div 
+                       className={`transition-all duration-700 ease-out ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
+                       style={{
+                           transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)',
+                           filter: isHovered ? 'blur(0px)' : 'blur(0.5px)'
+                       }}
+                   >
+                       <Navbar isVisible={true} />
+                   </div>
 
             {/* Background Video/Image */}
-            <div className="absolute inset-0 w-full h-full">
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
                 {trailer ? (
                     <iframe
                         src={getYouTubeEmbedUrl(trailer, true, isMuted)}
-                        className="w-full h-full object-cover transition-all duration-500"
+                        className="w-full h-full object-cover transition-all duration-700 ease-out"
                         allow="autoplay; encrypted-media; fullscreen"
                         allowFullScreen
                         style={{
-                            filter: isHovered ? 'brightness(0.9)' : 'brightness(0.5)',
+                            filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
                             width: '100vw',
                             height: '100vh',
                             position: 'absolute',
                             top: '50%',
                             left: '50%',
-                            transform: 'translate(-50%, -50%) scale(1.1)'
+                            transform: isHovered 
+                                ? 'translate(-50%, -50%) scale(1.05) rotate(0.5deg)' 
+                                : 'translate(-50%, -50%) scale(1.1) rotate(0deg)',
+                            transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                         }}
                     />
                 ) : (
                     <div
-                        className="w-full h-full bg-cover bg-center transition-all duration-500"
+                        className="w-full h-full bg-cover bg-center transition-all duration-700 ease-out"
                         style={{
                             backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
-                            filter: isHovered ? 'brightness(0.8)' : 'brightness(0.4)',
+                            filter: isHovered ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.4) saturate(0.8) contrast(0.9)',
                             width: '100vw',
                             height: '100vh',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center center'
+                            backgroundSize: isHovered ? '105%' : '110%',
+                            backgroundPosition: isHovered ? 'center 45%' : 'center 50%',
+                            transform: isHovered ? 'scale(1.02) rotate(0.3deg)' : 'scale(1) rotate(0deg)',
+                            transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                         }}
                     />
                 )}
@@ -331,18 +344,24 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div 
-                    className={`absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-30'}`}
-                    style={{
-                        animation: showControls ? 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none'
-                    }}
-                >
+                {showControls && (
+                    <div 
+                        className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
+                        style={{
+                            animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                            transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
+                            filter: isHovered ? 'blur(0px)' : 'blur(1px)'
+                        }}
+                    >
                     <div className="max-w-2xl">
                             {/* Title */}
                             <h1 
                                 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
                                 style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.2s both'
+                                    animation: 'fadeIn 0.6s ease-out 0.2s both',
+                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.5px)',
+                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                 }}
                             >
                                 {featuredMovie.title}
@@ -352,7 +371,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             <p 
                                 className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3"
                                 style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.4s both'
+                                    animation: 'fadeIn 0.6s ease-out 0.4s both',
+                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.8px)',
+                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
                                 }}
                             >
                                 {featuredMovie.overview}
@@ -362,7 +384,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             <div 
                                 className="flex items-center mb-8"
                                 style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.6s both'
+                                    animation: 'fadeIn 0.6s ease-out 0.6s both',
+                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(1px)',
+                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                 }}
                             >
                                 <div className="flex items-center">
@@ -380,13 +405,21 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             <div 
                                 className="flex flex-col sm:flex-row gap-4"
                                 style={{
-                                    animation: 'fadeIn 0.6s ease-out 0.8s both'
+                                    animation: 'fadeIn 0.6s ease-out 0.8s both',
+                                    transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(1.2px)',
+                                    transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
                                 }}
                             >
                                 <Button
                                     onClick={handleWatchNow}
                                     size="lg"
-                                    className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                                    className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                    style={{
+                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                    }}
                                 >
                                     <Play className="w-6 h-6" />
                                     Play
@@ -396,7 +429,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     onClick={handleMoreInfo}
                                     variant="outline"
                                     size="lg"
-                                    className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                    className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
+                                    style={{
+                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
+                                    }}
                                 >
                                     <Info className="w-6 h-6" />
                                     Altre Info
@@ -408,7 +446,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                         onClick={() => setIsMuted(!isMuted)}
                                         variant="ghost"
                                         size="lg"
-                                        className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                        className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                        style={{
+                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
+                                            filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
+                                        }}
                                     >
                                         {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                                         {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
@@ -420,7 +463,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     onClick={changeToNextMovie}
                                     variant="outline"
                                     size="lg"
-                                    className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                    className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
+                                    style={{
+                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s'
+                                    }}
                                 >
                                     Prossimo Film
                                 </Button>
@@ -436,7 +484,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 <Button
                                     variant="ghost"
                                     size="lg"
-                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
+                                    style={{
+                                        transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
+                                    }}
                                 >
                                     <Heart className="w-6 h-6" />
                                 </Button>
@@ -452,8 +505,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             )}
                     </div>
                 </div>
+                )}
             </div>
-
 
             {/* Bottom Gradient */}
             <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} />
