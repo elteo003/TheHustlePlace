@@ -41,11 +41,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // Nascondi dopo un breve delay quando esce dall'area specifica
-        const timeout = addTimeout(setTimeout(() => {
-            setShowControls(false)
-        }, 800))
-        return () => clearTimeout(timeout)
+        // La logica di nascondimento è gestita dal useEffect principale
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
