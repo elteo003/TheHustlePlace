@@ -328,29 +328,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             {/* Overlay Gradient */}
             <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-all duration-700 ease-out ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
-            {/* Area di hover per navbar */}
-            <div 
-                className="absolute top-0 left-0 right-0 h-20 z-30"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-            />
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {showControls && (
-                    <div 
-                        className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
-                        style={{
-                            animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                        }}
-                    >
-                        {/* Area di hover per dettagli */}
-                        <div 
-                            className="absolute inset-0 z-20"
-                            onMouseEnter={handleMouseEnter}
-                            onMouseLeave={handleMouseLeave}
-                        />
-                        <div className="max-w-2xl">
+                <div 
+                    className={`absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-30'}`}
+                    style={{
+                        animation: showControls ? 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none'
+                    }}
+                >
+                    <div className="max-w-2xl">
                             {/* Title */}
                             <h1 
                                 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
@@ -463,9 +450,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     </span>
                                 </div>
                             )}
-                        </div>
                     </div>
-                )}
+                </div>
             </div>
 
 
