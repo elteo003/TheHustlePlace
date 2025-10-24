@@ -80,14 +80,14 @@ export function MoviePreview({
 
                 if (trailer) {
                     console.log(`✅ Trailer ufficiale trovato: ${trailer.name} (${trailer.key})`)
-                    setTrailerUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&playlist=${trailer.key}`)
+                    setTrailerUrl(`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&playlist=${trailer.key}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1`)
                 } else {
                     console.log(`⚠️ Nessun trailer ufficiale, cerco altri video YouTube...`)
                     // Se non c'è un trailer ufficiale, prova con il primo video disponibile
                     const firstVideo = data.data.results.find((video: any) => video.site === 'YouTube')
                     if (firstVideo) {
                         console.log(`✅ Video YouTube trovato: ${firstVideo.name} (${firstVideo.key})`)
-                        setTrailerUrl(`https://www.youtube.com/embed/${firstVideo.key}?autoplay=1&mute=1&loop=1&playlist=${firstVideo.key}`)
+                        setTrailerUrl(`https://www.youtube.com/embed/${firstVideo.key}?autoplay=1&mute=1&loop=1&playlist=${firstVideo.key}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1`)
                     } else {
                         console.log(`❌ Nessun video YouTube disponibile per ${itemId}`)
                         console.log(`📋 Video disponibili:`, data.data.results.map((v: any) => ({ type: v.type, site: v.site, name: v.name })))

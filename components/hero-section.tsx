@@ -155,6 +155,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
             console.log('Hero Section - Dati API ricevuti:', data)
 
             if (data.success && data.data?.length > 0) {
+                // Salva i film popolari per il tasto "Prossimo Film"
+                setPopularMovies(data.data)
+                console.log(`Hero Section - Salvati ${data.data.length} film popolari`)
+
                 // Prova diversi film finché non ne trova uno con trailer
                 let featuredMovie = null
                 let trailerFound = false
