@@ -8,6 +8,8 @@ import { MoviesSection } from '@/components/movies-section'
 import { ApiKeyError } from '@/components/api-key-error'
 import { LoadingScreen } from '@/components/loading-screen'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
+import { UpcomingTrailers } from '@/components/upcoming-trailers'
+import { TMDBMovie } from '@/lib/tmdb'
 
 export default function HomePage() {
     const router = useRouter()
@@ -17,14 +19,36 @@ export default function HomePage() {
     const [initialLoad, setInitialLoad] = useState(true)
     const [navbarHovered, setNavbarHovered] = useState(false)
     const [showLoadingScreen, setShowLoadingScreen] = useState(false)
+    const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
+    const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
+    const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
 
     // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
     const shouldShowNavbar = navbarVisible || navbarHovered
 
+    // Carica i film popolari per i prossimi trailer
+    useEffect(() => {
+        const loadPopularMovies = async () => {
+            try {
+                const response = await fetch('/api/catalog/popular/movies')
+                const data = await response.json()
+
+                if (data.success && data.data) {
+                    setPopularMovies(data.data)
+                    console.log('✅ Film popolari caricati per prossimi trailer:', data.data.length)
+                }
+            } catch (error) {
+                console.error('❌ Errore nel caricamento film popolari:', error)
+            }
+        }
+
+        loadPopularMovies()
+    }, [])
+
     useEffect(() => {
         // Mostra loading screen solo al primo accesso o al refresh
         const hasSeenLoading = sessionStorage.getItem('hasSeenLoading')
-        
+
         if (!hasSeenLoading) {
             setShowLoadingScreen(true)
             sessionStorage.setItem('hasSeenLoading', 'true')
@@ -79,6 +103,34 @@ export default function HomePage() {
         }
     }
 
+    // Gestisce quando il trailer della Hero Section finisce
+    const handleTrailerEnded = () => {
+        console.log('🎬 Trailer finito, mostrando prossimi film')
+        setShowUpcomingTrailers(true)
+    }
+
+    // Gestisce il cambio di film nella Hero Section
+    const handleHeroMovieChange = (index: number) => {
+        setCurrentHeroMovieIndex(index)
+    }
+
+    // Gestisce la selezione di un film dai prossimi trailer
+    const handleUpcomingMovieSelect = (index: number) => {
+        console.log('🎬 Film selezionato dai prossimi:', index)
+        // Usa la funzione globale esposta dalla Hero Section
+        if ((window as any).changeHeroMovie) {
+            (window as any).changeHeroMovie(index)
+        }
+        setShowUpcomingTrailers(false) // Nasconde la sezione dopo la selezione
+    }
+
+    // Gestisce l'autoplay del prossimo film
+    const handleUpcomingAutoplay = () => {
+        console.log('🎬 Autoplay prossimo film')
+        const nextIndex = (currentHeroMovieIndex + 1) % popularMovies.length
+        handleUpcomingMovieSelect(nextIndex)
+    }
+
     // Mostra loading screen per il caricamento iniziale
     if (showLoadingScreen) {
         return (
@@ -102,10 +154,29 @@ export default function HomePage() {
                 onHoverChange={setNavbarHovered}
             />
 
+            {/* Upcoming Trailers Section - Sopra Hero Section */}
+            {showUpcomingTrailers && popularMovies.length > 0 && (
+                <div className="absolute top-0 left-0 right-0 z-20 bg-black/50 backdrop-blur-sm">
+                    <div className="container mx-auto px-4 py-8">
+                        <UpcomingTrailers
+                            movies={popularMovies}
+                            currentMovieIndex={currentHeroMovieIndex}
+                            onMovieSelect={handleUpcomingMovieSelect}
+                            isVisible={showUpcomingTrailers}
+                            onAutoplay={handleUpcomingAutoplay}
+                            autoplayDelay={10}
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Hero Section */}
             <HeroSection
                 onControlsVisibilityChange={setNavbarVisible}
                 navbarHovered={navbarHovered}
+                onTrailerEnded={handleTrailerEnded}
+                onMovieChange={handleHeroMovieChange}
+                showUpcomingTrailers={showUpcomingTrailers}
             />
 
             {/* Content Sections */}

@@ -8,9 +8,12 @@ import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from 
 interface HeroSectionProps {
     onControlsVisibilityChange?: (visible: boolean) => void
     navbarHovered?: boolean
+    onTrailerEnded?: () => void
+    onMovieChange?: (index: number) => void
+    showUpcomingTrailers?: boolean
 }
 
-export function HeroSection({ onControlsVisibilityChange, navbarHovered = false }: HeroSectionProps) {
+export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false }: HeroSectionProps) {
     const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
     const [trailer, setTrailer] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -23,6 +26,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
     const [currentMovieIndex, setCurrentMovieIndex] = useState(0)
     const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
     const [autoChangeTimer, setAutoChangeTimer] = useState<NodeJS.Timeout | null>(null)
+    const [trailerEnded, setTrailerEnded] = useState(false)
 
     // Fallback movie
     const fallbackMovie: TMDBMovie = {
@@ -50,6 +54,24 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
         }, 2000)
         return () => clearTimeout(timer)
     }, [])
+
+    // Gestisce la fine del trailer
+    useEffect(() => {
+        if (trailer && !trailerEnded) {
+            // Simula la fine del trailer dopo 30 secondi (durata media di un trailer)
+            const trailerTimer = setTimeout(() => {
+                console.log('🎬 Trailer finito, mostrando prossimi film')
+                setTrailerEnded(true)
+                // Ferma il trailer attuale
+                setTrailer(null)
+                if (onTrailerEnded) {
+                    onTrailerEnded()
+                }
+            }, 30000) // 30 secondi
+
+            return () => clearTimeout(trailerTimer)
+        }
+    }, [trailer, trailerEnded, onTrailerEnded])
 
     useEffect(() => {
         return () => {
@@ -315,7 +337,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
     const changeToNextMovie = () => {
         console.log('🎬 Click su Prossimo Film - popularMovies.length:', popularMovies.length)
         console.log('🎬 currentMovieIndex:', currentMovieIndex)
-        
+
         if (popularMovies.length === 0) {
             console.log('❌ Nessun film popolare disponibile')
             return
@@ -324,8 +346,41 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
         const nextIndex = (currentMovieIndex + 1) % popularMovies.length
         console.log(`🔄 Cambiando da film ${currentMovieIndex} a ${nextIndex} (${popularMovies[nextIndex]?.title})`)
         setCurrentMovieIndex(nextIndex)
+        setTrailerEnded(false) // Reset trailer ended state
         loadMovieAtIndex(nextIndex, popularMovies)
+
+        // Notifica il componente padre del cambio film
+        if (onMovieChange) {
+            onMovieChange(nextIndex)
+        }
     }
+
+    // Funzione per cambiare film dall'esterno
+    const changeToMovie = (index: number) => {
+        if (popularMovies.length === 0 || index < 0 || index >= popularMovies.length) {
+            return
+        }
+
+        console.log(`🔄 Cambiando a film ${index} (${popularMovies[index]?.title})`)
+        setCurrentMovieIndex(index)
+        setTrailerEnded(false) // Reset trailer ended state
+
+        // Carica solo i dettagli del film, non il trailer
+        const movie = popularMovies[index]
+        setFeaturedMovie(movie)
+        setTrailer(null) // Non carica il trailer automaticamente
+        setError(null)
+
+        console.log(`✅ Film cambiato: ${movie.title}`)
+    }
+
+    // Espone la funzione per il componente padre
+    useEffect(() => {
+        if (onMovieChange) {
+            // Crea una funzione che il componente padre può chiamare
+            (window as any).changeHeroMovie = changeToMovie
+        }
+    }, [popularMovies, onMovieChange])
 
     const handleWatchNow = () => {
         if (featuredMovie) {
@@ -360,6 +415,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
         <div className="relative h-screen w-full overflow-hidden -mt-20">
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
+                {/* Overlay scuro quando i prossimi trailer sono visibili */}
+                {showUpcomingTrailers && (
+                    <div className="absolute inset-0 bg-black/70 z-10" />
+                )}
                 {trailer ? (
                     <iframe
                         src={getYouTubeEmbedUrl(trailer, true, isMuted)}
