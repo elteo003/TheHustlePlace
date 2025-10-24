@@ -37,16 +37,30 @@ export const useYouTubePlayer = ({
     const [isPlaying, setIsPlaying] = useState(false)
     const [isMuted, setIsMuted] = useState(true)
     const playerInstanceRef = useRef<any>(null)
+    const isInitializingRef = useRef<boolean>(false)
 
     // Inizializza il player quando l'API è pronta
     useEffect(() => {
         const initializePlayer = () => {
-            if (!videoId || playerInstanceRef.current) return
+            if (!videoId || playerInstanceRef.current || isInitializingRef.current) return
+
+            isInitializingRef.current = true
 
             const playerElement = document.getElementById('youtube-player')
-            if (!playerElement) return
+            if (!playerElement) {
+                console.log('⚠️ Elemento youtube-player non trovato, riprovo tra 100ms')
+                isInitializingRef.current = false
+                setTimeout(initializePlayer, 100)
+                return
+            }
 
             try {
+                // Distruggi player esistente se c'è
+                if (playerInstanceRef.current) {
+                    playerInstanceRef.current.destroy()
+                    playerInstanceRef.current = null
+                }
+
                 const newPlayer = new window.YT.Player(playerElement, {
                     videoId: videoId,
                     playerVars: {
@@ -69,6 +83,7 @@ export const useYouTubePlayer = ({
                             playerInstanceRef.current = event.target
                             setIsReady(true)
                             setIsMuted(true)
+                            isInitializingRef.current = false
                             onReady?.()
                         },
                         onStateChange: (event: any) => {
@@ -80,6 +95,7 @@ export const useYouTubePlayer = ({
                 })
             } catch (error) {
                 console.error('❌ Errore inizializzazione YouTube Player:', error)
+                isInitializingRef.current = false
             }
         }
 
@@ -106,19 +122,13 @@ export const useYouTubePlayer = ({
         }
     }, [videoId, onReady, onStateChange])
 
-    // Distruggi e ricrea il player quando cambia videoId
+    // Reset stato quando cambia videoId (ma non distruggere il player qui)
     useEffect(() => {
-        if (playerInstanceRef.current && videoId) {
-            try {
-                playerInstanceRef.current.destroy()
-                playerInstanceRef.current = null
-                setPlayer(null)
-                setIsReady(false)
-                setIsPlaying(false)
-                setIsMuted(true)
-            } catch (error) {
-                console.error('❌ Errore distruzione player per cambio video:', error)
-            }
+        if (videoId) {
+            setPlayer(null)
+            setIsReady(false)
+            setIsPlaying(false)
+            setIsMuted(true)
         }
     }, [videoId])
 
