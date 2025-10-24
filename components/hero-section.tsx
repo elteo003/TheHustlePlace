@@ -41,9 +41,14 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             onControlsVisibilityChange?.(true)
         },
         onHoverEnd: () => {
+            // Solo se non siamo in scroll, navbar non è hovered, e non è il caricamento iniziale
             if (!isScrolled && !navbarHovered && !initialLoad) {
-                setShowControls(false)
-                onControlsVisibilityChange?.(false)
+                // Delay più lungo per zone neutre
+                const timeout = addTimeout(setTimeout(() => {
+                    setShowControls(false)
+                    onControlsVisibilityChange?.(false)
+                }, 4000))
+                return () => clearTimeout(timeout)
             }
         }
     })
@@ -133,11 +138,11 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             setShowControls(true)
             onControlsVisibilityChange?.(true)
         } else {
-            // Delay più lungo per zone neutre (3 secondi)
+            // Delay più lungo per zone neutre (5 secondi)
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
                 onControlsVisibilityChange?.(false)
-            }, 3000))
+            }, 5000))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, onControlsVisibilityChange, addTimeout])
@@ -237,11 +242,11 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="container mx-auto px-4">
+            <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <div className="container mx-auto px-4 pb-16">
                     <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
@@ -341,7 +346,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
 
 
             {/* Bottom Gradient */}
-            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-30'}`} />
 
             {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
             {trailerEnded && movies.length > 0 && (

@@ -148,7 +148,7 @@ export async function getMovieDetails(movieId: number): Promise<TMDBMovie> {
 export function findMainTrailer(videos: TMDBVideo[]): TMDBVideo | null {
     // Cerca trailer ufficiale in italiano
     let trailer = videos.find(video =>
-        video.type === 'Trailer' &&
+        (video.type === 'Trailer' || video.type === 'Teaser') &&
         video.official &&
         video.site === 'YouTube' &&
         video.iso_639_1 === 'it'
@@ -157,17 +157,17 @@ export function findMainTrailer(videos: TMDBVideo[]): TMDBVideo | null {
     // Se non trova in italiano, cerca in inglese
     if (!trailer) {
         trailer = videos.find(video =>
-            video.type === 'Trailer' &&
+            (video.type === 'Trailer' || video.type === 'Teaser') &&
             video.official &&
             video.site === 'YouTube' &&
             video.iso_639_1 === 'en'
         )
     }
 
-    // Se non trova ufficiale, cerca qualsiasi trailer YouTube
+    // Se non trova ufficiale, cerca qualsiasi trailer/teaser YouTube
     if (!trailer) {
         trailer = videos.find(video =>
-            video.type === 'Trailer' &&
+            (video.type === 'Trailer' || video.type === 'Teaser') &&
             video.site === 'YouTube'
         )
     }
