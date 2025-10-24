@@ -126,8 +126,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                 key={movie.id}
                                 className={`flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-out ${
                                     isMovieHovered
-                                        ? 'w-64 h-36 scale-110 z-10'
-                                        : 'w-48 h-28 hover:scale-105'
+                                        ? 'w-64 h-36 z-10'
+                                        : 'w-48 h-28'
                                 }`}
                                 onClick={(e) => {
                                     e.preventDefault()
