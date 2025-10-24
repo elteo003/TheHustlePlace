@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { UpcomingTrailers } from '@/components/upcoming-trailers'
@@ -112,10 +111,6 @@ export default function HomePage() {
 
     return (
         <div className={`min-h-screen bg-black transition-all duration-1500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <Navbar
-                isVisible={shouldShowNavbar}
-                onHoverChange={setNavbarHovered}
-            />
 
             {/* Hero Section */}
             <HeroSection
@@ -144,7 +139,7 @@ export default function HomePage() {
             )}
 
             {/* Main Content */}
-            <div className={`relative z-10 pt-16 transition-all duration-1000 delay-300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`relative z-10 transition-all duration-1000 delay-300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 {/* Top 10 Movies Section */}
                 <section className={`py-8 transition-all duration-1000 delay-500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                     <div className="container mx-auto px-4">
