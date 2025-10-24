@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { LoadingScreen } from '@/components/loading-screen'
 
 export default function RootPage() {
     const router = useRouter()
@@ -12,8 +13,8 @@ export default function RootPage() {
     }, [router])
 
     return (
-        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-            <div className="text-white text-xl">Caricamento...</div>
+        <div className="fixed inset-0 z-50 bg-black">
+            <LoadingScreen onComplete={() => {}} duration={15000} />
         </div>
     )
 }

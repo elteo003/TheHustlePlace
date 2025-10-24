@@ -87,36 +87,24 @@ export default function MovieGridIntegrated({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center py-8">
+        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          Riprova
-        </button>
+      <div className="flex items-center justify-center py-8">
+        <p className="text-gray-400 text-sm">Contenuto temporaneamente non disponibile</p>
       </div>
     )
   }
 
   if (movies.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="text-gray-500 mb-4">Nessun contenuto disponibile</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          Riprova
-        </button>
+      <div className="flex items-center justify-center py-8">
+        <p className="text-gray-400 text-sm">Nessun contenuto disponibile</p>
       </div>
     )
   }
