@@ -32,22 +32,19 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     
     const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
         delay: 300,
-        onEnter: () => setShowControls(true),
+        onEnter: () => {
+            setShowControls(true)
+            setIsHovered(true)
+        },
         onLeave: () => {
-            if (!isScrolled && !initialLoad) {
-                setShowControls(false)
-            }
+            setIsHovered(false)
+            // La logica di nascondimento è gestita da useHeroControls
         }
     })
 
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
-
-    // Sincronizzazione hover states
-    useEffect(() => {
-        setIsHovered(smartHovered)
-    }, [smartHovered, setIsHovered])
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
         trailer,
@@ -102,12 +99,13 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         console.log('🎬 Hero Section Debug:', {
             isHovered,
+            smartHovered,
             isScrolled,
             initialLoad,
             shouldShowControls,
             showControls
         })
-    }, [isHovered, isScrolled, initialLoad, shouldShowControls, showControls])
+    }, [isHovered, smartHovered, isScrolled, initialLoad, shouldShowControls, showControls])
 
 
     // Gestisce il cambio film dall'esterno
