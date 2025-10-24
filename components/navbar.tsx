@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/search-bar'
 import { Menu } from 'lucide-react'
-import { useNavbarContext } from '@/contexts/NavbarContext'
 
 interface NavbarProps {
     isVisible?: boolean
@@ -16,10 +15,12 @@ interface NavbarProps {
 export function Navbar({ isVisible = true, searchFocused = false, onSearchFocusChange }: NavbarProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isSearchFocused, setIsSearchFocused] = useState(false)
-    const { isVisible: contextVisible, isHovered, setIsHovered } = useNavbarContext()
 
     // La navbar è visibile se è visibile dalla prop OPPURE se la ricerca è attiva
     const shouldShow = isVisible || isSearchFocused
+
+    // Debug temporaneo
+    console.log('🔍 Navbar Debug:', { isVisible, isSearchFocused, shouldShow })
 
     // Gestisce il focus della ricerca e comunica alla homepage
     const handleSearchFocusChange = (focused: boolean) => {
@@ -30,8 +31,6 @@ export function Navbar({ isVisible = true, searchFocused = false, onSearchFocusC
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 bg-black/20 backdrop-blur-md border-b border-white/10 transition-all duration-500 ${shouldShow ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
         >
             <div className="max-w-7xl mx-auto flex items-center justify-between">
                 {/* Logo */}

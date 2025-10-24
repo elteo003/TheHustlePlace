@@ -31,7 +31,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
 
     const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
-        delay: 300,
+        delay: 1000, // Aumento il delay per dare più tempo
         onEnter: () => {
             setShowControls(true)
             setIsHovered(true)

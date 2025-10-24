@@ -13,7 +13,7 @@ export function useHeroControls() {
     if (!isHovered && !isScrolled && !initialLoad) {
       const timeout = setTimeout(() => {
         setShowControls(false)
-      }, 1000)
+      }, 2000) // Aumento il delay a 2 secondi
       return () => clearTimeout(timeout)
     }
   }, [isHovered, isScrolled, initialLoad])
@@ -39,6 +39,7 @@ export function useHeroControls() {
   // Timer per initialLoad
   useEffect(() => {
     const timer = setTimeout(() => {
+      console.log('🕐 initialLoad timer scaduto - nascondo controlli')
       setInitialLoad(false)
     }, 2000)
     return () => clearTimeout(timer)
