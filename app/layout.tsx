@@ -35,7 +35,7 @@ export default function RootLayout({
       <head>
         {/* CSS critico spostato in globals.css per evitare hydration mismatch */}
       </head>
-      <body className={`${inter.className} scrollbar-vertical`}>
+      <body className={`${inter.className} scrollbar-vertical`} suppressHydrationWarning={true}>
         <HLSConfigProvider>
           <div className="min-h-screen bg-black text-white">
             <ConditionalLayout>
