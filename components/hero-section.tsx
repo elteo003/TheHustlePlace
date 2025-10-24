@@ -19,10 +19,11 @@ interface HeroSectionProps {
     showUpcomingTrailers?: boolean
     onLoaded?: () => void
     currentHeroMovieIndex?: number
+    onUpcomingMovieSelect?: (index: number) => void
     // Rimuoviamo la dipendenza da popularMovies esterni
 }
 
-export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
+export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0, onUpcomingMovieSelect }: HeroSectionProps) {
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
 
@@ -510,6 +511,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 setShowControls(true)
                                 // Reset del timer per il nuovo film
                                 resetTimer()
+                                // Notifica al parent di nascondere la sezione prossimi
+                                onUpcomingMovieSelect?.(index)
                             }}
                         />
                     </>

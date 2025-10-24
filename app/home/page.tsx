@@ -62,6 +62,7 @@ export default function HomePage() {
         setShowUpcomingTrailers(true)
     }
 
+
     // Gestisce il cambio di film nella Hero Section
     const handleHeroMovieChange = (index: number) => {
         setCurrentHeroMovieIndex(index)
@@ -70,9 +71,6 @@ export default function HomePage() {
     // Gestisce la selezione di un film dai prossimi trailer
     const handleUpcomingMovieSelect = (index: number) => {
         console.log('🎬 Film selezionato dai prossimi trailer:', index)
-        if ((window as any).changeHeroMovie) {
-            (window as any).changeHeroMovie(index)
-        }
         setShowUpcomingTrailers(false)
     }
 
@@ -125,6 +123,7 @@ export default function HomePage() {
                     showUpcomingTrailers={showUpcomingTrailers}
                     onLoaded={handleHeroSectionLoaded}
                     currentHeroMovieIndex={currentHeroMovieIndex}
+                    onUpcomingMovieSelect={handleUpcomingMovieSelect}
                 />
 
                 {/* La sezione Upcoming Trailers è ora gestita internamente dalla Hero Section */}
