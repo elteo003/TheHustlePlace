@@ -8,7 +8,6 @@ import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
-import { useSmartHover } from '@/hooks/useSmartHover'
 import { useCleanup } from '@/hooks/useCleanup'
 
 interface HeroSectionProps {
@@ -34,23 +33,18 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
-    const { isHovered, handleMouseEnter, handleMouseLeave } = useSmartHover({
-        onHoverStart: () => {
-            setShowControls(true)
-            setNavbarVisible(true)
-        },
-        onHoverEnd: () => {
-            // Solo se non siamo in scroll, navbar non è hovered, e non è il caricamento iniziale
-            if (!isScrolled && !navbarHovered && !initialLoad) {
-                // Delay più lungo per zone neutre
-                const timeout = addTimeout(setTimeout(() => {
-                    setShowControls(false)
-                    setNavbarVisible(false)
-                }, 4000))
-                return () => clearTimeout(timeout)
-            }
-        }
-    })
+    const [isHovered, setIsHovered] = useState(false)
+
+    const handleMouseEnter = () => {
+        setIsHovered(true)
+        setShowControls(true)
+        setNavbarVisible(true)
+    }
+
+    const handleMouseLeave = () => {
+        setIsHovered(false)
+        // La logica di nascondere sarà gestita dal useEffect principale
+    }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
         trailer,
@@ -136,15 +130,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         if (shouldShowControls) {
             setShowControls(true)
             setNavbarVisible(true)
-        } else {
-            // Delay più lungo per zone neutre (5 secondi)
+        } else if (!initialLoad) {
+            // Solo se non è il caricamento iniziale, nascondi dopo delay
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
                 setNavbarVisible(false)
-            }, 5000))
+            }, 2000))
             return () => clearTimeout(timeout)
         }
-    }, [shouldShowControls, addTimeout])
+    }, [shouldShowControls, addTimeout, initialLoad])
 
 
     // Gestisce il cambio film dall'esterno
@@ -202,7 +196,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
     return (
-        <div 
+        <div
             className="relative h-screen w-full overflow-hidden -mt-20"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -246,7 +240,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="container mx-auto px-4 pb-16">
+                <div className="absolute bottom-16 left-4 px-4">
                     <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
