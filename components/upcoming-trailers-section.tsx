@@ -21,8 +21,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
     const { isHovered, handleMouseEnter, handleMouseLeave } = useSmartHover({
-        onHoverStart: () => setIsAutoPlaying(false),
-        onHoverEnd: () => setIsAutoPlaying(true)
+        onEnter: () => setIsAutoPlaying(false),
+        onLeave: () => setIsAutoPlaying(true)
     })
 
     // Filtra i film escludendo quello attuale e mantieni gli indici originali

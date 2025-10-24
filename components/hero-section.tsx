@@ -8,6 +8,9 @@ import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useCleanup } from '@/hooks/useCleanup'
+import { useParallax } from '@/hooks/useParallax'
+import { useSmartHover } from '@/hooks/useSmartHover'
+import { useHeroControls } from '@/hooks/useHeroControls'
 import { Navbar } from '@/components/navbar'
 
 interface HeroSectionProps {
@@ -23,26 +26,28 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
 
-    // Stati locali
+    // Hook personalizzati
+    const { parallaxRef, scrollY } = useParallax()
+    const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
+    
+    const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
+        delay: 300,
+        onEnter: () => setShowControls(true),
+        onLeave: () => {
+            if (!isScrolled && !initialLoad) {
+                setShowControls(false)
+            }
+        }
+    })
+
+    // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
-    const [isScrolled, setIsScrolled] = useState(false)
-    const [showControls, setShowControls] = useState(true)
-    const [initialLoad, setInitialLoad] = useState(true)
 
-    // Hooks personalizzati
-    const { addTimeout } = useCleanup()
-    const [isHovered, setIsHovered] = useState(false)
-
-    const handleMouseEnter = () => {
-        setIsHovered(true)
-        setShowControls(true)
-    }
-
-    const handleMouseLeave = () => {
-        setIsHovered(false)
-        // La logica di nascondimento è gestita dal useEffect principale
-    }
+    // Sincronizzazione hover states
+    useEffect(() => {
+        setIsHovered(smartHovered)
+    }, [smartHovered, setIsHovered])
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
         trailer,
@@ -51,14 +56,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             onTrailerEnded?.()
         }
     })
-
-    // Inizializzazione
-    useEffect(() => {
-        const timer = addTimeout(setTimeout(() => {
-            setInitialLoad(false)
-        }, 2000))
-        return () => clearTimeout(timer)
-    }, [addTimeout])
 
     // Notifica quando la Hero Section è caricata
     useEffect(() => {
@@ -101,37 +98,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         }
     }, [])
 
-    // Scroll detection semplificato
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollY = window.scrollY
-            const heroHeight = window.innerHeight
-
-            if (scrollY < heroHeight) {
-                setIsScrolled(false)
-            } else {
-                setIsScrolled(true)
-                setShowControls(true)
-            }
-        }
-
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-
-    // Timer globale per nascondere quando non c'è interazione
-    useEffect(() => {
-        if (!isHovered && !isScrolled && !initialLoad) {
-            const timeout = addTimeout(setTimeout(() => {
-                setShowControls(false)
-            }, 1000))
-            return () => clearTimeout(timeout)
-        }
-    }, [isHovered, isScrolled, initialLoad, addTimeout])
-
-    // Logica unificata per visibilità controlli
-    const shouldShowControls = isHovered || isScrolled || initialLoad
-
     // Debug per capire lo stato
     useEffect(() => {
         console.log('🎬 Hero Section Debug:', {
@@ -142,13 +108,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             showControls
         })
     }, [isHovered, isScrolled, initialLoad, shouldShowControls, showControls])
-
-    // Gestisce la visibilità unificata - più reattiva
-    useEffect(() => {
-        if (shouldShowControls) {
-            setShowControls(true)
-        }
-    }, [shouldShowControls])
 
 
     // Gestisce il cambio film dall'esterno
@@ -283,6 +242,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 }
             `}</style>
             <div 
+                ref={hoverRef}
                 className="relative h-screen w-full overflow-hidden -mt-20"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
@@ -291,8 +251,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                    <div 
                        className={`transition-all duration-700 ease-out ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
                        style={{
-                           transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)',
-                           filter: isHovered ? 'blur(0px)' : 'blur(0.5px)'
+                           transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
                        }}
                    >
                        <Navbar isVisible={true} />
@@ -347,8 +306,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
                         style={{
                             animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                            transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                            filter: isHovered ? 'blur(0px)' : 'blur(0.2px)'
+                            transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)'
                         }}
                     >
                     <div className="max-w-2xl">
@@ -358,7 +316,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.2s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                 }}
                             >
@@ -371,7 +328,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.4s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.2px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
                                 }}
                             >
@@ -384,7 +340,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.6s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                 }}
                             >
@@ -405,7 +360,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.8s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.4px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
                                 }}
                             >
@@ -415,7 +369,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                     }}
                                 >
@@ -430,7 +383,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
                                     }}
                                 >
@@ -447,7 +399,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                         className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
                                         style={{
                                             transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                            filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                             transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
                                         }}
                                     >
@@ -464,7 +415,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s'
                                     }}
                                 >
@@ -485,7 +435,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                     }}
                                 >

@@ -1,59 +1,43 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
-interface UseSmartHoverProps {
-    onHoverStart?: () => void
-    onHoverEnd?: () => void
-    hoverDelay?: number
+interface UseSmartHoverOptions {
+  delay?: number
+  onEnter?: () => void
+  onLeave?: () => void
 }
 
-interface UseSmartHoverReturn {
-    isHovered: boolean
-    handleMouseEnter: () => void
-    handleMouseLeave: () => void
-}
+export function useSmartHover(options: UseSmartHoverOptions = {}) {
+  const [isHovered, setIsHovered] = useState(false)
+  const hoverRef = useRef<HTMLDivElement>(null)
+  const timeoutRef = useRef<NodeJS.Timeout>()
 
-export const useSmartHover = ({
-    onHoverStart,
-    onHoverEnd,
-    hoverDelay = 500 // 500ms invece di 2000ms
-}: UseSmartHoverProps = {}): UseSmartHoverReturn => {
-    const [isHovered, setIsHovered] = useState(false)
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const handleMouseEnter = useCallback(() => {
+    clearTimeout(timeoutRef.current)
+    setIsHovered(true)
+    options.onEnter?.()
+  }, [options])
 
-    const handleMouseEnter = useCallback(() => {
-        // Pulisci timeout precedente
-        if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current)
-            hoverTimeoutRef.current = null
-        }
+  const handleMouseLeave = useCallback(() => {
+    timeoutRef.current = setTimeout(() => {
+      setIsHovered(false)
+      options.onLeave?.()
+    }, options.delay || 300)
+  }, [options])
 
-        setIsHovered(true)
-        onHoverStart?.()
-    }, [onHoverStart])
-
-    const handleMouseLeave = useCallback(() => {
-        setIsHovered(false)
-
-        // Riavvia autoplay dopo delay ridotto
-        hoverTimeoutRef.current = setTimeout(() => {
-            onHoverEnd?.()
-        }, hoverDelay)
-    }, [onHoverEnd, hoverDelay])
-
-    // Cleanup al dismount
-    useEffect(() => {
-        return () => {
-            if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current)
-            }
-        }
-    }, [])
-
-    return {
-        isHovered,
-        handleMouseEnter,
-        handleMouseLeave
+  // Cleanup timeout on unmount
+  const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
     }
+  }, [])
+
+  return { 
+    isHovered, 
+    hoverRef, 
+    handleMouseEnter, 
+    handleMouseLeave,
+    cleanup
+  }
 }
