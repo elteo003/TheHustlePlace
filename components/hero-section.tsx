@@ -13,6 +13,7 @@ interface HeroSectionProps {
     showUpcomingTrailers?: boolean
     onLoaded?: () => void
     currentHeroMovieIndex?: number
+    // Rimuoviamo la dipendenza da popularMovies esterni
 }
 
 export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
@@ -214,7 +215,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             console.log('Hero Section - Film con trailer ricevuti:', data)
 
             if (data.success && data.data?.length > 0) {
-                // Salva i film popolari per il tasto "Prossimo Film"
+                // Salva i film popolari per il tasto "Prossimo Film" e sezione "prossimi da guardare"
                 setPopularMovies(data.data)
                 console.log(`Hero Section - Salvati ${data.data.length} film con trailer`)
 

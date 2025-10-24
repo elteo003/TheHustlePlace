@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
-import { UpcomingTrailers } from '@/components/upcoming-trailers'
 import { ApiKeyError } from '@/components/api-key-error'
-import { TMDBMovie } from '@/lib/tmdb'
 
 export default function HomePage() {
     const router = useRouter()
@@ -18,36 +16,16 @@ export default function HomePage() {
     const [navbarHovered, setNavbarHovered] = useState(false)
     const [heroSectionLoaded, setHeroSectionLoaded] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
-    const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
     const [pageLoaded, setPageLoaded] = useState(false)
 
     // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
     const shouldShowNavbar = navbarVisible || navbarHovered
 
-    // Carica i film popolari con trailer per la Hero Section
-    const loadPopularMovies = async () => {
-        try {
-            console.log('🎬 Caricando film popolari con trailer...')
-            const response = await fetch('/api/catalog/popular/movies-with-trailers')
-            const data = await response.json()
-            
-            if (data.success && data.data) {
-                console.log(`✅ Caricati ${data.count} film con trailer`)
-                setPopularMovies(data.data)
-            } else {
-                console.error('❌ Nessun film con trailer disponibile')
-            }
-        } catch (error) {
-            console.error('Errore nel fetch dei film con trailer:', error)
-        }
-    }
+    // La Hero Section ora gestisce internamente il caricamento dei film con trailer
 
     useEffect(() => {
-        // Pre-carica i dati immediatamente
-        loadPopularMovies()
-
-        // Pre-carica anche altri dati in background
+        // Pre-carica altri dati in background (la Hero Section gestisce i suoi film internamente)
         const preloadData = async () => {
             try {
                 // Pre-carica dati per le sezioni
@@ -62,7 +40,7 @@ export default function HomePage() {
                 console.log('Pre-caricamento dati in background:', error)
             }
         }
-
+        
         preloadData()
     }, [])
 
@@ -149,8 +127,10 @@ export default function HomePage() {
     // Gestisce l'autoplay dei prossimi trailer
     const handleUpcomingAutoplay = () => {
         console.log('🎬 Autoplay prossimo film')
-        const nextIndex = (currentHeroMovieIndex + 1) % popularMovies.length
-        handleUpcomingMovieSelect(nextIndex)
+        // La Hero Section gestisce internamente l'indice del prossimo film
+        if ((window as any).changeHeroMovie) {
+            (window as any).changeHeroMovie(currentHeroMovieIndex + 1)
+        }
     }
 
     // Animazione di entrata della pagina
@@ -201,21 +181,7 @@ export default function HomePage() {
                 currentHeroMovieIndex={currentHeroMovieIndex}
             />
 
-            {/* Upcoming Trailers Section - Bottom Hero Section */}
-            {showUpcomingTrailers && popularMovies.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/95 via-black/80 to-transparent" style={{ marginTop: '-80px' }}>
-                    <div className="container mx-auto px-4 py-6">
-                        <UpcomingTrailers
-                            movies={popularMovies}
-                            currentMovieIndex={currentHeroMovieIndex}
-                            onMovieSelect={handleUpcomingMovieSelect}
-                            onAutoplay={handleUpcomingAutoplay}
-                            autoplayDelay={10}
-                            isVisible={true}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* La sezione Upcoming Trailers è ora gestita internamente dalla Hero Section */}
 
             {/* Main Content */}
             <div className={`relative z-10 transition-all duration-1000 delay-300 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
