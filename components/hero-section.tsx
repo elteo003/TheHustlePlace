@@ -170,6 +170,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         )
     }
 
+    // Debug immediato
+    console.log('🔴 RENDER: showControls =', showControls, 'isHovered =', isHovered, 'initialLoad =', initialLoad)
+
     return (
         <>
             <style jsx>{`
@@ -258,9 +261,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                        <div 
                            className="transition-all duration-700 ease-out opacity-100 translate-y-0"
                            style={{
-                               transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
+                               transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)',
+                               backgroundColor: 'rgba(255, 0, 0, 0.3)', // Debug: sfondo rosso per vedere il div
+                               border: '2px solid red' // Debug: bordo rosso
                            }}
                        >
+                           <div style={{ backgroundColor: 'rgba(0, 255, 0, 0.3)', padding: '10px' }}>
+                               DEBUG: Navbar dovrebbe essere qui!
+                           </div>
                            <Navbar isVisible={true} />
                        </div>
                    )}
