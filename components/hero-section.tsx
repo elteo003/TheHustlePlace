@@ -95,25 +95,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         }
     }, [])
 
-    // Debug per capire lo stato
-    useEffect(() => {
-        console.log('🎬 Hero Section Debug:', {
-            isHovered,
-            smartHovered,
-            isScrolled,
-            initialLoad,
-            shouldShowControls,
-            showControls,
-            'showControls === true': showControls === true,
-            'initialLoad === true': initialLoad === true
-        })
-        
-        if (showControls) {
-            console.log('🎯 Navbar dovrebbe essere visibile!')
-        } else {
-            console.log('❌ Navbar nascosta - showControls:', showControls)
-        }
-    }, [isHovered, smartHovered, isScrolled, initialLoad, shouldShowControls, showControls])
 
 
     // Gestisce il cambio film dall'esterno
@@ -170,8 +151,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         )
     }
 
-    // Debug immediato
-    console.log('🔴 RENDER: showControls =', showControls, 'isHovered =', isHovered, 'initialLoad =', initialLoad)
 
     return (
         <>
@@ -259,23 +238,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                    {/* Navbar che appare/scompare insieme ai dettagli */}
                    {showControls && (
                        <div 
-                           className="fixed top-0 left-0 right-0 z-[9999] transition-all duration-700 ease-out opacity-100 translate-y-0"
+                           className="fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out opacity-100 translate-y-0"
                            style={{
-                               transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)',
-                               backgroundColor: 'rgba(255, 0, 0, 0.5)', // Debug: sfondo rosso più visibile
-                               border: '3px solid red', // Debug: bordo rosso più spesso
-                               minHeight: '80px' // Debug: altezza minima
+                               transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
                            }}
                        >
-                           <div style={{ 
-                               backgroundColor: 'rgba(0, 255, 0, 0.8)', 
-                               padding: '20px',
-                               color: 'white',
-                               fontSize: '18px',
-                               fontWeight: 'bold'
-                           }}>
-                               🔴 DEBUG: Navbar dovrebbe essere qui! showControls = {showControls.toString()}
-                           </div>
                            <Navbar isVisible={true} />
                        </div>
                    )}

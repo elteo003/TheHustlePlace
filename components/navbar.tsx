@@ -19,8 +19,6 @@ export function Navbar({ isVisible = true, searchFocused = false, onSearchFocusC
     // La navbar è visibile se è visibile dalla prop OPPURE se la ricerca è attiva
     const shouldShow = isVisible || isSearchFocused
 
-    // Debug temporaneo
-    console.log('🔍 Navbar Debug:', { isVisible, isSearchFocused, shouldShow })
 
     // Gestisce il focus della ricerca e comunica alla homepage
     const handleSearchFocusChange = (focused: boolean) => {

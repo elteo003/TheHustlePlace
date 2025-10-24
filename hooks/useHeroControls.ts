@@ -39,7 +39,6 @@ export function useHeroControls() {
   // Timer per initialLoad
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('🕐 initialLoad timer scaduto - nascondo controlli')
       setInitialLoad(false)
     }, 2000)
     return () => clearTimeout(timer)
