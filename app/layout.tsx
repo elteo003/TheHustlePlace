@@ -32,6 +32,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it" className="dark">
+      <head>
+        {/* CSS critico inline per caricamento immediato */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            body { margin: 0; padding: 0; background: #000; }
+            .instant-loading-fade { opacity: 0; animation: instantFadeIn 0.5s ease-out forwards; }
+            @keyframes instantFadeIn { from { opacity: 0; } to { opacity: 1; } }
+          `
+        }} />
+      </head>
       <body className={`${inter.className} scrollbar-vertical`}>
         <HLSConfigProvider>
           <div className="min-h-screen bg-black text-white">
