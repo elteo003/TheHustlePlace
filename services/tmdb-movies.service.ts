@@ -209,16 +209,16 @@ export class TMDBMoviesService {
             // Cerca trailer ufficiale su YouTube
             const officialTrailer = trailers.results.find(trailer =>
                 trailer.site === 'YouTube' &&
-                trailer.type === 'Trailer' &&
+                (trailer.type === 'Trailer' || trailer.type === 'Teaser') &&
                 trailer.official
             )
 
             if (officialTrailer) return officialTrailer
 
-            // Fallback al primo trailer disponibile
+            // Fallback al primo trailer/teaser disponibile
             const anyTrailer = trailers.results.find(trailer =>
                 trailer.site === 'YouTube' &&
-                trailer.type === 'Trailer'
+                (trailer.type === 'Trailer' || trailer.type === 'Teaser')
             )
 
             return anyTrailer || null

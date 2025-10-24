@@ -44,9 +44,9 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
       const data = await response.json()
 
       if (data.success && data.data?.results?.length > 0) {
-        // Cerca trailer ufficiale su YouTube
+        // Cerca trailer/teaser ufficiale su YouTube
         const officialTrailer = data.data.results.find((video: any) => 
-          video.type === 'Trailer' && 
+          (video.type === 'Trailer' || video.type === 'Teaser') && 
           video.site === 'YouTube' && 
           video.official === true
         )
@@ -54,8 +54,11 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
         if (officialTrailer) {
           setTrailerUrl(`https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=1&loop=1&playlist=${officialTrailer.key}&controls=0&showinfo=0&rel=0&modestbranding=1`)
         } else {
-          // Fallback al primo video YouTube disponibile
-          const youtubeVideo = data.data.results.find((video: any) => video.site === 'YouTube')
+          // Fallback al primo trailer/teaser YouTube disponibile
+          const youtubeVideo = data.data.results.find((video: any) => 
+            (video.type === 'Trailer' || video.type === 'Teaser') && 
+            video.site === 'YouTube'
+          )
           if (youtubeVideo) {
             setTrailerUrl(`https://www.youtube.com/embed/${youtubeVideo.key}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideo.key}&controls=0&showinfo=0&rel=0&modestbranding=1`)
           }
