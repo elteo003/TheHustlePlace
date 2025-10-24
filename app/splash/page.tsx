@@ -26,7 +26,7 @@ export default function SplashPage() {
 
     return (
         <div className={`fixed inset-0 z-50 bg-black transition-opacity duration-1000 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-            <LoadingScreen onComplete={() => { }} duration={15000} />
+            <LoadingScreen onComplete={() => {}} duration={15000} />
         </div>
     )
 }
