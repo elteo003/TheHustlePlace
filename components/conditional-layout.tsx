@@ -10,15 +10,14 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     const pathname = usePathname()
 
-    // Nascondi la navbar nelle pagine del player, home e splash
+    // Nascondi la navbar nelle pagine del player e home
     const isPlayerPage = pathname?.startsWith('/player/')
     const isHomePage = pathname === '/' || pathname === '/home'
-    const isSplashPage = pathname === '/splash'
 
     return (
         <>
-            {!isPlayerPage && !isHomePage && !isSplashPage && <Navbar />}
-            <div className={!isPlayerPage && !isHomePage && !isSplashPage ? 'pt-20' : ''}>
+            {!isPlayerPage && !isHomePage && <Navbar />}
+            <div className={!isPlayerPage && !isHomePage ? 'pt-20' : ''}>
                 {children}
             </div>
         </>
