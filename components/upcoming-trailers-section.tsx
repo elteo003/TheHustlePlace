@@ -45,15 +45,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     // Funzione stabile per selezionare film
     const handleMovieSelect = useCallback((originalIndex: number) => {
-        console.log('🎬 handleMovieSelect chiamata con index:', originalIndex)
-        console.log('🎬 Film selezionato:', originalIndex, 'Titolo:', movies[originalIndex]?.title)
-        console.log('🎬 onMovieSelect function:', typeof onMovieSelect)
-        
         if (typeof onMovieSelect === 'function') {
             onMovieSelect(originalIndex)
-            console.log('🎬 onMovieSelect chiamata con successo')
-        } else {
-            console.error('🎬 onMovieSelect non è una funzione!')
         }
         
         setIsAutoPlaying(false)
@@ -96,10 +89,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
         }
     }, [isInitialized, addTimeout])
 
-    // Debug per vedere i film disponibili
-    console.log('🎬 UpcomingTrailersSection - Film disponibili:', upcomingMovies.length, 'Movies totali:', movies.length)
-    console.log('🎬 UpcomingTrailersSection - Current index:', currentMovieIndex)
-    console.log('🎬 UpcomingTrailersSection - Upcoming movies:', upcomingMovies.map(m => ({ id: m.movie.id, title: m.movie.title, originalIndex: m.originalIndex })))
+    // Debug rimosso per produzione
 
     return (
         <div 
@@ -142,7 +132,6 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
-                                    console.log('🖱️ Click su film:', originalIndex, movie.title, 'Event:', e)
                                     handleMovieSelect(originalIndex)
                                 }}
                                 onMouseEnter={() => handleMovieMouseEnter(movie.id)}
@@ -150,9 +139,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                 style={{
                                     transform: isMovieHovered ? 'scale(1.1)' : 'scale(1)',
                                     zIndex: isMovieHovered ? 10 : 1,
-                                    border: '2px solid red', // Debug: bordo rosso per vedere i clickable areas
-                                    pointerEvents: 'auto', // Forza i pointer events
-                                    position: 'relative', // Assicura che sia posizionato correttamente
+                                    pointerEvents: 'auto',
+                                    position: 'relative',
                                 }}
                             >
                                 <div className="relative w-full h-full group">

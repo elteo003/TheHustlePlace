@@ -49,12 +49,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Funzione per controllare l'audio senza riavviare il video
     const toggleAudio = () => {
-        console.log('🔊 Toggle audio - Stato attuale:', isMuted)
-        
         if (iframeRef.current && iframeRef.current.contentWindow) {
             try {
                 const command = isMuted ? 'unMute' : 'mute'
-                console.log('🔊 Invio comando:', command)
                 
                 // Prova diversi formati di comando
                 const commands = [
@@ -75,7 +72,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         const newMuted = !isMuted
                         const newSrc = getYouTubeEmbedUrl(trailer!, true, newMuted)
                         if (currentSrc !== newSrc) {
-                            console.log('🔊 Fallback: aggiorno URL iframe')
                             iframeRef.current.src = newSrc
                         }
                     }
@@ -503,16 +499,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
                 {(trailerEnded || showUpcomingTrailers) && movies.length > 0 && (
                     <>
-                        {console.log('🎬 Rendering UpcomingTrailersSection:', { trailerEnded, showUpcomingTrailers, moviesLength: movies.length })}
                         <UpcomingTrailersSection
                             movies={movies}
                             currentMovieIndex={currentIndex}
                             onMovieSelect={(index) => {
-                                console.log('🎬 Film selezionato dalla sezione prossimi:', index)
                                 changeToMovie(index)
                                 // Nasconde la sezione prossimi film quando si seleziona un film
-                                setShowControls(false)
                                 setTrailerEnded(false)
+                                // Mostra i controlli per il nuovo film
+                                setShowControls(true)
                                 // Reset del timer per il nuovo film
                                 resetTimer()
                             }}
