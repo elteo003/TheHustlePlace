@@ -11,9 +11,10 @@ interface HeroSectionProps {
     onTrailerEnded?: () => void
     onMovieChange?: (index: number) => void
     showUpcomingTrailers?: boolean
+    onLoaded?: () => void
 }
 
-export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false }: HeroSectionProps) {
+export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded }: HeroSectionProps) {
     const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
     const [trailer, setTrailer] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -54,6 +55,13 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         }, 2000)
         return () => clearTimeout(timer)
     }, [])
+
+    // Notifica quando la Hero Section è caricata
+    useEffect(() => {
+        if (featuredMovie && onLoaded) {
+            onLoaded()
+        }
+    }, [featuredMovie, onLoaded])
 
     // Gestisce la fine del trailer
     useEffect(() => {
