@@ -108,7 +108,7 @@ export function SearchBar() {
         const itemId = result.tmdb_id || result.id
         const url = result.type === 'movie'
             ? `/player/movie/${itemId}`
-            : `/player/tv/${itemId}`
+            : `/series/${itemId}`
 
         window.location.href = url
         setIsOpen(false)
