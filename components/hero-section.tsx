@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
@@ -33,15 +33,25 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
     const [isHovered, setIsHovered] = useState(false)
+    const globalHideTimer = useRef<NodeJS.Timeout | null>(null)
 
     const handleMouseEnter = () => {
         setIsHovered(true)
         setShowControls(true)
+        // Reset del timer globale quando entra in un'area specifica
+        if (globalHideTimer.current) {
+            clearTimeout(globalHideTimer.current)
+            globalHideTimer.current = null
+        }
     }
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // La logica di nascondere sarà gestita dal useEffect principale
+        // Nascondi dopo un breve delay quando esce dall'area specifica
+        const timeout = addTimeout(setTimeout(() => {
+            setShowControls(false)
+        }, 1000))
+        return () => clearTimeout(timeout)
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -119,6 +129,32 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
+    // Timer globale per nascondere quando il cursore non è su aree specifiche
+    useEffect(() => {
+        const handleMouseMove = () => {
+            // Reset timer quando il cursore si muove
+            if (globalHideTimer.current) {
+                clearTimeout(globalHideTimer.current)
+                globalHideTimer.current = null
+            }
+            
+            // Avvia timer per nascondere se non è su aree specifiche
+            if (!isHovered && !isScrolled && !initialLoad) {
+                globalHideTimer.current = setTimeout(() => {
+                    setShowControls(false)
+                }, 2000)
+            }
+        }
+
+        window.addEventListener('mousemove', handleMouseMove)
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove)
+            if (globalHideTimer.current) {
+                clearTimeout(globalHideTimer.current)
+            }
+        }
+    }, [isHovered, isScrolled, initialLoad])
+
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isScrolled || initialLoad
     
@@ -137,11 +173,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-        } else {
-            // Nascondi con delay, anche durante il caricamento iniziale
+        } else if (!initialLoad) {
+            // Solo dopo il caricamento iniziale, nascondi con delay
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, initialLoad ? 3000 : 1500))
+            }, 2000))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, addTimeout, initialLoad])
@@ -204,11 +240,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     return (
         <div 
             className="relative h-screen w-full overflow-hidden -mt-20"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
         >
             {/* Navbar che appare/scompare insieme ai dettagli */}
-            <Navbar isVisible={showControls} />
+            <div 
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+            >
+                <Navbar isVisible={showControls} />
+            </div>
 
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
@@ -249,7 +288,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 {showControls && (
-                    <div className="absolute bottom-16 left-4 px-4 transition-all duration-500">
+                    <div 
+                        className="absolute bottom-16 left-4 px-4 transition-all duration-500"
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
