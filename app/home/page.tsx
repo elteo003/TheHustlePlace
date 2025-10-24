@@ -12,17 +12,10 @@ export default function HomePage() {
     const router = useRouter()
     const [hasApiKey, setHasApiKey] = useState(true)
     const [isCheckingApi, setIsCheckingApi] = useState(false)
-    const [navbarVisible, setNavbarVisible] = useState(true)
-    const [initialLoad, setInitialLoad] = useState(true)
-    const [navbarHovered, setNavbarHovered] = useState(false)
-    const [searchFocused, setSearchFocused] = useState(false)
     const [heroSectionLoaded, setHeroSectionLoaded] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
     const [pageLoaded, setPageLoaded] = useState(false)
-
-    // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover OPPURE se la ricerca è attiva
-    const shouldShowNavbar = navbarVisible || navbarHovered || searchFocused
 
     // La Hero Section ora gestisce internamente il caricamento dei film con trailer
 
@@ -46,49 +39,6 @@ export default function HomePage() {
         preloadData()
     }, [])
 
-    // Gestisce la scomparsa della navbar dopo il caricamento iniziale
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setInitialLoad(false)
-            // Nascondi la navbar dopo 2 secondi se non c'è hover
-            if (!navbarHovered) {
-                setNavbarVisible(false)
-            }
-        }, 2000)
-        return () => clearTimeout(timer)
-    }, [navbarHovered])
-
-    // Gestisce l'hover della navbar con timeout più breve
-    useEffect(() => {
-        let hoverTimeout: NodeJS.Timeout | null = null
-
-        const handleNavbarHover = () => {
-            setNavbarHovered(true)
-            if (hoverTimeout) {
-                clearTimeout(hoverTimeout)
-                hoverTimeout = null
-            }
-        }
-
-        const handleNavbarLeave = () => {
-            // Nascondi dopo 2 secondi
-            hoverTimeout = setTimeout(() => {
-                setNavbarHovered(false)
-            }, 2000)
-        }
-
-        // Aggiungi event listeners per l'hover della navbar
-        document.addEventListener('mouseenter', handleNavbarHover, true)
-        document.addEventListener('mouseleave', handleNavbarLeave, true)
-
-        return () => {
-            document.removeEventListener('mouseenter', handleNavbarHover, true)
-            document.removeEventListener('mouseleave', handleNavbarLeave, true)
-            if (hoverTimeout) {
-                clearTimeout(hoverTimeout)
-            }
-        }
-    }, [])
 
     // Gestisce il caricamento della Hero Section
     const handleHeroSectionLoaded = () => {
@@ -159,9 +109,6 @@ export default function HomePage() {
         }
     }
 
-    const handleSearchFocusChange = (focused: boolean) => {
-        setSearchFocused(focused)
-    }
 
     // Mostra errore solo se API key mancante e controllo completato
     if (!hasApiKey && !isCheckingApi) {
@@ -171,18 +118,8 @@ export default function HomePage() {
     return (
         <MovieProvider>
             <main className="min-h-screen bg-black">
-                {/* Navbar */}
-                <Navbar
-                    isVisible={shouldShowNavbar}
-                    onHoverChange={setNavbarHovered}
-                    searchFocused={searchFocused}
-                    onSearchFocusChange={handleSearchFocusChange}
-                />
-
                 {/* Hero Section */}
                 <HeroSection
-                    onControlsVisibilityChange={setNavbarVisible}
-                    navbarHovered={navbarHovered}
                     onTrailerEnded={handleTrailerEnded}
                     onMovieChange={handleHeroMovieChange}
                     showUpcomingTrailers={showUpcomingTrailers}

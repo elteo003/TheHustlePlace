@@ -6,13 +6,12 @@ import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
+import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useCleanup } from '@/hooks/useCleanup'
 
 interface HeroSectionProps {
-    onControlsVisibilityChange?: (visible: boolean) => void
-    navbarHovered?: boolean
     onTrailerEnded?: () => void
     onMovieChange?: (index: number) => void
     showUpcomingTrailers?: boolean
@@ -21,9 +20,10 @@ interface HeroSectionProps {
     // Rimuoviamo la dipendenza da popularMovies esterni
 }
 
-export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
+export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
+    const { isVisible: navbarVisible, isHovered: navbarHovered, setIsVisible: setNavbarVisible } = useNavbarContext()
 
     // Stati locali
     const [trailer, setTrailer] = useState<string | null>(null)
@@ -31,14 +31,13 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
     const [isScrolled, setIsScrolled] = useState(false)
     const [showControls, setShowControls] = useState(true)
     const [initialLoad, setInitialLoad] = useState(true)
-    const [isNavbarHovered, setIsNavbarHovered] = useState(false)
 
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
     const { isHovered, handleMouseEnter, handleMouseLeave } = useSmartHover({
         onHoverStart: () => {
             setShowControls(true)
-            onControlsVisibilityChange?.(true)
+            setNavbarVisible(true)
         },
         onHoverEnd: () => {
             // Solo se non siamo in scroll, navbar non è hovered, e non è il caricamento iniziale
@@ -46,7 +45,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
                 // Delay più lungo per zone neutre
                 const timeout = addTimeout(setTimeout(() => {
                     setShowControls(false)
-                    onControlsVisibilityChange?.(false)
+                    setNavbarVisible(false)
                 }, 4000))
                 return () => clearTimeout(timeout)
             }
@@ -121,31 +120,32 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             } else {
                 setIsScrolled(true)
                 setShowControls(true)
-                onControlsVisibilityChange?.(true)
+                setNavbarVisible(true)
             }
         }
 
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
-    }, [onControlsVisibilityChange])
+    }, [setNavbarVisible])
 
     // Logica unificata per visibilità controlli
-    const shouldShowControls = isHovered || isNavbarHovered || navbarHovered || isScrolled || initialLoad
+    const shouldShowControls = isHovered || navbarHovered || isScrolled || initialLoad
 
     // Gestisce la visibilità unificata con delay per zone neutre
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-            onControlsVisibilityChange?.(true)
+            setNavbarVisible(true)
         } else {
             // Delay più lungo per zone neutre (5 secondi)
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-                onControlsVisibilityChange?.(false)
+                setNavbarVisible(false)
             }, 5000))
             return () => clearTimeout(timeout)
         }
-    }, [shouldShowControls, onControlsVisibilityChange, addTimeout])
+    }, [shouldShowControls, addTimeout, setNavbarVisible])
+
 
     // Gestisce il cambio film dall'esterno
     useEffect(() => {
@@ -245,7 +245,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="container mx-auto px-4 pb-16">
                     <div className="max-w-2xl">
                         {/* Title */}

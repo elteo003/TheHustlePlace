@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { HLSConfigProvider } from '@/components/hls-config-provider'
 import { ConditionalLayout } from '@/components/conditional-layout'
+import { NavbarProvider } from '@/contexts/NavbarContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -37,12 +38,14 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} scrollbar-vertical`} suppressHydrationWarning={true}>
         <HLSConfigProvider>
-          <div className="min-h-screen bg-black text-white">
-            <ConditionalLayout>
-              {children}
-            </ConditionalLayout>
-          </div>
-          <Toaster />
+          <NavbarProvider>
+            <div className="min-h-screen bg-black text-white">
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </div>
+            <Toaster />
+          </NavbarProvider>
         </HLSConfigProvider>
       </body>
     </html>

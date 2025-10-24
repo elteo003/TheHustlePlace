@@ -16,9 +16,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         setIsClient(true)
     }, [])
 
-    // Nascondi la navbar nelle pagine del player e home
+    // Nascondi la navbar solo nelle pagine del player
     const isPlayerPage = pathname?.startsWith('/player/')
-    const isHomePage = pathname === '/' || pathname === '/home'
 
     // Evita hydration mismatch mostrando layout base durante SSR
     if (!isClient) {
@@ -31,8 +30,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     return (
         <>
-            {!isPlayerPage && !isHomePage && <Navbar />}
-            <div className={!isPlayerPage && !isHomePage ? 'pt-20' : ''}>
+            {!isPlayerPage && <Navbar />}
+            <div className={!isPlayerPage ? 'pt-20' : ''}>
                 {children}
             </div>
         </>
