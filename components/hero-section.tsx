@@ -494,7 +494,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 </div>
 
                 {/* Bottom Gradient */}
-                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} />
+                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} style={{ zIndex: 1 }} />
 
                 {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
                 {(trailerEnded || showUpcomingTrailers) && movies.length > 0 && (

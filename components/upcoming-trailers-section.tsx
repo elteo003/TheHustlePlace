@@ -96,6 +96,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
             className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent"
             onMouseEnter={sectionMouseEnter}
             onMouseLeave={sectionMouseLeave}
+            style={{ zIndex: 10 }}
         >
             <div className="container mx-auto">
                 {/* Countdown */}
