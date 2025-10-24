@@ -127,16 +127,17 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isNavbarHovered || navbarHovered || isScrolled || initialLoad
 
-    // Gestisce la visibilità unificata
+    // Gestisce la visibilità unificata con delay per zone neutre
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
             onControlsVisibilityChange?.(true)
         } else {
+            // Delay più lungo per zone neutre (3 secondi)
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
                 onControlsVisibilityChange?.(false)
-            }, 2000))
+            }, 3000))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, onControlsVisibilityChange, addTimeout])
@@ -196,7 +197,11 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
     }
 
     return (
-        <div className="relative h-screen w-full overflow-hidden -mt-20">
+        <div 
+            className="relative h-screen w-full overflow-hidden -mt-20"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
 
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
@@ -232,16 +237,12 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${shouldShowControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${shouldShowControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="container mx-auto px-4">
-                    <div
-                        className="max-w-2xl"
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
-                    >
+                    <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                             {featuredMovie.title}

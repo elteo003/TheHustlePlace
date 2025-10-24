@@ -39,19 +39,18 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
                 const trailerData = await trailerResponse.json()
                 
                 if (trailerData.success && trailerData.data?.results?.length > 0) {
-                    // Verifica che ci sia un trailer YouTube ufficiale
+                    // Verifica che ci sia un trailer YouTube (meno restrittivo)
                     const hasYouTubeTrailer = trailerData.data.results.some((video: any) => 
                         video.site === 'YouTube' && 
-                        (video.type === 'Trailer' || video.type === 'Teaser') &&
-                        video.official === true
+                        (video.type === 'Trailer' || video.type === 'Teaser')
                     )
                     
                     if (hasYouTubeTrailer) {
-                        console.log(`✅ ${firstMovie.title} ha trailer YouTube ufficiale`)
+                        console.log(`✅ ${firstMovie.title} ha trailer YouTube`)
                         setMovies(data.data)
                         setCurrentIndex(0)
                     } else {
-                        console.log(`⚠️ ${firstMovie.title} non ha trailer YouTube ufficiale, cerco il prossimo...`)
+                        console.log(`⚠️ ${firstMovie.title} non ha trailer YouTube, cerco il prossimo...`)
                         await loadNextMovieWithTrailer(data.data, 1)
                     }
                 } else {
@@ -104,17 +103,16 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
                 if (trailerData.success && trailerData.data?.results?.length > 0) {
                     const hasYouTubeTrailer = trailerData.data.results.some((video: any) => 
                         video.site === 'YouTube' && 
-                        (video.type === 'Trailer' || video.type === 'Teaser') &&
-                        video.official === true
+                        (video.type === 'Trailer' || video.type === 'Teaser')
                     )
                     
                     if (hasYouTubeTrailer) {
-                        console.log(`✅ ${movie.title} ha trailer YouTube ufficiale - IMPOSTATO COME FEATURED`)
+                        console.log(`✅ ${movie.title} ha trailer YouTube - IMPOSTATO COME FEATURED`)
                         setMovies(movies)
                         setCurrentIndex(i)
                         return
                     } else {
-                        console.log(`⚠️ ${movie.title} non ha trailer YouTube ufficiale`)
+                        console.log(`⚠️ ${movie.title} non ha trailer YouTube`)
                     }
                 } else {
                     console.log(`⚠️ ${movie.title} non ha video disponibili`)
