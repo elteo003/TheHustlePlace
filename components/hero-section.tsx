@@ -288,6 +288,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             `}</style>
             <div 
                 className="relative h-screen w-full overflow-hidden -mt-20"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
             >
                    {/* Navbar che appare/scompare insieme ai dettagli */}
                    <div 
@@ -350,7 +352,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         style={{
                             animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                             transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                            filter: isHovered ? 'blur(0px)' : 'blur(1px)'
+                            filter: isHovered ? 'blur(0px)' : 'blur(0.2px)'
                         }}
                     >
                     <div className="max-w-2xl">
@@ -360,7 +362,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.2s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.5px)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                 }}
                             >
@@ -373,7 +375,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.4s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(0.8px)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.2px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
                                 }}
                             >
@@ -386,7 +388,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.6s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(1px)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                 }}
                             >
@@ -407,7 +409,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 style={{
                                     animation: 'fadeIn 0.6s ease-out 0.8s both',
                                     transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
-                                    filter: isHovered ? 'blur(0px)' : 'blur(1.2px)',
+                                    filter: isHovered ? 'blur(0px)' : 'blur(0.4px)',
                                     transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
                                 }}
                             >
@@ -417,7 +419,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                     }}
                                 >
@@ -432,7 +434,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
                                     }}
                                 >
@@ -449,7 +451,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                         className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
                                         style={{
                                             transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                            filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                            filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                             transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
                                         }}
                                     >
@@ -466,7 +468,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s'
                                     }}
                                 >
@@ -487,7 +489,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
                                     style={{
                                         transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                        filter: isHovered ? 'blur(0px)' : 'blur(0.3px)',
+                                        filter: isHovered ? 'blur(0px)' : 'blur(0.1px)',
                                         transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
                                     }}
                                 >
