@@ -37,7 +37,7 @@ export default function MovieGridIntegrated({
         } else if (section === 'popular') {
           endpoint = type === 'movie' ? `/api/catalog/popular/movies` : `/api/catalog/popular/tv`
         } else if (section === 'recent') {
-          endpoint = type === 'movie' ? `/api/catalog/recent` : `/api/catalog/latest/tv`
+          endpoint = type === 'movie' ? `/api/catalog/latest/movies` : `/api/catalog/latest/tv`
         } else if (section === 'top-rated') {
           endpoint = type === 'movie' ? `/api/catalog/top-rated/movies` : `/api/catalog/top-rated/tv`
         } else {
@@ -95,16 +95,28 @@ export default function MovieGridIntegrated({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <p className="text-red-500">{error}</p>
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Riprova
+        </button>
       </div>
     )
   }
 
   if (movies.length === 0) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <p className="text-gray-500">Nessun contenuto disponibile</p>
+      <div className="flex flex-col items-center justify-center py-16">
+        <p className="text-gray-500 mb-4">Nessun contenuto disponibile</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Riprova
+        </button>
       </div>
     )
   }
