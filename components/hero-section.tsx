@@ -8,6 +8,7 @@ import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useCleanup } from '@/hooks/useCleanup'
+import { Navbar } from '@/components/navbar'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void
@@ -55,7 +56,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         const timer = addTimeout(setTimeout(() => {
             setInitialLoad(false)
-        }, 2000))
+        }, 1000))
         return () => clearTimeout(timer)
     }, [addTimeout])
 
@@ -125,11 +126,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-        } else if (!initialLoad) {
-            // Solo se non è il caricamento iniziale, nascondi dopo delay
+        } else {
+            // Nascondi dopo delay, anche durante il caricamento iniziale
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, 2000))
+            }, initialLoad ? 3000 : 1500))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, addTimeout, initialLoad])
@@ -190,11 +191,13 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
     return (
-        <div
+        <div 
             className="relative h-screen w-full overflow-hidden -mt-20"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
+            {/* Navbar Dinamica */}
+            <Navbar isVisible={showControls} />
 
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
@@ -234,8 +237,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="absolute bottom-16 left-4 px-4">
-                    <div className="max-w-2xl">
+                {showControls && (
+                    <div className="absolute bottom-16 left-4 px-4">
+                        <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                             {featuredMovie.title}
@@ -328,8 +332,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 </span>
                             </div>
                         )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
 
