@@ -430,10 +430,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false 
                             <Button
                                 onClick={handleWatchNow}
                                 size="lg"
-                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                                className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
                                 <Play className="w-6 h-6" />
-                                Guarda Ora
+                                Play
                             </Button>
 
                             <Button
