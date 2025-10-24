@@ -128,7 +128,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         if (!isHovered && !isScrolled && !initialLoad) {
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, 3000))
+            }, 1000))
             return () => clearTimeout(timeout)
         }
     }, [isHovered, isScrolled, initialLoad, addTimeout])
