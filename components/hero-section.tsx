@@ -41,7 +41,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // La logica di nascondere sarà gestita dal useEffect principale
+        // Nascondi immediatamente quando il cursore esce
+        const timeout = addTimeout(setTimeout(() => {
+            setShowControls(false)
+        }, 100))
+        return () => clearTimeout(timeout)
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -122,15 +126,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isScrolled || initialLoad
 
-    // Gestisce la visibilità unificata con delay per zone neutre
+    // Gestisce la visibilità unificata - più reattiva
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-        } else {
-            // Nascondi dopo delay, anche durante il caricamento iniziale
+        } else if (!initialLoad) {
+            // Solo dopo il caricamento iniziale, nascondi con delay breve
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, initialLoad ? 3000 : 1500))
+            }, 500))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, addTimeout, initialLoad])
@@ -196,7 +200,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            {/* Navbar Dinamica */}
+            {/* Navbar che appare/scompare insieme ai dettagli */}
             <Navbar isVisible={showControls} />
 
             {/* Background Video/Image */}
@@ -238,7 +242,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 {showControls && (
-                    <div className="absolute bottom-16 left-4 px-4">
+                    <div className="absolute bottom-16 left-4 px-4 transition-all duration-500">
                         <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
