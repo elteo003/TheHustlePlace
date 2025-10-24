@@ -22,16 +22,21 @@ export default function HomePage() {
     const shouldShowNavbar = navbarVisible || navbarHovered
 
     useEffect(() => {
-        // Mostra loading screen solo al primo accesso o dopo riavvio server
-        const lastSeenLoading = localStorage.getItem('lastSeenLoading')
-        const now = Date.now()
-        const oneHour = 60 * 60 * 1000 // 1 ora in millisecondi
+        // Mostra loading screen solo al primo accesso o al refresh
+        const hasSeenLoading = sessionStorage.getItem('hasSeenLoading')
         
-        // Se non c'è timestamp o è passata più di un'ora, mostra l'animazione
-        if (!lastSeenLoading || (now - parseInt(lastSeenLoading)) > oneHour) {
+        if (!hasSeenLoading) {
             setShowLoadingScreen(true)
-            localStorage.setItem('lastSeenLoading', now.toString())
+            sessionStorage.setItem('hasSeenLoading', 'true')
         }
+
+        // Listener per il refresh della pagina
+        const handleBeforeUnload = () => {
+            // Rimuove il flag quando la pagina viene ricaricata
+            sessionStorage.removeItem('hasSeenLoading')
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
 
         // Controllo API key in background, non blocca il rendering
         setIsCheckingApi(true)
@@ -40,6 +45,10 @@ export default function HomePage() {
             .then(data => setHasApiKey(data.hasApiKey))
             .catch(() => setHasApiKey(false))
             .finally(() => setIsCheckingApi(false))
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
     }, [])
 
     // Gestisce la scomparsa della navbar dopo il caricamento iniziale
