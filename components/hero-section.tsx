@@ -161,14 +161,27 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             setShowControls(true)
             onControlsVisibilityChange?.(true)
         } else if (!isScrolled && !isHovered) {
-            // Se non c'è hover sulla navbar e non siamo scrollati e non c'è hover sui controlli, nascondi dopo 3 secondi
+            // Se non c'è hover sulla navbar e non siamo scrollati e non c'è hover sui controlli, nascondi dopo 5 secondi
             const timeout = setTimeout(() => {
                 setShowControls(false)
                 onControlsVisibilityChange?.(false)
-            }, 3000)
+            }, 5000)
             return () => clearTimeout(timeout)
         }
     }, [navbarHovered, isScrolled, isHovered, onControlsVisibilityChange])
+
+    // Mostra la navbar quando il mouse è nella parte superiore dello schermo
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (e.clientY < 100) { // Se il mouse è nei primi 100px dall'alto
+                setShowControls(true)
+                onControlsVisibilityChange?.(true)
+            }
+        }
+
+        window.addEventListener('mousemove', handleMouseMove)
+        return () => window.removeEventListener('mousemove', handleMouseMove)
+    }, [onControlsVisibilityChange])
 
     // Carica il film featured al mount del componente
     useEffect(() => {
@@ -422,52 +435,6 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
 
     return (
         <div className="relative h-screen w-full overflow-hidden -mt-20">
-            {/* Navbar Dinamica */}
-            <div 
-                className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${(showControls || navbarHovered) ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
-                onMouseEnter={() => {
-                    setShowControls(true)
-                    onControlsVisibilityChange?.(true)
-                }}
-                onMouseLeave={() => {
-                    // Non nascondere immediatamente, lascia che la logica generale gestisca la visibilità
-                }}
-            >
-                <div className="bg-black/80 backdrop-blur-md border-b border-white/10">
-                    <div className="container mx-auto px-4 py-4">
-                        <div className="flex items-center justify-between">
-                            {/* Logo */}
-                            <div className="flex items-center space-x-3 group">
-                                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
-                                    <span className="text-white font-bold text-xl">H</span>
-                                </div>
-                                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-500 transition-all duration-300">
-                                    TheHustlePlace
-                                </span>
-                            </div>
-
-                            {/* Navigation Links */}
-                            <div className="hidden md:flex items-center space-x-8">
-                                <a href="/home" className="text-gray-300 hover:text-white transition-colors">
-                                    Home
-                                </a>
-                                <a href="/movies" className="text-gray-300 hover:text-white transition-colors">
-                                    Film
-                                </a>
-                                <a href="/tv" className="text-gray-300 hover:text-white transition-colors">
-                                    Serie TV
-                                </a>
-                                <a href="/anime" className="text-gray-300 hover:text-white transition-colors">
-                                    Anime
-                                </a>
-                                <a href="/request" className="text-gray-300 hover:text-white transition-colors">
-                                    Richiedi un titolo
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
@@ -506,7 +473,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingTop: '80px' }}>
+            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="container mx-auto px-4">
                     <div
                         className="max-w-2xl"
@@ -609,60 +576,6 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
                 </div>
             </div>
 
-            {/* Upcoming Trailers Section */}
-            {showUpcomingTrailers && popularMovies.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
-                    <div className="container mx-auto">
-                        <div className="flex gap-3 overflow-x-auto scrollbar-horizontal" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                            {popularMovies.filter((_, index) => index !== currentHeroMovieIndex).slice(0, 6).map((movie, index) => {
-                                const title = movie.title || 'Titolo non disponibile'
-                                const backdropPath = movie.backdrop_path || movie.poster_path
-                                
-                                return (
-                                    <div
-                                        key={movie.id}
-                                        className="flex-shrink-0 w-48 h-28 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105"
-                                        onClick={() => {
-                                            const originalIndex = popularMovies.findIndex(m => m.id === movie.id)
-                                            if (originalIndex !== -1) {
-                                                onMovieChange?.(originalIndex)
-                                            }
-                                        }}
-                                    >
-                                        <div className="relative w-full h-full group">
-                                            {/* Backdrop Image */}
-                                            <img
-                                                src={backdropPath ? `https://image.tmdb.org/t/p/w500${backdropPath}` : '/placeholder-movie.svg'}
-                                                alt={title}
-                                                className="w-full h-full object-cover"
-                                            />
-
-                                            {/* Overlay */}
-                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-300" />
-
-                                            {/* Play Button */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="p-2 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 group-hover:bg-black/80 transition-all duration-300">
-                                                    <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24">
-                                                        <path d="M8 5v14l11-7z"/>
-                                                    </svg>
-                                                </div>
-                                            </div>
-
-                                            {/* Title */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                                                <h4 className="text-white text-xs font-semibold truncate">
-                                                    {title}
-                                                </h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Bottom Gradient */}
             <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />

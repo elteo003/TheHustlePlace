@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { UpcomingTrailers } from '@/components/upcoming-trailers'
@@ -12,7 +13,8 @@ export default function HomePage() {
     const router = useRouter()
     const [hasApiKey, setHasApiKey] = useState(true)
     const [isCheckingApi, setIsCheckingApi] = useState(false)
-    const [navbarVisible, setNavbarVisible] = useState(false)
+    const [navbarVisible, setNavbarVisible] = useState(true)
+    const [initialLoad, setInitialLoad] = useState(true)
     const [navbarHovered, setNavbarHovered] = useState(false)
     const [heroSectionLoaded, setHeroSectionLoaded] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
@@ -20,6 +22,8 @@ export default function HomePage() {
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
     const [pageLoaded, setPageLoaded] = useState(false)
 
+    // La navbar è visibile se è esplicitamente visibile OPPURE se c'è hover
+    const shouldShowNavbar = navbarVisible || navbarHovered
 
     // Carica i film popolari per la Hero Section
     const loadPopularMovies = async () => {
@@ -27,7 +31,7 @@ export default function HomePage() {
             console.log('🎬 Caricando film popolari...')
             const response = await fetch('/api/catalog/popular/movies')
             const data = await response.json()
-            
+
             if (data.success && data.data) {
                 console.log('✅ Caricati 20 film popolari')
                 setPopularMovies(data.data)
@@ -42,7 +46,7 @@ export default function HomePage() {
     useEffect(() => {
         // Pre-carica i dati immediatamente
         loadPopularMovies()
-        
+
         // Pre-carica anche altri dati in background
         const preloadData = async () => {
             try {
@@ -58,16 +62,28 @@ export default function HomePage() {
                 console.log('Pre-caricamento dati in background:', error)
             }
         }
-        
+
         preloadData()
     }, [])
+
+    // Gestisce la scomparsa della navbar dopo il caricamento iniziale
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setInitialLoad(false)
+            // Nascondi la navbar dopo 2 secondi se non c'è hover
+            if (!navbarHovered) {
+                setNavbarVisible(false)
+            }
+        }, 2000)
+        return () => clearTimeout(timer)
+    }, [navbarHovered])
 
     // Gestisce l'hover della navbar
     useEffect(() => {
         const handleNavbarHover = () => {
             setNavbarHovered(true)
         }
-        
+
         const handleNavbarLeave = () => {
             setNavbarHovered(false)
         }
@@ -133,23 +149,45 @@ export default function HomePage() {
         return () => clearTimeout(timer)
     }, [])
 
+    const handlePlay = (id: number, type?: 'movie' | 'tv') => {
+        if (type === 'tv') {
+            router.push(`/series/${id}`)
+        } else {
+            router.push(`/player/movie/${id}`)
+        }
+    }
+
+    const handleDetails = (id: number, type?: 'movie' | 'tv') => {
+        if (type === 'tv') {
+            router.push(`/series/${id}`)
+        } else {
+            router.push(`/player/movie/${id}`)
+        }
+    }
+
     // Mostra errore solo se API key mancante e controllo completato
     if (!hasApiKey && !isCheckingApi) {
         return <ApiKeyError />
     }
 
     return (
-        <div className={`min-h-screen bg-black transition-all duration-1500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <main className="min-h-screen bg-black">
+            {/* Navbar */}
+            <Navbar
+                isVisible={shouldShowNavbar}
+                onHoverChange={setNavbarHovered}
+            />
+
             {/* Hero Section */}
-                <HeroSection
-                    onControlsVisibilityChange={setNavbarVisible}
-                    navbarHovered={navbarHovered}
-                    onTrailerEnded={handleTrailerEnded}
-                    onMovieChange={handleHeroMovieChange}
-                    showUpcomingTrailers={showUpcomingTrailers}
-                    onLoaded={handleHeroSectionLoaded}
-                    currentHeroMovieIndex={currentHeroMovieIndex}
-                />
+            <HeroSection
+                onControlsVisibilityChange={setNavbarVisible}
+                navbarHovered={navbarHovered}
+                onTrailerEnded={handleTrailerEnded}
+                onMovieChange={handleHeroMovieChange}
+                showUpcomingTrailers={showUpcomingTrailers}
+                onLoaded={handleHeroSectionLoaded}
+                currentHeroMovieIndex={currentHeroMovieIndex}
+            />
 
             {/* Upcoming Trailers Section - Bottom Hero Section */}
             {showUpcomingTrailers && popularMovies.length > 0 && (
@@ -234,22 +272,7 @@ export default function HomePage() {
                     </div>
                 </section>
             </div>
-        </div>
+        </main>
     )
 
-    function handlePlay(id: number, type?: 'movie' | 'tv') {
-        if (type === 'tv') {
-            router.push(`/series/${id}`)
-        } else {
-            router.push(`/player/movie/${id}`)
-        }
-    }
-
-    function handleDetails(id: number, type?: 'movie' | 'tv') {
-        if (type === 'tv') {
-            router.push(`/series/${id}`)
-        } else {
-            router.push(`/player/movie/${id}`)
-        }
-    }
 }
