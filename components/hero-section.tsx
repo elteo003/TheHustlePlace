@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
@@ -33,25 +33,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Hooks personalizzati
     const { addTimeout } = useCleanup()
     const [isHovered, setIsHovered] = useState(false)
-    const globalHideTimer = useRef<NodeJS.Timeout | null>(null)
 
     const handleMouseEnter = () => {
         setIsHovered(true)
         setShowControls(true)
-        // Reset del timer globale quando entra in un'area specifica
-        if (globalHideTimer.current) {
-            clearTimeout(globalHideTimer.current)
-            globalHideTimer.current = null
-        }
     }
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // Nascondi dopo un breve delay quando esce dall'area specifica
-        const timeout = addTimeout(setTimeout(() => {
-            setShowControls(false)
-        }, 1000))
-        return () => clearTimeout(timeout)
+        // La logica di nascondere sarà gestita dal useEffect principale
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -129,35 +119,19 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    // Timer globale per nascondere quando il cursore non è su aree specifiche
+    // Timer per nascondere quando il cursore esce dall'area
     useEffect(() => {
-        const handleMouseMove = () => {
-            // Reset timer quando il cursore si muove
-            if (globalHideTimer.current) {
-                clearTimeout(globalHideTimer.current)
-                globalHideTimer.current = null
-            }
-            
-            // Avvia timer per nascondere se non è su aree specifiche
-            if (!isHovered && !isScrolled && !initialLoad) {
-                globalHideTimer.current = setTimeout(() => {
-                    setShowControls(false)
-                }, 2000)
-            }
+        if (!isHovered && !isScrolled && !initialLoad) {
+            const timeout = addTimeout(setTimeout(() => {
+                setShowControls(false)
+            }, 1500))
+            return () => clearTimeout(timeout)
         }
-
-        window.addEventListener('mousemove', handleMouseMove)
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove)
-            if (globalHideTimer.current) {
-                clearTimeout(globalHideTimer.current)
-            }
-        }
-    }, [isHovered, isScrolled, initialLoad])
+    }, [isHovered, isScrolled, initialLoad, addTimeout])
 
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isScrolled || initialLoad
-    
+
     // Debug per capire lo stato
     useEffect(() => {
         console.log('🎬 Hero Section Debug:', {
@@ -173,14 +147,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-        } else if (!initialLoad) {
-            // Solo dopo il caricamento iniziale, nascondi con delay
-            const timeout = addTimeout(setTimeout(() => {
-                setShowControls(false)
-            }, 2000))
-            return () => clearTimeout(timeout)
         }
-    }, [shouldShowControls, addTimeout, initialLoad])
+    }, [shouldShowControls])
 
 
     // Gestisce il cambio film dall'esterno
@@ -238,16 +206,53 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
     return (
-        <div 
-            className="relative h-screen w-full overflow-hidden -mt-20"
-        >
-            {/* Navbar che appare/scompare insieme ai dettagli */}
+        <>
+            <style jsx>{`
+                @keyframes slideInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes slideOutDown {
+                    from {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                }
+                
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+                
+                @keyframes fadeOut {
+                    from {
+                        opacity: 1;
+                    }
+                    to {
+                        opacity: 0;
+                    }
+                }
+            `}</style>
             <div 
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
+                className="relative h-screen w-full overflow-hidden -mt-20"
             >
-                <Navbar isVisible={showControls} />
-            </div>
+            {/* Navbar che appare/scompare insieme ai dettagli */}
+            <Navbar isVisible={showControls} />
 
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
@@ -285,107 +290,115 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             {/* Overlay Gradient */}
             <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
+            {/* Area di hover unificata per navbar e dettagli */}
+            <div 
+                className="absolute inset-0 z-20"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+            />
+
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 {showControls && (
                     <div 
-                        className="absolute bottom-16 left-4 px-4 transition-all duration-500"
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
+                        className="absolute bottom-16 left-4 px-4 transition-all duration-700 ease-out"
+                        style={{
+                            animation: 'slideInUp 0.7s ease-out'
+                        }}
                     >
                         <div className="max-w-2xl">
-                        {/* Title */}
-                        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                            {featuredMovie.title}
-                        </h1>
+                            {/* Title */}
+                            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                                {featuredMovie.title}
+                            </h1>
 
-                        {/* Overview */}
-                        <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
-                            {featuredMovie.overview}
-                        </p>
+                            {/* Overview */}
+                            <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
+                                {featuredMovie.overview}
+                            </p>
 
-                        {/* Rating */}
-                        <div className="flex items-center mb-8">
-                            <div className="flex items-center">
-                                <div className="text-yellow-400 text-2xl mr-2">★</div>
-                                <span className="text-white text-xl font-semibold">
-                                    {featuredMovie.vote_average.toFixed(1)}
-                                </span>
-                                <span className="text-gray-400 ml-2">
-                                    ({featuredMovie.vote_count.toLocaleString()} voti)
-                                </span>
+                            {/* Rating */}
+                            <div className="flex items-center mb-8">
+                                <div className="flex items-center">
+                                    <div className="text-yellow-400 text-2xl mr-2">★</div>
+                                    <span className="text-white text-xl font-semibold">
+                                        {featuredMovie.vote_average.toFixed(1)}
+                                    </span>
+                                    <span className="text-gray-400 ml-2">
+                                        ({featuredMovie.vote_count.toLocaleString()} voti)
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <Button
-                                onClick={handleWatchNow}
-                                size="lg"
-                                className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                                <Play className="w-6 h-6" />
-                                Play
-                            </Button>
-
-                            <Button
-                                onClick={handleMoreInfo}
-                                variant="outline"
-                                size="lg"
-                                className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
-                            >
-                                <Info className="w-6 h-6" />
-                                Altre Info
-                            </Button>
-
-                            {/* Mute/Unmute Button */}
-                            {trailer && (
+                            {/* Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-4">
                                 <Button
-                                    onClick={() => setIsMuted(!isMuted)}
+                                    onClick={handleWatchNow}
+                                    size="lg"
+                                    className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                    <Play className="w-6 h-6" />
+                                    Play
+                                </Button>
+
+                                <Button
+                                    onClick={handleMoreInfo}
+                                    variant="outline"
+                                    size="lg"
+                                    className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                >
+                                    <Info className="w-6 h-6" />
+                                    Altre Info
+                                </Button>
+
+                                {/* Mute/Unmute Button */}
+                                {trailer && (
+                                    <Button
+                                        onClick={() => setIsMuted(!isMuted)}
+                                        variant="ghost"
+                                        size="lg"
+                                        className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                    >
+                                        {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                                        {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
+                                    </Button>
+                                )}
+
+                                {/* Next Movie Button */}
+                                <Button
+                                    onClick={changeToNextMovie}
+                                    variant="outline"
+                                    size="lg"
+                                    className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                >
+                                    Prossimo Film
+                                </Button>
+
+                                <Button
                                     variant="ghost"
                                     size="lg"
                                     className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
                                 >
-                                    {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                                    {isMuted ? 'Attiva Audio' : 'Disattiva Audio'}
+                                    <Plus className="w-6 h-6" />
                                 </Button>
-                            )}
 
-                            {/* Next Movie Button */}
-                            <Button
-                                onClick={changeToNextMovie}
-                                variant="outline"
-                                size="lg"
-                                className="border-gray-400/50 text-gray-300 hover:bg-gray-400/20 font-semibold px-6 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
-                            >
-                                Prossimo Film
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                size="lg"
-                                className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
-                            >
-                                <Plus className="w-6 h-6" />
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                size="lg"
-                                className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
-                            >
-                                <Heart className="w-6 h-6" />
-                            </Button>
-                        </div>
-
-                        {/* Release Date */}
-                        {featuredMovie.release_date && (
-                            <div className="mt-6">
-                                <span className="text-gray-300 text-lg">
-                                    Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
-                                </span>
+                                <Button
+                                    variant="ghost"
+                                    size="lg"
+                                    className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm"
+                                >
+                                    <Heart className="w-6 h-6" />
+                                </Button>
                             </div>
-                        )}
+
+                            {/* Release Date */}
+                            {featuredMovie.release_date && (
+                                <div className="mt-6">
+                                    <span className="text-gray-300 text-lg">
+                                        Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -393,7 +406,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
 
             {/* Bottom Gradient */}
-            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-30'}`} />
+            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-all duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-30'}`} />
 
             {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
             {trailerEnded && movies.length > 0 && (
@@ -403,6 +416,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     onMovieSelect={changeToMovie}
                 />
             )}
-        </div>
+            </div>
+        </>
     )
 }
