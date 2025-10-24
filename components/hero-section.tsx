@@ -259,7 +259,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                     {trailer ? (
                         <iframe
-                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
+                            src={getYouTubeEmbedUrl(trailer, false, isMuted)}
                             className="w-full h-full object-cover transition-all duration-700 ease-out"
                             allow="autoplay; encrypted-media; fullscreen"
                             allowFullScreen
