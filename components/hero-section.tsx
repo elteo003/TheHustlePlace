@@ -259,15 +259,22 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                    {/* Navbar che appare/scompare insieme ai dettagli */}
                    {showControls && (
                        <div 
-                           className="transition-all duration-700 ease-out opacity-100 translate-y-0"
+                           className="fixed top-0 left-0 right-0 z-[9999] transition-all duration-700 ease-out opacity-100 translate-y-0"
                            style={{
                                transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)',
-                               backgroundColor: 'rgba(255, 0, 0, 0.3)', // Debug: sfondo rosso per vedere il div
-                               border: '2px solid red' // Debug: bordo rosso
+                               backgroundColor: 'rgba(255, 0, 0, 0.5)', // Debug: sfondo rosso più visibile
+                               border: '3px solid red', // Debug: bordo rosso più spesso
+                               minHeight: '80px' // Debug: altezza minima
                            }}
                        >
-                           <div style={{ backgroundColor: 'rgba(0, 255, 0, 0.3)', padding: '10px' }}>
-                               DEBUG: Navbar dovrebbe essere qui!
+                           <div style={{ 
+                               backgroundColor: 'rgba(0, 255, 0, 0.8)', 
+                               padding: '20px',
+                               color: 'white',
+                               fontSize: '18px',
+                               fontWeight: 'bold'
+                           }}>
+                               🔴 DEBUG: Navbar dovrebbe essere qui! showControls = {showControls.toString()}
                            </div>
                            <Navbar isVisible={true} />
                        </div>
