@@ -41,11 +41,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     const handleMouseLeave = () => {
         setIsHovered(false)
-        // Nascondi immediatamente quando il cursore esce
-        const timeout = addTimeout(setTimeout(() => {
-            setShowControls(false)
-        }, 100))
-        return () => clearTimeout(timeout)
+        // La logica di nascondere sarà gestita dal useEffect principale
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -131,10 +127,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         if (shouldShowControls) {
             setShowControls(true)
         } else if (!initialLoad) {
-            // Solo dopo il caricamento iniziale, nascondi con delay breve
+            // Solo dopo il caricamento iniziale, nascondi con delay
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, 500))
+            }, 2000))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, addTimeout, initialLoad])
@@ -241,9 +237,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {showControls && (
-                    <div className="absolute bottom-16 left-4 px-4 transition-all duration-500">
-                        <div className="max-w-2xl">
+                <div className={`absolute bottom-16 left-4 px-4 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-30'}`}>
+                    <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                             {featuredMovie.title}
@@ -336,9 +331,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 </span>
                             </div>
                         )}
-                        </div>
                     </div>
-                )}
+                </div>
             </div>
 
 
