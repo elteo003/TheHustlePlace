@@ -154,10 +154,19 @@ export default function HomePage() {
                 onHoverChange={setNavbarHovered}
             />
 
-            {/* Upcoming Trailers Section - Sopra Hero Section */}
+            {/* Hero Section */}
+            <HeroSection
+                onControlsVisibilityChange={setNavbarVisible}
+                navbarHovered={navbarHovered}
+                onTrailerEnded={handleTrailerEnded}
+                onMovieChange={handleHeroMovieChange}
+                showUpcomingTrailers={showUpcomingTrailers}
+            />
+
+            {/* Upcoming Trailers Section - Bottom Hero Section */}
             {showUpcomingTrailers && popularMovies.length > 0 && (
-                <div className="absolute top-0 left-0 right-0 z-20 bg-black/50 backdrop-blur-sm">
-                    <div className="container mx-auto px-4 py-8">
+                <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/95 via-black/80 to-transparent" style={{ marginTop: '-80px' }}>
+                    <div className="container mx-auto px-4 py-6">
                         <UpcomingTrailers
                             movies={popularMovies}
                             currentMovieIndex={currentHeroMovieIndex}
@@ -169,15 +178,6 @@ export default function HomePage() {
                     </div>
                 </div>
             )}
-
-            {/* Hero Section */}
-            <HeroSection
-                onControlsVisibilityChange={setNavbarVisible}
-                navbarHovered={navbarHovered}
-                onTrailerEnded={handleTrailerEnded}
-                onMovieChange={handleHeroMovieChange}
-                showUpcomingTrailers={showUpcomingTrailers}
-            />
 
             {/* Content Sections */}
             <div className="container mx-auto px-4 py-12 space-y-16">

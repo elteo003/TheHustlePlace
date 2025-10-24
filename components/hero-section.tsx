@@ -415,10 +415,6 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         <div className="relative h-screen w-full overflow-hidden -mt-20">
             {/* Background Video/Image */}
             <div className="absolute inset-0 w-full h-full">
-                {/* Overlay scuro quando i prossimi trailer sono visibili */}
-                {showUpcomingTrailers && (
-                    <div className="absolute inset-0 bg-black/70 z-10" />
-                )}
                 {trailer ? (
                     <iframe
                         src={getYouTubeEmbedUrl(trailer, true, isMuted)}
@@ -451,10 +447,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${showControls || navbarHovered ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${showControls || navbarHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingTop: '80px' }}>
+            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ paddingTop: '80px' }}>
                 <div className="container mx-auto px-4">
                     <div
                         className="max-w-2xl"
