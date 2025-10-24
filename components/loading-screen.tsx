@@ -269,22 +269,6 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
             </motion.div>
           </div>
           
-          {/* Progress percentage with animation */}
-          <motion.div 
-            className="text-center mt-4"
-            animate={{
-              scale: [1, 1.05, 1]
-            }}
-            transition={{
-              duration: 0.5,
-              repeat: Infinity,
-              repeatDelay: 1
-            }}
-          >
-            <span className="text-sm text-gray-400 font-mono bg-gray-800 px-3 py-1 rounded-full">
-              {Math.round(progress)}%
-            </span>
-          </motion.div>
         </div>
       </motion.div>
 
