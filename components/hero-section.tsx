@@ -82,6 +82,21 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         }
     }, [trailer, trailerEnded, onTrailerEnded])
 
+    // Mostra la sezione prossimi film anche se non c'è trailer (dopo 15 secondi)
+    useEffect(() => {
+        if (!trailer && !trailerEnded && popularMovies.length > 0) {
+            const fallbackTimer = setTimeout(() => {
+                console.log('🎬 Nessun trailer, mostrando prossimi film dopo timeout')
+                setTrailerEnded(true)
+                if (onTrailerEnded) {
+                    onTrailerEnded()
+                }
+            }, 15000) // 15 secondi
+
+            return () => clearTimeout(fallbackTimer)
+        }
+    }, [trailer, trailerEnded, popularMovies.length, onTrailerEnded])
+
     useEffect(() => {
         return () => {
             if (hoverTimeout) {
@@ -192,51 +207,36 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         try {
             setError(null)
 
-            // Carica un film trending reale da TMDB
-            const response = await fetch('/api/catalog/popular/movies')
+            // Carica solo film con trailer disponibili
+            const response = await fetch('/api/catalog/popular/movies-with-trailers')
             const data = await response.json()
 
-            console.log('Hero Section - Dati API ricevuti:', data)
+            console.log('Hero Section - Film con trailer ricevuti:', data)
 
             if (data.success && data.data?.length > 0) {
                 // Salva i film popolari per il tasto "Prossimo Film"
                 setPopularMovies(data.data)
-                console.log(`Hero Section - Salvati ${data.data.length} film popolari`)
+                console.log(`Hero Section - Salvati ${data.data.length} film con trailer`)
 
-                // Prova diversi film finché non ne trova uno con trailer
-                let featuredMovie = null
-                let trailerFound = false
+                // Usa il primo film (che sicuramente ha trailer)
+                const featuredMovie = data.data[0]
+                setFeaturedMovie(featuredMovie)
+                console.log('Hero Section - Film selezionato:', featuredMovie.title)
 
-                for (let i = 0; i < Math.min(5, data.data.length); i++) {
-                    const movie = data.data[i]
-                    console.log(`Hero Section - Provando film ${i + 1}:`, movie.title)
+                // Carica il trailer del film selezionato
+                try {
+                    const trailerResponse = await fetch(`/api/tmdb/movies/${featuredMovie.id}`)
+                    const trailerData = await trailerResponse.json()
 
-                    try {
-                        const trailerResponse = await fetch(`/api/tmdb/movies/${movie.id}`)
-                        const trailerData = await trailerResponse.json()
-
-                        if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
-                            const mainTrailer = findMainTrailer(trailerData.data.videos.results)
-                            if (mainTrailer) {
-                                featuredMovie = movie
-                                setFeaturedMovie(movie)
-                                setTrailer(mainTrailer.key)
-                                console.log('Hero Section - Film con trailer trovato:', movie.title)
-                                console.log('Hero Section - Trailer impostato:', mainTrailer.key)
-                                trailerFound = true
-                                break
-                            }
+                    if (trailerData.success && trailerData.data?.videos?.results?.length > 0) {
+                        const mainTrailer = findMainTrailer(trailerData.data.videos.results)
+                        if (mainTrailer) {
+                            setTrailer(mainTrailer.key)
+                            console.log('Hero Section - Trailer impostato:', mainTrailer.key)
                         }
-                    } catch (trailerErr) {
-                        console.log(`Hero Section - Errore per film ${movie.title}:`, trailerErr)
                     }
-                }
-
-                // Se non trova nessun film con trailer, usa il primo
-                if (!trailerFound && data.data.length > 0) {
-                    featuredMovie = data.data[0]
-                    setFeaturedMovie(featuredMovie)
-                    console.log('Hero Section - Nessun trailer trovato, usando primo film:', featuredMovie.title)
+                } catch (trailerErr) {
+                    console.log('Hero Section - Errore caricamento trailer:', trailerErr)
                 }
             } else {
                 // Fallback con film hardcoded se l'API non funziona
