@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const tvId = params.id
+        const { id: tvId } = await params
         const url = request.nextUrl
         const season = url.searchParams.get('season') || '1'
         const episode = url.searchParams.get('episode') || '1'
@@ -63,12 +63,13 @@ export async function GET(
         })
 
     } catch (error) {
-        console.error('Errore nel recupero video source per serie TV', { error, tvId: params.id })
+        const { id: tvId } = await params
+        console.error('Errore nel recupero video source per serie TV', { error, tvId })
 
         return NextResponse.json({
             success: false,
             error: 'Errore nel recupero del video',
-            fallbackUrl: `https://vixsrc.to/tv/${params.id}/1/1`
+            fallbackUrl: `https://vixsrc.to/tv/${tvId}/1/1`
         }, { status: 500 })
     }
 }

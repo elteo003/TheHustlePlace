@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const movieId = params.id
+        const { id: movieId } = await params
         const vixsrcUrl = `https://vixsrc.to/movie/${movieId}`
 
         console.log('Recupero video source per film', { movieId, vixsrcUrl })
@@ -57,12 +57,13 @@ export async function GET(
         })
 
     } catch (error) {
-        console.error('Errore nel recupero video source per film', { error, movieId: params.id })
+        const { id: movieId } = await params
+        console.error('Errore nel recupero video source per film', { error, movieId })
 
         return NextResponse.json({
             success: false,
             error: 'Errore nel recupero del video',
-            fallbackUrl: `https://vixsrc.to/movie/${params.id}`
+            fallbackUrl: `https://vixsrc.to/movie/${movieId}`
         }, { status: 500 })
     }
 }
