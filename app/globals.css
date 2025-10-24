@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS critico per evitare hydration mismatch */
+body { 
+  margin: 0; 
+  padding: 0; 
+  background: #000; 
+}
+
+.instant-loading-fade { 
+  opacity: 0; 
+  animation: instantFadeIn 0.5s ease-out forwards; 
+}
+
+@keyframes instantFadeIn { 
+  from { opacity: 0; } 
+  to { opacity: 1; } 
+}
+
 @layer components {
     .card-hover {
         @apply transition-all duration-500 ease-out hover:scale-110 hover:z-10;
