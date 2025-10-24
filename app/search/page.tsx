@@ -338,7 +338,7 @@ function SearchContent() {
                                                         onClick={() => {
                                                             // Usa tmdb_id se disponibile, altrimenti id
                                                             const itemId = (tvShow as any).tmdb_id || tvShow.id
-                                                            window.location.href = `/player/tv/${itemId}`
+                                                            window.location.href = `/series/${itemId}`
                                                         }}
                                                         className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
                                                     >

@@ -37,7 +37,7 @@ export function MovieCard({
         const itemId = (movie as any).tmdb_id || movie.id
         const url = type === 'movie'
             ? `/player/movie/${itemId}`
-            : `/player/tv/${itemId}`
+            : `/series/${itemId}`
         window.location.href = url
     }
 
