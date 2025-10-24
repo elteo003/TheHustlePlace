@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
@@ -45,6 +45,19 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+
+    // Funzione per controllare l'audio senza riavviare il video
+    const toggleAudio = () => {
+        if (iframeRef.current) {
+            const command = isMuted ? 'unMute' : 'mute'
+            iframeRef.current.contentWindow?.postMessage(
+                JSON.stringify({ event: 'command', func: command }),
+                'https://www.youtube.com'
+            )
+        }
+        setIsMuted(!isMuted)
+    }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
         trailer,
@@ -259,7 +272,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                     {trailer ? (
                         <iframe
-                            src={getYouTubeEmbedUrl(trailer, false, isMuted)}
+                            ref={iframeRef}
+                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
                             className="w-full h-full object-cover transition-all duration-700 ease-out"
                             allow="autoplay; encrypted-media; fullscreen"
                             allowFullScreen
@@ -391,7 +405,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     {/* Mute/Unmute Button */}
                                     {trailer && (
                                         <Button
-                                            onClick={() => setIsMuted(!isMuted)}
+                                            onClick={toggleAudio}
                                             variant="ghost"
                                             size="lg"
                                             className="text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:rotate-1"
