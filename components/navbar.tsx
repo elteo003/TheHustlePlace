@@ -18,8 +18,8 @@ export function Navbar({ isVisible = true, searchFocused = false, onSearchFocusC
     const [isSearchFocused, setIsSearchFocused] = useState(false)
     const { isVisible: contextVisible, isHovered, setIsHovered } = useNavbarContext()
 
-    // La navbar è visibile se è visibile nel context OPPURE se la ricerca è attiva
-    const shouldShow = contextVisible || isSearchFocused
+    // La navbar è visibile se è visibile dalla prop OPPURE se la ricerca è attiva
+    const shouldShow = isVisible || isSearchFocused
 
     // Gestisce il focus della ricerca e comunica alla homepage
     const handleSearchFocusChange = (focused: boolean) => {
