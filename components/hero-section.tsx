@@ -107,6 +107,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             'showControls === true': showControls === true,
             'initialLoad === true': initialLoad === true
         })
+        
+        if (showControls) {
+            console.log('🎯 Navbar dovrebbe essere visibile!')
+        } else {
+            console.log('❌ Navbar nascosta - showControls:', showControls)
+        }
     }, [isHovered, smartHovered, isScrolled, initialLoad, shouldShowControls, showControls])
 
 
@@ -248,14 +254,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 onMouseLeave={handleMouseLeave}
             >
                    {/* Navbar che appare/scompare insieme ai dettagli */}
-                   <div 
-                       className={`transition-all duration-700 ease-out ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}
-                       style={{
-                           transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
-                       }}
-                   >
-                       <Navbar isVisible={showControls} />
-                   </div>
+                   {showControls && (
+                       <div 
+                           className="transition-all duration-700 ease-out opacity-100 translate-y-0"
+                           style={{
+                               transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.98)'
+                           }}
+                       >
+                           <Navbar isVisible={true} />
+                       </div>
+                   )}
 
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
