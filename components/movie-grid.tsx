@@ -143,14 +143,14 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
             </p>
             
             {/* Bottoni azione */}
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
               {onPlay && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     onPlay(movie.id)
                   }}
-                  className="group relative w-12 h-12 bg-transparent border-2 border-white text-white rounded-lg transition-all duration-300 transform hover:scale-110 hover:shadow-lg flex items-center justify-center backdrop-blur-sm hover:bg-white/10"
+                  className="group relative bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
                 >
                   {/* Play Logo SVG */}
                   <svg 
@@ -160,9 +160,6 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                   >
                     <path d="M8 5v14l11-7z"/>
                   </svg>
-                  
-                  {/* Hover Effect */}
-                  <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </button>
               )}
               {onDetails && (
@@ -171,7 +168,7 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
                     e.stopPropagation()
                     onDetails(movie.id)
                   }}
-                  className="px-4 py-3 bg-gray-600/80 hover:bg-gray-700/80 text-white rounded-lg transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-gray-500/30"
+                  className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center justify-center backdrop-blur-sm w-full sm:w-auto"
                 >
                   Dettagli
                 </button>

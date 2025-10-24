@@ -174,22 +174,22 @@ export function MoviePreview({
                         {/* Overlay con controlli */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
                             <div className="absolute bottom-4 left-4 right-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="flex flex-col sm:flex-row gap-4 w-full">
                                     <Button
                                         size="sm"
                                         onClick={handlePlay}
-                                        className="bg-white text-black hover:bg-gray-200 flex items-center space-x-1"
+                                        className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
                                     >
-                                        <Play className="w-4 h-4" />
-                                        <span>Guarda ora</span>
+                                        <Play className="w-4 h-4 mr-2" />
+                                        <span>Play</span>
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={handleDetails}
-                                        className="border-white/30 text-white hover:bg-white/10 flex items-center space-x-1"
+                                        className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center justify-center backdrop-blur-sm w-full sm:w-auto"
                                     >
-                                        <Info className="w-4 h-4" />
+                                        <Info className="w-4 h-4 mr-2" />
                                         <span>Dettagli</span>
                                     </Button>
                                 </div>
