@@ -201,5 +201,29 @@ export function getYouTubeEmbedUrl(videoKey: string, autoplay: boolean = true, m
     return `https://www.youtube.com/embed/${videoKey}?${params.toString()}`
 }
 
+/**
+ * Estrae il videoId da una chiave YouTube o URL
+ */
+export function extractYouTubeVideoId(trailerKey: string): string | null {
+    // Se è già un videoId puro
+    if (trailerKey && !trailerKey.includes('/') && !trailerKey.includes('?')) {
+        return trailerKey
+    }
+    
+    // Se è un URL YouTube completo
+    const urlMatch = trailerKey.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+    if (urlMatch) {
+        return urlMatch[1]
+    }
+    
+    // Se è già una chiave YouTube (formato standard)
+    if (trailerKey && trailerKey.length === 11) {
+        return trailerKey
+    }
+    
+    console.warn('⚠️ Impossibile estrarre videoId da:', trailerKey)
+    return null
+}
+
 
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
-import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer, extractYouTubeVideoId } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
@@ -11,6 +11,7 @@ import { useCleanup } from '@/hooks/useCleanup'
 import { useParallax } from '@/hooks/useParallax'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useHeroControls } from '@/hooks/useHeroControls'
+import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
 import { Navbar } from '@/components/navbar'
 
 interface HeroSectionProps {
@@ -44,19 +45,33 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
-    const [isMuted, setIsMuted] = useState(true)
-    const iframeRef = useRef<HTMLIFrameElement>(null)
+    const [videoId, setVideoId] = useState<string | null>(null)
+
+    // YouTube Player API
+    const { 
+        player, 
+        isReady, 
+        isPlaying, 
+        isMuted, 
+        mute, 
+        unMute 
+    } = useYouTubePlayer({
+        videoId,
+        onReady: () => {
+            console.log('🎬 YouTube Player pronto per:', videoId)
+        },
+        onStateChange: (event) => {
+            console.log('🎬 Player state change:', event.data)
+        }
+    })
 
     // Funzione per controllare l'audio senza riavviare il video
     const toggleAudio = () => {
-        if (iframeRef.current) {
-            const command = isMuted ? 'unMute' : 'mute'
-            iframeRef.current.contentWindow?.postMessage(
-                JSON.stringify({ event: 'command', func: command }),
-                'https://www.youtube.com'
-            )
+        if (isMuted) {
+            unMute()
+        } else {
+            mute()
         }
-        setIsMuted(!isMuted)
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -100,15 +115,25 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             if (data.success && data.data?.results?.length > 0) {
                 const mainTrailer = findMainTrailer(data.data.results)
                 if (mainTrailer) {
-                    setTrailer(mainTrailer.key)
-                    console.log(`✅ Trailer trovato: ${mainTrailer.key}`)
+                    const extractedVideoId = extractYouTubeVideoId(mainTrailer.key)
+                    if (extractedVideoId) {
+                        setTrailer(mainTrailer.key)
+                        setVideoId(extractedVideoId)
+                        console.log(`✅ Trailer trovato: ${mainTrailer.key} -> VideoId: ${extractedVideoId}`)
+                    } else {
+                        console.log(`⚠️ Impossibile estrarre videoId da: ${mainTrailer.key}`)
+                        setTrailer(null)
+                        setVideoId(null)
+                    }
                 } else {
                     console.log(`⚠️ Nessun trailer valido per ${movie.title}`)
                     setTrailer(null)
+                    setVideoId(null)
                 }
             } else {
                 console.log(`⚠️ Nessun video disponibile per ${movie.title}`)
                 setTrailer(null)
+                setVideoId(null)
             }
         } catch (error) {
             console.error(`❌ Errore caricamento trailer per ${movie.title}:`, error)
@@ -270,13 +295,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
-                    {trailer ? (
-                        <iframe
-                            ref={iframeRef}
-                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
-                            className="w-full h-full object-cover transition-all duration-700 ease-out"
-                            allow="autoplay; encrypted-media; fullscreen"
-                            allowFullScreen
+                    {videoId ? (
+                        <div
+                            id="youtube-player"
+                            className="w-full h-full transition-all duration-700 ease-out"
                             style={{
                                 filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
                                 width: '100vw',
@@ -284,8 +306,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
-                                transform: isHovered
-                                    ? 'translate(-50%, -50%) scale(1.05) rotate(0.5deg)'
+                                transform: isHovered 
+                                    ? 'translate(-50%, -50%) scale(1.05) rotate(0.5deg)' 
                                     : 'translate(-50%, -50%) scale(1.1) rotate(0deg)',
                                 transition: 'all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                             }}

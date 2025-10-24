@@ -35,6 +35,7 @@ export default function RootLayout({
     <html lang="it" className="dark">
       <head>
         {/* CSS critico spostato in globals.css per evitare hydration mismatch */}
+        <script src="https://www.youtube.com/iframe_api" async></script>
       </head>
       <body className={`${inter.className} scrollbar-vertical`} suppressHydrationWarning={true}>
         <HLSConfigProvider>
