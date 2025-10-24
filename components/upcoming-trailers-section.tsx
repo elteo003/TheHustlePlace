@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { TMDBMovie } from '@/lib/tmdb'
 
 interface UpcomingTrailersSectionProps {
@@ -13,24 +13,66 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
     const [countdown, setCountdown] = useState(10)
     const [isAutoPlaying, setIsAutoPlaying] = useState(false)
+    const [isInitialized, setIsInitialized] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const countdownRef = useRef<NodeJS.Timeout | null>(null)
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Filtra i film escludendo quello attuale
-    const upcomingMovies = movies.filter((_, index) => index !== currentMovieIndex).slice(0, 6)
+    // Filtra i film escludendo quello attuale e mantieni gli indici originali
+    const upcomingMovies = movies
+        .map((movie, index) => ({ movie, originalIndex: index }))
+        .filter(({ originalIndex }) => originalIndex !== currentMovieIndex)
+        .slice(0, 6)
 
-    // Countdown per autoplay
+    // Funzione stabile per selezionare film
+    const handleMovieSelect = useCallback((originalIndex: number) => {
+        onMovieSelect(originalIndex)
+        // Reset countdown ma non riavviare autoplay immediatamente
+        setIsAutoPlaying(false)
+        setCountdown(10)
+        setHoveredIndex(null)
+
+        // Riavvia autoplay dopo 3 secondi
+        setTimeout(() => {
+            setIsAutoPlaying(true)
+        }, 3000)
+    }, [onMovieSelect])
+
+    // Gestione hover con timeout pulito
+    const handleMouseEnter = useCallback((index: number) => {
+        setHoveredIndex(index)
+        setIsAutoPlaying(false)
+
+        // Pulisci timeout precedenti
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current)
+        }
+    }, [])
+
+    const handleMouseLeave = useCallback(() => {
+        setHoveredIndex(null)
+
+        // Pulisci timeout precedenti
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current)
+        }
+
+        // Riavvia countdown dopo 2 secondi
+        hoverTimeoutRef.current = setTimeout(() => {
+            setIsAutoPlaying(true)
+        }, 2000)
+    }, [])
+
+    // Countdown logic migliorata
     useEffect(() => {
         if (isAutoPlaying && countdown > 0) {
             countdownRef.current = setTimeout(() => {
                 setCountdown(prev => prev - 1)
             }, 1000)
-        } else if (countdown === 0) {
-            // Avvia il prossimo film automaticamente
+        } else if (countdown === 0 && isAutoPlaying) {
+            // Autoplay del prossimo film
             const nextIndex = (currentMovieIndex + 1) % movies.length
-            onMovieSelect(nextIndex)
-            setIsAutoPlaying(false)
-            setCountdown(10)
+            handleMovieSelect(nextIndex)
         }
 
         return () => {
@@ -38,38 +80,31 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 clearTimeout(countdownRef.current)
             }
         }
-    }, [countdown, isAutoPlaying, currentMovieIndex, movies.length, onMovieSelect])
+    }, [countdown, isAutoPlaying, currentMovieIndex, movies.length, handleMovieSelect])
 
-    // Avvia il countdown quando la sezione appare
+    // Inizializzazione countdown
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsAutoPlaying(true)
-        }, 2000) // Inizia dopo 2 secondi
+        if (!isInitialized) {
+            const initTimer = setTimeout(() => {
+                setIsAutoPlaying(true)
+                setIsInitialized(true)
+            }, 2000)
 
-        return () => clearTimeout(timer)
+            return () => clearTimeout(initTimer)
+        }
+    }, [isInitialized])
+
+    // Cleanup al dismount
+    useEffect(() => {
+        return () => {
+            if (countdownRef.current) {
+                clearTimeout(countdownRef.current)
+            }
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current)
+            }
+        }
     }, [])
-
-    // Reset countdown quando si cambia film manualmente
-    const handleMovieSelect = (index: number) => {
-        onMovieSelect(index)
-        setIsAutoPlaying(false)
-        setCountdown(10)
-    }
-
-    // Reset countdown quando si fa hover su una card
-    const handleMouseEnter = (index: number) => {
-        setHoveredIndex(index)
-        setIsAutoPlaying(false)
-        setCountdown(10)
-    }
-
-    const handleMouseLeave = () => {
-        setHoveredIndex(null)
-        // Riavvia il countdown dopo 1 secondo
-        setTimeout(() => {
-            setIsAutoPlaying(true)
-        }, 1000)
-    }
 
     return (
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
@@ -92,18 +127,17 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                     className="flex gap-4 overflow-x-auto scrollbar-horizontal"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {upcomingMovies.map((movie, index) => {
+                    {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path
                         const isHovered = hoveredIndex === index
-                        const originalIndex = movies.findIndex(m => m.id === movie.id)
 
                         return (
                             <div
                                 key={movie.id}
                                 className={`flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-out ${isHovered
-                                        ? 'w-64 h-36 scale-110 z-10'
-                                        : 'w-48 h-28 hover:scale-105'
+                                    ? 'w-64 h-36 scale-110 z-10'
+                                    : 'w-48 h-28 hover:scale-105'
                                     }`}
                                 onClick={() => handleMovieSelect(originalIndex)}
                                 onMouseEnter={() => handleMouseEnter(index)}
@@ -128,8 +162,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     {/* Play Button */}
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <div className={`p-3 rounded-full backdrop-blur-sm border border-white/30 transition-all duration-300 ${isHovered
-                                                ? 'bg-black/80 scale-110'
-                                                : 'bg-black/60 group-hover:bg-black/80'
+                                            ? 'bg-black/80 scale-110'
+                                            : 'bg-black/60 group-hover:bg-black/80'
                                             }`}>
                                             <svg className={`text-white fill-white transition-all duration-300 ${isHovered ? 'w-6 h-6' : 'w-4 h-4'
                                                 }`} viewBox="0 0 24 24">
