@@ -141,14 +141,15 @@ export default function HomePage() {
     return (
         <div className={`min-h-screen bg-black transition-all duration-1500 ${pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             {/* Hero Section */}
-            <HeroSection
-                onControlsVisibilityChange={setNavbarVisible}
-                navbarHovered={navbarHovered}
-                onTrailerEnded={handleTrailerEnded}
-                onMovieChange={handleHeroMovieChange}
-                showUpcomingTrailers={showUpcomingTrailers}
-                onLoaded={handleHeroSectionLoaded}
-            />
+                <HeroSection
+                    onControlsVisibilityChange={setNavbarVisible}
+                    navbarHovered={navbarHovered}
+                    onTrailerEnded={handleTrailerEnded}
+                    onMovieChange={handleHeroMovieChange}
+                    showUpcomingTrailers={showUpcomingTrailers}
+                    onLoaded={handleHeroSectionLoaded}
+                    currentHeroMovieIndex={currentHeroMovieIndex}
+                />
 
             {/* Upcoming Trailers Section - Bottom Hero Section */}
             {showUpcomingTrailers && popularMovies.length > 0 && (

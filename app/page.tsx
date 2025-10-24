@@ -29,9 +29,9 @@ export default function RootPage() {
             <div className="flex flex-col items-center justify-center h-full instant-loading-fade">
                 {/* Logo */}
                 <div className="instant-loading-logo mb-8">
-                    <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden">
-                        <span className="text-white font-bold text-4xl drop-shadow-lg">H</span>
-                    </div>
+                    <span className="text-8xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent drop-shadow-2xl">
+                        H
+                    </span>
                 </div>
 
                 {/* Text */}
@@ -58,8 +58,10 @@ export default function RootPage() {
             {/* Fallback per quando JavaScript non è ancora caricato */}
             <noscript>
                 <div className="flex flex-col items-center justify-center h-full">
-                    <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl mb-8 overflow-hidden">
-                        <span className="text-white font-bold text-4xl drop-shadow-lg">H</span>
+                    <div className="mb-8">
+                        <span className="text-8xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent drop-shadow-2xl">
+                            H
+                        </span>
                     </div>
                     <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent mb-4">
                         TheHustlePlace

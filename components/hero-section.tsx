@@ -12,9 +12,10 @@ interface HeroSectionProps {
     onMovieChange?: (index: number) => void
     showUpcomingTrailers?: boolean
     onLoaded?: () => void
+    currentHeroMovieIndex?: number
 }
 
-export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded }: HeroSectionProps) {
+export function HeroSection({ onControlsVisibilityChange, navbarHovered = false, onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0 }: HeroSectionProps) {
     const [featuredMovie, setFeaturedMovie] = useState<TMDBMovie | null>(null)
     const [trailer, setTrailer] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -607,6 +608,61 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
                     </div>
                 </div>
             </div>
+
+            {/* Upcoming Trailers Section */}
+            {showUpcomingTrailers && popularMovies.length > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                    <div className="container mx-auto">
+                        <div className="flex gap-3 overflow-x-auto scrollbar-horizontal" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            {popularMovies.filter((_, index) => index !== currentHeroMovieIndex).slice(0, 6).map((movie, index) => {
+                                const title = movie.title || 'Titolo non disponibile'
+                                const backdropPath = movie.backdrop_path || movie.poster_path
+                                
+                                return (
+                                    <div
+                                        key={movie.id}
+                                        className="flex-shrink-0 w-48 h-28 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105"
+                                        onClick={() => {
+                                            const originalIndex = popularMovies.findIndex(m => m.id === movie.id)
+                                            if (originalIndex !== -1) {
+                                                onMovieChange?.(originalIndex)
+                                            }
+                                        }}
+                                    >
+                                        <div className="relative w-full h-full group">
+                                            {/* Backdrop Image */}
+                                            <img
+                                                src={backdropPath ? `https://image.tmdb.org/t/p/w500${backdropPath}` : '/placeholder-movie.svg'}
+                                                alt={title}
+                                                className="w-full h-full object-cover"
+                                            />
+
+                                            {/* Overlay */}
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-300" />
+
+                                            {/* Play Button */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="p-2 rounded-full bg-black/60 backdrop-blur-sm border border-white/30 group-hover:bg-black/80 transition-all duration-300">
+                                                    <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            {/* Title */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                                                <h4 className="text-white text-xs font-semibold truncate">
+                                                    {title}
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Bottom Gradient */}
             <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-20'}`} />
