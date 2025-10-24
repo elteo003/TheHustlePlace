@@ -56,7 +56,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         const timer = addTimeout(setTimeout(() => {
             setInitialLoad(false)
-        }, 1000))
+        }, 2000))
         return () => clearTimeout(timer)
     }, [addTimeout])
 
@@ -121,16 +121,27 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Logica unificata per visibilità controlli
     const shouldShowControls = isHovered || isScrolled || initialLoad
+    
+    // Debug per capire lo stato
+    useEffect(() => {
+        console.log('🎬 Hero Section Debug:', {
+            isHovered,
+            isScrolled,
+            initialLoad,
+            shouldShowControls,
+            showControls
+        })
+    }, [isHovered, isScrolled, initialLoad, shouldShowControls, showControls])
 
     // Gestisce la visibilità unificata - più reattiva
     useEffect(() => {
         if (shouldShowControls) {
             setShowControls(true)
-        } else if (!initialLoad) {
-            // Solo dopo il caricamento iniziale, nascondi con delay
+        } else {
+            // Nascondi con delay, anche durante il caricamento iniziale
             const timeout = addTimeout(setTimeout(() => {
                 setShowControls(false)
-            }, 2000))
+            }, initialLoad ? 3000 : 1500))
             return () => clearTimeout(timeout)
         }
     }, [shouldShowControls, addTimeout, initialLoad])
@@ -237,8 +248,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
             {/* Content */}
             <div className={`relative z-10 h-full flex items-end transition-all duration-500 ${!showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className={`absolute bottom-16 left-4 px-4 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-30'}`}>
-                    <div className="max-w-2xl">
+                {showControls && (
+                    <div className="absolute bottom-16 left-4 px-4 transition-all duration-500">
+                        <div className="max-w-2xl">
                         {/* Title */}
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                             {featuredMovie.title}
@@ -331,8 +343,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 </span>
                             </div>
                         )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
 
