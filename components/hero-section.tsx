@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
-import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer, extractYouTubeVideoId } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
@@ -11,7 +11,6 @@ import { useCleanup } from '@/hooks/useCleanup'
 import { useParallax } from '@/hooks/useParallax'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useHeroControls } from '@/hooks/useHeroControls'
-import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
 import { Navbar } from '@/components/navbar'
 
 interface HeroSectionProps {
@@ -45,33 +44,49 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
-    const [videoId, setVideoId] = useState<string | null>(null)
-
-    // YouTube Player API
-    const { 
-        player, 
-        isReady, 
-        isPlaying, 
-        isMuted, 
-        mute, 
-        unMute 
-    } = useYouTubePlayer({
-        videoId,
-        onReady: () => {
-            console.log('🎬 YouTube Player pronto per:', videoId)
-        },
-        onStateChange: (event) => {
-            console.log('🎬 Player state change:', event.data)
-        }
-    })
+    const [isMuted, setIsMuted] = useState(true)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
 
     // Funzione per controllare l'audio senza riavviare il video
     const toggleAudio = () => {
-        if (isMuted) {
-            unMute()
-        } else {
-            mute()
+        console.log('🔊 Toggle audio - Stato attuale:', isMuted)
+        
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            try {
+                const command = isMuted ? 'unMute' : 'mute'
+                console.log('🔊 Invio comando:', command)
+                
+                // Prova diversi formati di comando
+                const commands = [
+                    JSON.stringify({ event: 'command', func: command }),
+                    JSON.stringify({ event: 'command', func: command, args: '' }),
+                    `{"event":"command","func":"${command}"}`,
+                    `{"event":"command","func":"${command}","args":""}`
+                ]
+                
+                commands.forEach(cmd => {
+                    iframeRef.current?.contentWindow?.postMessage(cmd, 'https://www.youtube.com')
+                })
+                
+                // Fallback: aggiorna l'URL dell'iframe
+                setTimeout(() => {
+                    if (iframeRef.current) {
+                        const currentSrc = iframeRef.current.src
+                        const newMuted = !isMuted
+                        const newSrc = getYouTubeEmbedUrl(trailer!, true, newMuted)
+                        if (currentSrc !== newSrc) {
+                            console.log('🔊 Fallback: aggiorno URL iframe')
+                            iframeRef.current.src = newSrc
+                        }
+                    }
+                }, 100)
+                
+            } catch (error) {
+                console.error('❌ Errore PostMessage:', error)
+            }
         }
+        
+        setIsMuted(!isMuted)
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -115,25 +130,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             if (data.success && data.data?.results?.length > 0) {
                 const mainTrailer = findMainTrailer(data.data.results)
                 if (mainTrailer) {
-                    const extractedVideoId = extractYouTubeVideoId(mainTrailer.key)
-                    if (extractedVideoId) {
-                        setTrailer(mainTrailer.key)
-                        setVideoId(extractedVideoId)
-                        console.log(`✅ Trailer trovato: ${mainTrailer.key} -> VideoId: ${extractedVideoId}`)
-                    } else {
-                        console.log(`⚠️ Impossibile estrarre videoId da: ${mainTrailer.key}`)
-                        setTrailer(null)
-                        setVideoId(null)
-                    }
+                    setTrailer(mainTrailer.key)
+                    console.log(`✅ Trailer trovato: ${mainTrailer.key}`)
                 } else {
                     console.log(`⚠️ Nessun trailer valido per ${movie.title}`)
                     setTrailer(null)
-                    setVideoId(null)
                 }
             } else {
                 console.log(`⚠️ Nessun video disponibile per ${movie.title}`)
                 setTrailer(null)
-                setVideoId(null)
             }
         } catch (error) {
             console.error(`❌ Errore caricamento trailer per ${movie.title}:`, error)
@@ -295,10 +300,13 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
-                    {videoId ? (
-                        <div
-                            id="youtube-player"
-                            className="w-full h-full transition-all duration-700 ease-out"
+                    {trailer ? (
+                        <iframe
+                            ref={iframeRef}
+                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
+                            className="w-full h-full object-cover transition-all duration-700 ease-out"
+                            allow="autoplay; encrypted-media; fullscreen"
+                            allowFullScreen
                             style={{
                                 filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
                                 width: '100vw',
