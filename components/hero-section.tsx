@@ -61,6 +61,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         }
     }, [featuredMovie, onLoaded])
 
+    // Reset trailerEnded quando cambia il film per far riapparire la sezione prossimi
+    useEffect(() => {
+        if (featuredMovie) {
+            setTrailerEnded(false)
+            console.log('🎬 Film cambiato, reset trailerEnded per far riapparire sezione prossimi')
+        }
+    }, [featuredMovie, setTrailerEnded])
+
     // Carica trailer quando cambia il film
     useEffect(() => {
         if (featuredMovie) {
@@ -455,7 +463,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         <UpcomingTrailersSection
                             movies={movies}
                             currentMovieIndex={currentIndex}
-                            onMovieSelect={changeToMovie}
+                            onMovieSelect={(index) => {
+                                console.log('🎬 Film selezionato dalla sezione prossimi:', index)
+                                changeToMovie(index)
+                                // Nasconde la sezione prossimi film quando si seleziona un film
+                                setShowControls(false)
+                                setTrailerEnded(false)
+                                // Reset del timer per il nuovo film
+                                resetTimer()
+                            }}
                         />
                     </>
                 )}

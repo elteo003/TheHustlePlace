@@ -120,6 +120,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                                     zIndex: isHovered ? 10 : 1,
                                     border: '2px solid red', // Debug: bordo rosso per vedere i clickable areas
+                                    pointerEvents: 'auto', // Forza i pointer events
+                                    position: 'relative', // Assicura che sia posizionato correttamente
                                 }}
                             >
                                 <div className="relative w-full h-full group">
