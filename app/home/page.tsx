@@ -78,14 +78,23 @@ export default function HomePage() {
         return () => clearTimeout(timer)
     }, [navbarHovered])
 
-    // Gestisce l'hover della navbar
+    // Gestisce l'hover della navbar con timeout più breve
     useEffect(() => {
+        let hoverTimeout: NodeJS.Timeout | null = null
+
         const handleNavbarHover = () => {
             setNavbarHovered(true)
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout)
+                hoverTimeout = null
+            }
         }
-
+        
         const handleNavbarLeave = () => {
-            setNavbarHovered(false)
+            // Nascondi dopo 2 secondi
+            hoverTimeout = setTimeout(() => {
+                setNavbarHovered(false)
+            }, 2000)
         }
 
         // Aggiungi event listeners per l'hover della navbar
@@ -95,6 +104,9 @@ export default function HomePage() {
         return () => {
             document.removeEventListener('mouseenter', handleNavbarHover, true)
             document.removeEventListener('mouseleave', handleNavbarLeave, true)
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout)
+            }
         }
     }, [])
 

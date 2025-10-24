@@ -25,6 +25,7 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
     const [isScrolled, setIsScrolled] = useState(false)
     const [showControls, setShowControls] = useState(true)
     const [initialLoad, setInitialLoad] = useState(true)
+    const [isNavbarHovered, setIsNavbarHovered] = useState(false)
     const [currentMovieIndex, setCurrentMovieIndex] = useState(0)
     const [popularMovies, setPopularMovies] = useState<TMDBMovie[]>([])
     const [autoChangeTimer, setAutoChangeTimer] = useState<NodeJS.Timeout | null>(null)
@@ -170,33 +171,32 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
         }
     }, [isHovered, isScrolled, navbarHovered, initialLoad, onControlsVisibilityChange])
 
-    // Gestisce l'hover della navbar
+    // Logica unificata per visibilità navbar e dettagli
+    const shouldShowControls = isHovered || isNavbarHovered || navbarHovered || isScrolled || initialLoad
+
+    // Gestisce la visibilità unificata
     useEffect(() => {
-        if (navbarHovered) {
+        if (shouldShowControls) {
             setShowControls(true)
             onControlsVisibilityChange?.(true)
-        } else if (!isScrolled && !isHovered) {
-            // Se non c'è hover sulla navbar e non siamo scrollati e non c'è hover sui controlli, nascondi dopo 5 secondi
+        } else {
+            // Nascondi dopo 2 secondi se non c'è hover
             const timeout = setTimeout(() => {
                 setShowControls(false)
                 onControlsVisibilityChange?.(false)
-            }, 5000)
+            }, 2000)
             return () => clearTimeout(timeout)
         }
-    }, [navbarHovered, isScrolled, isHovered, onControlsVisibilityChange])
+    }, [shouldShowControls, onControlsVisibilityChange])
 
-    // Mostra la navbar quando il mouse è nella parte superiore dello schermo
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (e.clientY < 100) { // Se il mouse è nei primi 100px dall'alto
-                setShowControls(true)
-                onControlsVisibilityChange?.(true)
-            }
-        }
+    // Gestisce hover sulla navbar
+    const handleNavbarHover = () => {
+        setIsNavbarHovered(true)
+    }
 
-        window.addEventListener('mousemove', handleMouseMove)
-        return () => window.removeEventListener('mousemove', handleMouseMove)
-    }, [onControlsVisibilityChange])
+    const handleNavbarLeave = () => {
+        setIsNavbarHovered(false)
+    }
 
     // Carica il film featured al mount del componente
     useEffect(() => {
@@ -470,10 +470,10 @@ export function HeroSection({ onControlsVisibilityChange, navbarHovered = false,
             </div>
 
             {/* Overlay Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-500 ${shouldShowControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-20'}`} />
 
             {/* Content */}
-            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${(showControls || navbarHovered) && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className={`relative z-10 h-full flex items-center transition-all duration-500 ${shouldShowControls && !showUpcomingTrailers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <div className="container mx-auto px-4">
                     <div
                         className="max-w-2xl"
