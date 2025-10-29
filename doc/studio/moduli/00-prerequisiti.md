@@ -9,11 +9,20 @@ Alla fine di questo modulo, sarai in grado di:
 - **Scrivere** codice seguendo i pattern utilizzati nel progetto
 - **Debug** e risolvere problemi comuni
 
+**⏱️ Tempo stimato**: 40-50 ore di studio e pratica
+
 ---
 
 ## 📚 Struttura del Corso
 
-Questo modulo è organizzato in sezioni progressive che costruiscono una base solida per comprendere l'intero progetto.
+Questo modulo è organizzato in sezioni **progressive** che costruiscono una base solida partendo da zero:
+1. **Setup Ambiente** - Primi passi pratici
+2. **Fondamenti Web** - HTML, CSS, JavaScript base
+3. **TypeScript** - Sistema di tipi
+4. **React** - Libreria UI
+5. **Next.js** - Framework full-stack
+6. **Concetti Avanzati** - Caching, Sicurezza, Streaming
+7. **Pattern e Best Practices** - Architettura del progetto
 
 ### Mappa Concettuale Completa
 
@@ -72,11 +81,469 @@ mindmap
 
 ---
 
-## 1. JavaScript/TypeScript: Fondamenta Solide
+## 0. Setup Ambiente e Primi Passi
+
+> **🎯 Obiettivo di questa sezione**: Fare il setup completo del tuo ambiente di sviluppo
+
+### 0.1 Prerequisiti Hardware/Software
+
+**Cosa ti serve per iniziare**:
+
+✅ **Hardware**:
+- Computer con Windows, macOS o Linux
+- Connessione internet
+- Almeno 4GB di RAM (8GB consigliato)
+
+✅ **Software**:
+- Browser moderno (Chrome, Firefox, Edge, Safari)
+- Editor di codice (VS Code consigliato)
+- Git per controllo versione
+
+#### 🔧 Installazione Node.js
+
+**Node.js** è necessario per eseguire JavaScript sul server e utilizzare npm (Node Package Manager).
+
+**Passi**:
+1. Vai su [nodejs.org](https://nodejs.org/)
+2. Scarica la versione LTS (Long Term Support)
+3. Installa seguendo la procedura guidata
+4. Verifica l'installazione aprendo il terminale e digitando:
+
+```bash
+node --version
+npm --version
+```
+
+**✅ Checkpoint**: Dovresti vedere numeri di versione come `v20.x.x` e `10.x.x`
+
+#### 🔧 Installazione Git
+
+**Git** è necessario per:
+- Controllo versione del codice
+- Clonare il repository del progetto
+
+**Passi**:
+1. Vai su [git-scm.com](https://git-scm.com/)
+2. Scarica per il tuo sistema operativo
+3. Installa con opzioni predefinite
+4. Verifica:
+
+```bash
+git --version
+```
+
+**✅ Checkpoint**: Dovresti vedere `git version 2.x.x`
+
+#### 🔧 Installazione VS Code
+
+**VS Code** è l'editor di codice consigliato con:
+- Syntax highlighting
+- Auto-completion
+- Debugging integrato
+- Estensioni utili
+
+**Passi**:
+1. Vai su [code.visualstudio.com](https://code.visualstudio.com/)
+2. Scarica per il tuo sistema operativo
+3. Installa
+4. Apri VS Code e installa estensioni consigliate:
+   - **ESLint** - Linting JavaScript/TypeScript
+   - **Prettier** - Formattazione codice
+   - **GitLens** - Visualizzazione Git
+   - **Tailwind CSS IntelliSense** - Autocomplete Tailwind
+
+**✅ Checkpoint**: VS Code installato con estensioni attive
+
+#### 🔧 Clonare il Progetto
+
+```bash
+# Clona il repository
+git clone https://github.com/elteo003/TheHustlePlace.git
+
+# Entra nella cartella
+cd TheHustlePlace
+
+# Installa dipendenze
+npm install
+```
+
+**✅ Checkpoint**: Cartella `node_modules` creata e nessun errore durante `npm install`
+
+---
+
+### 0.2 Verifica Setup Completo
+
+**Comando di verifica**:
+
+```bash
+node --version && npm --version && git --version && echo "✅ Setup completo!"
+```
+
+**Dovresti vedere**:
+```
+v20.x.x
+10.x.x
+git version 2.x.x
+✅ Setup completo!
+```
+
+**🔴 Se non funziona**: Controlla di aver installato correttamente Node.js e Git, e di aver riavviato il terminale dopo l'installazione.
+
+---
+
+### 0.3 Struttura del Progetto
+
+**Ecco la struttura principale di TheHustlePlace**:
+
+```
+TheHustlePlace/
+├── app/              # Pagine e API routes (Next.js App Router)
+├── components/       # Componenti React riutilizzabili
+├── services/         # Logica business (API calls)
+├── controllers/      # Orchestrazione API routes
+├── hooks/            # Custom React hooks
+├── utils/            # Funzioni utility
+├── types/            # Definizioni TypeScript
+├── middlewares/      # Middleware per API
+├── public/           # File statici (immagini, etc.)
+├── doc/              # Documentazione
+└── package.json      # Dipendenze e script
+```
+
+**🎓 Termini da ricordare**:
+- **app/**: Contiene le pagine web e le API
+- **components/**: Pezzi di UI riutilizzabili
+- **services/**: Logica per chiamate API esterne
+- **hooks/**: Logica React condivisa tra componenti
+
+---
+
+### 0.4 Primo Script e Verifica Funzionamento
+
+**Testa che tutto funzioni**:
+
+```bash
+# Avvia il server di sviluppo
+npm run dev
+```
+
+**Dovresti vedere**:
+```
+▲ Next.js 14.x.x
+- Local:        http://localhost:3000
+- Ready in X ms
+```
+
+**Apri il browser** e vai su `http://localhost:3000`
+
+**✅ Checkpoint Finale**: Il sito si apre nel browser senza errori
+
+**🔴 Risoluzione problemi comuni**:
+- **Errore "port 3000 già in uso"**: Cambia porta con `PORT=3001 npm run dev`
+- **Errore durante install**: Cancella `node_modules` e `package-lock.json`, poi `npm install` di nuovo
+
+---
+
+### 0.5 Familiarizzazione con il Codice
+
+**Esercizio**: Esplora il progetto
+
+1. **Apri VS Code** nella cartella del progetto
+2. **Esplora** i file principali:
+   - `app/page.tsx` - Homepage
+   - `components/movie-card.tsx` - Card film
+   - `services/tmdb.service.ts` - Chiamate API TMDB
+3. **Leggi** il codice senza modificarli (per ora)
+
+**🎓 Nota**: Non ti preoccupare se non capisci tutto subito! Questo modulo ti insegnerà ogni concetto.
+
+**✅ Obiettivo sezione completato**: Ambiente funzionante e progetto avviato
+
+---
+
+## 1. Fondamenti Web: HTML, CSS e JavaScript Base
+
+> **🎯 Obiettivo**: Conoscere le basi del web prima di affrontare React e Next.js
+
+### 1.1 HTML: Struttura delle Pagine Web
+
+> **🤔 Domanda**: Come è strutturata una pagina web?
+
+**HTML** (HyperText Markup Language) definisce la **struttura** e il **contenuto** delle pagine web.
+
+**Esempio base**:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Il Mio Film</title>
+</head>
+<body>
+    <header>
+        <h1>The Hustle Place</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/movies">Film</a>
+        </nav>
+    </header>
+    
+    <main>
+        <article>
+            <h2>Interstellar</h2>
+            <p>Un film di fantascienza...</p>
+            <img src="/poster.jpg" alt="Poster Interstellar" />
+        </article>
+    </main>
+    
+    <footer>
+        <p>© 2024 The Hustle Place</p>
+    </footer>
+</body>
+</html>
+```
+
+**🎓 Termini chiave**:
+- **Tag**: `<>` che definiscono elementi (`<h1>`, `<p>`, `<img>`)
+- **Attributi**: Proprietà degli elementi (`href`, `src`, `alt`)
+- **Struttura semantica**: `<header>`, `<main>`, `<article>`, `<footer>` descrivono il significato
+
+**⚠️ Importante**: HTML definisce COSA è sulla pagina, non come appare visivamente (quello è CSS).
+
+---
+
+### 1.2 CSS: Styling e Presentazione
+
+> **🤔 Domanda**: Come controllo l'aspetto visivo degli elementi HTML?
+
+**CSS** (Cascading Style Sheets) controlla **colori, layout, font, spaziatura**.
+
+**Esempio**:
+
+```css
+/* Selezione per tag */
+h1 {
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+/* Selezione per classe */
+.movie-card {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Selezione per id */
+#main-title {
+    font-weight: bold;
+}
+```
+
+**Come applicarlo**:
+
+```html
+<!-- Metodo 1: Inline (non consigliato) -->
+<h1 style="color: white;">Titolo</h1>
+
+<!-- Metodo 2: Tag <style> -->
+<style>
+    h1 { color: white; }
+</style>
+
+<!-- Metodo 3: File esterno (consigliato) -->
+<link rel="stylesheet" href="styles.css">
+```
+
+**🎓 Concept chiave**: **Cascading** significa che CSS applica stili in cascata (ereditarietà), perciò `body { font-family: Arial }` si applica a tutti i figli se non sovrascritto.
+
+---
+
+### 1.3 JavaScript Base: Variabili, Funzioni e Oggetti
+
+> **🤔 Domanda**: Come aggiungo interattività alle pagine?
+
+**JavaScript** aggiunge **logica, interattività e manipolazione DOM**.
+
+#### 1.3.1 Variabili
+
+```javascript
+// let: variabile modificabile
+let userName = "Mario"
+userName = "Luigi" // ✅ Ok, modificabile
+
+// const: variabile costante
+const maxMovies = 100
+maxMovies = 200 // ❌ Errore! Costante non modificabile
+
+// var: vecchio modo (evitare)
+```
+
+#### 1.3.2 Funzioni
+
+```javascript
+// Funzione normale
+function greetUser(name) {
+    return `Ciao, ${name}!`
+}
+
+// Arrow function (moderna)
+const greetUser = (name) => {
+    return `Ciao, ${name}!`
+}
+
+// Uso
+greetUser("Mario") // "Ciao, Mario!"
+```
+
+#### 1.3.3 Array e Oggetti
+
+```javascript
+// Array: lista ordinata
+const movies = ["Interstellar", "Inception", "Dunkirk"]
+movies[0] // "Interstellar"
+movies.push("Oppenheimer") // Aggiunge elemento
+movies.length // 4
+
+// Oggetto: chiave-valore
+const movie = {
+    title: "Interstellar",
+    year: 2014,
+    rating: 8.6,
+    watched: true
+}
+
+movie.title // "Interstellar"
+movie.year = 2015 // Modifica valore
+movie.genre = "Sci-Fi" // Aggiunge proprietà
+```
+
+---
+
+### 1.4 JavaScript: Eventi e Interattività
+
+> **🤔 Domanda**: Come rispondo ai click, submit form e altri eventi utente?
+
+**Event Listeners** permettono di reagire a azioni utente:
+
+```javascript
+// Selezione elemento
+const button = document.getElementById('myButton')
+
+// Aggiungi listener per evento click
+button.addEventListener('click', (event) => {
+    console.log('Button cliccato!')
+    alert('Ciao!')
+})
+```
+
+**Eventi comuni**:
+- `click` - Click su elemento
+- `submit` - Invio form
+- `change` - Cambio input/select
+- `load` - Pagina caricata
+- `keydown` - Tasto premuto
+
+**Esempio pratico - Search bar**:
+
+```javascript
+const searchInput = document.getElementById('search')
+const searchButton = document.getElementById('search-btn')
+
+searchButton.addEventListener('click', () => {
+    const query = searchInput.value
+    console.log('Cercando:', query)
+    // Logica di ricerca...
+})
+
+searchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        searchButton.click() // Invia ricerca
+    }
+})
+```
+
+---
+
+### 1.5 JavaScript: Fetch API e Dati asincroni
+
+> **🤔 Domanda**: Come ottengo dati da un server (API)?
+
+**Fetch** permette di fare richieste HTTP per ottenere dati:
+
+```javascript
+// Richiesta GET
+fetch('https://api.example.com/movies')
+    .then(response => response.json())
+    .then(data => {
+        console.log('Film ricevuti:', data)
+    })
+    .catch(error => {
+        console.error('Errore:', error)
+    })
+```
+
+**Moderno con async/await**:
+
+```javascript
+async function getMovies() {
+    try {
+        const response = await fetch('https://api.example.com/movies')
+        const data = await response.json()
+        console.log('Film:', data)
+        return data
+    } catch (error) {
+        console.error('Errore:', error)
+    }
+}
+```
+
+**🎓 Async/await rende il codice più leggibile** - sembra codice sincrono ma è asincrono.
+
+---
+
+### 1.6 JavaScript: Manipolazione DOM
+
+> **🤔 Domanda**: Come modifico dinamicamente elementi HTML con JavaScript?
+
+**DOM** (Document Object Model) rappresenta l'HTML come oggetti JavaScript modificabili.
+
+```javascript
+// Selezione elementi
+const title = document.querySelector('h1')
+const allCards = document.querySelectorAll('.movie-card')
+
+// Modifica contenuto
+title.textContent = 'Nuovo Titolo'
+title.innerHTML = '<span>Nuovo</span> <em>Titolo</em>' // HTML
+
+// Modifica CSS
+title.style.color = 'red'
+title.classList.add('highlight')
+
+// Creare nuovo elemento
+const newCard = document.createElement('div')
+newCard.textContent = 'Nuovo Film'
+newCard.className = 'movie-card'
+document.body.appendChild(newCard) // Aggiunge al DOM
+```
+
+**✅ Checkpoint Sezione 1**:
+- [ ] Creare un file HTML con struttura semantica
+- [ ] Aggiungere CSS con selettori di classe
+- [ ] Scrivi una funzione JavaScript che manipola il DOM
+- [ ] Crea un event listener per un bottone
+
+---
+
+## 2. TypeScript: Sistema di Tipi Avanzato
 
 > **🤔 Pensa prima di procedere**: Perché JavaScript non è sufficiente? Cosa aggiunge TypeScript che ci aiuta a scrivere codice migliore?
 
-### 1.1 TypeScript: Sistema di Tipi Avanzato
+### 2.1 TypeScript: Sistema di Tipi Avanzato
 
 #### 💡 Introduzione: Il Problema che Risolve
 
@@ -621,7 +1088,7 @@ async function fetchParallel() {
 
 ---
 
-## 2. React: Componenti e Hooks
+## 3. React: Componenti e Hooks
 
 > **🤔 Domanda fondamentale**: Perché React si chiama "Reactive"? Cosa significa che l'interfaccia "reagisce" ai cambiamenti?
 
@@ -1828,7 +2295,7 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
 
 ---
 
-## 3. Next.js App Router: Architettura Moderna
+## 4. Next.js App Router: Architettura Moderna
 
 > **🤔 Domanda rivoluzionaria**: E se potessi eseguire React sul server? Cosa cambierebbe per performance, SEO e UX?
 
@@ -2101,7 +2568,7 @@ export const config = {
 
 ---
 
-## 4. HTTP/REST APIs: Comunicazione Client-Server
+## 5. HTTP/REST APIs: Comunicazione Client-Server
 
 > **🤔 Domanda fondamentale**: Come fanno il browser e il server a "parlare" tra loro? Qual è il protocollo di comunicazione?
 
@@ -2711,7 +3178,7 @@ async function getMovie(id: number): Promise<ApiResponse<Movie>> {
 
 ---
 
-## 5. Caching: Performance e Ottimizzazione
+## 6. Caching: Performance e Ottimizzazione
 
 > **🤔 Domanda**: Perché richiamare TMDB ogni volta quando le informazioni sui film popolari cambiano solo ogni giorno? Come ridurre le chiamate API?
 
@@ -3033,7 +3500,7 @@ async function updateMovie(id: number, updates: Partial<Movie>) {
 
 ---
 
-## 6. Rate Limiting e Sicurezza
+## 7. Rate Limiting e Sicurezza
 
 > **🤔 Domanda**: Cosa succede se qualcuno fa 1000 richieste al secondo alla tua API? Come proteggersi?
 
@@ -3221,7 +3688,7 @@ const movie = validateMovie(request.body) // ✅ Garantisce formato corretto
 
 ---
 
-## 7. Video Streaming e HLS
+## 8. Video Streaming e HLS
 
 > **🤔 Domanda**: Come gestisci lo streaming di video lunghi? Perché non caricare tutto il video in una volta?
 
@@ -3365,7 +3832,7 @@ function ExternalPlayer({ url }: { url: string }) {
 
 ---
 
-## 8. Tailwind CSS e Styling
+## 9. Tailwind CSS e Styling
 
 > **🤔 Domanda**: Come stilizzi un'applicazione moderna senza scrivere CSS personalizzato per ogni componente?
 
@@ -3463,7 +3930,7 @@ module.exports = {
 
 ---
 
-## 9. Pattern e Best Practices
+## 10. Pattern e Best Practices
 
 > **🤔 Domanda**: Come organizzi il codice in modo mantenibile e scalabile?
 
@@ -3592,7 +4059,7 @@ class ErrorBoundary extends Component<Props, State> {
 
 ---
 
-## 10. Interpretazione Diagrammi Mermaid
+## 11. Interpretazione Diagrammi Mermaid
 
 > **🤔 Domanda**: Come comunichi visivamente l'architettura e il flusso dell'applicazione?
 
@@ -3699,20 +4166,68 @@ Crea un service che:
 
 ---
 
-## 🎯 Checklist Prerequisiti
+## 12. Checklist Finale Completa
 
-Completa questa checklist per verificare la tua preparazione:
+> **🎯 Verifica finale**: Controlla di aver capito tutti i concetti
 
-- [ ] **TypeScript**: Comprendi tipi, generics, utility types
-- [ ] **React**: Padronanza di hooks (useState, useEffect, useCallback, useMemo)
-- [ ] **Next.js**: Differenza tra Server e Client Components
-- [ ] **HTTP/REST**: Metodi, status codes, fetch/axios
-- [ ] **Async/Await**: Gestione di Promises e error handling
-- [ ] **Caching**: Concetti di cache, TTL, invalidation
-- [ ] **Rate Limiting**: Come funziona e perché è importante
-- [ ] **HLS/Streaming**: Concetti base di video streaming
-- [ ] **Tailwind CSS**: Utility classes e responsive design
-- [ ] **Mermaid**: Capacità di leggere diagrammi di architettura
+### 12.1 Setup Ambiente
+- [ ] Node.js installato e funzionante (`node --version`)
+- [ ] Git installato (`git --version`)
+- [ ] VS Code con estensioni installate
+- [ ] Progetto clonato e avviato (`npm run dev`)
+- [ ] Sito visibile su `http://localhost:3000`
+
+### 12.2 Fondamenti Web
+- [ ] Capisci struttura HTML (tag, attributi, semantica)
+- [ ] Capisci come funziona CSS (selettori, classi, id)
+- [ ] Capisci JavaScript base (variabili, funzioni, array, oggetti)
+- [ ] Capisci eventi JavaScript (addEventListener, click, submit)
+- [ ] Capisci Fetch API e async/await
+- [ ] Capisci manipolazione DOM
+
+### 12.3 TypeScript
+- [ ] Capisci tipi primitivi (string, number, boolean)
+- [ ] Capisci interfacce e type
+- [ ] Capisci Union Types e Discriminated Unions
+- [ ] Capisci Generics e quando usarli
+- [ ] Capisci type narrowing
+
+### 12.4 React
+- [ ] Capisci componenti funzionali e props
+- [ ] Capisci useState e gestione stato
+- [ ] Capisci useEffect e lifecycle
+- [ ] Capisci useCallback e useMemo
+- [ ] Capisci custom hooks
+- [ ] Capisci quando usare 'use client'
+
+### 12.5 Next.js
+- [ ] Capisci differenza Server vs Client Components
+- [ ] Capisci routing file-based
+- [ ] Capisci API Routes
+- [ ] Capisci middleware e intercepting routes
+
+### 12.6 Concetti Avanzati
+- [ ] Capisci metodi HTTP (GET, POST, PUT, DELETE)
+- [ ] Capisci status codes
+- [ ] Capisci caching e TTL
+- [ ] Capisci rate limiting
+- [ ] Capisci validazione con Zod
+- [ ] Capisci HLS e streaming video
+- [ ] Capisci Tailwind CSS utility-first
+
+### 12.7 Pattern e Best Practices
+- [ ] Capisci Service Layer Pattern
+- [ ] Capisci Controller Pattern
+- [ ] Capisci Error Boundaries
+- [ ] Capisci quando separare logica
+
+### 12.8 Diagrammi
+- [ ] Capisci Graph TB
+- [ ] Capisci Sequence Diagram
+- [ ] Capisci State Diagram
+- [ ] Capisci Flowchart
+
+**✅ Se tutte le caselle sono spuntate**, sei pronto per il prossimo modulo!
 
 ---
 
