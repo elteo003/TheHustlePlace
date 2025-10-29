@@ -2103,49 +2103,151 @@ export const config = {
 
 ## 4. HTTP/REST APIs: Comunicazione Client-Server
 
-### 4.1 Metodi HTTP
+> **🤔 Domanda fondamentale**: Come fanno il browser e il server a "parlare" tra loro? Qual è il protocollo di comunicazione?
 
+### 4.1 Metodi HTTP: Il Linguaggio del Web
+
+#### 💡 Introduzione: Il Protocollo HTTP
+
+**HTTP** (HyperText Transfer Protocol) è il protocollo che permette la comunicazione tra client (browser) e server.
+
+**Elementi di una richiesta HTTP**:
+```
+Method (GET, POST, etc.)
+    ↓
+URL (endpoint)
+    ↓
+Headers (metadata)
+    ↓
+Body (dati opzionali)
+```
+
+#### 📚 I Metodi HTTP: Quando Usarli?
+
+**GET - Lettura** (Idempotente, senza body):
 ```typescript
-// GET - Lettura dati
+// Leggi un film
 fetch('/api/movies/123')
+```
+**Caratteristiche**: Solo lettura, non modifica dati, può essere cachato
 
-// POST - Creazione
+**POST - Creazione** (Non idempotente, con body):
+```typescript
+// Crea un nuovo film
 fetch('/api/movies', {
     method: 'POST',
     body: JSON.stringify({ title: 'New Movie' })
 })
+```
+**Caratteristiche**: Crea nuove risorse, ha body con dati
 
-// PUT - Aggiornamento completo
+**PUT - Aggiornamento Completo** (Idempotente):
+```typescript
+// Sostituisci TUTTO il film
 fetch('/api/movies/123', {
     method: 'PUT',
-    body: JSON.stringify({ title: 'Updated Movie' })
+    body: JSON.stringify({ title: 'Updated Movie', overview: '...' })
 })
+```
+**Caratteristiche**: Sostituisce l'intera risorsa, non parziale
 
-// PATCH - Aggiornamento parziale
+**PATCH - Aggiornamento Parziale** (Non idempotente):
+```typescript
+// Aggiorna solo il titolo
 fetch('/api/movies/123', {
     method: 'PATCH',
     body: JSON.stringify({ title: 'Updated Title Only' })
 })
+```
+**Caratteristiche**: Modifica solo campi specificati
 
-// DELETE - Eliminazione
+**DELETE - Eliminazione** (Idempotente):
+```typescript
+// Elimina un film
 fetch('/api/movies/123', { method: 'DELETE' })
 ```
+**Caratteristiche**: Rimuove risorsa, senza body
 
-### 4.2 Status Codes
+#### 🧠 Esercizio di Ragionamento 4.1.1
 
-```typescript
-// 200 OK - Successo
-// 201 Created - Risorsa creata
-// 204 No Content - Successo senza body
-// 400 Bad Request - Richiesta non valida
-// 401 Unauthorized - Non autenticato
-// 403 Forbidden - Non autorizzato
-// 404 Not Found - Risorsa non trovata
-// 429 Too Many Requests - Rate limit
-// 500 Internal Server Error - Errore server
+**Domanda**: Quale metodo usi per ottenere la lista dei film popolari? E quale per aggiungere un film ai preferiti?
+
+<details>
+<summary>💭 Pensa...</summary>
+
+- **Lista film popolari**: GET (è lettura di dati)
+- **Aggiungere ai preferiti**: POST (crea una nuova relazione preferiti)
+</details>
+
+#### 🎓 Regola d'oro: Idempotenza
+
+**Idempotente**: Chiamare N volte ha lo stesso effetto di chiamarlo 1 volta
+- ✅ GET: sempre stesso risultato
+- ✅ PUT: stesso effetto anche se chiamato 10 volte
+- ✅ DELETE: eliminato già al primo tentativo
+- ❌ POST: crea una nuova risorsa OGNI volta
+- ❌ PATCH: può dare risultati diversi
+
+**Perché è importante?** Consente retry sicuri delle richieste!
+
+### 4.2 Status Codes: Il Linguaggio delle Risposte
+
+> **🤔 Domanda**: Come fa il client a sapere se la richiesta è andata a buon fine? Come distingue tra "film non trovato" e "errore server"?
+
+#### 💡 Introduzione: Codici di Stato HTTP
+
+Gli **HTTP Status Codes** sono numeri a 3 cifre che comunicano il risultato della richiesta:
+
+```
+1xx - Informativo (rare)
+2xx - Successo ✅
+3xx - Redirect
+4xx - Errore Client ❌
+5xx - Errore Server 🔥
 ```
 
-**Esempio dal progetto** - `middlewares/rate-limit.middleware.ts`:
+#### 📚 Status Codes Comuni nel Progetto
+
+**Success Codes (2xx)**:
+
+```typescript
+// 200 OK - Tutto a posto!
+{ status: 200, data: movies }
+
+// 201 Created - Risorsa creata con successo
+{ status: 201, data: newMovie }
+
+// 204 No Content - Successo ma senza body
+{ status: 204 } // Eliminazione completata
+```
+
+**Client Errors (4xx)**:
+
+```typescript
+// 400 Bad Request - Richiesta malformata
+{ status: 400, error: 'Parametri non validi' }
+
+// 401 Unauthorized - Non autenticato
+{ status: 401, error: 'Login richiesto' }
+
+// 403 Forbidden - Non autorizzato
+{ status: 403, error: 'Operazione non permessa' }
+
+// 404 Not Found - Risorsa non esistente
+{ status: 404, error: 'Film non trovato' }
+
+// 429 Too Many Requests - Rate limit superato
+{ status: 429, error: 'Troppe richieste, riprova più tardi' }
+```
+
+**Server Errors (5xx)**:
+
+```typescript
+// 500 Internal Server Error - Errore interno
+{ status: 500, error: 'Errore server' }
+```
+
+**Esempio dal progetto** - Rate Limiting con status 429:
 ```97:132:middlewares/rate-limit.middleware.ts
 export function withRateLimit(
     handler: (req: NextRequest) => Promise<NextResponse>,
@@ -2162,7 +2264,7 @@ export function withRateLimit(
                     retryAfter: Math.ceil((limitCheck.resetTime - Date.now()) / 1000)
                 },
                 { 
-                    status: 429,
+                    status: 429, // ✅ Status code specifico per rate limit
                     headers: {
                         'X-RateLimit-Limit': config?.maxRequests?.toString() || '100',
                         'X-RateLimit-Remaining': limitCheck.remaining.toString(),
@@ -2185,19 +2287,93 @@ export function withRateLimit(
 }
 ```
 
-### 4.3 Fetch API vs Axios
+#### 🧠 Esercizio di Ragionamento 4.2.1
 
-#### Fetch API (Nativo)
+**Scenario**: Il server riceve una richiesta GET a `/api/movies/99999`, ma quel film non esiste.
+
+**Domanda**: Quale status code restituiresti?
+
+<details>
+<summary>💭 Pensa...</summary>
+
+**404 Not Found** - La risorsa richiesta (film 99999) non esiste. Non è un errore di validazione (400) o di permessi (403), ma semplicemente la risorsa non c'è.
+</details>
+
+#### ✏️ Esercizio Pratico 4.2.1
+
+Implementa una funzione che gestisce diversi casi d'errore:
 
 ```typescript
-// Fetch base
+async function handleApiError(response: Response) {
+    // TODO: Gestisci status codes appropriati
+    // - 404 → "Not found"
+    // - 401 → "Unauthorized"
+    // - 500 → "Server error"
+    // - Altro → "Unknown error"
+}
+```
+
+<details>
+<summary>✅ Soluzione</summary>
+
+```typescript
+async function handleApiError(response: Response) {
+    switch (response.status) {
+        case 404:
+            throw new Error('Not found')
+        case 401:
+            throw new Error('Unauthorized - please login')
+        case 403:
+            throw new Error('Forbidden - insufficient permissions')
+        case 429:
+            throw new Error('Too many requests - please wait')
+        case 500:
+            throw new Error('Server error - please try later')
+        default:
+            throw new Error(`Unknown error: ${response.status}`)
+    }
+}
+```
+</details>
+
+### 4.3 Fetch API vs Axios: Quale Scegliere?
+
+> **🤔 Domanda pratica**: Devo usare `fetch` (nativo) o `axios` (libreria)? Quali sono le differenze?
+
+#### 💡 Fetch API: Nativo del Browser
+
+**Vantaggi**:
+- ✅ **Zero dipendenze**: È già nel browser
+- ✅ **Standard**: Supportato ovunque
+- ✅ **Promise-based**: Async/await built-in
+
+**Svantaggi**:
+- ❌ **NO error handling automatico**: Dev gestirlo manualmente
+- ❌ **NO timeout automatico**
+- ❌ **NO request cancellation** (senza AbortController)
+
+**Esempio base**:
+```typescript
+// Fetch semplice
 const response = await fetch('/api/movies')
 const data = await response.json()
+```
 
-// Fetch con error handling
+**⚠️ PROBLEMA: Fetch non lancia errori per HTTP errors!**
+
+```typescript
+// ❌ NON lancia errore anche se status 404!
+const response = await fetch('/api/movies/99999')
+const data = await response.json() // Solo quando response.ok è false!
+```
+
+**✅ Soluzione corretta con Fetch**:
+
+```typescript
 async function fetchMovie(id: number) {
     const response = await fetch(`/api/movies/${id}`)
     
+    // ⚠️ IMPORTANTE: Controlla manualmente response.ok
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
     }
@@ -2205,7 +2381,7 @@ async function fetchMovie(id: number) {
     return await response.json()
 }
 
-// Fetch con configurazione
+// Fetch con configurazione completa
 const response = await fetch('/api/movies', {
     method: 'POST',
     headers: {
@@ -2213,41 +2389,65 @@ const response = await fetch('/api/movies', {
         'Authorization': 'Bearer token'
     },
     body: JSON.stringify({ title: 'New Movie' }),
-    cache: 'no-store' // Disabilita cache
+    cache: 'no-store'
 })
 ```
 
-#### Axios (Libreria)
+#### 📚 Axios: Libreria Potente
 
+**Vantaggi**:
+- ✅ **Error handling automatico**: Lancia errori per status 4xx/5xx
+- ✅ **Timeout configurato**
+- ✅ **Request/Response interceptors**
+- ✅ **Automatic request body parsing**
+
+**Svantaggi**:
+- ❌ **Dipendenza esterna**: Aggiunge al bundle (~10KB)
+- ❌ **Da importare**
+
+**Esempio base con Axios**:
 ```typescript
 import axios from 'axios'
 
-// Richiesta GET
+// GET semplice
 const response = await axios.get('/api/movies')
-const movies = response.data
+const movies = response.data // ✅ Data già estratta
 
-// Richiesta POST
+// POST
 await axios.post('/api/movies', {
     title: 'New Movie'
-})
+}) // ✅ Body serializzato automaticamente
 
-// Configurazione globale
+// ⚠️ Errori gestiti automaticamente: lancia error per 4xx/5xx!
+```
+
+**Configurazione avanzata nel progetto**:
+```typescript
+// Crea un client configurato
 const apiClient = axios.create({
     baseURL: 'https://api.themoviedb.org/3',
     headers: {
         'Authorization': `Bearer ${API_KEY}`
     },
-    timeout: 10000
+    timeout: 10000 // ✅ Timeout automatico
 })
 
-// Interceptors per logging/errori
+// Interceptors per logging/errori globali
 apiClient.interceptors.response.use(
-    response => response,
-    error => {
+    response => response, // ✅ Successo: passa
+    error => {            // ❌ Errore: gestisci
         console.error('API Error:', error)
         throw error
     }
 )
+
+// Utilizzo
+try {
+    const movies = await apiClient.get('/movie/popular')
+} catch (error) {
+    // ✅ Errori 4xx/5xx catturati automaticamente
+    console.error('Failed to fetch movies')
+}
 ```
 
 **Esempio dal progetto** - `services/tmdb.service.ts`:
@@ -2288,36 +2488,205 @@ apiClient.interceptors.response.use(
             return []
 ```
 
-### 4.4 Request/Response Pattern
+**🔍 Analisi**: Perché il progetto usa Axios? Per gestire automaticamente errori, timeout e retry logic con gli interceptors.
+
+#### 🧠 Esercizio di Ragionamento 4.3.1
+
+**Domanda**: Quando conviene usare `fetch` e quando `axios`?
+
+<details>
+<summary>💭 Pensa...</summary>
+
+**Usa Fetch quando**:
+- Progetto semplice, poche chiamate API
+- Vuoi zero dipendenze
+- Hai bisogno del controllo totale
+
+**Usa Axios quando**:
+- API complesse con retry, timeout, interceptor
+- Vuoi error handling automatico
+- Progetto enterprise con molte API calls
+</details>
+
+#### 📊 Confronto Pratico
+
+| Caratteristica | Fetch | Axios |
+|----------------|-------|-------|
+| Error handling 4xx/5xx | ❌ Manuale | ✅ Automatico |
+| Timeout | ❌ Manuale | ✅ Configurabile |
+| Interceptors | ❌ No | ✅ Sì |
+| Request cancellation | ⚠️ Con AbortController | ✅ Built-in |
+| Bundle size | ✅ 0KB | ❌ ~10KB |
+| Browser support | ✅ Moderno | ✅ Tutti |
+| TypeScript | ✅ Built-in | ✅ Built-in |
+
+#### 🎓 Regola d'oro
+
+**Nel progetto TheHustlePlace**: Usiamo **Axios** per:
+1. **Error handling robusto** (automatico per API esterne TMDB)
+2. **Retry logic** con interceptors
+3. **Timeout configuration** (evitare richieste pendenti infinite)
+4. **Request/Response transformation** automatizzato
+
+**Fetch** è adeguato per API interne semplici dove vogliamo controllo totale.
+
+**Esempio dal progetto** - `services/tmdb.service.ts`:
+```47:80:services/tmdb.service.ts
+    // Metodo per ottenere film "now playing" (appena usciti al cinema)
+    async getNowPlayingMovies(): Promise<Movie[]> {
+        try {
+            const response = await this.makeRequestWithRetry(() =>
+                axios.get(`${this.TMDB_BASE_URL}/movie/now_playing`, {
+                    params: {
+                        api_key: this.TMDB_API_KEY,
+                        language: 'it-IT',
+                        region: 'IT',
+                        page: 1
+                    }
+                })
+            )
+
+            if (response.status === 200 && response.data.results) {
+                return response.data.results.map((movie: any) => ({
+                    id: movie.id,
+                    title: movie.title || `Film ${movie.id}`,
+                    overview: movie.overview || 'Descrizione non disponibile',
+                    release_date: movie.release_date || '',
+                    vote_average: movie.vote_average || 0,
+                    vote_count: movie.vote_count || 0,
+                    genre_ids: movie.genre_ids || [],
+                    adult: movie.adult || false,
+                    backdrop_path: movie.backdrop_path || '/placeholder-movie.svg',
+                    original_language: movie.original_language || 'en',
+                    original_title: movie.original_title || movie.title,
+                    popularity: movie.popularity || 0,
+                    poster_path: movie.poster_path || '/placeholder-movie.svg',
+                    video: movie.video || false,
+                    tmdb_id: movie.id
+                }))
+            }
+            return []
+```
+
+### 4.4 Request/Response Pattern: Standardizzazione
+
+> **🤔 Domanda**: Come standardizzare le risposte API per gestire sempre successi ed errori nello stesso modo?
+
+#### 💡 Il Problema: Risposte Inconsistenti
+
+Immagina API che restituiscono formati diversi:
 
 ```typescript
-// Request Object
-interface ApiRequest {
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-    url: string
-    headers?: Record<string, string>
-    body?: any
-    params?: Record<string, string>
-}
+// API 1: Restituisce solo dati
+/api/movies → [movie1, movie2, ...]
 
-// Response Object
+// API 2: Restituisce con wrapper
+/api/movies/popular → { results: [movie1, ...], total: 100 }
+
+// API 3: Restituisce con success flag
+/api/movies/search → { success: true, data: [...], error: null }
+
+// ❌ Inconsistenza! Come gestirli tutti?
+```
+
+**Problema**: Ogni API ha un formato diverso → codice difficile da mantenere!
+
+#### 📚 Soluzione: Pattern Standardizzato
+
+**Definiamo un'interfaccia comune per tutte le risposte**:
+
+```typescript
+// Tutte le risposte API seguono questo pattern
 interface ApiResponse<T> {
-    success: boolean
-    data?: T
-    error?: string
-    message?: string
-    statusCode?: number
+    success: boolean      // ✅ Sempre presente
+    data?: T             // ✅ Dati se successo
+    error?: string        // ❌ Messaggio errore se fallimento
+    message?: string      // ℹ️ Messaggio informativo
+    statusCode?: number   // 📊 HTTP status code
 }
+```
 
-// Utilizzo tipico
+#### 🎯 Implementazione nel Progetto
+
+**Esempio pratico**:
+
+```typescript
 async function fetchMovies(): Promise<ApiResponse<Movie[]>> {
     try {
         const response = await fetch('/api/movies')
         const data = await response.json()
         
+        // ✅ Wrapper standardizzato
         return {
             success: response.ok,
-            data: data.movies,
+            data: data.movies,      // Dati solo se successo
+            statusCode: response.status
+        }
+    } catch (error) {
+        // ❌ Errore standardizzato
+        return {
+            success: false,
+            error: error.message,
+            statusCode: 500
+        }
+    }
+}
+
+// Utilizzo standardizzato nel client
+const { success, data, error } = await fetchMovies()
+
+if (success && data) {
+    // ✅ Gestione successo
+    console.log('Films:', data)
+} else {
+    // ❌ Gestione errore
+    console.error('Error:', error)
+}
+```
+
+#### 🧠 Esercizio di Ragionamento 4.4.1
+
+**Domanda**: Perché `data` e `error` sono opzionali (`?`)? Perché non sempre presenti?
+
+<details>
+<summary>💭 Pensa...</summary>
+
+**Mutualmente esclusivi**: Se `success === true`, ci sarà `data` ma NON `error`. Se `success === false`, ci sarà `error` ma NON `data`. Usare `?` rende esplicito che non saranno mai entrambi presenti.
+</details>
+
+#### ✏️ Esercizio Pratico 4.4.1
+
+Standardizza questa API con il pattern `ApiResponse`:
+
+```typescript
+// API attuale (inconsistente)
+async function getMovie(id: number) {
+    const response = await fetch(`/api/movies/${id}`)
+    return await response.json() // Restituisce direttamente Movie | Error
+}
+```
+
+<details>
+<summary>✅ Soluzione</summary>
+
+```typescript
+async function getMovie(id: number): Promise<ApiResponse<Movie>> {
+    try {
+        const response = await fetch(`/api/movies/${id}`)
+        
+        if (!response.ok) {
+            return {
+                success: false,
+                error: `HTTP ${response.status}`,
+                statusCode: response.status
+            }
+        }
+        
+        const movie = await response.json()
+        
+        return {
+            success: true,
+            data: movie,
             statusCode: response.status
         }
     } catch (error) {
@@ -2329,59 +2698,169 @@ async function fetchMovies(): Promise<ApiResponse<Movie[]>> {
     }
 }
 ```
+</details>
+
+#### 🎓 Vantaggi del Pattern Standardizzato
+
+1. ✅ **Consistenza**: Tutte le API rispondono nello stesso formato
+2. ✅ **Type Safety**: TypeScript garantisce tipo corretto
+3. ✅ **Error Handling**: Gestione errori uniforme
+4. ✅ **Developer Experience**: Semplice da usare
+
+**Regola d'oro**: Usa SEMPRE `ApiResponse<T>` per tutte le API nel progetto!
 
 ---
 
 ## 5. Caching: Performance e Ottimizzazione
 
-### 5.1 Strategie di Caching
+> **🤔 Domanda**: Perché richiamare TMDB ogni volta quando le informazioni sui film popolari cambiano solo ogni giorno? Come ridurre le chiamate API?
+
+### 5.1 Strategie di Caching: Velocizzare l'App
+
+#### 💡 Il Problema: Chiamate API Ridondanti
+
+Immagina 1000 utenti che visitano la homepage:
+
+```
+Utente 1: GET /api/movies/popular → Chiama TMDB API (2s)
+Utente 2: GET /api/movies/popular → Chiama TMDB API (2s)
+Utente 3: GET /api/movies/popular → Chiama TMDB API (2s)
+...
+Utente 1000: GET /api/movies/popular → Chiama TMDB API (2s)
+
+⚠️ PROBLEMA: 1000 chiamate API, 2000s totali!
+```
+
+**La soluzione**: **Cache** - Salva i risultati e riutilizzali!
+
+#### 📚 Cache In-Memory: Il Più Veloce
+
+**Come funziona**: Salva dati in memoria RAM del server:
 
 ```typescript
-// Cache in-memory (veloce, ma limitato)
+// Cache semplice: Map JavaScript
 const cache = new Map<string, any>()
 
 function getCached(key: string) {
-    return cache.get(key)
+    return cache.get(key) // O(1) - istantaneo!
 }
 
-function setCached(key: string, value: any, ttl: number) {
+function setCached(key: string, value: any) {
     cache.set(key, value)
-    setTimeout(() => cache.delete(key), ttl * 1000)
 }
 
-// Cache con TTL (Time To Live)
+// Utilizzo
+const movies = getCached('movies:popular')
+if (!movies) {
+    movies = await fetchMovies() // Solo se non in cache
+    setCached('movies:popular', movies)
+}
+```
+
+**Problema**: Cosa succede se i dati diventano **stale** (vecchi)?
+
+#### 🎯 Cache con TTL (Time To Live)
+
+**TTL**: Dopo quanto tempo la cache diventa invalida
+
+```typescript
+// Cache con expiration
 interface CacheEntry<T> {
     value: T
-    expires: number
+    expires: number // Timestamp di scadenza
 }
 
 class TTLCache<T> {
     private cache = new Map<string, CacheEntry<T>>()
     
     set(key: string, value: T, ttl: number) {
+        // ✅ Salva valore + tempo di scadenza
         this.cache.set(key, {
             value,
-            expires: Date.now() + ttl * 1000
+            expires: Date.now() + ttl * 1000 // TTL in secondi
         })
     }
     
     get(key: string): T | null {
         const entry = this.cache.get(key)
-        if (!entry) return null
+        if (!entry) return null // Cache miss
         
+        // ⚠️ Controlla se è scaduto
         if (Date.now() > entry.expires) {
-            this.cache.delete(key)
+            this.cache.delete(key) // ✅ Rimuovi se scaduto
             return null
         }
         
+        // ✅ Cache hit: restituisci valore valido
         return entry.value
     }
 }
 ```
 
-### 5.2 Redis Cache
+**Utilizzo**:
+```typescript
+const cache = new TTLCache<Movie[]>()
 
-Redis è un database in-memory per caching distribuito.
+// Salva con TTL di 1 ora
+cache.set('movies:popular', movies, 3600)
+
+// Recupera
+const cached = cache.get('movies:popular')
+
+if (cached) {
+    // ✅ Cache hit: usa dati dalla cache (istantaneo!)
+    return cached
+} else {
+    // ❌ Cache miss: fetch da API
+    const movies = await fetchMovies()
+    cache.set('movies:popular', movies, 3600) // Salva per prossima volta
+    return movies
+}
+```
+
+#### 🧠 Esercizio di Ragionamento 5.1.1
+
+**Domanda**: Quale TTL impostare per questi dati?
+1. Film popolari del giorno
+2. Dettagli di un film specifico (es: Interstellar del 2014)
+3. Dati utente in sessione
+
+<details>
+<summary>💭 Pensa...</summary>
+
+1. **Film popolari**: TTL breve (15-60 min) - cambiano durante il giorno
+2. **Dettagli film**: TTL lungo (24h+) - dati storici che non cambiano
+3. **Dati utente**: TTL molto breve (5 min) o nessun TTL - cambiano spesso
+</details>
+
+### 5.2 Redis Cache: Cache Distribuita
+
+> **🤔 Domanda**: E se avessi più server? Come condividi la cache tra loro?
+
+#### 💡 Il Problema: Cache In-Memory Monolita
+
+Con cache in-memory normale, ogni istanza del server ha la sua cache:
+
+```
+Server 1 → Cache { movies: [...] }
+Server 2 → Cache { movies: [...] }  // ❌ Cache diversa!
+```
+
+**Problema**: 
+- Se Server 1 aggiorna cache, Server 2 non lo sa
+- Se utente va su Server 2, fa fetch anche se era in cache su Server 1
+
+**Soluzione**: **Redis** - Cache condivisa tra tutti i server!
+
+#### 📚 Cos'è Redis?
+
+**Redis** (Remote Dictionary Server) è un database in-memory che:
+- ✅ Salva dati in RAM (velocissimo!)
+- ✅ Persiste su disco (non perde dati)
+- ✅ Condiviso tra server (cache distribuita)
+- ✅ Supporta TTL nativo
+
+#### 🎯 Implementazione Base
 
 ```typescript
 import { createClient } from 'redis'
@@ -2403,6 +2882,7 @@ class RedisCache {
     }
     
     async set(key: string, value: any, ttl: number = 3600) {
+        // ✅ setEx = set + expiration in un comando
         await this.client.setEx(
             key,
             ttl,
@@ -2414,6 +2894,18 @@ class RedisCache {
         await this.client.del(key)
     }
 }
+```
+
+**Utilizzo**:
+```typescript
+const redisCache = new RedisCache()
+await redisCache.connect()
+
+// Salva con TTL automatico
+await redisCache.set('movies:popular', movies, 3600)
+
+// Recupera
+const cached = await redisCache.get<Movie[]>('movies:popular')
 ```
 
 **Esempio dal progetto** - `utils/redis-cache.ts`:
@@ -2451,64 +2943,103 @@ class RedisCache {
     }
 ```
 
-### 5.3 Cache Patterns
+### 5.3 Cache Patterns: Strategie di Utilizzo
 
-#### Cache-Aside (Lazy Loading)
+> **🤔 Domanda**: Quando salvare nella cache? Prima o dopo aver fatto fetch? Come gestire dati che cambiano?
+
+#### 💡 Pattern 1: Cache-Aside (Lazy Loading)
+
+**Più comune**: Controlla cache PRIMA, fetch dopo se manca.
 
 ```typescript
 async function getMovie(id: number): Promise<Movie> {
-    // 1. Controlla cache
+    // 1. Controlla cache PRIMA
     const cached = await cache.get(`movie:${id}`)
-    if (cached) return cached
+    if (cached) return cached // ✅ Cache hit: veloce!
     
-    // 2. Fetch da API
+    // 2. Cache miss: fetch da API
     const movie = await fetchMovieFromAPI(id)
     
-    // 3. Salva in cache
+    // 3. Salva in cache per prossima volta
     await cache.set(`movie:${id}`, movie, 3600)
     
     return movie
 }
 ```
 
-#### Write-Through
+**Vantaggi**:
+- ✅ Semplice da implementare
+- ✅ Funziona anche se cache fallisce
+- ✅ Cache popolata lazy (solo quando richiesta)
+
+**Quando usarlo**: Query di lettura frequenti (es: film popolari)
+
+#### 💡 Pattern 2: Write-Through
+
+**Scritta sincrona**: Scrive SEMPRE in cache quando salvi dati.
 
 ```typescript
 async function createMovie(movie: Movie): Promise<Movie> {
     // 1. Salva nel database
     const saved = await db.movies.create(movie)
     
-    // 2. Aggiorna cache
+    // 2. Aggiorna cache IMMEDIATAMENTE (sincrono)
     await cache.set(`movie:${saved.id}`, saved, 3600)
     
     return saved
 }
 ```
 
-#### Cache Invalidation
+**Vantaggi**:
+- ✅ Cache sempre sincronizzata con database
+- ✅ Dati disponibili subito dopo creazione
+
+**Svantaggi**:
+- ❌ Scritture più lente (devono aggiornare cache + db)
+
+#### 💡 Pattern 3: Cache Invalidation
+
+**Invalidazione**: Rimuovi cache quando dati cambiano.
 
 ```typescript
 async function updateMovie(id: number, updates: Partial<Movie>) {
     // 1. Aggiorna nel database
     const updated = await db.movies.update(id, updates)
     
-    // 2. Invalida cache
-    await cache.delete(`movie:${id}`)
-    
-    // 3. Aggiorna cache con nuovi dati
-    await cache.set(`movie:${id}`, updated, 3600)
+    // 2. Invalida cache (o aggiorna)
+    await cache.delete(`movie:${id}`) // Rimuovi versione vecchia
+    // Oppure:
+    await cache.set(`movie:${id}`, updated, 3600) // Aggiorna
     
     return updated
 }
 ```
 
+**Vantaggi**:
+- ✅ Dati sempre freschi dopo aggiornamenti
+- ✅ Evita inconsistency
+
+#### 🧠 Esercizio di Ragionamento 5.3.1
+
+**Scenario**: Hai un sistema che mostra "film visti dall'utente". Quando un utente guarda un film, salvi nel database.
+
+**Domanda**: Quale pattern usi e perché?
+
+<details>
+<summary>💭 Pensa...</summary>
+
+**Write-Through**: Quando salvi "film visto", aggiorna subito la cache dell'utente. Così quando l'utente ricarica la pagina, vede immediatamente il film nella lista "visti".
+</details>
+
 ---
 
 ## 6. Rate Limiting e Sicurezza
 
+> **🤔 Domanda**: Cosa succede se qualcuno fa 1000 richieste al secondo alla tua API? Come proteggersi?
+
 ### 6.1 Rate Limiting: Protezione dagli Abusi
 
-Il rate limiting limita il numero di richieste per periodo di tempo.
+**Il problema**: Attacchi DDoS o API abuse possono sovraccaricare il server.
 
 ```typescript
 class RateLimiter {
@@ -2629,6 +3160,12 @@ class RateLimitService {
 
 ### 6.2 IP Tracking e Identificazione Client
 
+> **🤔 Domanda**: Come identifichi un utente specifico se tutti passano attraverso proxy o load balancer?
+
+**Il problema**: Dietro proxy/load balancer, l'IP client è negli header HTTP, non in `request.ip`.
+
+**Soluzione**: Controlla header multipli in ordine di priorità:
+
 ```typescript
 function getClientIP(request: NextRequest): string {
     // Prova vari header (proxy/load balancer)
@@ -2636,43 +3173,63 @@ function getClientIP(request: NextRequest): string {
     const realIP = request.headers.get('x-real-ip')
     const cfConnectingIP = request.headers.get('cf-connecting-ip') // Cloudflare
     
-    return forwarded?.split(',')[0] || 
+    return forwarded?.split(',')[0] ||  // Primo IP nella lista
            realIP || 
            cfConnectingIP || 
            'unknown'
 }
 ```
 
+**Perché serve**: Rate limiting basato su IP richiede l'IP reale del client, non quello del proxy!
+
 ### 6.3 Validation e Sanitizzazione
+
+> **🤔 Domanda**: Come ti proteggi da dati malevoli o formattati male inviati dagli utenti?
+
+**Il problema**: Gli utenti possono inviare qualsiasi cosa: SQL injection, XSS, dati malformati.
+
+**Soluzione**: **Validazione con Zod** - Definisci schema e valida prima di processare.
 
 ```typescript
 import { z } from 'zod'
 
-// Schema di validazione
+// Schema di validazione STRICTO
 const movieSchema = z.object({
-    title: z.string().min(1).max(200),
-    overview: z.string().max(2000),
-    release_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    vote_average: z.number().min(0).max(10)
+    title: z.string().min(1).max(200),        // Min 1 char, max 200
+    overview: z.string().max(2000),           // Max 2000 caratteri
+    release_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // Formato YYYY-MM-DD
+    vote_average: z.number().min(0).max(10)   // Tra 0 e 10
 })
 
 // Validazione
 function validateMovie(data: unknown) {
     try {
-        return movieSchema.parse(data)
+        return movieSchema.parse(data) // ✅ Lancia errore se invalido
     } catch (error) {
         throw new Error('Validation failed')
     }
 }
+
+// Utilizzo
+const movie = validateMovie(request.body) // ✅ Garantisce formato corretto
 ```
+
+**Vantaggi di Zod**:
+- ✅ **Type-safe**: TypeScript deduce i tipi dallo schema
+- ✅ **Runtime validation**: Valida a runtime, non solo compile-time
+- ✅ **Messaggi di errore chiari**: Dice esattamente cosa è sbagliato
 
 ---
 
 ## 7. Video Streaming e HLS
 
-### 7.1 HLS (HTTP Live Streaming)
+> **🤔 Domanda**: Come gestisci lo streaming di video lunghi? Perché non caricare tutto il video in una volta?
 
-HLS è un protocollo per streaming video che suddivide il video in piccoli segmenti.
+### 7.1 HLS (HTTP Live Streaming): Streaming Intelligente
+
+**Il problema**: Video lunghi (2h) richiederebbero download completo prima di vedere il primo frame.
+
+**HLS** (HTTP Live Streaming) risolve suddividendo il video in **segmenti** di pochi secondi ciascuno.
 
 ```
 # playlist.m3u8
@@ -2692,7 +3249,13 @@ stream_720.m3u8
 - **Recovery**: Gestione automatica degli errori di rete
 - **Compatibility**: Supportato da tutti i browser moderni
 
-### 7.2 Video Player Integration
+### 7.2 Video Player Integration: Player Personalizzato
+
+> **🤔 Domanda**: Come integri un player HLS nel tuo sito React?
+
+**Caratteristiche**:
+- **Ref per accesso al DOM**: `useRef<HTMLVideoElement>`
+- **HLS.js**: Libreria per supporto HLS nei browser moderni
 
 ```typescript
 'use client'
@@ -2721,9 +3284,13 @@ function VideoPlayer({ src }: { src: string }) {
 }
 ```
 
-### 7.3 Iframe e PostMessage API
+### 7.3 Iframe e PostMessage API: Comunicazione Cross-Origin
 
-Per integrare player esterni (come VixSrc), usiamo iframe e PostMessage per comunicazione sicura.
+> **🤔 Domanda**: Come comunichi con un player esterno embedded in un iframe senza violare la Same-Origin Policy?
+
+**Il problema**: Browsers bloccano accesso al contenuto di iframe con dominio diverso (Same-Origin Policy).
+
+**Soluzione**: **PostMessage API** permette comunicazione sicura cross-origin.
 
 ```typescript
 'use client'
@@ -2800,9 +3367,11 @@ function ExternalPlayer({ url }: { url: string }) {
 
 ## 8. Tailwind CSS e Styling
 
-### 8.1 Utility-First CSS
+> **🤔 Domanda**: Come stilizzi un'applicazione moderna senza scrivere CSS personalizzato per ogni componente?
 
-Tailwind CSS usa classi utility invece di CSS personalizzato.
+### 8.1 Utility-First CSS: Styling con Classi
+
+**Il paradigma**: Invece di CSS custom, usa classi utility predefinite.
 
 ```tsx
 // Senza Tailwind (CSS custom)
@@ -2816,7 +3385,11 @@ Tailwind CSS usa classi utility invece di CSS personalizzato.
 </div>
 ```
 
-### 8.2 Responsive Design
+### 8.2 Responsive Design: Mobile-First
+
+> **🤔 Domanda**: Come fai un design che si adatta a mobile, tablet e desktop?
+
+**Approccio Mobile-First**: Stilizza prima per mobile, poi aggiungi breakpoint per schermi più grandi.
 
 ```tsx
 // Mobile-first approach
@@ -2829,7 +3402,11 @@ Tailwind CSS usa classi utility invece di CSS personalizzato.
 ">
 ```
 
-### 8.3 Hover e State Variants
+### 8.3 Hover e State Variants: Interattività
+
+> **🤔 Domanda**: Come gestisci stati hover, focus, active, disabled?
+
+**Varianti di stato**: Tailwind permette modificatori di stato con prefisso (es: `hover:`, `focus:`).
 
 ```tsx
 <button className="
@@ -2857,7 +3434,11 @@ Tailwind CSS usa classi utility invece di CSS personalizzato.
                     <div className="h-3 bg-gray-700 rounded w-2/3"></div>
 ```
 
-### 8.4 Design System e Token
+### 8.4 Design System e Token: Personalizzazione
+
+> **🤔 Domanda**: Come personalizzi colori, font, spacing per il tuo brand?
+
+**Tailwind Config**: Definisci custom token che restano consistenti in tutta l'app.
 
 ```typescript
 // tailwind.config.js
@@ -2884,9 +3465,27 @@ module.exports = {
 
 ## 9. Pattern e Best Practices
 
-### 9.1 Service Layer Pattern
+> **🤔 Domanda**: Come organizzi il codice in modo mantenibile e scalabile?
 
-Separa la logica di business dalla logica di presentazione.
+### 9.1 Service Layer Pattern: Separazione delle Responsabilità
+
+**Il principio**: Separa la logica di business dalla logica di presentazione.
+
+**Problema senza Service Layer**:
+```typescript
+// ❌ Componente con logica di business mescolata
+function MovieCard() {
+    const [movie, setMovie] = useState()
+    
+    useEffect(() => {
+        fetch('https://api.tmdb.org/3/movie/123?api_key=...')
+            .then(r => r.json())
+            .then(data => setMovie(data)) // Logica business nel componente!
+    }, [])
+}
+```
+
+**Soluzione**: Service Layer separato.
 
 ```typescript
 // services/tmdb.service.ts
@@ -2917,9 +3516,19 @@ export class TMDBService {
     private lastRequestTime = 0
 ```
 
-### 9.2 Controller Pattern
+### 9.2 Controller Pattern: Orchestrazione API
 
-I controller gestiscono le richieste HTTP e delegano ai servizi.
+> **🤔 Domanda**: Come gestisci le richieste HTTP senza mettere tutto nella route handler?
+
+**Responsabilità del Controller**:
+- Gestisce HTTP (request/response)
+- Delega logica business ai Service
+- Gestisce errori e status codes
+
+**Vantaggi**:
+- ✅ Route handlers puliti e leggibili
+- ✅ Logica riutilizzabile tra endpoint
+- ✅ Testing più facile
 
 ```typescript
 // controllers/catalog.controller.ts
@@ -2945,9 +3554,11 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### 9.3 Error Boundaries
+### 9.3 Error Boundaries: Gestione Errori UI
 
-Gli error boundaries catturano errori React e mostrano UI di fallback.
+> **🤔 Domanda**: Come previeni che un singolo errore crasha tutta l'applicazione React?
+
+**Error Boundary**: Componente React che cattura errori nei children e mostra UI di fallback.
 
 ```typescript
 'use client'
@@ -2983,7 +3594,11 @@ class ErrorBoundary extends Component<Props, State> {
 
 ## 10. Interpretazione Diagrammi Mermaid
 
-### 10.1 Graph TB (Top to Bottom)
+> **🤔 Domanda**: Come comunichi visivamente l'architettura e il flusso dell'applicazione?
+
+**Mermaid** è un linguaggio per creare diagrammi testuali interpretabili come grafici.
+
+### 10.1 Graph TB (Top to Bottom): Flusso Verticale
 
 ```mermaid
 graph TB
@@ -2997,7 +3612,9 @@ graph TB
 
 **Interpretazione**: Flusso verticale da Start a End, con un punto di decisione.
 
-### 10.2 Sequence Diagram
+### 10.2 Sequence Diagram: Interazioni Temporali
+
+> **🤔 Domanda**: Come mostri l'ordine temporale delle comunicazioni tra componenti?
 
 ```mermaid
 sequenceDiagram
@@ -3013,7 +3630,9 @@ sequenceDiagram
 
 **Interpretazione**: Interazione temporale tra componenti, mostra l'ordine delle comunicazioni.
 
-### 10.3 State Diagram
+### 10.3 State Diagram: Stati del Sistema
+
+> **🤔 Domanda**: Come rappresenti i possibili stati dell'applicazione e le transizioni?
 
 ```mermaid
 stateDiagram-v2
@@ -3026,7 +3645,9 @@ stateDiagram-v2
 
 **Interpretazione**: Stati possibili del sistema e transizioni tra essi.
 
-### 10.4 Flowchart
+### 10.4 Flowchart: Decisioni e Flussi
+
+> **🤔 Domanda**: Come visualizzi la logica decisionale e i percorsi di esecuzione?
 
 ```mermaid
 flowchart TD
