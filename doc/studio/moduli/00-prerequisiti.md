@@ -16,13 +16,16 @@ Alla fine di questo modulo, sarai in grado di:
 ## 📚 Struttura del Corso
 
 Questo modulo è organizzato in sezioni **progressive** che costruiscono una base solida partendo da zero:
-1. **Setup Ambiente** - Primi passi pratici
-2. **Fondamenti Web** - HTML, CSS, JavaScript base
-3. **TypeScript** - Sistema di tipi
-4. **React** - Libreria UI
-5. **Next.js** - Framework full-stack
-6. **Concetti Avanzati** - Caching, Sicurezza, Streaming
-7. **Pattern e Best Practices** - Architettura del progetto
+1. **Teoria Fondamentale** - Come funziona il Web, Browser, JavaScript Engine, HTTP
+2. **Setup Ambiente** - Primi passi pratici
+3. **Fondamenti Web** - HTML, CSS, JavaScript base (espanso)
+4. **TypeScript** - Sistema di tipi avanzato con teoria approfondita
+5. **React** - Libreria UI con Virtual DOM, Fiber, Reconciliation
+6. **Next.js** - Framework full-stack con SSR, SSG, ISR, Hydration
+7. **HTTP/REST/APIs** - Protocolli completi, WebSockets, GraphQL
+8. **Concetti Avanzati** - Caching, Sicurezza, Streaming (espanso)
+9. **Pattern Architetturali** - Clean Architecture, DI, Design Patterns
+10. **Tools e Best Practices** - Testing, Debugging, CI/CD
 
 ### Mappa Concettuale Completa
 
@@ -77,6 +80,441 @@ mindmap
       Responsive Design
       Animations
       Design System
+```
+
+---
+
+## 0. Teoria Fondamentale: Come Funziona il Web
+
+> **🎯 Obiettivo**: Comprendere i meccanismi interni del web prima di programmare
+
+### 0.0 Il Browser: Un Sandbox Complesso
+
+**Come il browser esegue il tuo codice:**
+
+```mermaid
+sequenceDiagram
+    participant User as Utente
+    participant Browser as Browser
+    participant DNS as DNS Server
+    participant Server as Web Server
+    participant DB as Database
+    
+    User->>Browser: Digita URL
+    Browser->>DNS: Risolvi dominio
+    DNS-->>Browser: IP Address
+    Browser->>Server: HTTP Request
+    Server->>DB: Query dati
+    DB-->>Server: Risultati
+    Server-->>Browser: HTTP Response (HTML/CSS/JS)
+    Browser->>Browser: Parsing + Rendering
+    Browser-->>User: Pagina visualizzata
+```
+
+**Componenti principali del browser:**
+
+1. **Rendering Engine** (Blink/Gecko/WebKit)
+   - Parse HTML → DOM Tree
+   - Parse CSS → CSSOM Tree
+   - Combine → Render Tree
+   - Layout → Paint → Display
+
+2. **JavaScript Engine** (V8/SpiderMonkey/JavaScriptCore)
+   - Interpretazione e compilazione JIT
+   - Memory management (Garbage Collection)
+   - Call Stack e Event Loop
+
+3. **Network Layer**
+   - Gestione HTTP/HTTPS
+   - Caching intelligente
+   - WebSocket per connessioni persistenti
+
+4. **Security Sandbox**
+   - Isolamento tra tab
+   - Same-Origin Policy
+   - Content Security Policy (CSP)
+
+**🧠 Esercizio**: Apri Chrome DevTools → Network Tab → Ricarica la pagina. Analizza:
+- Quanti file vengono scaricati?
+- Quali sono più pesanti?
+- Quanto tempo impiega il rendering totale?
+
+---
+
+### 0.1 JavaScript Engine: Call Stack, Event Loop, Heap
+
+#### Call Stack (Pila delle Chiamate)
+
+Il **Call Stack** tiene traccia delle funzioni in esecuzione:
+
+```javascript
+function a() {
+    console.log('a started')
+    b()
+    console.log('a finished')
+}
+
+function b() {
+    console.log('b started')
+    c()
+    console.log('b finished')
+}
+
+function c() {
+    console.log('c executed')
+}
+
+a()
+
+// Output:
+// a started
+// b started
+// c executed
+// b finished
+// a finished
+```
+
+**Visualizzazione Call Stack:**
+
+```
+┌──────────┐
+│    c()   │  ← Top: funzione in esecuzione
+├──────────┤
+│    b()   │
+├──────────┤
+│    a()   │  ← Base
+└──────────┘
+```
+
+#### Memory Heap (Mucchio di Memoria)
+
+Lo **Heap** è lo spazio di memoria per oggetti e array allocati dinamicamente:
+
+```javascript
+// Heap storage:
+const movie = { title: 'Interstellar', year: 2014 }  // Oggetto in heap
+const actors = ['McConaughey', 'Chastain']           // Array in heap
+
+// Stack storage:
+const count = 100  // Primitivo nello stack
+```
+
+#### Event Loop: Asincronia in JavaScript
+
+**Il problema**: JavaScript è single-threaded (un solo thread), ma deve gestire I/O asincrono!
+
+**Soluzione**: Event Loop con Callback Queue
+
+```javascript
+console.log('1')
+
+setTimeout(() => console.log('2'), 0)
+
+Promise.resolve().then(() => console.log('3'))
+
+console.log('4')
+
+// Output: 1, 4, 3, 2
+```
+
+**Spiegazione:**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    Note over Main: Call Stack
+    Note over WebAPI: Web APIs
+    Note over Queue: Callback Queue
+    Note over EL: Event Loop
+    
+    Main->>Main: console.log('1')
+    Main->>WebAPI: setTimeout(0)
+    Main->>WebAPI: Promise.resolve()
+    Main->>Main: console.log('4')
+    WebAPI->>Queue: setTimeout callback
+    WebAPI->>Queue: Promise callback
+    EL->>Main: Promise callback
+    EL->>Main: setTimeout callback
+```
+
+**🔬 Microtasks vs Macrotasks:**
+
+```javascript
+console.log('Start')
+
+setTimeout(() => console.log('Macrotask 1'), 0)
+Promise.resolve().then(() => console.log('Microtask 1'))
+setTimeout(() => console.log('Macrotask 2'), 0)
+Promise.resolve().then(() => console.log('Microtask 2'))
+
+console.log('End')
+
+// Output:
+// Start
+// End
+// Microtask 1
+// Microtask 2
+// Macrotask 1
+// Macrotask 2
+```
+
+**Regola**: L'Event Loop esaurisce TUTTE le microtasks prima di processare i macrotasks!
+
+---
+
+### 0.2 HTTP/HTTPS: Protocollo Client-Server
+
+#### Struttura Richiesta HTTP
+
+```
+GET /api/movies HTTP/1.1              ← Request Line
+Host: api.example.com                  ← Headers
+User-Agent: Mozilla/5.0
+Accept: application/json
+Authorization: Bearer token123
+Content-Type: application/json
+
+(body opzionale)
+```
+
+**Elementi chiave:**
+
+1. **Request Line**: `METODO URI VERSIONE`
+   - Metodi: GET, POST, PUT, DELETE, PATCH, etc.
+   - URI: percorso della risorsa
+   - Versione: HTTP/1.1 o HTTP/2 o HTTP/3
+
+2. **Headers**: metadati della richiesta
+   ```
+   Host: dominio target
+   User-Agent: client che fa la richiesta
+   Accept: formato dati accettato
+   Authorization: credenziali per autenticazione
+   Content-Type: formato del body
+   ```
+
+3. **Body**: dati opzionali (solo POST, PUT, PATCH)
+
+#### Struttura Risposta HTTP
+
+```
+HTTP/1.1 200 OK                       ← Status Line
+Content-Type: application/json
+Cache-Control: max-age=3600
+ETag: "33a64df551425fcc55e4d42a148795d9f25f89d4"
+
+{
+  "success": true,
+  "data": [...]
+}
+```
+
+**Status Line**: `VERSIONE CODICE_STATO MESSAGGIO`
+
+**Headers importanti nelle risposte:**
+
+- **Cache-Control**: `max-age=3600` → cache per 1 ora
+- **ETag**: validazione cache (304 Not Modified)
+- **Content-Type**: `application/json`, `text/html`, etc.
+- **Set-Cookie**: invio cookie al browser
+- **Access-Control-Allow-Origin**: CORS
+
+#### HTTPS: HTTP Sicuro
+
+**Differenza chiave:**
+
+```
+HTTP:  Plain text → ❌ Vulnerabile a man-in-the-middle
+HTTPS: Encrypted  → ✅ Sicuro grazie a TLS/SSL
+```
+
+**Handshake TLS:**
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    
+    C->>S: ClientHello
+    S->>C: ServerHello + Certificate
+    C->>C: Verify Certificate
+    C->>S: Generate Secret Key
+    S-->>C: Connection Encrypted
+```
+
+**🔒 Certificati SSL/TLS:**
+- Certificati emessi da CA (Certificate Authority)
+- Browser verifica catena di certificati
+- Crittografia asimmetrica per lo scambio chiavi
+- Crittografia simmetrica per i dati
+
+---
+
+### 0.3 Architetture Web: Client-Side, Server-Side, Hybrid
+
+#### 1. Single Page Application (SPA)
+
+**Architettura:**
+
+```
+┌─────────────────────────────────┐
+│  Browser (React/Vue/Angular)   │  ← Tutto il rendering client-side
+│                                 │
+│  ┌───────────────────────────┐ │
+│  │  Virtual DOM              │ │
+│  │  State Management         │ │
+│  │  Routing                  │ │
+│  └───────────────────────────┘ │
+└─────────────────────────────────┘
+            ↕ HTTP/REST API (JSON)
+┌─────────────────────────────────┐
+│  Backend API Server            │  ← Solo dati, nessun rendering
+│  - Node.js                     │
+│  - Express/Nest.js             │
+│  - Database                    │
+└─────────────────────────────────┘
+```
+
+**Caratteristiche:**
+- ✅ UI reattiva e fluida
+- ✅ Routing client-side senza refresh
+- ✅ Esperienza moderna simile alle app native
+
+- ❌ SEO difficile (contenuto vuoto al load)
+- ❌ Bundle JavaScript grande (lentezza iniziale)
+- ❌ Problemi con JavaScript disabilitato
+
+**Quando usare:**
+- Dashboard amministrative
+- App interne aziendali
+- Social media (Twitter, Facebook)
+
+---
+
+#### 2. Server-Side Rendering (SSR)
+
+**Architettura:**
+
+```
+┌─────────────────────────────────┐
+│  Browser                        │
+│  ┌───────────────────────────┐ │
+│  │  HTML già renderizzato    │ │  ← Contenuto completo
+│  └───────────────────────────┘ │
+└─────────────────────────────────┘
+            ↕ Richiesta full HTML
+┌─────────────────────────────────┐
+│  Next.js Server                │
+│  ┌───────────────────────────┐ │
+│  │  Render React component   │ │  ← Rendering server-side
+│  │  Fetch dati da DB         │ │
+│  │  Genera HTML completo     │ │
+│  └───────────────────────────┘ │
+└─────────────────────────────────┘
+```
+
+**Caratteristiche:**
+- ✅ SEO ottimale (HTML completo ai bot)
+- ✅ Performance iniziale buona
+- ✅ Funziona senza JavaScript
+
+- ❌ Costo computazionale server alto
+- ❌ Latency (ogni request = render completo)
+- ❌ TTFB (Time To First Byte) più lento
+
+**Quando usare:**
+- Siti e-commerce
+- Blog e news
+- Landing pages
+- Contenuto che cambia frequentemente
+
+---
+
+#### 3. Static Site Generation (SSG)
+
+**Architettura:**
+
+```
+┌─────────────────────────────────┐
+│  Browser                        │
+└─────────────────────────────────┘
+            ↕ Richiesta HTML pre-generato
+┌─────────────────────────────────┐
+│  CDN (Content Delivery Network) │  ← Cache globale
+│  - HTML già pronto              │
+│  - CSS/JS minificati            │
+│  - Immagini ottimizzate         │
+└─────────────────────────────────┘
+            ↕ Build time
+┌─────────────────────────────────┐
+│  Static Site Generator         │
+│  - Next.js Build               │
+│  - Genera HTML per ogni page   │
+│  - Pre-renderizza tutto        │
+└─────────────────────────────────┘
+```
+
+**Caratteristiche:**
+- ✅ Performance massima (file statici)
+- ✅ Costo hosting basso (solo storage)
+- ✅ Scalabilità infinita (CDN)
+- ✅ Sicurezza (nessun server da proteggere)
+
+- ❌ Contenuto statico (no dati dinamici real-time)
+- ❌ Rebuild necessaria per aggiornamenti
+
+**Quando usare:**
+- Documentazione tecnica
+- Portfolio personali
+- Landing pages corporate
+- Blog con contenuto statico
+
+---
+
+#### 4. Hybrid: Il Meglio di Tutto
+
+**Next.js offre approccio ibrido:**
+
+```typescript
+// app/page.tsx - SSG (build time)
+export default async function HomePage() {
+    const movies = await getPopularMovies() // Fetch build time
+    return <div>{movies.map(...)}</div>
+}
+
+// app/movies/[id]/page.tsx - SSR (runtime)
+export default async function MoviePage({ params }) {
+    const movie = await getMovie(params.id) // Fetch runtime
+    return <MovieDetails movie={movie} />
+}
+
+// app/dashboard/page.tsx - CSR (client)
+'use client'
+export default function Dashboard() {
+    const [data, setData] = useState(null)
+    useEffect(() => {
+        fetch('/api/dashboard').then(...)
+    }, [])
+    return <DashboardUI data={data} />
+}
+```
+
+**Riepilogo Trade-offs:**
+
+| Architettura | SEO | Performance | Costo | Scalabilità | Dati Dinamici |
+|-------------|-----|-------------|-------|-------------|---------------|
+| SPA         | ❌  | ⚠️         | 💰   | ⚠️          | ✅            |
+| SSR         | ✅  | ✅          | 💰💰 | ⚠️          | ✅            |
+| SSG         | ✅  | ✅✅        | 🟢   | ✅✅         | ❌            |
+| Hybrid      | ✅  | ✅✅        | 💰💰 | ✅          | ✅            |
+
+**🎓 Decisione architetturale:**
+
+```
+Hai bisogno di dati real-time? → SSR o Hybrid
+Contenuto statico? → SSG
+Dashboard interattiva? → SPA o Hybrid
+Alto traffico, budget limitato? → SSG + ISR
 ```
 
 ---
@@ -1092,7 +1530,277 @@ async function fetchParallel() {
 
 > **🤔 Domanda fondamentale**: Perché React si chiama "Reactive"? Cosa significa che l'interfaccia "reagisce" ai cambiamenti?
 
-### 2.1 Componenti Funzionali: Funzioni che Restituiscono UI
+### 3.0 Virtual DOM: Perché React È Veloce
+
+#### 💡 Il Problema del DOM Nativo
+
+Modificare il DOM browser per elementi complessi è lento:
+
+```javascript
+// Modifica semplice ma costosa:
+document.getElementById('list').innerHTML += '<li>Item 3</li>'
+
+// Il browser deve eseguire:
+// 1. Parse HTML string
+// 2. Create DOM nodes
+// 3. Recalculate layout (Reflow)
+// 4. Repaint (ridisegna pixel)
+// Con 1000 elementi: lento! 🐌
+```
+
+**Performanza DOM nativo:**
+- **1 modifica**: ~1ms
+- **100 modifice**: ~100ms (bloccante!)
+- **1000 modifice**: ~1s (lag UI evidente!)
+
+---
+
+#### 📚 Virtual DOM: Rappresentazione Virtimale
+
+React crea una rappresentazione leggera del DOM:
+
+```javascript
+// Virtual DOM: oggetto JavaScript puro
+const virtualTree = {
+    type: 'ul',
+    props: { id: 'list' },
+    children: [
+        { type: 'li', props: {}, children: ['Item 1'] },
+        { type: 'li', props: {}, children: ['Item 2'] }
+    ]
+}
+
+// Modifica Virtual DOM:
+const newVirtualTree = {
+    ...virtualTree,
+    children: [
+        ...virtualTree.children,
+        { type: 'li', props: {}, children: ['Item 3'] }
+    ]
+}
+
+// React confronta (diffing):
+// TROVA solo le differenze → Applica SOLO quelle al DOM reale
+// Risultato: Veloce! ⚡
+```
+
+**Velocità Virtual DOM:**
+- **1 modifica**: ~0.1ms
+- **100 modifice**: ~10ms (non bloccante)
+- **1000 modifice**: ~100ms (UI responsive!)
+
+---
+
+#### 🔬 Diffing Algorithm: Come React Confronta
+
+React usa algoritmo **diff** ottimizzato:
+
+```javascript
+// Before (Virtual DOM):
+<div id="list">
+    <span>Item 1</span>
+    <span>Item 2</span>
+    <span>Item 3</span>
+</div>
+
+// After (Virtual DOM):
+<div id="list">
+    <span>Item 1</span>
+    <span>Item X</span>  ← Cambiato!
+    <span>Item 3</span>
+</div>
+
+// React diffing:
+// - <div> → Same, no change
+// - <span> index 0 → Same, no change
+// - <span> index 1 → Changed! Apply update
+// - <span> index 2 → Same, no change
+
+// DOM update:
+div.children[1].textContent = 'Item X'  // 1 sola modifica!
+```
+
+**Heuristic del diffing:**
+1. **Stesso tipo elemento**: Aggiorna attributi, non ricrea
+2. **Diverso tipo elemento**: Distrugge e ricrea
+3. **Key prop**: Evita riordinamenti costosi
+
+```javascript
+// ❌ SBAGLIATO: senza key, React non sa cosa è cambiato
+{items.map(item => <Item data={item} />)}
+
+// ✅ CORRETTO: React usa key per tracking
+{items.map(item => <Item key={item.id} data={item} />)}
+```
+
+---
+
+#### 🎓 Limiti del Virtual DOM
+
+**Overhead:**
+- Virtual DOM ha costo di memoria (oggetti JS extra)
+- Algoritmo diff ha costo computazionale O(n)
+- Per animazioni 60fps, Vanilla JS batte React
+
+**Quando React VINCE:**
+- App con molti componenti interattivi
+- State management complesso
+- Code splitting e lazy loading
+- Developer experience superiore
+
+**🔬 Esercizio**: Implementa mini Virtual DOM
+```javascript
+// TODO: Crea render() e diff() functions
+// Test con 1000 elementi
+```
+
+---
+
+### 3.1 React Fiber: Scheduler Intelligente
+
+#### 💡 Il Problema Pre-Fiber (React 15)
+
+Prima di React 16, il rendering era **sincrono e bloccante**:
+
+```javascript
+// React 15 behavior:
+function App() {
+    return <List items={Array(1000).fill(0).map((_, i) => i)} />
+}
+
+// Problema:
+// 1. Render tutti 1000 item
+// 2. Blocca UI per ~16ms
+// 3. Lag percepibile dall'utente!
+```
+
+**Stack Reconciler (React 15):**
+- Usa stack JavaScript nativo
+- Rendering profondo = blocco lungo
+- Nessun modo di interrompere
+- 60fps → Impossible con molti componenti
+
+---
+
+#### 📚 Fiber Reconciler: Rendering Interruptibile
+
+React 16+ introduce **Fiber**: scheduler cooperativo che può interrompere il rendering:
+
+```javascript
+// React Fiber behavior:
+// 1. Render Item 1 (5ms chunk)
+// 2. Check: user clicked? → Pause rendering
+// 3. Handle click event (responsive!)
+// 4. Resume rendering
+// 5. Render Item 2-50 (5ms chunk)
+// 6. Repeat...
+
+// Risultato: UI sempre responsive! ⚡
+```
+
+**Fiber Data Structure:**
+
+```javascript
+// Fiber è linked list invece di tree:
+fiber = {
+    type: Component,
+    props: { ... },
+    state: { ... },
+    
+    // Links a altri Fiber nodes:
+    child: firstChildFiber,    // Primo figlio
+    sibling: nextSiblingFiber, // Prossimo fratello
+    return: parentFiber,       // Genitore
+    alternate: previousFiber   // Doppio buffering
+    
+    // Status tracking:
+    effectTag: 'UPDATE' | 'PLACEMENT' | 'DELETION',
+    expirationTime: priority
+}
+```
+
+---
+
+#### 🔬 Work Phases: Render vs Commit
+
+Fiber divide il lavoro in **due fasi**:
+
+**1. Render Phase (interrompibile):**
+```javascript
+// Funzioni pure, nessun side-effect
+- calculate diff
+- mark changes
+- schedule updates
+```
+
+**2. Commit Phase (atomica):**
+```javascript
+// Side effects, non interrompibile
+- apply DOM changes
+- run lifecycle methods
+- update refs
+```
+
+**Vantaggi:**
+- **Prioritization**: Urgenti updates (click) prima di low priority (fetch)
+- **Batching**: Raggruppa updates multipli
+- **Suspense**: Pausa rendering durante data fetching
+
+---
+
+#### 🎓 Concurrent Features
+
+React 18 introduce **Concurrent Rendering**:
+
+```javascript
+// Automatic batching:
+setCount(c => c + 1)
+setFlag(f => !f)
+// React batches both in 1 single re-render!
+
+// Transitions:
+startTransition(() => {
+    setSearchQuery(input)  // Low priority
+})
+// Urgent updates (click) interrompono!
+
+// Suspense:
+<Suspense fallback={<Skeleton />}>
+    <DataComponent />  // Can suspend!
+</Suspense>
+```
+
+**🔬 Demo**: Confronto React 15 vs React 18
+[Test con 1000 componenti]
+
+---
+
+### 3.2 Reconciliation: Cosa Cambia nel DOM
+
+#### 💡 Reconciliation Process
+
+Reconciliation = confronto tra Virtual DOM old e new:
+
+```javascript
+// Step 1: Render phase
+// - Genera nuovo Virtual DOM tree
+// - Confronta con prev tree
+// - Marca cambiamenti
+
+// Step 2: Commit phase
+// - Applica cambiamenti al DOM reale
+// - Esegue side effects
+// - Attiva lifecycle hooks
+```
+
+**Ottimizzazioni:**
+- **Skip unchanged trees**: Se props invariati, skip render
+- **Lazy reconciliation**: Child components chiamati solo se necessario
+- **Memoization**: `React.memo`, `useMemo`, `useCallback`
+
+---
+
+### 3.3 Componenti Funzionali: Funzioni che Restituiscono UI
 
 #### 💡 Il Concetto Chiave
 
@@ -2299,7 +3007,284 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
 
 > **🤔 Domanda rivoluzionaria**: E se potessi eseguire React sul server? Cosa cambierebbe per performance, SEO e UX?
 
-### 3.1 Server Components vs Client Components: La Rivoluzione
+### 4.0 Strategie di Rendering: SSR, SSG, ISR
+
+#### 💡 Il Problema: Quando Renderizzare?
+
+Next.js offre **4 strategie** di rendering diverse:
+
+1. **CSR** (Client-Side Rendering) - Render nel browser
+2. **SSR** (Server-Side Rendering) - Render sul server ad ogni request
+3. **SSG** (Static Site Generation) - Render al build time
+4. **ISR** (Incremental Static Regeneration) - SSG che si aggiorna
+
+**Confronto visivo:**
+
+```mermaid
+sequenceDiagram
+    participant User as Utente
+    participant Client as Browser
+    participant Server as Next.js Server
+    participant DB as Database
+    
+    Note over Client,DB: CSR (Client-Side Rendering)
+    User->>Client: Richiede pagina
+    Client->>Client: Carica JS bundle
+    Client->>DB: Fetch dati
+    DB-->>Client: Dati
+    Client->>Client: Render React
+    Client-->>User: HTML vuoto → poi popolato
+    
+    Note over Client,DB: SSR (Server-Side Rendering)
+    User->>Server: Richiede pagina
+    Server->>DB: Fetch dati
+    DB-->>Server: Dati
+    Server->>Server: Render React → HTML
+    Server-->>Client: HTML completo
+    Client-->>User: Display immediato
+    
+    Note over Client,DB: SSG (Static Site Generation)
+    Note over Server: Build time
+    Server->>DB: Pre-fetch dati
+    Server->>Server: Genera HTML statici
+    Note over User: Request time
+    User->>Server: Richiede pagina
+    Server-->>Client: HTML pre-generato (istantaneo!)
+```
+
+---
+
+#### 📚 1. CSR: Client-Side Rendering
+
+**Come funziona:**
+```typescript
+'use client'
+
+export default function MoviesPage() {
+    const [movies, setMovies] = useState([])
+    
+    useEffect(() => {
+        fetch('/api/movies').then(res => res.json()).then(setMovies)
+    }, [])
+    
+    return <div>{movies.map(m => <MovieCard key={m.id} {...m} />)}</div>
+}
+```
+
+**Vantaggi:**
+- ✅ Interattività immediata
+- ✅ Esperienza app-like
+- ✅ Comunicazione real-time
+
+**Svantaggi:**
+- ❌ SEO difficile (HTML vuoto)
+- ❌ Hydration overhead
+- ❌ Bundle grande
+
+**Quando usare:**
+- Dashboard interattive
+- App interne aziendali
+- Social media
+
+---
+
+#### 📚 2. SSR: Server-Side Rendering
+
+**Come funziona:**
+```typescript
+// app/movies/page.tsx (default = Server Component)
+export default async function MoviesPage() {
+    const movies = await fetch('https://api.tmdb.org/3/movie/popular', {
+        next: { revalidate: 60 } // Revalidate ogni 60s
+    }).then(r => r.json())
+    
+    return <div>{movies.results.map(m => <MovieCard key={m.id} {...m} />)}</div>
+}
+```
+
+**Vantaggi:**
+- ✅ SEO ottimale (HTML completo)
+- ✅ Performance iniziale buona
+- ✅ Dati sempre aggiornati
+
+**Svantaggi:**
+- ❌ TTFB più lento
+- ❌ Costo server per ogni request
+- ❌ Scalabilità limitata
+
+**Quando usare:**
+- E-commerce
+- Blog/News
+- Contenuto dinamico
+
+---
+
+#### 📚 3. SSG: Static Site Generation
+
+**Come funziona:**
+```typescript
+// app/about/page.tsx
+export default function AboutPage() {
+    return <div>Informazioni statiche</div>
+}
+// Next.js genererà HTML statico al build time
+```
+
+**Vantaggi:**
+- ✅ Performance massima (CDN)
+- ✅ Costo hosting basso
+- ✅ Scalabilità infinita
+- ✅ Sicurezza (no server)
+
+**Svantaggi:**
+- ❌ Contenuto statico
+- ❌ Rebuild necessaria
+
+**Quando usare:**
+- Documentazione
+- Portfolio
+- Landing pages
+- Blog con contenuto raro
+
+---
+
+#### 📚 4. ISR: Incremental Static Regeneration
+
+**Come funziona:**
+```typescript
+// app/movies/page.tsx
+export default async function MoviesPage() {
+    const movies = await fetch('https://api.tmdb.org/3/movie/popular', {
+        next: { revalidate: 3600 } // Rigenera ogni ora
+    }).then(r => r.json())
+    
+    return <div>{movies.results.map(m => <MovieCard key={m.id} {...m} />)}</div>
+}
+```
+
+**Come funziona ISR:**
+```
+1. Build time: Genera HTML statico per /movies
+2. Request 1 (0-3600s): Serve HTML statico → Veloce!
+3. Request N: Serve HTML statico → Veloce!
+4. Request DOPO 3600s: 
+   - Serve HTML vecchio immediatamente
+   - Triggera rigenerazione in background
+   - Prossima request avrà HTML aggiornato
+```
+
+**Vantaggi:**
+- ✅ SSG + dati aggiornati
+- ✅ Performance massima
+- ✅ No waterfall requests
+- ✅ Best of both worlds!
+
+**Svantaggi:**
+- ⚠️ Stale data per 1 request (pagina precedente durante update)
+
+**Quando usare:**
+- Blog con post frequenti
+- E-commerce con cataloghi
+- Pagine che cambiano raramente ma periodicamente
+
+---
+
+#### 🎓 Decisione Strategica
+
+**Matrice decisione:**
+
+| Caratteristica | CSR | SSR | SSG | ISR |
+|---------------|-----|-----|-----|-----|
+| **SEO** | ❌ | ✅ | ✅ | ✅ |
+| **Performance** | ⚠️ | ✅ | ✅✅ | ✅✅ |
+| **Tempo Build** | 🟢 | 🟢 | ⚠️ | ⚠️ |
+| **Hosting Cost** | 💰 | 💰💰 | 🟢 | 🟢 |
+| **Dati Real-time** | ✅ | ✅ | ❌ | ⚠️ |
+
+**Regola d'oro:**
+```
+Stai costruendo un blog? → SSG
+Hai bisogno di SEO? → SSR o SSG
+Dati che cambiano spesso? → SSR
+Dati che cambiano raramente? → SSG
+Vuoi best of both? → ISR
+Dashboard interattiva? → CSR
+```
+
+---
+
+### 4.1 Hydration: Colmare il Gap
+
+#### 💡 Il Problema dell'Hydration Mismatch
+
+**Hydration** = processo dove React "attiva" HTML statico:
+
+```typescript
+// 1. Server genera HTML:
+<div>Server Time: 10:00:00</div>
+
+// 2. Browser riceve HTML statico
+// 3. React "hydrata" e attiva event handlers
+
+// ❌ PROBLEMA se c'è mismatch:
+<div>Client Time: 10:00:05</div>
+// Server ≠ Client → Warning! ⚠️
+```
+
+**Causa comune:**
+```typescript
+// ❌ SBAGLIATO
+export default function Page() {
+    return <div>{new Date().toString()}</div>
+    // Date diversa server vs client!
+}
+
+// ✅ CORRETTO
+'use client'
+export default function Page() {
+    const [time, setTime] = useState<string>()
+    useEffect(() => {
+        setTime(new Date().toString())
+    }, [])
+    return <div>{time || 'Loading...'}</div>
+}
+```
+
+---
+
+#### 🔬 Streaming SSR: Progressive Hydration
+
+Next.js supporta **streaming**: invia parti di HTML man mano che sono pronte:
+
+```typescript
+// app/movies/page.tsx
+export default async function MoviesPage() {
+    const movies = await fetch('/api/movies')
+    
+    return (
+        <div>
+            <Header /> {/* Inviato subito */}
+            <Suspense fallback={<Skeleton />}>
+                <MovieList movies={movies} /> {/* Streaming quando pronto */}
+            </Suspense>
+            <Footer /> {/* Inviato subito */}
+        </div>
+    )
+}
+```
+
+**Timeline:**
+
+```
+Time 0ms:  <html><body><div><Header />...
+Time 100ms: <html><body><div><Header /><Skeleton />...
+Time 500ms: <html><body><div><Header /><MovieList />...
+Time 550ms: Hydration completa
+```
+
+---
+
+### 4.2 Server Components vs Client Components: La Rivoluzione
 
 #### 💡 Il Problema: Tutto sul Client
 
@@ -3500,11 +4485,449 @@ async function updateMovie(id: number, updates: Partial<Movie>) {
 
 ---
 
-## 7. Rate Limiting e Sicurezza
+## 7. Sicurezza Web: Protezione delle Applicazioni
 
-> **🤔 Domanda**: Cosa succede se qualcuno fa 1000 richieste al secondo alla tua API? Come proteggersi?
+> **🤔 Domanda**: Come proteggi la tua applicazione da attacchi, data breach e vulnerabilità?
 
-### 6.1 Rate Limiting: Protezione dagli Abusi
+### 7.0 Vulnerabilità Web Comuni
+
+#### 💡 Le Top 10 OWASP
+
+L'**OWASP Top 10** lista le vulnerabilità web più critiche:
+
+1. **Injection** (SQL, NoSQL, Command, etc.)
+2. **Broken Authentication**
+3. **Sensitive Data Exposure**
+4. **XML External Entities (XXE)**
+5. **Broken Access Control**
+6. **Security Misconfiguration**
+7. **Cross-Site Scripting (XSS)**
+8. **Insecure Deserialization**
+9. **Using Components with Known Vulnerabilities**
+10. **Insufficient Logging & Monitoring**
+
+---
+
+#### 🔴 1. Cross-Site Scripting (XSS)
+
+**XSS** = iniettare codice JavaScript malevolo nel browser degli utenti.
+
+**Tipi di XSS:**
+
+**A) Stored XSS** (Persistente):
+```javascript
+// Malicious input salvato nel database:
+<script>alert(document.cookie)</script>
+
+// Quando altri utenti vedono questo content:
+// → Il codice viene eseguito nel loro browser!
+```
+
+**B) Reflected XSS** (Non persistente):
+```javascript
+// URL con parametro malevolo:
+https://example.com/search?q=<script>alert('XSS')</script>
+
+// Server risponde:
+<div>Risultati per: <script>alert('XSS')</script></div>
+// → Script eseguito!
+```
+
+**C) DOM-based XSS**:
+```javascript
+// Client-side vulnerabilità
+const userInput = document.getElementById('search').value
+document.getElementById('results').innerHTML = userInput
+// ❌ Pericoloso se userInput contiene <script>!
+```
+
+**Protezione:**
+
+```typescript
+// ✅ Sanitizzazione input
+import DOMPurify from 'dompurify'
+
+const cleanHTML = DOMPurify.sanitize(userInput)
+
+// ✅ React auto-escapes
+const safe = <div>{userInput}</div>  // ✅ Auto-escaped
+
+// ❌ VULNERABILE
+const unsafe = <div dangerouslySetInnerHTML={{ __html: userInput }} />
+
+// ✅ Content Security Policy (CSP)
+// Aggiungi header:
+Content-Security-Policy: script-src 'self'
+```
+
+**🔬 Esercizio**: Trova la vulnerabilità:
+```typescript
+export function SearchResults({ query }: { query: string }) {
+    return (
+        <div>
+            <h2>Risultati per: {query}</h2>
+            <div dangerouslySetInnerHTML={{ __html: marked(query) }} />
+        </div>
+    )
+}
+```
+
+---
+
+#### 🔴 2. SQL Injection
+
+**SQL Injection** = iniettare SQL malevolo nelle query del database.
+
+**Vulnerabilità:**
+
+```javascript
+// ❌ VULNERABILE
+const query = `SELECT * FROM users WHERE username = '${username}'`
+// Se username = "admin' OR '1'='1"
+// Query diventa:
+// SELECT * FROM users WHERE username = 'admin' OR '1'='1'
+// → Ritorna TUTTI gli utenti!
+```
+
+**Protezione:**
+
+```typescript
+// ✅ Parameterized queries (Prepared Statements)
+const query = 'SELECT * FROM users WHERE username = ?'
+db.query(query, [username])  // Params escaped automaticamente
+
+// ✅ ORM (Object-Relational Mapping)
+const user = await User.findOne({ where: { username } })
+// TypeORM, Prisma, Sequelize → Parameterized queries automatiche
+```
+
+---
+
+#### 🔴 3. Cross-Site Request Forgery (CSRF)
+
+**CSRF** = forzare un utente autenticato a eseguire azioni non volute.
+
+**Attacco:**
+
+```html
+<!-- Sito malevolo evil.com -->
+<img src="https://bank.com/transfer?to=attacker&amount=1000" />
+
+<!-- Utente visita evil.com → Richiesta DELETE eseguita! -->
+```
+
+**Protezione:**
+
+```typescript
+// ✅ CSRF Tokens
+// Server genera token univoco, client lo include
+<form method="POST" action="/transfer">
+    <input type="hidden" name="_csrf" value="{{csrfToken}}" />
+    <!-- ... -->
+</form>
+
+// Server verifica token
+async function transfer(request: NextRequest) {
+    const csrfToken = request.headers.get('X-CSRF-Token')
+    if (!validateCSRFToken(csrfToken)) {
+        return new Response('Invalid CSRF token', { status: 403 })
+    }
+    // ... process request
+}
+
+// ✅ SameSite Cookies
+Set-Cookie: session=abc123; SameSite=Strict
+// Cookie NON inviato in richieste cross-site
+```
+
+---
+
+#### 🔴 4. Command Injection
+
+**Command Injection** = eseguire comandi OS tramite input utente.
+
+**Vulnerabilità:**
+
+```javascript
+// ❌ VULNERABILE
+const exec = require('child_process').exec
+exec(`ping ${userInput}`)
+// Se userInput = "8.8.8.8; rm -rf /"
+// → Comando distruttivo eseguito!
+
+// ✅ Sanitizzazione input
+const execFile = require('child_process').execFile
+execFile('ping', [userInput], (error, stdout, stderr) => {
+    // Params escaped
+})
+```
+
+---
+
+#### 🔴 5. Insecure Deserialization
+
+**Deserialization** = convertire dati serializzati in oggetti.
+
+**Vulnerabilità:**
+
+```javascript
+// ❌ VULNERABILE
+const data = Buffer.from(req.body, 'base64')
+const obj = pickle.loads(data)  // Python pickle
+// → Possibile RCE (Remote Code Execution)!
+
+// ✅ JSON (safe)
+const obj = JSON.parse(req.body)  // Solo dati, no code
+
+// ✅ Validazione input
+const { error, value } = userSchema.validate(data)
+if (error) throw new Error('Invalid data')
+```
+
+---
+
+### 7.1 CORS: Cross-Origin Resource Sharing
+
+#### 💡 Il Problema Same-Origin Policy
+
+I browser bloccano richieste cross-origin per sicurezza:
+
+```
+Origin A: https://example.com
+Origin B: https://api.example.com
+
+Browser: "Origini diverse! Blocco richiesta."
+```
+
+**CORS** = meccanismo per permettere richieste cross-origin controllate.
+
+---
+
+#### 📚 CORS Headers
+
+**Server configura CORS:**
+
+```typescript
+// middleware.ts
+export function cors(req: NextRequest) {
+    const response = NextResponse.next()
+    
+    response.headers.set('Access-Control-Allow-Origin', 'https://example.com')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Max-Age', '86400')
+    
+    return response
+}
+```
+
+**Preflight Request:**
+
+```javascript
+// Browser fa OPTIONS preflight:
+OPTIONS /api/movies HTTP/1.1
+Origin: https://example.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type
+
+// Server risponde:
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Methods: GET, POST, PUT
+Access-Control-Allow-Headers: Content-Type
+Access-Control-Max-Age: 86400
+
+// Browser: "OK, permetto POST request"
+```
+
+**⚠️ Attenzione:**
+
+```typescript
+// ❌ PERICOLOSO
+Access-Control-Allow-Origin: *  // Permette TUTTI gli origins!
+
+// ✅ Sicuro
+Access-Control-Allow-Origin: https://trusted-site.com
+```
+
+---
+
+### 7.2 Autenticazione e Autorizzazione
+
+#### 🔐 OAuth 2.0 Flow
+
+**OAuth 2.0** = standard per autenticazione tramite terze parti (Google, Facebook, etc.).
+
+**Authorization Code Flow:**
+
+```
+1. User → Your App: "Login with Google"
+2. Your App → Google: Redirect a Google
+3. User → Google: Login Google
+4. Google → Your App: Authorization Code
+5. Your App → Google: Exchange Code per Access Token
+6. Google → Your App: Access Token
+7. Your App → Google API: Request user info con Token
+8. Google API → Your App: User info
+9. Your App: Crea sessione utente
+```
+
+**Implementazione:**
+
+```typescript
+// 1. Redirect a Google
+const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?
+    client_id=${CLIENT_ID}&
+    redirect_uri=${REDIRECT_URI}&
+    response_type=code&
+    scope=email profile`
+
+window.location.href = authUrl
+
+// 2. Callback handler
+export async function GET(request: NextRequest) {
+    const code = request.nextUrl.searchParams.get('code')
+    
+    // 3. Exchange code per token
+    const token = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        body: JSON.stringify({
+            code,
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            redirect_uri: REDIRECT_URI,
+            grant_type: 'authorization_code'
+        })
+    }).then(r => r.json())
+    
+    // 4. Get user info
+    const user = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${token.access_token}` }
+    }).then(r => r.json())
+    
+    // 5. Crea sessione
+    setCookie('session', user.id)
+    
+    return NextResponse.redirect('/dashboard')
+}
+```
+
+---
+
+#### 🔑 JWT: JSON Web Tokens
+
+**JWT** = token criptograficamente firmato che contiene informazioni dell'utente.
+
+**Struttura JWT:**
+
+```
+eyJhbGc...   ← Header (algoritmo, tipo)
+.eyJzdWI...   ← Payload (dati utente)
+.SflKxw...    ← Signature (firma)
+```
+
+**Payload (decoded):**
+
+```json
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "iat": 1516239022,
+  "exp": 1516242622
+}
+```
+
+**Implementazione:**
+
+```typescript
+import jwt from 'jsonwebtoken'
+
+// Sign token
+const token = jwt.sign(
+    { userId: user.id, email: user.email },
+    SECRET_KEY,
+    { expiresIn: '1h' }
+)
+
+// Verify token
+const decoded = jwt.verify(token, SECRET_KEY)
+// decoded = { userId: '...', email: '...' }
+
+// Middleware auth
+export function auth(request: NextRequest) {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '')
+    
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY)
+        request.user = decoded
+        return true
+    } catch {
+        return false
+    }
+}
+```
+
+**⚠️ Best Practices:**
+- ✅ Store JWT in httpOnly cookie (non localStorage)
+- ✅ Short expiration time (1h-24h)
+- ✅ Refresh tokens per renewal
+- ✅ Never store sensitive data in JWT (nome pubblico OK)
+- ❌ Don't use JWT for sessions (troppo grande)
+
+---
+
+### 7.3 Headers di Sicurezza
+
+#### 🛡️ Security Headers
+
+**HTTP Security Headers** proteggono l'applicazione:
+
+```typescript
+// next.config.js
+module.exports = {
+    async headers() {
+        return [
+            {
+                source: '/:path*',
+                headers: [
+                    // 1. XSS Protection (deprecated ma utile)
+                    { key: 'X-XSS-Protection', value: '1; mode=block' },
+                    
+                    // 2. Content-Type sniffing prevention
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    
+                    // 3. Clickjacking prevention
+                    { key: 'X-Frame-Options', value: 'DENY' },
+                    
+                    // 4. HTTPS enforcement
+                    { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+                    
+                    // 5. Content Security Policy
+                    { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'" },
+                    
+                    // 6. Referrer policy
+                    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+                    
+                    // 7. Permissions policy
+                    { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
+                ]
+            }
+        ]
+    }
+}
+```
+
+**Spiegazione headers:**
+
+- **CSP**: Previene XSS specificando fonti JavaScript/CSS permesse
+- **HSTS**: Forza HTTPS per 1 anno
+- **X-Frame-Options**: Previene clickjacking (no iframe embedding)
+- **X-Content-Type-Options**: Previene MIME sniffing
+- **Referrer-Policy**: Controlla invio referrer URL
+
+---
+
+### 7.4 Rate Limiting: Protezione dagli Abusi
 
 **Il problema**: Attacchi DDoS o API abuse possono sovraccaricare il server.
 
