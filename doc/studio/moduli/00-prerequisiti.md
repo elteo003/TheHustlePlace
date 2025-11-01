@@ -4413,6 +4413,113 @@ fetch('/api/movies/123', { method: 'DELETE' })
 
 **Perché è importante?** Consente retry sicuri delle richieste!
 
+#### ✏️ Esercizio Pratico 5.1: Scegliere il Metodo HTTP Corretto
+
+> **🎯 Obiettivo:** Identificare e utilizzare il metodo HTTP appropriato per diverse operazioni CRUD.
+
+**[Passo 1: Enunciato]**
+Per ogni operazione seguente, identifica il metodo HTTP corretto e implementa la richiesta:
+
+1. **Ottenere dettagli di un film specifico** (ID: 123)
+2. **Creare un nuovo film** con titolo "The Matrix"
+3. **Aggiornare SOLO il rating** di un film esistente (da 8.5 a 9.0)
+4. **Aggiornare TUTTI i campi** di un film (titolo, overview, rating, cast)
+5. **Eliminare un film** dal database
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* GET vs POST: quale operazione leggi dati e quale crea nuove risorse?
+* PUT vs PATCH: quale sostituisce tutto e quale aggiorna parzialmente?
+* Perché DELETE non ha body ma POST/PUT sì?
+* Quali metodi sono idempotenti e perché è importante?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// 1. Ottenere dettagli film
+const getMovie = async (id: number) => {
+    // Implementa con metodo corretto
+}
+
+// 2. Creare nuovo film
+const createMovie = async (title: string) => {
+    // Implementa con metodo corretto e body
+}
+
+// 3. Aggiornare solo rating
+const updateRating = async (id: number, rating: number) => {
+    // Implementa con metodo corretto
+}
+
+// 4. Aggiornare tutti i campi
+const updateMovie = async (id: number, movie: Movie) => {
+    // Implementa con metodo corretto
+}
+
+// 5. Eliminare film
+const deleteMovie = async (id: number) => {
+    // Implementa con metodo corretto
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Il metodo HTTP segue semantica REST: GET legge, POST crea, PUT sostituisce tutto, PATCH aggiorna parzialmente, DELETE rimuove. L'idempotenza (PUT, DELETE) permette retry sicuri. POST/PATCH richiedono body JSON perché trasferiscono dati. GET/DELETE non hanno body perché operazioni atomiche.
+
+**Soluzione Completa:**
+
+```typescript
+// 1. Ottenere dettagli film - GET
+const getMovie = async (id: number) => {
+    const response = await fetch(`/api/movies/${id}`)
+    return response.json()
+}
+
+// 2. Creare nuovo film - POST
+const createMovie = async (title: string) => {
+    const response = await fetch('/api/movies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+    })
+    return response.json()
+}
+
+// 3. Aggiornare solo rating - PATCH (parziale)
+const updateRating = async (id: number, rating: number) => {
+    const response = await fetch(`/api/movies/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating })
+    })
+    return response.json()
+}
+
+// 4. Aggiornare tutti i campi - PUT (completo)
+const updateMovie = async (id: number, movie: Movie) => {
+    const response = await fetch(`/api/movies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(movie)
+    })
+    return response.json()
+}
+
+// 5. Eliminare film - DELETE
+const deleteMovie = async (id: number) => {
+    const response = await fetch(`/api/movies/${id}`, {
+        method: 'DELETE'
+    })
+    return response.json()
+}
+```
+</details>
+
+---
+
 ### 4.2 Status Codes: Il Linguaggio delle Risposte
 
 > **🤔 Domanda**: Come fa il client a sapere se la richiesta è andata a buon fine? Come distingue tra "film non trovato" e "errore server"?
@@ -4522,22 +4629,53 @@ export function withRateLimit(
 **404 Not Found** - La risorsa richiesta (film 99999) non esiste. Non è un errore di validazione (400) o di permessi (403), ma semplicemente la risorsa non c'è.
 </details>
 
-#### ✏️ Esercizio Pratico 4.2.1
+#### ✏️ Esercizio Pratico 5.2: Gestire Errori HTTP con Status Codes
 
-Implementa una funzione che gestisce diversi casi d'errore:
+> **🎯 Obiettivo:** Implementare error handling robusto che distingue tra diversi tipi di errori HTTP.
+
+**[Passo 1: Enunciato]**
+Implementa una funzione `handleApiError` che gestisce diversi status codes HTTP e lancia errori con messaggi appropriati:
 
 ```typescript
 async function handleApiError(response: Response) {
-    // TODO: Gestisci status codes appropriati
-    // - 404 → "Not found"
-    // - 401 → "Unauthorized"
-    // - 500 → "Server error"
-    // - Altro → "Unknown error"
+    // Implementa la gestione degli errori
+    // 404 → "Not found"
+    // 401 → "Unauthorized"
+    // 403 → "Forbidden"
+    // 429 → "Too many requests"
+    // 500 → "Server error"
+    // Altro → "Unknown error"
 }
 ```
 
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come distinguo errori client (4xx) da errori server (5xx)?
+* Quali status codes richiedono azione dell'utente (login, retry) vs azione del sistema?
+* Perché è meglio lanciare Error custom invece di retornare response?
+* Come fornisci messaggi di errore utente-friendly?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+async function handleApiError(response: Response) {
+    // Implementa switch case per status codes
+}
+
+// Test
+const badResponse = new Response(null, { status: 404 })
+await handleApiError(badResponse) // Dovrebbe lanciare: "Not found"
+```
+
 <details>
-<summary>✅ Soluzione</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Gli status codes HTTP segnalano tipi di errore diversi. Client errors (4xx) indicano problemi con la richiesta dell'utente. Server errors (5xx) indicano problemi del sistema. `switch/case` è l'ideale per branching multi-condizione. Lanciare Error consente `try/catch` e permette messaggi specifici per UX. Il pattern garantisce gestione consistente degli errori in tutta l'app.
+
+**Soluzione Completa:**
 
 ```typescript
 async function handleApiError(response: Response) {
@@ -4555,6 +4693,17 @@ async function handleApiError(response: Response) {
         default:
             throw new Error(`Unknown error: ${response.status}`)
     }
+}
+
+// Utilizzo
+try {
+    const response = await fetch('/api/movies/999')
+    if (!response.ok) {
+        await handleApiError(response)
+    }
+    const data = await response.json()
+} catch (error) {
+    console.error(error.message) // Messaggio user-friendly
 }
 ```
 </details>
@@ -4877,9 +5026,12 @@ if (success && data) {
 **Mutualmente esclusivi**: Se `success === true`, ci sarà `data` ma NON `error`. Se `success === false`, ci sarà `error` ma NON `data`. Usare `?` rende esplicito che non saranno mai entrambi presenti.
 </details>
 
-#### ✏️ Esercizio Pratico 4.4.1
+#### ✏️ Esercizio Pratico 5.3: Standardizzare Risposte API
 
-Standardizza questa API con il pattern `ApiResponse`:
+> **🎯 Obiettivo:** Implementare pattern standardizzato per risposte API che consente gestione consistente di successi ed errori.
+
+**[Passo 1: Enunciato]**
+Standardizza questa funzione API inconsistente usando il pattern `ApiResponse<T>`:
 
 ```typescript
 // API attuale (inconsistente)
@@ -4889,10 +5041,45 @@ async function getMovie(id: number) {
 }
 ```
 
-<details>
-<summary>✅ Soluzione</summary>
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come wrappi successo vs errore in un formato uniforme?
+* Perché `success` booleano è il primo campo nel pattern?
+* Quando usi `data` vs `error` in ApiResponse?
+* Come gestisci HTTP errors vs eccezioni JavaScript nello stesso pattern?
+
+<br/>
+
+**⌨️ Template Iniziale**
 
 ```typescript
+interface ApiResponse<T> {
+    success: boolean
+    data?: T
+    error?: string
+    statusCode?: number
+}
+
+async function getMovie(id: number): Promise<ApiResponse<Movie>> {
+    // Implementa pattern standardizzato
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `ApiResponse<T>` wrapper standard per tutte le risposte API. `success` booleano indica risultato immediato. `data` contiene payload solo su successo. `error` contiene messaggio solo su fallimento. `statusCode` espone HTTP status per logging/debugging. Try/catch gestisce eccezioni network. Pattern garantisce consistenza cross-API e simplify error handling nel client.
+
+**Soluzione Completa:**
+
+```typescript
+interface ApiResponse<T> {
+    success: boolean
+    data?: T
+    error?: string
+    statusCode?: number
+}
+
 async function getMovie(id: number): Promise<ApiResponse<Movie>> {
     try {
         const response = await fetch(`/api/movies/${id}`)
@@ -4915,10 +5102,18 @@ async function getMovie(id: number): Promise<ApiResponse<Movie>> {
     } catch (error) {
         return {
             success: false,
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
             statusCode: 500
         }
     }
+}
+
+// Utilizzo
+const result = await getMovie(123)
+if (result.success && result.data) {
+    console.log('Movie:', result.data)
+} else {
+    console.error('Error:', result.error)
 }
 ```
 </details>
