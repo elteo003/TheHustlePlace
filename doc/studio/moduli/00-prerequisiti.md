@@ -6862,6 +6862,91 @@ module.exports = {
 }
 ```
 
+#### ✏️ Esercizio Pratico 9.1: Costruire Layout Responsive con Tailwind
+
+> **🎯 Obiettivo:** Applicare approccio mobile-first con Tailwind per creare layout adattivi che funzionano su tutti i device.
+
+**[Passo 1: Enunciato]**
+Crea una griglia di card responsive con Tailwind che:
+1. Mostra 1 colonna su mobile
+2. Mostra 2 colonne su tablet (md)
+3. Mostra 3 colonne su desktop (lg)
+4. Card hanno padding, shadow, border-radius e hover effect
+5. Hover mostra leggera trasformazione visiva
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Perché mobile-first è meglio di desktop-first per responsive design?
+* Come funzionano i breakpoint Tailwind (md:, lg:, xl:)?
+* Quali classi usi per creare una griglia responsive?
+* Come crei hover effects smooth con Tailwind?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```tsx
+function MovieGrid({ movies }: { movies: Movie[] }) {
+    return (
+        <div className="">
+            {/* Grid responsive */}
+        </div>
+    )
+}
+```
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Mobile-first means default styles sono per mobile, poi aggiungi breakpoints per schermi più grandi. `grid` crea CSS Grid layout. `grid-cols-1` è default (mobile), `md:grid-cols-2` attiva a 768px+, `lg:grid-cols-3` a 1024px+. `gap` aggiunge spacing tra cards. `transition` + `hover:` crea smooth hover effects. `shadow-lg` e `hover:shadow-xl` aggiungono depth perception.
+
+**Soluzione Completa:**
+
+```tsx
+function MovieGrid({ movies }: { movies: Movie[] }) {
+    return (
+        <div className="
+            grid 
+            grid-cols-1 
+            md:grid-cols-2 
+            lg:grid-cols-3 
+            gap-6 
+            p-4
+        ">
+            {movies.map(movie => (
+                <div 
+                    key={movie.id}
+                    className="
+                        bg-gray-900 
+                        rounded-lg 
+                        p-4 
+                        shadow-lg 
+                        hover:shadow-xl 
+                        transition-shadow 
+                        duration-300
+                        hover:-translate-y-1
+                        cursor-pointer
+                    "
+                >
+                    <h3 className="text-white font-bold mb-2">{movie.title}</h3>
+                    <p className="text-gray-400 text-sm">{movie.overview}</p>
+                </div>
+            ))}
+        </div>
+    )
+}
+```
+
+**Breakpoint reference:**
+- Mobile: default (0px+)
+- `sm:` 640px+
+- `md:` 768px+
+- `lg:` 1024px+
+- `xl:` 1280px+
+- `2xl:` 1536px+
+</details>
+
 ---
 
 ## 10. Pattern e Best Practices
@@ -6990,6 +7075,113 @@ class ErrorBoundary extends Component<Props, State> {
     }
 }
 ```
+
+#### ✏️ Esercizio Pratico 10.1: Implementare Error Boundary
+
+> **🎯 Obiettivo:** Creare Error Boundary React che cattura errori nei children e mostra UI di fallback invece di crashare l'intera app.
+
+**[Passo 1: Enunciato]**
+Implementa un ErrorBoundary che:
+1. Cattura errori nei children con `getDerivedStateFromError`
+2. Mostra UI di fallback quando c'è errore
+3. Logga l'errore con `componentDidCatch` (opzionale, best practice)
+4. Supporta reset dello stato error
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Perché Error Boundaries devono essere class components, non functional components?
+* Cosa fa `getDerivedStateFromError` vs `componentDidCatch`?
+* Come previeni che un singolo errore crasha tutta l'app?
+* Quando è utile un Error Boundary nelle applicazioni React?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+'use client'
+import { Component, ReactNode } from 'react'
+
+interface Props {
+    children: ReactNode
+    fallback?: ReactNode
+}
+
+interface State {
+    hasError: boolean
+    error: Error | null
+}
+
+class ErrorBoundary extends Component<Props, State> {
+    state: State = { hasError: false, error: null }
+    
+    // Implementa getDerivedStateFromError
+    
+    // Implementa componentDidCatch (opzionale, per logging)
+    
+    // Implementa render con fallback UI
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Error Boundaries sono l'unico modo di catturare errori rendering in component tree React. Devono essere class components perché hooks non supportano error handling lifecycle. `getDerivedStateFromError` aggiorna state quando errore, triggerando fallback UI. `componentDidCatch` utile per logging errors a servizio monitoraggio. Children sono wrappati e errors sono isolated, previenting app-wide crash. Pattern essenziale per production apps.
+
+**Soluzione Completa:**
+
+```typescript
+'use client'
+import { Component, ReactNode } from 'react'
+
+interface Props {
+    children: ReactNode
+    fallback?: ReactNode
+}
+
+interface State {
+    hasError: boolean
+    error: Error | null
+}
+
+class ErrorBoundary extends Component<Props, State> {
+    state: State = { hasError: false, error: null }
+    
+    static getDerivedStateFromError(error: Error): State {
+        return { hasError: true, error }
+    }
+    
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        // Log error to monitoring service
+        console.error('Error caught by boundary:', error, errorInfo)
+    }
+    
+    render() {
+        if (this.state.hasError) {
+            return this.props.fallback || (
+                <div className="p-4 bg-red-900 text-white rounded">
+                    <h2 className="font-bold">Something went wrong</h2>
+                    <p className="text-sm mt-2">
+                        {this.state.error?.message || 'An unexpected error occurred'}
+                    </p>
+                </div>
+            )
+        }
+        
+        return this.props.children
+    }
+}
+
+// Utilizzo
+function App() {
+    return (
+        <ErrorBoundary fallback={<div>Custom fallback UI</div>}>
+            <BuggyComponent />
+        </ErrorBoundary>
+    )
+}
+```
+</details>
 
 ---
 
