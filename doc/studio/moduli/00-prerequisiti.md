@@ -5712,8 +5712,16 @@ const unsafe = <div dangerouslySetInnerHTML={{ __html: userInput }} />
 Content-Security-Policy: script-src 'self'
 ```
 
-**🔬 Esercizio**: Trova la vulnerabilità:
+#### ✏️ Esercizio Pratico 7.1: Prevenire Vulnerabilità XSS
+
+> **🎯 Obiettivo:** Identificare e prevenire vulnerabilità XSS in componenti React che renderizzano input utente.
+
+**[Passo 1: Enunciato]**
+Trova e risolvi la vulnerabilità XSS in questo componente:
+
 ```typescript
+import { marked } from 'marked'
+
 export function SearchResults({ query }: { query: string }) {
     return (
         <div>
@@ -5723,6 +5731,78 @@ export function SearchResults({ query }: { query: string }) {
     )
 }
 ```
+
+**Tip**: Prova con input `<script>alert('XSS')</script>` o `<img src=x onerror=alert('XSS')>`.
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale prop React è vulnerabile a XSS quando usata con input untrusted?
+* `dangerouslySetInnerHTML` bypassa auto-escaping di React: cosa usare al suo posto?
+* Come sanitizzi HTML prima di renderizzarlo con `dangerouslySetInnerHTML`?
+* In quali casi `dangerouslySetInnerHTML` è sicuro?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+export function SearchResults({ query }: { query: string }) {
+    // Implementa protezione XSS
+    return (
+        <div>
+            <h2>Risultati per: {query}</h2>
+            {/* Renderizza query in modo sicuro */}
+        </div>
+    )
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `dangerouslySetInnerHTML` passa raw HTML al DOM, bypanting auto-escaping di React. Input utente non trusted deve essere sanitizzato prima. DOMPurify rimuove script/malicious tags. `marked()` converte markdown in HTML ma può contenere XSS vectors. React auto-escaping su `{query}` è sicuro. Pattern: sanitize + dangerouslySetInnerHTML per contenuto trusted.
+
+**Soluzione Completa:**
+
+```typescript
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+export function SearchResults({ query }: { query: string }) {
+    // ✅ Sanitizza HTML prima di renderizzare
+    const sanitizedHTML = DOMPurify.sanitize(marked(query))
+    
+    return (
+        <div>
+            <h2>Risultati per: {query}</h2>
+            {/* ✅ Solo HTML sanitizzato */}
+            <div dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+        </div>
+    )
+}
+
+// Alternativa (senza markdown):
+export function SearchResults({ query }: { query: string }) {
+    return (
+        <div>
+            {/* ✅ React auto-escaping sempre sicuro */}
+            <h2>Risultati per: {query}</h2>
+        </div>
+    )
+}
+```
+
+**Test di sicurezza:**
+```typescript
+// Input malevolo
+const maliciousInput = '<script>alert("XSS")</script>'
+// Con DOMPurify: script rimosso ✅
+// Senza DOMPurify: XSS eseguito ❌
+```
+</details>
 
 ---
 
@@ -5752,6 +5832,91 @@ db.query(query, [username])  // Params escaped automaticamente
 const user = await User.findOne({ where: { username } })
 // TypeORM, Prisma, Sequelize → Parameterized queries automatiche
 ```
+
+#### ✏️ Esercizio Pratico 7.2: Prevenire SQL Injection
+
+> **🎯 Obiettivo:** Implementare query database sicure usando parameterized queries per prevenire SQL injection.
+
+**[Passo 1: Enunciato]**
+Trova e risolvi la vulnerabilità SQL injection in queste funzioni di autenticazione:
+
+```typescript
+// Implementazione VULNERABILE
+async function authenticateUser(username: string, password: string) {
+    const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`
+    const result = await db.query(query)
+    return result[0]
+}
+
+// Test con input malevolo
+await authenticateUser("admin", "password' OR '1'='1")
+// → Ritorna tutti gli utenti! ❌
+```
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Perché la string interpolation in query SQL è pericolosa?
+* Come funzionano parameterized queries per prevenire injection?
+* Perché i parametri sono escapati automaticamente dal driver database?
+* Perché gli ORM sono più sicuri di raw SQL?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// Implementa versione sicura
+async function authenticateUserSafe(username: string, password: string) {
+    // Usa parameterized queries
+}
+
+// Assumi che db.query esiste e supporta parametri
+// db.query(query: string, params: any[])
+```
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Parameterized queries separano logica SQL da dati. Placeholder `?` segnalano parametri che il driver escape sostituisce. Input speciale come `'OR '1'='1` viene escaped a string literal, non parte del SQL. ORM astrae raw SQL e forza prepared statements. Pattern elimina rischio injection anche con input malizioso.
+
+**Soluzione Completa:**
+
+```typescript
+// ✅ Versione sicura con parameterized queries
+async function authenticateUserSafe(username: string, password: string) {
+    const query = 'SELECT * FROM users WHERE username = ? AND password = ?'
+    const result = await db.query(query, [username, password])
+    return result[0]
+}
+
+// Test con stesso input malevolo
+await authenticateUserSafe("admin", "password' OR '1'='1")
+// → Nessun match, input trattato come stringa normale ✅
+
+// Con ORM (ancora più sicuro):
+async function authenticateUserORM(username: string, password: string) {
+    const user = await User.findOne({ 
+        where: { 
+            username, 
+            password // ORM genera parameterized query automaticamente
+        } 
+    })
+    return user
+}
+```
+
+**Confronto visuale:**
+```sql
+-- Vulnerabile:
+SELECT * FROM users WHERE username = 'admin' OR '1'='1'
+                    ^ String interpolation inserita direttamente
+
+-- Sicuro:
+SELECT * FROM users WHERE username = 'admin'' OR ''1''=''1'
+                    ^ Parameter escaped come string literal
+```
+</details>
 
 ---
 
@@ -5901,6 +6066,91 @@ Access-Control-Allow-Origin: *  // Permette TUTTI gli origins!
 // ✅ Sicuro
 Access-Control-Allow-Origin: https://trusted-site.com
 ```
+
+#### ✏️ Esercizio Pratico 7.3: Configurare CORS in Next.js Middleware
+
+> **🎯 Obiettivo:** Implementare CORS configurato correttamente in Next.js middleware per permettere richieste cross-origin sicure.
+
+**[Passo 1: Enunciato]**
+Implementa middleware CORS per un'API Next.js che:
+1. Permette richieste solo da `https://trusted-app.com`
+2. Supporta metodi GET, POST, PUT, DELETE
+3. Permette headers `Content-Type` e `Authorization`
+4. Cache preflight per 1 giorno
+5. Rifiuta origins non autorizzati con 403
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Cosa fa `Access-Control-Allow-Origin`?
+* Perché `*` è pericoloso con credenziali/autenticazione?
+* Cosa sono preflight requests e quando vengono fatte?
+* Come gestisci OPTIONS requests nel middleware?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+    // Implementa logica CORS
+}
+
+export const config = {
+    matcher: '/api/:path*'
+}
+```
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Middleware intercetta requests e aggiunge CORS headers alla response. Verifica origin contro whitelist, rifiuta origins non autorizzati. OPTIONS preflight richiede risposta anticipata 204 senza body. Headers CORS propagano permissions al browser che enforce Same-Origin Policy. Max-Age cachea preflight per ridurre overhead. Pattern protegge API da accesso non autorizzato.
+
+**Soluzione Completa:**
+
+```typescript
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+const ALLOWED_ORIGINS = ['https://trusted-app.com']
+
+export function middleware(request: NextRequest) {
+    const origin = request.headers.get('origin')
+    
+    // Verifica origin autorizzato
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+        return new NextResponse(null, { status: 403 })
+    }
+    
+    const response = NextResponse.next()
+    
+    // Set CORS headers se origin è valido
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+        response.headers.set('Access-Control-Allow-Origin', origin)
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.set('Access-Control-Max-Age', '86400')
+    }
+    
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+        return new NextResponse(null, { 
+            status: 204,
+            headers: response.headers
+        })
+    }
+    
+    return response
+}
+
+export const config = {
+    matcher: '/api/:path*'
+}
+```
+</details>
 
 ---
 
