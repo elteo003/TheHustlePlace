@@ -2217,15 +2217,40 @@ function MovieCard({
 - **Auto-completamento**: L'IDE suggerisce le props disponibili
 - **Refactoring**: Se cambi `MovieCardProps`, TypeScript mostra tutti i posti da aggiornare
 
-#### ✏️ Esercizio Pratico 2.2.1
+#### ✏️ Esercizio Pratico 3.1: Componente Rating
 
+> **🎯 Obiettivo:** Creare un componente React type-safe che gestisce props obbligatorie e opzionali con default values.
+
+**[Passo 1: Enunciato]**
 Crea un componente `Rating` che:
-- Accetta una prop `value: number` (obbligatorio)
-- Accetta una prop opzionale `max: number` (default: 10)
-- Mostra `value / max` come "8.5/10"
+1. Accetta una prop `value: number` (obbligatorio)
+2. Accetta una prop opzionale `max: number` (default: 10)
+3. Mostra `value / max` come "8.5/10"
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come definisci interface TypeScript per props obbligatorie vs opzionali?
+* Quale sintassi assegna valore di default quando destrutturi props?
+* Come funziona rendering condizionale in JSX?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// Definisci interface RatingProps
+
+function Rating({ value, max }: RatingProps) {
+    // Scrivi qui il rendering
+}
 
 <details>
-<summary>✅ Soluzione</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Le interfacce TypeScript documentano le props. Il destructuring con `max = 10` assegna default se la prop manca. JSX renderizza espressioni JavaScript con `{}`, permettendo calcoli inline.
+
+**Soluzione Completa:**
 
 ```typescript
 interface RatingProps {
@@ -2323,21 +2348,40 @@ setFormData({ ...formData, name: 'Nuovo nome' })
 
 **🎓 Regola d'oro**: In React, **non mutare mai** lo stato direttamente! Crea sempre nuovi oggetti/array.
 
-#### ✏️ Esercizio Pratico 2.3.1
+#### ✏️ Esercizio Pratico 3.2: Gestire Stato con useState
 
+> **🎯 Obiettivo:** Padroneggiare useState per gestire stato locale e aggiornamenti immutabili di array e valori complessi.
+
+**[Passo 1: Enunciato]**
 Crea un componente `MovieList` con:
-1. Stato `selectedMovie: Movie | null`
-2. Bottone "Aggiungi film" che aggiunge un film alla lista
-3. Click su un film lo seleziona
+1. Stato `selectedMovie: Movie | null` per tracciare il film selezionato
+2. Bottone "Aggiungi film" che aggiunge un nuovo film all'array
+3. Click su un film lo seleziona (aggiorna `selectedMovie`)
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come inizializzi stato con `useState` per array e valore nullabile?
+* Come aggiungi elemento ad array senza mutare lo stato esistente?
+* Come renderizzi condizionalmente UI basata su stato?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+function MovieList() {
+    // Definisci qui i tuoi useState
+    // Implementa addMovie
+    // Implementa rendering condizionale
+}
 
 <details>
-<summary>💡 Suggerimento</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
 
-Usa due `useState`: uno per l'array dei film, uno per il film selezionato.
-</details>
+**Spiegazione della Logica**: useState ritorna `[value, setter]`. Il setter accetta nuovo valore che sostituisce quello precedente. Array spread `[...movies, newMovie]` crea nuovo array immutabile. Rendering condizionale `{selectedMovie && ...}` mostra componente se `selectedMovie` è truthy.
 
-<details>
-<summary>✅ Soluzione Guidata</summary>
+**Soluzione Completa:**
 
 ```typescript
 function MovieList() {
@@ -2345,7 +2389,11 @@ function MovieList() {
     const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
     
     const addMovie = () => {
-        const newMovie: Movie = { /* dati film */ }
+        const newMovie: Movie = { 
+            id: Date.now(), // ID temporaneo
+            title: 'Nuovo Film',
+            // ... altre props
+        }
         setMovies([...movies, newMovie]) // ✅ Nuovo array
     }
     
@@ -2772,6 +2820,97 @@ function SimpleButton({ text }: { text: string }) {
 }
 ```
 
+#### ✏️ Esercizio Pratico 2.5: Prevenire Loop con useCallback
+
+> **🎯 Obiettivo:** Implementare `useCallback` per evitare loop infiniti quando funzioni sono dipendenze di `useEffect`.
+
+**[Passo 1: Enunciato]**
+Hai un componente che carica film da API al mount. Attualmente crea un loop infinito perché `loadMovies` viene ricreata ad ogni render. Usa `useCallback` per risolvere:
+
+```typescript
+function MoviesPage() {
+    const [movies, setMovies] = useState<Movie[]>([])
+    const [loading, setLoading] = useState(true)
+    
+    const loadMovies = async () => {
+        setLoading(true)
+        const response = await fetch('/api/movies')
+        const data = await response.json()
+        setMovies(data)
+        setLoading(false)
+    }
+    
+    useEffect(() => {
+        loadMovies() // ⚠️ Loop infinito!
+    }, [loadMovies]) // loadMovies cambia ad ogni render
+    
+    return <div>{loading ? 'Loading...' : movies.map(m => <MovieCard key={m.id} movie={m} />)}</div>
+}
+```
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Perché `loadMovies` viene ricreata ad ogni render?
+* Come mantieni la stessa reference di `loadMovies` tra render?
+* Quali dipendenze deve avere `useCallback` per `loadMovies`?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+function MoviesPage() {
+    const [movies, setMovies] = useState<Movie[]>([])
+    const [loading, setLoading] = useState(true)
+    
+    // Usa useCallback per memoizzare loadMovies
+    const loadMovies = async () => {
+        setLoading(true)
+        const response = await fetch('/api/movies')
+        const data = await response.json()
+        setMovies(data)
+        setLoading(false)
+    }
+    
+    useEffect(() => {
+        loadMovies()
+    }, [loadMovies])
+    
+    return <div>{loading ? 'Loading...' : movies.map(m => <MovieCard key={m.id} movie={m} />)}</div>
+}
+```
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Senza `useCallback`, `loadMovies` è una nuova funzione ad ogni render. Questo causa loop perché `useEffect` vede una nuova dipendenza e ri-esegue. `useCallback` memoizza la funzione, restituendo la stessa reference se le dipendenze non cambiano. Array vuoto `[]` significa "nessuna dipendenza esterna", quindi la funzione è stabile.
+
+**Soluzione Completa:**
+
+```typescript
+function MoviesPage() {
+    const [movies, setMovies] = useState<Movie[]>([])
+    const [loading, setLoading] = useState(true)
+    
+    // ✅ useCallback per stabilizzare la funzione
+    const loadMovies = useCallback(async () => {
+        setLoading(true)
+        const response = await fetch('/api/movies')
+        const data = await response.json()
+        setMovies(data)
+        setLoading(false)
+    }, []) // Array vuoto = nessuna dipendenza = funzione sempre stabile
+    
+    useEffect(() => {
+        loadMovies()
+    }, [loadMovies]) // Ora loadMovies è stabile, useEffect esegue solo una volta
+    
+    return <div>{loading ? 'Loading...' : movies.map(m => <MovieCard key={m.id} movie={m} />)}</div>
+}
+```
+</details>
+
 **Esempio dal progetto**:
 ```22:91:hooks/useMoviesWithTrailers.ts
     const loadMovies = useCallback(async () => {
@@ -2911,9 +3050,12 @@ const doubleCount = useMemo(() => count * 2, [count])
 **Regola**: useMemo solo se il calcolo costa più del controllo delle dipendenze.
 </details>
 
-#### ✏️ Esercizio Pratico 2.5.1
+#### ✏️ Esercizio Pratico 2.4: Ottimizzazione con useMemo
 
-Ottimizza questo componente:
+> **🎯 Obiettivo:** Utilizzare `useMemo` per ottimizzare calcoli costosi e prevenire mutazioni accidentali di array.
+
+**[Passo 1: Enunciato]**
+Ottimizza questo componente che calcola la media dei voti dei top 10 film, risolvendo problemi di performance e mutazione:
 
 ```typescript
 function TopRatedMovies({ movies }: { movies: Movie[] }) {
@@ -2925,12 +3067,32 @@ function TopRatedMovies({ movies }: { movies: Movie[] }) {
 }
 ```
 
-Problemi da risolvere:
-1. `sort` muta l'array originale!
-2. Calcoli costosi a ogni render
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale problema causa `movies.sort()` senza spread operator?
+* Come eviti di ricalcolare `top10` e `average` ad ogni render?
+* Quali dipendenze deve avere il primo `useMemo`?
+* Il secondo `useMemo` dipende da cosa?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+function TopRatedMovies({ movies }: { movies: Movie[] }) {
+    // Usa useMemo per ottimizzare calcoli
+    
+    return <div>Media voti top 10: {average}</div>
+}
+```
 
 <details>
-<summary>✅ Soluzione</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `sort()` muta l'array originale, violando immutabilità. `useMemo` memorizza calcoli costosi, ri-eseguendoli solo quando le dipendenze cambiano. Il secondo `useMemo` dipende da `top10` per evitare ricalcoli quando `movies` non cambia ma è già stato filtrato. Immutabilità e memoizzazione migliorano performance e prevedibilità.
+
+**Soluzione Completa:**
 
 ```typescript
 function TopRatedMovies({ movies }: { movies: Movie[] }) {
@@ -3161,23 +3323,53 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
 }
 ```
 
-#### ✏️ Esercizio Pratico 2.6.1
+#### ✏️ Esercizio Pratico 3.3: Custom Hook per Gestione Stato Booleano
 
-Crea un custom hook `useToggle` che gestisce uno stato booleano con una funzione toggle.
+> **🎯 Obiettivo:** Creare un custom hook riutilizzabile che gestisce stato booleano con funzioni toggle, seguendo le best practice di React hooks.
 
-**Requisiti**:
-- Stato iniziale configurabile
-- Funzione `toggle` per invertire lo stato
-- Funzione `setValue` per impostare direttamente
+**[Passo 1: Enunciato]**
+Crea un custom hook `useToggle` che:
+1. Accetta un valore iniziale configurabile (default: `false`)
+2. Restituisce lo stato corrente `value`
+3. Restituisce una funzione `toggle` per invertire lo stato
+4. Restituisce una funzione `setValue` per impostare direttamente lo stato
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come struttura il custom hook per rispettare la convenzione dei nomi React?
+* Quale hook base React gestisce stato locale?
+* Come ottimizzi `toggle` per evitare ri-creazioni inutili?
+* Perché usare `as const` nel return del hook?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// Crea il custom hook useToggle
+function useToggle(initialValue = false) {
+    // Implementa qui la logica del hook
+}
+
+// Utilizzo nel componente
+function Modal() {
+    // Usa il custom hook
+    return (
+        <div>
+            <button onClick={...}>Toggle</button>
+            {/* Mostra contenuto se aperto */}
+        </div>
+    )
+}
+```
 
 <details>
-<summary>💡 Suggerimento</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
 
-Usa `useState` per il booleano, restituisci `[value, toggle, setValue]`.
-</details>
+**Spiegazione della Logica**: Custom hooks estraggono logica riutilizzabile. `useState` gestisce lo stato locale. `useCallback` memoizza `toggle` per evitare ri-creazioni. `as const` rende il tipo del return tuple readonly, utile per destructuring stabile. La convenzione `use*` permette a React di applicare le regole degli hooks.
 
-<details>
-<summary>✅ Soluzione</summary>
+**Soluzione Completa:**
 
 ```typescript
 function useToggle(initialValue = false) {
