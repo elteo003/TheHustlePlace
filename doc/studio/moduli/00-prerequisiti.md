@@ -969,11 +969,338 @@ newCard.className = 'movie-card'
 document.body.appendChild(newCard) // Aggiunge al DOM
 ```
 
-**✅ Checkpoint Sezione 1**:
-- [ ] Creare un file HTML con struttura semantica
-- [ ] Aggiungere CSS con selettori di classe
-- [ ] Scrivi una funzione JavaScript che manipola il DOM
-- [ ] Crea un event listener per un bottone
+### ✏️ Esercizio Pratico 1.1: Creare una Pagina HTML Semantica
+
+> **🎯 Obiettivo:** Padroneggiare la creazione di una struttura HTML semantica con elementi header, nav, main, article e footer.
+
+**[Passo 1: Enunciato]**
+Crea un file HTML completo per una pagina che mostra i dettagli di un film, includendo:
+1. Un header con titolo del sito e nav per navigazione
+2. Una sezione main con article contenente titolo film, immagine poster, descrizione
+3. Un footer con copyright
+4. Usa TUTTI elementi semantici: `<header>`, `<nav>`, `<main>`, `<article>`, `<footer>`, `<section>`
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale elemento semantico HTML rappresenta il contenuto principale della pagina?
+* Come struttureresti il layout per avere navigazione in cima e info copyright in basso?
+* Quale attributo HTML è essenziale per immagini accessibilità?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```html
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Il Tuo Film</title>
+</head>
+<body>
+    <!-- Inserisci qui la tua struttura semantica -->
+</body>
+</html>
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Gli elementi semantici (`<header>`, `<nav>`, `<main>`, ecc.) danno significato alla struttura HTML, rendendo la pagina più accessibile per screen reader e motori di ricerca. Il tag `<article>` identifica contenuto indipendente e riutilizzabile.
+
+**Soluzione Completa:**
+
+```html
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Hustle Place - Interstellar</title>
+</head>
+<body>
+    <header>
+        <h1>The Hustle Place</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/movies">Film</a>
+            <a href="/tv">Serie TV</a>
+        </nav>
+    </header>
+    
+    <main>
+        <article>
+            <section>
+                <h2>Interstellar</h2>
+                <img src="/interstellar-poster.jpg" alt="Poster del film Interstellar" />
+            </section>
+            <section>
+                <p>Un gruppo di esploratori viaggia attraverso un wormhole nello spazio per salvare l'umanità...</p>
+                <p><strong>Anno:</strong> 2014</p>
+                <p><strong>Rating:</strong> 8.6/10</p>
+            </section>
+        </article>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 The Hustle Place. Tutti i diritti riservati.</p>
+    </footer>
+</body>
+</html>
+```
+</details>
+
+---
+
+### ✏️ Esercizio Pratico 1.2: Stilizzare con CSS Selettori e Proprietà
+
+> **🎯 Obiettivo:** Applicare CSS usando selettori tag, classi e ID per controllare layout, colori e spaziatura.
+
+**[Passo 1: Enunciato]**
+Aggiungi uno stile CSS alla pagina HTML dell'esercizio 1.1 che:
+1. Rende sfondo scuro e testo bianco
+2. Stilizza `.movie-card` con bordo arrotondato, padding, sfondo scuro
+3. Centra contenuti con flexbox
+4. Stilizza header con sfondo degradato
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale proprietà CSS controlla lo sfondo della pagina?
+* Come usi flexbox per centrare elementi verticalmente e orizzontalmente?
+* Quale proprietà CSS crea bordi arrotondati?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```css
+/* Scrivi qui il tuo CSS */
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: I selettori CSS permettono targeting preciso degli elementi. Flexbox (`display: flex`, `justify-content`, `align-items`) è lo strumento moderno per layout responsive. Border-radius crea design moderni senza immagini.
+
+**Soluzione Completa:**
+
+```css
+/* Reset e base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+/* Header styling */
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 1rem;
+}
+
+/* Main content */
+main {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+article {
+    max-width: 800px;
+}
+
+/* Movie card styling */
+.movie-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.movie-card img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1rem;
+    background: #111;
+    margin-top: 2rem;
+}
+```
+</details>
+
+---
+
+### ✏️ Esercizio Pratico 1.3: Manipolazione DOM con JavaScript
+
+> **🎯 Obiettivo:** Usare JavaScript per selezionare elementi DOM, modificare contenuto e aggiungere interattività.
+
+**[Passo 1: Enunciato]**
+Crea uno script JavaScript che:
+1. Seleziona un bottone `<button id="toggle-details">Mostra Dettagli</button>`
+2. Aggiunge event listener che mostra/nasconde una sezione al click
+3. Cambia testo bottone tra "Mostra Dettagli" e "Nascondi Dettagli"
+4. Usa `querySelector`, `addEventListener`, `classList.toggle`
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale metodo DOM seleziona un elemento per ID?
+* Come aggiungi un listener per evento click a un elemento?
+* Quale metodo `classList` alterna presenza classe CSS?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```javascript
+// Seleziona elemento bottone
+
+// Aggiungi event listener
+
+// Toggle visibilità contenuto
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `querySelector` e `getElementById` selezionano elementi DOM. `addEventListener` iscrive callback ad eventi. `classList.toggle` aggiunge/rimuove classe CSS se è già presente/assente. Il DOM rappresenta HTML come oggetti JavaScript modificabili.
+
+**Soluzione Completa:**
+
+```javascript
+// Aspetta che DOM sia pronto
+document.addEventListener('DOMContentLoaded', () => {
+    // Seleziona elementi
+    const button = document.getElementById('toggle-details');
+    const detailsSection = document.querySelector('.movie-details');
+    
+    if (button && detailsSection) {
+        // Aggiungi event listener
+        button.addEventListener('click', () => {
+            // Toggle visibilità
+            detailsSection.classList.toggle('hidden');
+            
+            // Cambia testo bottone
+            const isHidden = detailsSection.classList.contains('hidden');
+            button.textContent = isHidden ? 'Mostra Dettagli' : 'Nascondi Dettagli';
+        });
+    }
+});
+```
+
+Con CSS corrispondente:
+
+```css
+.movie-details.hidden {
+    display: none;
+}
+```
+</details>
+
+---
+
+### ✏️ Esercizio Pratico 1.4: Fetch API per Caricare Dati
+
+> **🎯 Obiettivo:** Usare Fetch API con async/await per caricare dati da API REST e gestire errori.
+
+**[Passo 1: Enunciato]**
+Scrivi una funzione `loadMovies()` che:
+1. Usa `async/await` per fetch API
+2. Carica dati da `https://api.example.com/movies` (endpoint mock)
+3. Gestisce errori con try/catch
+4. Ritorna array film o array vuoto su errore
+5. Mostra loading state durante fetch
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come dichiari funzione asincrona in JavaScript moderno?
+* Quale metodo di response object converte JSON in oggetto JavaScript?
+* Dove posizioni errore handling in codice asincrono?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```javascript
+async function loadMovies() {
+    // Scrivi qui la tua implementazione
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `async/await` rende codice asincrono più leggibile. `fetch()` ritorna Promise che si risolve in Response. `.json()` parse JSON response body. Try/catch gestisce network errors e parse errors. Async functions sempre ritornano Promise.
+
+**Soluzione Completa:**
+
+```javascript
+async function loadMovies() {
+    try {
+        // Mostra loading state
+        console.log('⏳ Caricamento film...');
+        
+        // Fetch data
+        const response = await fetch('https://api.example.com/movies');
+        
+        // Verifica response OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Parse JSON
+        const data = await response.json();
+        
+        console.log('✅ Film caricati:', data);
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Errore caricamento film:', error);
+        return []; // Ritorna array vuoto su errore
+    }
+}
+
+// Uso
+loadMovies().then(movies => {
+    console.log('Totale film:', movies.length);
+});
+
+// O con async/await
+(async () => {
+    const movies = await loadMovies();
+    displayMovies(movies);
+})();
+```
+</details>
 
 ---
 
@@ -1410,37 +1737,47 @@ async function fetchMovie(id: number): Promise<Movie | null> {
 }
 ```
 
-#### ✏️ Esercizio Pratico 1.3.1
+#### ✏️ Esercizio Pratico 1.5: Caricamento Parallelo con Gestione Errori
 
+> **🎯 Obiettivo:** Padroneggiare l'uso di `Promise.allSettled` per eseguire richieste asincrone in parallelo e gestire individualmente successi e fallimenti.
+
+**[Passo 1: Enunciato]**
 Scrivi una funzione `fetchMultipleMovies(ids: number[])` che:
-1. Carica tutti i film in parallelo (non sequenziale!)
-2. Gestisce gli errori per ogni film
-3. Restituisce solo i film caricati con successo
+1. Carica tutti i film in parallelo chiamando una funzione `fetchMovie(id: number)`.
+2. Restituisce **solo** i film caricati con successo, ignorando quelli che falliscono.
 
-<details>
-<summary>💡 Suggerimento 1</summary>
+<br/>
 
-Usa `Promise.all()` per eseguire le fetch in parallelo.
-</details>
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale metodo di `Promise` (tra `all` e `allSettled`) ti permette di ottenere i risultati di *tutte* le richieste, anche se alcune falliscono?
+* Come puoi mappare l'array di ID in un array di `Promise<Movie>`?
+* Dopo aver risolto la Promise principale, quale proprietà del risultato ti indica se la richiesta è `fulfilled` o `rejected`?
 
-<details>
-<summary>💡 Suggerimento 2</summary>
+<br/>
 
-`Promise.all()` fallisce se QUALSIASI promise fallisce. Usa `Promise.allSettled()` per avere tutti i risultati, anche quelli falliti.
-</details>
-
-<details>
-<summary>✅ Soluzione Guidata</summary>
+**⌨️ Template Iniziale**
 
 ```typescript
 async function fetchMultipleMovies(ids: number[]): Promise<Movie[]> {
-    // Passo 1: Crea array di Promises
+    // Definisci qui la tua funzione
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Abbiamo utilizzato `Promise.allSettled` per assicurarci che l'esecuzione continui anche se una o più chiamate falliscono. Il `.filter()` rimuove i fallimenti, e il `.map()` estrae il `value` (il film) solo dai risultati di tipo `'fulfilled'`.
+
+**Soluzione Completa:**
+
+```typescript
+// Assumi che fetchMovie sia definito e ritorni Promise<Movie>
+async function fetchMultipleMovies(ids: number[]): Promise<Movie[]> {
     const promises = ids.map(id => fetchMovie(id))
     
-    // Passo 2: Esegui tutte in parallelo con allSettled
+    // Esegui tutte in parallelo
     const results = await Promise.allSettled(promises)
     
-    // Passo 3: Filtra solo i successi
+    // Filtra e mappa solo i successi
     const successfulMovies = results
         .filter(result => result.status === 'fulfilled')
         .map(result => (result as PromiseFulfilledResult<Movie>).value)
@@ -2258,21 +2595,38 @@ useEffect(() => {
 }, []) // Solo al mount
 ```
 
-#### ✏️ Esercizio Pratico 2.4.1
+#### ✏️ Esercizio Pratico 2.1: Timer con Cleanup
 
+> **🎯 Obiettivo:** Implementare useEffect con cleanup per gestire side effects come timer e prevenire memory leaks.
+
+**[Passo 1: Enunciato]**
 Scrivi un componente `LiveClock` che:
 1. Mostra l'ora corrente aggiornata ogni secondo
 2. Si pulisce correttamente quando il componente viene rimosso
 3. Non crea memory leak
 
-<details>
-<summary>💡 Suggerimento</summary>
+<br/>
 
-Usa `setInterval` dentro useEffect con cleanup.
-</details>
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale hook React ti permette di eseguire codice dopo il rendering?
+* Come crei un timer che esegue ogni secondo?
+* Quale return value di useEffect pulisce side effects quando il componente viene rimosso?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+function LiveClock() {
+    // Scrivi qui la tua implementazione
+}
 
 <details>
-<summary>✅ Soluzione Guidata</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `useEffect` con `[]` dependency array esegue solo al mount. Il cleanup function (return) viene chiamato al unmount, prevenendo memory leaks da timer attivi. `setInterval` ritorna ID che `clearInterval` usa per fermare il timer.
+
+**Soluzione Completa:**
 
 ```typescript
 function LiveClock() {
@@ -2288,7 +2642,7 @@ function LiveClock() {
         return () => {
             clearInterval(interval)
         }
-    }, []) // Solo al mount
+    }, []) // Solo al mount, cleanup al unmount
     
     return <div>{time.toLocaleTimeString()}</div>
 }
