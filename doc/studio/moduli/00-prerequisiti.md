@@ -5236,6 +5236,113 @@ if (cached) {
 }
 ```
 
+#### ✏️ Esercizio Pratico 6.1: Implementare Cache con TTL
+
+> **🎯 Obiettivo:** Implementare una cache in-memory con TTL per ottimizzare performance riducendo chiamate API ridondanti.
+
+**[Passo 1: Enunciato]**
+Implementa una classe `SimpleCache` che gestisce dati con TTL, includendo metodi `get` e `set`:
+
+```typescript
+// Implementa SimpleCache
+class SimpleCache<T> {
+    // Metodi da implementare:
+    // set(key: string, value: T, ttlSeconds: number): void
+    // get(key: string): T | null
+    // delete(key: string): void
+}
+
+// Test
+const cache = new SimpleCache<string>()
+cache.set('test', 'Hello', 60) // TTL 60 secondi
+const value = cache.get('test') // "Hello"
+setTimeout(() => cache.get('test'), 61000) // null (scaduto)
+```
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Come memorizzi TTL insieme al valore nella cache?
+* Come controlli se un entry è scaduto quando chiami `get`?
+* Cosa fai quando `get` trova entry scaduta: rimuovi o solo restituisci null?
+* Quale struttura dati usi per storage interno?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+interface CacheEntry<T> {
+    value: T
+    expires: number // Timestamp
+}
+
+class SimpleCache<T> {
+    private cache = new Map<string, CacheEntry<T>>()
+    
+    set(key: string, value: T, ttlSeconds: number): void {
+        // Implementa
+    }
+    
+    get(key: string): T | null {
+        // Implementa con validazione TTL
+    }
+    
+    delete(key: string): void {
+        // Implementa
+    }
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Map fornisce storage key-value efficiente O(1). CacheEntry wrappa valore con timestamp expirazione. `Date.now()` ritorna ms, quindi sommiamo `ttlSeconds * 1000`. Get verifica `expires`, rimuove entry scaduta, ritorna null se miss o expired. Pattern semplice ma efficace per cache temporanea.
+
+**Soluzione Completa:**
+
+```typescript
+interface CacheEntry<T> {
+    value: T
+    expires: number // Timestamp
+}
+
+class SimpleCache<T> {
+    private cache = new Map<string, CacheEntry<T>>()
+    
+    set(key: string, value: T, ttlSeconds: number): void {
+        const expires = Date.now() + (ttlSeconds * 1000)
+        this.cache.set(key, { value, expires })
+    }
+    
+    get(key: string): T | null {
+        const entry = this.cache.get(key)
+        if (!entry) return null // Cache miss
+        
+        // Controlla se è scaduto
+        if (Date.now() > entry.expires) {
+            this.cache.delete(key) // Rimuovi entry scaduta
+            return null
+        }
+        
+        return entry.value
+    }
+    
+    delete(key: string): void {
+        this.cache.delete(key)
+    }
+}
+
+// Utilizzo
+const cache = new SimpleCache<string>()
+cache.set('greeting', 'Hello World', 60) // 60 secondi TTL
+console.log(cache.get('greeting')) // "Hello World"
+
+setTimeout(() => {
+    console.log(cache.get('greeting')) // null (scaduto)
+}, 61000)
+```
+</details>
+
 #### 🧠 Esercizio di Ragionamento 5.1.1
 
 **Domanda**: Quale TTL impostare per questi dati?
@@ -5391,6 +5498,85 @@ async function getMovie(id: number): Promise<Movie> {
 - ✅ Cache popolata lazy (solo quando richiesta)
 
 **Quando usarlo**: Query di lettura frequenti (es: film popolari)
+
+#### ✏️ Esercizio Pratico 6.2: Implementare Cache-Aside Pattern
+
+> **🎯 Obiettivo:** Applicare pattern Cache-Aside per ottimizzare fetch dati riducendo chiamate API ridondanti.
+
+**[Passo 1: Enunciato]**
+Implementa la funzione `getMovie` usando Cache-Aside: controlla la cache prima, fai fetch da API se manca, salva il risultato in cache per le prossime richieste:
+
+```typescript
+// Implementa Cache-Aside
+async function getMovie(id: number): Promise<Movie> {
+    // 1. Controlla cache PRIMA
+    // 2. Se cache miss, fetch da API
+    // 3. Salva in cache per prossima volta
+    // 4. Restituisci risultato
+}
+```
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Perché controllare cache PRIMA invece di fetch diretto?
+* Cosa fai se cache contiene dato? E se è null (miss)?
+* Perché salvi il risultato API in cache DOPO il fetch?
+* Quale TTL è appropriato per dati che cambiano raramente?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// Assumi che SimpleCache sia implementata come esercizio 6.1
+const cache = new SimpleCache<Movie>()
+
+async function getMovie(id: number): Promise<Movie> {
+    // Implementa Cache-Aside pattern
+}
+
+// API helper
+async function fetchMovieFromAPI(id: number): Promise<Movie> {
+    const response = await fetch(`https://api.example.com/movies/${id}`)
+    return response.json()
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: Cache-Aside controlla cache PRIMA per evitare API call. Se hit, ritorna immediatamente dati veloci. Se miss, fetches da source of truth (API/database) e popola cache per richieste future. Pattern resilient perché se cache fallisce, sistema continua con API. TTL di 3600s (1h) appropriato per dati che cambiano poco.
+
+**Soluzione Completa:**
+
+```typescript
+const cache = new SimpleCache<Movie>()
+
+async function getMovie(id: number): Promise<Movie> {
+    // 1. Controlla cache PRIMA
+    const cached = cache.get(`movie:${id}`)
+    if (cached) {
+        console.log('Cache hit!')
+        return cached // ✅ Veloce!
+    }
+    
+    // 2. Cache miss: fetch da API
+    console.log('Cache miss, fetching from API...')
+    const movie = await fetchMovieFromAPI(id)
+    
+    // 3. Salva in cache per prossima volta (TTL 1h)
+    cache.set(`movie:${id}`, movie, 3600)
+    
+    return movie
+}
+
+// Test
+await getMovie(123) // Cache miss, fetch API, salva cache
+await getMovie(123) // Cache hit! Veloce!
+```
+</details>
+
+---
 
 #### 💡 Pattern 2: Write-Through
 
