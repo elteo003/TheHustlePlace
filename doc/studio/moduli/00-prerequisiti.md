@@ -3759,6 +3759,78 @@ Dashboard interattiva? → CSR
 
 ---
 
+#### ✏️ Esercizio Pratico 4.1: Scegliere la Strategia di Rendering
+
+> **🎯 Obiettivo:** Scegliere la strategia di rendering corretta (CSR, SSR, SSG, ISR) in base ai requisiti del progetto.
+
+**[Passo 1: Enunciato]**
+Per ogni scenario seguente, identifica la strategia di rendering migliore e spiega perché:
+
+1. **Sito portfolio personale** - Pagine con informazioni statiche su progetti e contatti che cambiano raramente (2-3 volte all'anno).
+2. **Dashboard analytics** - Pagina con grafici interattivi che si aggiornano ogni 30 secondi per mostrare statistiche in tempo reale.
+3. **Blog tecnologico** - Articoli pubblicati 2-3 volte a settimana, lettura intensiva, necessità di buon posizionamento su Google.
+4. **E-commerce con cataloghi** - Migliaia di prodotti che aggiungono/modificano quotidianamente, performance critica per conversioni.
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quale strategia privilegia performance (SEO, velocità) vs interattività (real-time updates)?
+* Cosa significa "dati statici" vs "dati dinamici"? Quanto spesso cambiano?
+* ISR combina SSG e SSR: in quali casi è la scelta migliore?
+* Quale strategia ha il costo di hosting più basso?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// Scenario 1: Portfolio personale
+// Strategia: _____
+// Ragionamento: 
+
+
+// Scenario 2: Dashboard analytics
+// Strategia: _____
+// Ragionamento: 
+
+
+// Scenario 3: Blog tecnologico
+// Strategia: _____
+// Ragionamento: 
+
+
+// Scenario 4: E-commerce cataloghi
+// Strategia: _____
+// Ragionamento: 
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: La scelta dipende da frequenza aggiornamenti dati, bisogno SEO, performance e costo hosting. Strategie statiche (SSG/ISR) offrono performance massima e costi bassi, ma dati devono cambiare raramente. SSR fornisce dati sempre freschi ma costo server più alto. CSR privilegia interattività ma sacrifica SEO.
+
+**Soluzione Completa:**
+
+```typescript
+// Scenario 1: Portfolio personale
+// Strategia: SSG (Static Site Generation)
+// Ragionamento: Contenuto statico che cambia raramente, performance massima, costo hosting minimo, SEO ottimale
+
+// Scenario 2: Dashboard analytics
+// Strategia: CSR (Client-Side Rendering)
+// Ragionamento: Dati in tempo reale, interattività prioritaria, nessun bisogno SEO, aggiornamenti frequenti (30s)
+
+// Scenario 3: Blog tecnologico
+// Strategia: SSG (Static Site Generation)
+// Ragionamento: Contenuto semi-statico (2-3 post/settimana), SEO fondamentale, performance critica per lettura
+
+// Scenario 4: E-commerce cataloghi
+// Strategia: ISR (Incremental Static Regeneration)
+// Ragionamento: Migliaia di prodotti con aggiornamenti giornalieri, bisogno di performance SSG + dati aggiornati, rigenerazione incrementale efficiente (es: revalidate: 86400 per 24h)
+```
+</details>
+
+---
+
 ### 4.1 Hydration: Colmare il Gap
 
 #### 💡 Il Problema dell'Hydration Mismatch
@@ -3827,6 +3899,107 @@ Time 100ms: <html><body><div><Header /><Skeleton />...
 Time 500ms: <html><body><div><Header /><MovieList />...
 Time 550ms: Hydration completa
 ```
+
+#### ✏️ Esercizio Pratico 4.2: Implementare Streaming SSR con Suspense
+
+> **🎯 Obiettivo:** Utilizzare `Suspense` per implementare streaming SSR e migliorare perceived performance.
+
+**[Passo 1: Enunciato]**
+Hai una pagina che carica dati da due API diverse, una veloce e una lenta. Attualmente l'utente attende che ENTRAMBE finiscano prima di vedere contenuto. Implementa streaming SSR con `Suspense` per mostrare contenuto progressivamente:
+
+```typescript
+// app/movies/page.tsx
+export default async function MoviesPage() {
+    const movies = await fetch('/api/movies') // Lenta (500ms)
+    const genres = await fetch('/api/genres') // Veloce (100ms)
+    
+    return (
+        <div>
+            <Header />
+            <GenreList genres={genres} />
+            <MovieList movies={movies} />
+        </div>
+    )
+}
+```
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quali dati possono essere mostrati per primi senza attendere gli altri?
+* Come funziona `Suspense` per ritardare render di parti specifiche?
+* Quale componente deve essere Server vs Client per usare async?
+* Come fornisci fallback UI mentre i dati sono in caricamento?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// app/movies/page.tsx
+import { Suspense } from 'react'
+
+async function MovieList() {
+    // Carica dati lenti
+}
+
+async function GenreList() {
+    // Carica dati veloci
+}
+
+export default function MoviesPage() {
+    // Implementa streaming con Suspense
+}
+
+function Skeleton() {
+    // Fallback UI mentre carica
+}
+```
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: `Suspense` ritarda render di componenti async, permettendo invio HTML progressivo. Componenti Server possono essere async e fetch dati. Fallback UI (`Skeleton`) appare durante il loading. Next.js invia parti non sospese subito, poi sostituisce i placeholder quando i dati sono pronti. Questo migliora perceived performance mostrando contenuto prima che tutto sia pronto.
+
+**Soluzione Completa:**
+
+```typescript
+// app/movies/page.tsx
+import { Suspense } from 'react'
+
+async function MovieList() {
+    const movies = await fetch('/api/movies')
+    const data = await movies.json()
+    return <div>{data.map(m => <MovieCard key={m.id} movie={m} />)}</div>
+}
+
+async function GenreList() {
+    const genres = await fetch('/api/genres')
+    const data = await genres.json()
+    return <div>{data.map(g => <GenreTag key={g.id} genre={g} />)}</div>
+}
+
+function Skeleton() {
+    return <div className="animate-pulse bg-gray-200 h-20 w-full rounded" />
+}
+
+export default function MoviesPage() {
+    return (
+        <div>
+            <Header />
+            {/* Mostrato subito */}
+            <Suspense fallback={<Skeleton />}>
+                <GenreList /> {/* Streaming quando pronto (~100ms) */}
+            </Suspense>
+            {/* Continuazione streaming */}
+            <Suspense fallback={<Skeleton />}>
+                <MovieList /> {/* Streaming quando pronto (~500ms) */}
+            </Suspense>
+        </div>
+    )
+}
+```
+</details>
 
 ---
 
@@ -3990,22 +4163,74 @@ async function MoviesPage() {
 }
 ```
 
-#### ✏️ Esercizio Pratico 3.1.1
+#### ✏️ Esercizio Pratico 4.3: Scegliere tra Server e Client Components
 
-Decidi se questi componenti devono essere Server o Client:
+> **🎯 Obiettivo:** Identificare correttamente quando usare Server vs Client Components in Next.js.
 
-1. Componente che mostra una lista di film (solo render)
-2. Componente con bottone che apre un modale
-3. Componente che carica dati da database
-4. Componente che usa localStorage per salvare preferenze
+**[Passo 1: Enunciato]**
+Analizza ogni componente seguente e determina se deve essere Server Component o Client Component. Spiega perché:
+
+1. `MovieList` - Mostra lista di film ricevuti come prop, nessuna interattività
+2. `ModalTrigger` - Bottone che apre/chiude modale con animazioni
+3. `MovieDetails` - Carica dettagli film da database, mostra sezione read-only
+4. `UserPreferences` - Salva/legge preferenze utente da localStorage
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* Quali funzionalità richiedono esecuzione nel browser (hooks, eventi, API del browser)?
+* Server Components possono eseguire async fetch ma non possono usare useState/useEffect: quale delle due operazioni serve qui?
+* Perché `localStorage` richiede Client Component ma il fetch da database no?
+* Cosa significa "interattività" in React vs semplice rendering?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+// 1. MovieList
+// Tipo: Server / Client?
+// Motivo: 
+
+
+// 2. ModalTrigger
+// Tipo: Server / Client?
+// Motivo: 
+
+
+// 3. MovieDetails
+// Tipo: Server / Client?
+// Motivo: 
+
+
+// 4. UserPreferences
+// Tipo: Server / Client?
+// Motivo: 
 
 <details>
-<summary>✅ Risposte</summary>
+<summary>✅ Mostra Soluzione Guidata</summary>
 
-1. **Server Component** - Solo rendering, nessuna interattività
-2. **Client Component** - Serve onClick per aprire modale
-3. **Server Component** - Fetch dati sul server è perfetto
-4. **Client Component** - localStorage è API del browser (solo client)
+**Spiegazione della Logica**: La scelta dipende da cosa il componente deve fare. Server Components per rendering e async data fetching senza stato/interattività. Client Components per hooks React (useState, useEffect), event handlers (onClick), o API del browser (localStorage, window). Regola: Server di default, Client solo se necessario.
+
+**Soluzione Completa:**
+
+```typescript
+// 1. MovieList
+// Tipo: Server Component
+// Motivo: Solo rendering statico di props, nessun hook o evento. Performance migliore sul server.
+
+// 2. ModalTrigger
+// Tipo: Client Component ('use client')
+// Motivo: Richiede onClick per aprire/chiudere modale. Hover/animation state gestito con useState.
+
+// 3. MovieDetails
+// Tipo: Server Component
+// Motivo: Fetch dati da database può essere async in Server Component. Rendering read-only senza interattività.
+
+// 4. UserPreferences
+// Tipo: Client Component ('use client')
+// Motivo: localStorage è API del browser accessibile solo lato client. Richiede useEffect per leggere/scrivere.
+```
 </details>
 
 ### 3.2 Routing e File System
