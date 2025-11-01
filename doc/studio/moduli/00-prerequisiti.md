@@ -6655,6 +6655,115 @@ function ExternalPlayer({ url }: { url: string }) {
             }
 ```
 
+#### ✏️ Esercizio Pratico 8.1: Comunicare con Iframe via PostMessage
+
+> **🎯 Obiettivo:** Implementare comunicazione sicura cross-origin tra parent window e iframe usando PostMessage API.
+
+**[Passo 1: Enunciato]**
+Implementa un componente che comunica con un iframe esterno:
+1. Ascolta messaggi dall'iframe (play, pause, timeupdate)
+2. Verifica sempre `event.origin` per sicurezza
+3. Invia comandi all'iframe (play, pause, seek)
+4. Cleanup listener quando componente unmounts
+
+<br/>
+
+**🧠 Ragionamento Guidato (Il "Come Pensare")**
+* PostMessage abilita cross-origin communication: perché non puoi accedere direttamente al contenuto dell'iframe?
+* Perché verificare `event.origin` è CRITICO per sicurezza?
+* Come mandi messaggi da parent a iframe usando `contentWindow.postMessage`?
+* Perché è importante cleanup del listener con `removeEventListener`?
+
+<br/>
+
+**⌨️ Template Iniziale**
+
+```typescript
+'use client'
+import { useRef, useEffect, useCallback, useState } from 'react'
+
+function IframePlayer({ url }: { url: string }) {
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+    const [isPlaying, setIsPlaying] = useState(false)
+    
+    // Implementa listener per messaggi iframe
+    useEffect(() => {
+        // Setup listener e cleanup
+    }, [])
+    
+    // Implementa funzione sendCommand
+    const sendCommand = useCallback((command: string) => {
+        // Invia comandi all'iframe
+    }, [])
+    
+    return <iframe ref={iframeRef} src={url} />
+}
+
+<details>
+<summary>✅ Mostra Soluzione Guidata</summary>
+
+**Spiegazione della Logica**: PostMessage supera Same-Origin Policy per cross-origin communication. Parent e iframe si scambiano `MessageEvent` con `data` e `origin`. Origin check previene man-in-the-middle. `contentWindow` è la window dell'iframe, usata per inviare messaggi. Cleanup evita memory leaks. Pattern used per third-party embeds (YouTube, Vimeo, custom players).
+
+**Soluzione Completa:**
+
+```typescript
+'use client'
+import { useRef, useEffect, useCallback, useState } from 'react'
+
+function IframePlayer({ url }: { url: string }) {
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+    const [isPlaying, setIsPlaying] = useState(false)
+    
+    // Ascolta messaggi dall'iframe
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            // ✅ SECURITY: Verifica sempre origin
+            if (event.origin !== 'https://trusted-player.com') {
+                return
+            }
+            
+            const { type, data } = event.data
+            
+            switch (type) {
+                case 'play':
+                    setIsPlaying(true)
+                    break
+                case 'pause':
+                    setIsPlaying(false)
+                    break
+                case 'timeupdate':
+                    console.log('Current time:', data.currentTime)
+                    break
+            }
+        }
+        
+        window.addEventListener('message', handleMessage)
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('message', handleMessage)
+        }
+    }, [])
+    
+    // Invia comandi all'iframe
+    const sendCommand = useCallback((command: string) => {
+        iframeRef.current?.contentWindow?.postMessage(
+            { type: command },
+            'https://trusted-player.com' // Target origin
+        )
+    }, [])
+    
+    return (
+        <div>
+            <iframe ref={iframeRef} src={url} />
+            <button onClick={() => sendCommand('play')}>Play</button>
+            <button onClick={() => sendCommand('pause')}>Pause</button>
+        </div>
+    )
+}
+```
+</details>
+
 ---
 
 ## 9. Tailwind CSS e Styling
