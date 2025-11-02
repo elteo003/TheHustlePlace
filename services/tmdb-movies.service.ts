@@ -168,6 +168,100 @@ export class TMDBMoviesService {
     }
 
     /**
+     * Ottiene i dettagli di una stagione specifica con tutti gli episodi
+     */
+    async getTVShowSeasonDetails(tvShowId: number, seasonNumber: number): Promise<any> {
+        try {
+            const response = await this.makeRequest(`/tv/${tvShowId}/season/${seasonNumber}`)
+            return response
+        } catch (error) {
+            logger.error('Errore nel recupero dettagli stagione', { tvShowId, seasonNumber, error })
+            return null
+        }
+    }
+
+    /**
+     * Ottiene tutte le stagioni con gli episodi per una serie TV
+     */
+    async getTVShowAllSeasonsWithEpisodes(tvShowId: number): Promise<any[]> {
+        try {
+            // Prima ottieni i dettagli della serie per conoscere le stagioni
+            const tvShowDetails = await this.getTVShowDetails(tvShowId)
+            
+            if (!tvShowDetails || !tvShowDetails.seasons) {
+                return []
+            }
+
+            // Filtra solo le stagioni con numero di episodi > 0
+            const validSeasons = (tvShowDetails.seasons || []).filter(
+                (season: any) => season.episode_count > 0 && season.season_number > 0
+            )
+
+            // Carica gli episodi per ogni stagione in parallelo
+            const seasonsWithEpisodes = await Promise.all(
+                validSeasons.map(async (season: any) => {
+                    try {
+                        const seasonDetails = await this.getTVShowSeasonDetails(tvShowId, season.season_number)
+                        
+                        if (seasonDetails && seasonDetails.episodes) {
+                            return {
+                                id: season.id,
+                                season_number: season.season_number,
+                                name: seasonDetails.name || season.name || `Stagione ${season.season_number}`,
+                                overview: seasonDetails.overview || season.overview || '',
+                                air_date: seasonDetails.air_date || season.air_date || '',
+                                poster_path: seasonDetails.poster_path || season.poster_path || null,
+                                episode_count: seasonDetails.episodes.length,
+                                episodes: seasonDetails.episodes.map((ep: any) => ({
+                                    id: ep.id,
+                                    episode_number: ep.episode_number,
+                                    name: ep.name,
+                                    overview: ep.overview || '',
+                                    air_date: ep.air_date || '',
+                                    still_path: ep.still_path || undefined,
+                                    runtime: ep.runtime || 0,
+                                    vote_average: ep.vote_average || 0,
+                                    season_number: season.season_number
+                                }))
+                            }
+                        }
+                        
+                        // Fallback se non ci sono episodi nella risposta
+                        return {
+                            id: season.id,
+                            season_number: season.season_number,
+                            name: season.name || `Stagione ${season.season_number}`,
+                            overview: season.overview || '',
+                            air_date: season.air_date || '',
+                            poster_path: season.poster_path || null,
+                            episode_count: season.episode_count || 0,
+                            episodes: []
+                        }
+                    } catch (error) {
+                        logger.error('Errore nel caricamento stagione', { tvShowId, seasonNumber: season.season_number, error })
+                        // Ritorna almeno i dati base della stagione
+                        return {
+                            id: season.id,
+                            season_number: season.season_number,
+                            name: season.name || `Stagione ${season.season_number}`,
+                            overview: season.overview || '',
+                            air_date: season.air_date || '',
+                            poster_path: season.poster_path || null,
+                            episode_count: season.episode_count || 0,
+                            episodes: []
+                        }
+                    }
+                })
+            )
+
+            return seasonsWithEpisodes
+        } catch (error) {
+            logger.error('Errore nel recupero tutte le stagioni', { tvShowId, error })
+            return []
+        }
+    }
+
+    /**
      * Cerca serie TV per query
      */
     async searchTVShows(query: string, page: number = 1): Promise<any[]> {

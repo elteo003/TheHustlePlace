@@ -63,51 +63,23 @@ export default function SeriesPage() {
 
     const loadSeasonsWithEpisodes = async (seriesId: string): Promise<any[]> => {
         try {
-            // Per ora simuliamo i dati delle stagioni
-            // In un'app reale, faresti chiamate API per ogni stagione
-            const mockSeasons = [
-                {
-                    id: 1,
-                    season_number: 1,
-                    name: "Stagione 1",
-                    overview: "La prima stagione della serie",
-                    air_date: "2023-01-01",
-                    poster_path: null,
-                    episode_count: 8,
-                    episodes: generateMockEpisodes(1, 8)
-                },
-                {
-                    id: 2,
-                    season_number: 2,
-                    name: "Stagione 2",
-                    overview: "La seconda stagione della serie",
-                    air_date: "2023-06-01",
-                    poster_path: null,
-                    episode_count: 10,
-                    episodes: generateMockEpisodes(2, 10)
-                }
-            ]
+            // Carica le stagioni e gli episodi reali da TMDB
+            const response = await fetch(`/api/tmdb/tv/${seriesId}/seasons`)
+            const data = await response.json()
 
-            return mockSeasons
+            if (data.success && data.data) {
+                console.log('✅ Stagioni caricate:', data.data.length, 'stagioni trovate')
+                return data.data
+            }
+
+            console.warn('⚠️ Nessuna stagione trovata, uso fallback')
+            return []
         } catch (error) {
             console.error('Errore nel caricamento delle stagioni:', error)
             return []
         }
     }
 
-    const generateMockEpisodes = (seasonNumber: number, episodeCount: number): Episode[] => {
-        return Array.from({ length: episodeCount }, (_, index) => ({
-            id: seasonNumber * 1000 + index + 1,
-            episode_number: index + 1,
-            name: `Episodio ${index + 1}`,
-            overview: `Descrizione dell'episodio ${index + 1} della stagione ${seasonNumber}.`,
-            air_date: new Date(2023, seasonNumber - 1, index + 1).toISOString().split('T')[0],
-            still_path: undefined,
-            runtime: 45 + Math.floor(Math.random() * 15), // 45-60 minuti
-            vote_average: 7 + Math.random() * 2, // 7-9 rating
-            season_number: seasonNumber
-        }))
-    }
 
     const handleSeasonChange = (season: number) => {
         setCurrentSeason(season)

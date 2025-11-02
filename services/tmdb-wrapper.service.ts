@@ -68,6 +68,15 @@ class TMDBWrapperService {
         return this.safeCall(() => this.service!.getTVShowDetails(tvShowId))
     }
 
+    async getTVShowSeasonDetails(tvShowId: number, seasonNumber: number) {
+        return this.safeCall(() => this.service!.getTVShowSeasonDetails(tvShowId, seasonNumber))
+    }
+
+    async getTVShowAllSeasonsWithEpisodes(tvShowId: number) {
+        const result = await this.safeCall(() => this.service!.getTVShowAllSeasonsWithEpisodes(tvShowId))
+        return result || []
+    }
+
     async getTopRatedTVShows(limit: number = 10) {
         return this.safeCall(() => this.service!.getTopRatedTVShows(limit))
     }
