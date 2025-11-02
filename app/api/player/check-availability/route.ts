@@ -6,6 +6,8 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const tmdbId = searchParams.get('tmdbId')
         const type = searchParams.get('type') || 'movie'
+        const season = searchParams.get('season')
+        const episode = searchParams.get('episode')
 
         if (!tmdbId) {
             return NextResponse.json({
@@ -14,11 +16,12 @@ export async function GET(request: NextRequest) {
             }, { status: 400 })
         }
 
+        // Per le serie TV, usa stagione ed episodio specifici se forniti
         const vixsrcUrl = type === 'movie'
             ? `https://vixsrc.to/movie/${tmdbId}`
-            : `https://vixsrc.to/tv/${tmdbId}/1/1`
+            : `https://vixsrc.to/tv/${tmdbId}/${season || '1'}/${episode || '1'}`
 
-        console.log('Controllo disponibilità per:', { tmdbId, type, vixsrcUrl })
+        console.log('Controllo disponibilità per:', { tmdbId, type, season, episode, vixsrcUrl })
 
         // Fai una richiesta GET per verificare se la risorsa esiste
         // VixSrc potrebbe non supportare HEAD, quindi usiamo GET con range per limitare i dati

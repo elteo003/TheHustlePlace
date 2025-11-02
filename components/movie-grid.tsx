@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Movie, TVShow } from '@/types'
+import { getYouTubeEmbedUrl } from '@/lib/tmdb'
 
 interface MovieGridProps {
   movies: (Movie | TVShow)[]
@@ -19,6 +20,9 @@ interface MovieCardProps {
   onDetails?: (id: number) => void
 }
 
+// Cache globale per i trailer (condivisa tra tutte le istanze del componente)
+const trailerCache = new Map<number, string>()
+
 function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDetails }: MovieCardProps) {
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -34,38 +38,56 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
   }
 
   const loadTrailer = async () => {
+    const itemId = (movie as any).tmdb_id || movie.id
+    
+    // Controlla la cache prima
+    const cachedTrailer = trailerCache.get(itemId)
+    if (cachedTrailer) {
+      setTrailerUrl(cachedTrailer)
+      setIsLoading(false)
+      return
+    }
+
+    // Se già caricato, non ricaricare
     if (trailerUrl) return
 
     setIsLoading(true)
+    
     try {
-      const itemId = (movie as any).tmdb_id || movie.id
       const apiType = type === 'movie' ? 'movies' : 'tv'
       const response = await fetch(`/api/tmdb/${apiType}/${itemId}/videos`)
       const data = await response.json()
 
       if (data.success && data.data?.results?.length > 0) {
-        // Cerca trailer/teaser ufficiale su YouTube
-        const officialTrailer = data.data.results.find((video: any) => 
+        const videos = data.data.results
+        
+        // Prima cerca trailer/teaser ufficiale su YouTube
+        let selectedVideo = videos.find((video: any) => 
           (video.type === 'Trailer' || video.type === 'Teaser') && 
           video.site === 'YouTube' && 
           video.official === true
         )
 
-        if (officialTrailer) {
-          setTrailerUrl(`https://www.youtube.com/embed/${officialTrailer.key}?autoplay=1&mute=1&loop=1&playlist=${officialTrailer.key}&controls=0&showinfo=0&rel=0&modestbranding=1`)
-        } else {
-          // Fallback al primo trailer/teaser YouTube disponibile
-          const youtubeVideo = data.data.results.find((video: any) => 
+        if (!selectedVideo) {
+          // Fallback: cerca qualsiasi trailer/teaser YouTube (senza controllo official)
+          selectedVideo = videos.find((video: any) => 
             (video.type === 'Trailer' || video.type === 'Teaser') && 
             video.site === 'YouTube'
           )
-          if (youtubeVideo) {
-            setTrailerUrl(`https://www.youtube.com/embed/${youtubeVideo.key}?autoplay=1&mute=1&loop=1&playlist=${youtubeVideo.key}&controls=0&showinfo=0&rel=0&modestbranding=1`)
-          }
+        }
+
+        if (selectedVideo) {
+          // Usa la funzione getYouTubeEmbedUrl con loop=true per la griglia
+          const embedUrl = getYouTubeEmbedUrl(selectedVideo.key, true, true, true) // loop=true per la griglia
+          
+          // Salva in cache
+          trailerCache.set(itemId, embedUrl)
+          
+          setTrailerUrl(embedUrl)
         }
       }
     } catch (error) {
-      console.error('Errore nel caricamento del trailer:', error)
+      // Silently fail
     } finally {
       setIsLoading(false)
     }
@@ -75,10 +97,10 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
     // Espansione immediata al hover
     onExpand(movie.id)
 
-    // Carica trailer dopo 2 secondi
+    // Carica trailer dopo 700ms (ridotto da 2000ms per migliore reattività)
     timeoutRef.current = setTimeout(() => {
       loadTrailer()
-    }, 2000)
+    }, 700)
   }
 
   const handleMouseLeave = () => {
@@ -186,6 +208,7 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
 
 export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }: MovieGridProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const handleExpand = (id: number) => {
@@ -202,14 +225,41 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
 
   return (
     <div className="w-full">
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          border-radius: 3px;
+          transition: all 0.2s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(90deg, #2563eb, #7c3aed);
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #3b82f6 transparent;
+        }
+        .custom-scrollbar:not(:hover)::-webkit-scrollbar {
+          display: none;
+        }
+        .custom-scrollbar:not(:hover) {
+          scrollbar-width: none;
+        }
+      `}</style>
       <div 
         ref={scrollRef}
-        className="flex space-x-4 overflow-x-auto pb-4 scrollbar-horizontal"
+        className="custom-scrollbar flex space-x-4 overflow-x-auto pb-4"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
           scrollBehavior: 'smooth',
-          willChange: 'transform'
+          willChange: 'transform',
+          ...(isHovered ? {} : { scrollbarWidth: 'none' })
         }}
       >
         {movies.map((movie) => (
@@ -227,3 +277,4 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
     </div>
   )
 }
+

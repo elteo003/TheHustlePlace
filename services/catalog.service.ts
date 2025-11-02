@@ -329,6 +329,41 @@ export class CatalogService {
                         }
                     }
 
+                    // Ordina i film secondo i filtri specificati
+                    if (filters.sortBy && movies.length > 0) {
+                        movies.sort((a, b) => {
+                            let aValue: any
+                            let bValue: any
+
+                            switch (filters.sortBy) {
+                                case 'popularity':
+                                    aValue = a.popularity || 0
+                                    bValue = b.popularity || 0
+                                    break
+                                case 'vote_average':
+                                    aValue = a.vote_average || 0
+                                    bValue = b.vote_average || 0
+                                    break
+                                case 'release_date':
+                                    aValue = a.release_date ? new Date(a.release_date).getTime() : 0
+                                    bValue = b.release_date ? new Date(b.release_date).getTime() : 0
+                                    break
+                                case 'title':
+                                    aValue = a.title?.toLowerCase() || ''
+                                    bValue = b.title?.toLowerCase() || ''
+                                    break
+                                default:
+                                    return 0
+                            }
+
+                            if (filters.sortOrder === 'asc') {
+                                return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+                            } else {
+                                return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+                            }
+                        })
+                    }
+
                     const result: PaginatedResponse<Movie> = {
                         page: filters.page || 1,
                         results: movies,
@@ -489,6 +524,42 @@ export class CatalogService {
                         if (i + batchSize < Math.min(tmdbIds.length, 20)) {
                             await new Promise(resolve => setTimeout(resolve, 100))
                         }
+                    }
+
+                    // Ordina le serie TV secondo i filtri specificati
+                    if (filters.sortBy && tvShows.length > 0) {
+                        tvShows.sort((a, b) => {
+                            let aValue: any
+                            let bValue: any
+
+                            switch (filters.sortBy) {
+                                case 'popularity':
+                                    aValue = a.popularity || 0
+                                    bValue = b.popularity || 0
+                                    break
+                                case 'vote_average':
+                                    aValue = a.vote_average || 0
+                                    bValue = b.vote_average || 0
+                                    break
+                                case 'release_date':
+                                    // Per serie TV usa first_air_date invece di release_date
+                                    aValue = a.first_air_date ? new Date(a.first_air_date).getTime() : 0
+                                    bValue = b.first_air_date ? new Date(b.first_air_date).getTime() : 0
+                                    break
+                                case 'title':
+                                    aValue = a.name?.toLowerCase() || ''
+                                    bValue = b.name?.toLowerCase() || ''
+                                    break
+                                default:
+                                    return 0
+                            }
+
+                            if (filters.sortOrder === 'asc') {
+                                return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+                            } else {
+                                return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+                            }
+                        })
                     }
 
                     const result: PaginatedResponse<TVShow> = {

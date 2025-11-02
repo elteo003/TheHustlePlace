@@ -186,17 +186,23 @@ export function getTMDBImageUrl(path: string | null, size: 'w500' | 'w780' | 'or
 /**
  * Genera URL YouTube embed
  */
-export function getYouTubeEmbedUrl(videoKey: string, autoplay: boolean = true, mute: boolean = true): string {
+export function getYouTubeEmbedUrl(videoKey: string, autoplay: boolean = true, mute: boolean = true, loop: boolean = false): string {
     const params = new URLSearchParams({
+        enablejsapi: '1', // Abilita API JavaScript per ricevere eventi (ended, play, pause, ecc.)
         autoplay: autoplay ? '1' : '0',
         mute: mute ? '1' : '0',
         controls: '0',
         showinfo: '0',
         rel: '0',
         modestbranding: '1',
-        loop: '1',
-        playlist: videoKey
+        origin: typeof window !== 'undefined' ? window.location.origin : ''
     })
+
+    // Loop solo se esplicitamente richiesto (per esempio nella griglia film)
+    if (loop) {
+        params.append('loop', '1')
+        params.append('playlist', videoKey) // playlist è necessario per il loop
+    }
 
     return `https://www.youtube.com/embed/${videoKey}?${params.toString()}`
 }

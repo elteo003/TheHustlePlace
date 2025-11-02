@@ -192,13 +192,40 @@ export function MoviesSection({
             </div>
 
             {/* Movies Grid */}
-            <div className="flex space-x-6 overflow-x-auto scrollbar-thin py-8 px-2"
+            <style jsx>{`
+                .custom-scrollbar-section::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .custom-scrollbar-section::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar-section::-webkit-scrollbar-thumb {
+                    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+                    border-radius: 3px;
+                    transition: all 0.2s ease;
+                }
+                .custom-scrollbar-section::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(90deg, #2563eb, #7c3aed);
+                }
+                .custom-scrollbar-section:not(:hover)::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
+            <div 
+                className="custom-scrollbar-section flex space-x-6 overflow-x-auto py-8 px-2"
                 style={{
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
                     scrollBehavior: 'smooth',
-                    willChange: 'transform'
-                }}>
+                    willChange: 'transform',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#3b82f6 transparent'
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.scrollbarWidth = 'thin'
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.scrollbarWidth = 'none'
+                }}
+            >
                 {type === 'top10' ? renderTop10Cards() : renderMovieCards()}
             </div>
         </div>

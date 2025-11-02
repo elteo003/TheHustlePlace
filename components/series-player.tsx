@@ -122,8 +122,11 @@ export function SeriesPlayer({
                                         {tvShow.vote_average.toFixed(1)} ⭐
                                     </span>
                                     <span>{formatDate(tvShow.first_air_date)}</span>
-                                    <span>{tvShow.number_of_seasons} stagioni</span>
-                                    <span>{tvShow.number_of_episodes} episodi</span>
+                                    <span>{tvShow.seasons?.length || tvShow.number_of_seasons || 0} stagioni</span>
+                                    <span>
+                                        {tvShow.seasons?.reduce((total, season) => total + (season.episodes?.length || 0), 0) || 
+                                         tvShow.number_of_episodes || 0} episodi
+                                    </span>
                                 </div>
 
                                 <p className="text-lg text-gray-300 mb-6 max-w-2xl leading-relaxed">
@@ -134,9 +137,9 @@ export function SeriesPlayer({
                                     <Button
                                         size="lg"
                                         onClick={() => handlePlay(selectedSeason, selectedEpisode)}
-                                        className="bg-white text-black hover:bg-gray-200 flex items-center space-x-2"
+                                        className="bg-gray-700 text-white border border-gray-400 hover:bg-gray-600 rounded-xl flex items-center space-x-2 px-6 py-3 shadow-lg"
                                     >
-                                        <Play className="w-5 h-5" />
+                                        <Play className="w-5 h-5 fill-current" />
                                         <span>Guarda ora</span>
                                     </Button>
                                     
@@ -235,9 +238,9 @@ export function SeriesPlayer({
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handlePlay(selectedSeason, episode.episode_number)}
-                                                    className="bg-white text-black hover:bg-gray-200"
+                                                    className="bg-gray-700 text-white border border-gray-400 hover:bg-gray-600 rounded-xl px-4 py-2 shadow-lg"
                                                 >
-                                                    <Play className="w-4 h-4" />
+                                                    <Play className="w-4 h-4 fill-current" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -274,9 +277,9 @@ export function SeriesPlayer({
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handlePlay(selectedSeason, episode.episode_number)}
-                                                    className="bg-white text-black hover:bg-gray-200"
+                                                    className="bg-gray-700 text-white border border-gray-400 hover:bg-gray-600 rounded-xl px-4 py-2 shadow-lg"
                                                 >
-                                                    <Play className="w-4 h-4 mr-1" />
+                                                    <Play className="w-4 h-4 mr-1 fill-current" />
                                                     Guarda
                                                 </Button>
                                             </div>
@@ -296,7 +299,7 @@ export function SeriesPlayer({
                             <p className="text-gray-300 mb-4">
                                 Hai finito di guardare tutti gli episodi di questa stagione.
                             </p>
-                            {selectedSeason < tvShow.number_of_seasons && (
+                            {selectedSeason < (tvShow.seasons?.length || tvShow.number_of_seasons || 0) && (
                                 <Button
                                     onClick={() => handleSeasonChange(selectedSeason + 1)}
                                     className="bg-white text-black hover:bg-gray-200"

@@ -56,6 +56,28 @@ export function ContentCarousel({ title, items, type, showDetails = false }: Con
 
     return (
         <section className="mb-12">
+            <style jsx>{`
+                .custom-scrollbar-carousel::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .custom-scrollbar-carousel::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar-carousel::-webkit-scrollbar-thumb {
+                    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+                    border-radius: 3px;
+                    transition: all 0.2s ease;
+                }
+                .custom-scrollbar-carousel::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(90deg, #2563eb, #7c3aed);
+                }
+                .custom-scrollbar-carousel:not(:hover)::-webkit-scrollbar {
+                    display: none;
+                }
+                .custom-scrollbar-carousel:not(:hover) {
+                    scrollbar-width: none;
+                }
+            `}</style>
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">{title}</h2>
             </div>
@@ -63,8 +85,11 @@ export function ContentCarousel({ title, items, type, showDetails = false }: Con
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="flex space-x-4 overflow-x-auto scrollbar-thin pb-4"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className="custom-scrollbar-carousel flex space-x-4 overflow-x-auto pb-4"
+                style={{
+                    scrollBehavior: 'smooth',
+                    willChange: 'transform'
+                }}
             >
                 {items.map((item, index) => (
                     <div key={item.id} className="flex-shrink-0 w-48">
