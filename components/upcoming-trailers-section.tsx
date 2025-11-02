@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TMDBMovie } from '@/lib/tmdb'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useCleanup } from '@/hooks/useCleanup'
+import { CustomScrollbar } from './custom-scrollbar'
 
 interface UpcomingTrailersSectionProps {
     movies: TMDBMovie[]
@@ -112,36 +113,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 </div>
 
                 {/* Movies Grid */}
-                <style jsx>{`
-                    .custom-scrollbar-upcoming::-webkit-scrollbar {
-                        height: 6px;
-                    }
-                    .custom-scrollbar-upcoming::-webkit-scrollbar-track {
-                        background: transparent;
-                    }
-                    .custom-scrollbar-upcoming::-webkit-scrollbar-thumb {
-                        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-                        border-radius: 3px;
-                        transition: all 0.2s ease;
-                    }
-                    .custom-scrollbar-upcoming::-webkit-scrollbar-thumb:hover {
-                        background: linear-gradient(90deg, #2563eb, #7c3aed);
-                    }
-                    .custom-scrollbar-upcoming:not(:hover)::-webkit-scrollbar {
-                        display: none;
-                    }
-                    .custom-scrollbar-upcoming:not(:hover) {
-                        scrollbar-width: none;
-                    }
-                `}</style>
-                <div
-                    ref={containerRef}
-                    className="custom-scrollbar-upcoming flex gap-4 overflow-x-auto"
-                    style={{
-                        scrollBehavior: 'smooth',
-                        willChange: 'transform'
-                    }}
-                >
+                <CustomScrollbar className="" containerClassName="flex gap-4">
                     {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path
@@ -215,7 +187,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                             </div>
                         )
                     })}
-                </div>
+                </CustomScrollbar>
             </div>
         </div>
     )

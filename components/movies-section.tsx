@@ -7,6 +7,7 @@ import { Top10MovieCard } from './top-10-movie-card'
 import { MoviePreview } from './movie-preview'
 import { TMDBMovie, getTMDBImageUrl } from '@/lib/tmdb'
 import { Top10Content } from '@/types'
+import { CustomScrollbar } from './custom-scrollbar'
 
 interface MoviesSectionProps {
     title: string
@@ -192,42 +193,9 @@ export function MoviesSection({
             </div>
 
             {/* Movies Grid */}
-            <style jsx>{`
-                .custom-scrollbar-section::-webkit-scrollbar {
-                    height: 6px;
-                }
-                .custom-scrollbar-section::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar-section::-webkit-scrollbar-thumb {
-                    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-                    border-radius: 3px;
-                    transition: all 0.2s ease;
-                }
-                .custom-scrollbar-section::-webkit-scrollbar-thumb:hover {
-                    background: linear-gradient(90deg, #2563eb, #7c3aed);
-                }
-                .custom-scrollbar-section:not(:hover)::-webkit-scrollbar {
-                    display: none;
-                }
-            `}</style>
-            <div 
-                className="custom-scrollbar-section flex space-x-6 overflow-x-auto py-8 px-2"
-                style={{
-                    scrollBehavior: 'smooth',
-                    willChange: 'transform',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#3b82f6 transparent'
-                }}
-                onMouseEnter={(e) => {
-                    e.currentTarget.style.scrollbarWidth = 'thin'
-                }}
-                onMouseLeave={(e) => {
-                    e.currentTarget.style.scrollbarWidth = 'none'
-                }}
-            >
+            <CustomScrollbar className="py-8 px-2" containerClassName="flex space-x-6">
                 {type === 'top10' ? renderTop10Cards() : renderMovieCards()}
-            </div>
+            </CustomScrollbar>
         </div>
     )
 }

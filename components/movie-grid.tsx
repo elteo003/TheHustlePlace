@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Movie, TVShow } from '@/types'
+import { CustomScrollbar } from './custom-scrollbar'
 import { getYouTubeEmbedUrl } from '@/lib/tmdb'
 
 interface MovieGridProps {
@@ -208,8 +209,6 @@ function MovieCard({ movie, type = 'movie', isExpanded, onExpand, onPlay, onDeta
 
 export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }: MovieGridProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [isHovered, setIsHovered] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   const handleExpand = (id: number) => {
     setExpandedId(id)
@@ -225,55 +224,20 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
 
   return (
     <div className="w-full">
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-          border-radius: 3px;
-          transition: all 0.2s ease;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(90deg, #2563eb, #7c3aed);
-        }
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #3b82f6 transparent;
-        }
-        .custom-scrollbar:not(:hover)::-webkit-scrollbar {
-          display: none;
-        }
-        .custom-scrollbar:not(:hover) {
-          scrollbar-width: none;
-        }
-      `}</style>
-      <div 
-        ref={scrollRef}
-        className="custom-scrollbar flex space-x-4 overflow-x-auto pb-4"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          scrollBehavior: 'smooth',
-          willChange: 'transform',
-          ...(isHovered ? {} : { scrollbarWidth: 'none' })
-        }}
-      >
+      <CustomScrollbar className="pb-4" containerClassName="flex space-x-4">
         {movies.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            type={type}
-            isExpanded={expandedId === movie.id}
-            onExpand={handleExpand}
-            onPlay={handlePlay}
-            onDetails={handleDetails}
-          />
+          <div key={movie.id} className="flex-shrink-0">
+            <MovieCard
+              movie={movie}
+              type={type}
+              isExpanded={expandedId === movie.id}
+              onExpand={handleExpand}
+              onPlay={handlePlay}
+              onDetails={handleDetails}
+            />
+          </div>
         ))}
-      </div>
+      </CustomScrollbar>
     </div>
   )
 }
