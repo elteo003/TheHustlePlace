@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
+import { CatalogService } from '@/services/catalog.service'
+
+const catalogService = new CatalogService()
 
 export const dynamic = 'force-dynamic'
 
@@ -7,15 +10,8 @@ export async function GET(request: NextRequest) {
     try {
         console.log('🎬 Recupero film popolari con trailer...')
 
-        // Recupera i film popolari
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/catalog/popular/movies`)
-        const popularData = await response.json()
-        
-        if (!popularData.success || !popularData.data) {
-            throw new Error('Impossibile recuperare film popolari')
-        }
-        
-        const popularMovies = popularData.data
+        // Recupera i film popolari direttamente dal servizio per evitare chiamate HTTP interne
+        const popularMovies = await catalogService.getPopularMovies()
         
         if (!popularMovies || popularMovies.length === 0) {
             return NextResponse.json({
