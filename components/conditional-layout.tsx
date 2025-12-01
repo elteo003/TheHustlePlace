@@ -16,9 +16,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         setIsClient(true)
     }, [])
 
-    // Nascondi la navbar solo nelle pagine del player e nello splash iniziale
+    // Nascondi la navbar globale nelle pagine player, nello splash e nella home
     const isPlayerPage = pathname?.startsWith('/player/')
-    const hideNavbar = isPlayerPage || pathname === '/'
+    const isSplashPage = pathname === '/'
+    const isHomePage = pathname === '/home'
+    const hideNavbar = isPlayerPage || isSplashPage || isHomePage
 
     // Evita hydration mismatch mostrando layout base durante SSR
     if (!isClient) {
