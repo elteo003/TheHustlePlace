@@ -23,7 +23,8 @@ export async function GET() {
                 redis: {
                     available: redisHealth,
                     type: cacheStats.type,
-                    size: cacheStats.size
+                    size: cacheStats.size,
+                    disabledReason: redisCache.getDisabledReason()
                 },
                 memory: {
                     size: memoryCacheSize

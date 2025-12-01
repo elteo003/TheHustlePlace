@@ -5,10 +5,11 @@ interface CacheOptions {
 }
 
 interface RedisConfig {
-    host: string
-    port: number
+    host?: string
+    port?: number
     password?: string
     db?: number
+    url?: string
 }
 
 class RedisCacheService {
@@ -16,55 +17,69 @@ class RedisCacheService {
     private readonly DEFAULT_TTL = 3600 // 1 hour
     private readonly fallbackCache = new Map<string, { value: any; expires: number }>()
     private isRedisAvailable = false
+    private redisDisabledReason: string | null = null
 
     constructor() {
-        // Non inizializzare Redis durante il build
-        if (process.env.NEXT_PHASE !== 'phase-production-build') {
-            this.initializeRedis()
-        } else {
-            logger.info('Redis disabilitato durante il build - usando cache in-memory')
+        const skipReason = this.getRedisSkipReason()
+
+        if (skipReason) {
+            logger.info(skipReason)
+            this.redisDisabledReason = skipReason
             this.isRedisAvailable = false
+            return
         }
+
+        // Non inizializzare Redis durante il build
+        if (process.env.NEXT_PHASE === 'phase-production-build') {
+            const reason = 'Redis disabilitato durante il build - usando cache in-memory'
+            logger.info(reason)
+            this.redisDisabledReason = reason
+            this.isRedisAvailable = false
+            return
+        }
+
+        this.initializeRedis()
     }
 
     private async initializeRedis(): Promise<void> {
         try {
-            // Disabilita Redis in ambiente di sviluppo locale o se non configurato
-            if ((process.env.NODE_ENV === 'development' && !process.env.REDIS_HOST) || 
-                (!process.env.REDIS_HOST && process.env.NODE_ENV !== 'production')) {
-                logger.info('Redis disabilitato - usando cache in-memory')
-                this.isRedisAvailable = false
-                return
-            }
-
             // Try to import redis (optional dependency)
             const redis = await import('redis')
             
             const config: RedisConfig = {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379'),
+                host: process.env.REDIS_HOST,
+                port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
                 password: process.env.REDIS_PASSWORD,
-                db: parseInt(process.env.REDIS_DB || '0')
+                db: process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0,
+                url: process.env.REDIS_URL
             }
 
-            this.redis = redis.createClient({
-                socket: {
-                    host: config.host,
-                    port: config.port,
-                    connectTimeout: 5000 // 5 second timeout
-                },
-                password: config.password,
-                database: config.db
-            })
+            const clientOptions: Record<string, any> = config.url
+                ? {
+                    url: config.url,
+                    socket: { connectTimeout: 5000 }
+                }
+                : {
+                    socket: {
+                        host: config.host,
+                        port: config.port,
+                        connectTimeout: 5000
+                    },
+                    password: config.password,
+                    database: config.db
+                }
+
+            this.redis = redis.createClient(clientOptions)
 
             this.redis.on('error', (err: Error) => {
-                logger.error('Redis connection error', { error: err.message })
-                this.isRedisAvailable = false
+                logger.error('Redis connection error', { error: err?.message || err })
+                this.disableRedis('Errore durante la connessione a Redis', err)
             })
 
             this.redis.on('connect', () => {
                 logger.info('Redis connected successfully')
                 this.isRedisAvailable = true
+                this.redisDisabledReason = null
             })
 
             this.redis.on('reconnecting', () => {
@@ -75,6 +90,7 @@ class RedisCacheService {
             this.redis.on('ready', () => {
                 logger.info('Redis ready for operations')
                 this.isRedisAvailable = true
+                this.redisDisabledReason = null
             })
 
             // Connect with timeout
@@ -85,12 +101,48 @@ class RedisCacheService {
                 )
             ])
         } catch (error) {
-            // Solo log di warning se Redis era configurato ma non disponibile
-            if (process.env.REDIS_HOST) {
-                logger.warn('Redis not available, using in-memory cache', { error })
-            }
-            this.isRedisAvailable = false
+            this.disableRedis('Redis non disponibile, uso cache in-memory', error)
         }
+    }
+
+    private getRedisSkipReason(): string | null {
+        const enabledFlag = (process.env.REDIS_ENABLED ?? 'true').toLowerCase()
+        const disabledValues = ['false', '0', 'off', 'no']
+
+        if (disabledValues.includes(enabledFlag)) {
+            return 'Redis disabilitato tramite REDIS_ENABLED=false'
+        }
+
+        if (!process.env.REDIS_HOST && !process.env.REDIS_URL) {
+            return 'Redis non configurato (manca REDIS_HOST o REDIS_URL) - uso cache in-memory'
+        }
+
+        return null
+    }
+
+    private disableRedis(reason: string, error?: unknown) {
+        const client = this.redis
+
+        if (client) {
+            try {
+                client.removeAllListeners?.()
+                // Evita ulteriori tentativi di riconnessione
+                client.quit?.().catch(() => client.disconnect?.().catch(() => undefined))
+            } catch (cleanupError) {
+                logger.warn('Errore durante la chiusura della connessione Redis', { error: cleanupError })
+            } finally {
+                this.redis = null
+            }
+        }
+
+        if (this.redisDisabledReason === reason) {
+            this.isRedisAvailable = false
+            return
+        }
+
+        this.redisDisabledReason = reason
+        this.isRedisAvailable = false
+        logger.warn(reason, error ? { error } : undefined)
     }
 
     async get<T>(key: string): Promise<T | null> {
@@ -196,6 +248,14 @@ class RedisCacheService {
         } catch (error) {
             return { type: 'memory', size: this.fallbackCache.size }
         }
+    }
+
+    getDisabledReason(): string | null {
+        return this.redisDisabledReason
+    }
+
+    isEnabled(): boolean {
+        return this.isRedisAvailable
     }
 }
 
