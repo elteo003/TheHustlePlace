@@ -36,9 +36,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
 
     useEffect(() => {
-        setNavbarVisible(showControls)
+        const shouldShowNavbar = showControls || loading || !!error || !featuredMovie
+        setNavbarVisible(shouldShowNavbar)
         return () => setNavbarVisible(true)
-    }, [showControls, setNavbarVisible])
+    }, [showControls, loading, error, featuredMovie, setNavbarVisible])
 
     const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
         delay: 1000, // Aumento il delay per dare più tempo
@@ -176,29 +177,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
 
-
-    const navbarShouldBeVisible = showControls || loading || error || !featuredMovie
-
-    const renderNavbarOverlay = (forceVisible: boolean) => (
-        <div 
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out ${
-                forceVisible ? 'opacity-100 translate-y-0' : navbarShouldBeVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6 pointer-events-none'
-            }`}
-            style={{
-                transform: (forceVisible || navbarShouldBeVisible)
-                    ? 'translateY(0) scale(1)'
-                    : 'translateY(-10px) scale(0.98)'
-            }}
-        >
-            <Navbar isVisible={true} />
-        </div>
-    )
-
     // Mostra loading durante verifica trailer
     if (loading) {
         return (
             <div className="relative h-screen bg-black flex items-center justify-center">
-                {renderNavbarOverlay(true)}
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
                     <h2 className="text-3xl font-bold text-white mb-4">Caricamento film con trailer...</h2>
@@ -216,7 +198,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     if (error || !featuredMovie) {
         return (
             <div className="relative h-screen bg-black flex items-center justify-center">
-                {renderNavbarOverlay(true)}
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
@@ -306,7 +287,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     }
                 }
             `}</style>
-            {renderNavbarOverlay(false)}
             <div
                 ref={hoverRef}
                 className="relative h-screen w-full overflow-hidden"

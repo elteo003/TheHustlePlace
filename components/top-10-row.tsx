@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
@@ -53,7 +53,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                             onClick={isTouch ? () => handleActivate(item, itemType) : undefined}
                             onKeyDown={
                                 isTouch
-                                    ? (e) => {
+                                    ? (e: KeyboardEvent<HTMLDivElement>) => {
                                           if (e.key === 'Enter' || e.key === ' ') {
                                               e.preventDefault()
                                               handleActivate(item, itemType)

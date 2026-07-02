@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducedMotion } from 'framer-motion'
+import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { ContentType } from '@/lib/content-navigation'
 import { getPosterTransitionName } from '@/lib/view-transitions'
 import { cn } from '@/lib/utils'

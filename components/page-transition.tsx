@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
-import { useReducedMotion } from 'framer-motion'
+import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { DURATION } from '@/lib/motion'
 
 const pageEase = [0.16, 1, 0.3, 1] as const
