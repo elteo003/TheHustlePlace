@@ -1,83 +1,70 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
+import { motion } from 'framer-motion'
 
-// Componente di caricamento che viene renderizzato solo lato client
-const LoadingAnimation = dynamic(() => Promise.resolve(() => {
+const SPLASH_MS = 1800
+
+export default function RootPage() {
     const router = useRouter()
     const [isFadingOut, setIsFadingOut] = useState(false)
 
-    useEffect(() => {
-        // Naviga alla home dopo 15 secondi
-        const timer = setTimeout(() => {
-            setIsFadingOut(true)
-            setTimeout(() => {
-                router.push('/home')
-            }, 1000)
-        }, 15000)
+    const goHome = useCallback(() => {
+        if (isFadingOut) return
+        setIsFadingOut(true)
+        setTimeout(() => router.push('/home'), 280)
+    }, [isFadingOut, router])
 
+    useEffect(() => {
+        const timer = setTimeout(goHome, SPLASH_MS)
         return () => clearTimeout(timer)
-    }, [router])
+    }, [goHome])
 
     return (
-        <div className={`fixed inset-0 z-50 bg-black transition-opacity duration-1000 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-            {/* CSS-Only Loading Animation - Parte immediatamente */}
-            <div className="flex flex-col items-center justify-center h-full instant-loading-fade">
-                {/* Logo */}
-                <div className="instant-loading-logo mb-8">
-                    <span className="text-8xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent drop-shadow-2xl">
-                        H
-                    </span>
+        <motion.div
+            className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center"
+            animate={{ opacity: isFadingOut ? 0 : 1 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        >
+            <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-col items-center"
+            >
+                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-lg shadow-white/10">
+                    <span className="text-black font-bold text-2xl">H</span>
                 </div>
-
-                {/* Text */}
-                <div className="text-center mb-12">
-                    <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent mb-4">
-                        TheHustlePlace
-                    </h1>
-                    <p className="text-xl text-gray-300 font-medium">
-                        STREAMING PREMIUM
-                    </p>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-80 h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div className="instant-loading-progress h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
-                </div>
-
-                {/* Loading Text */}
-                <p className="text-gray-400 mt-6 text-lg">
-                    Caricamento in corso...
-                </p>
-            </div>
-        </div>
-    )
-}), {
-    ssr: false,
-    loading: () => (
-        <div className="fixed inset-0 z-50 bg-black">
-            <div className="flex flex-col items-center justify-center h-full">
-                <div className="mb-8">
-                    <span className="text-8xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent drop-shadow-2xl">
-                        H
-                    </span>
-                </div>
-                <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent mb-4">
+                <h1 className="text-2xl font-semibold text-white tracking-tight mb-1">
                     TheHustlePlace
                 </h1>
-                <p className="text-xl text-gray-300 font-medium mb-12">
-                    STREAMING PREMIUM
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-10">
+                    Streaming
                 </p>
-                <p className="text-gray-400 text-lg">
-                    Caricamento in corso...
-                </p>
-            </div>
-        </div>
-    )
-})
+            </motion.div>
 
-export default function RootPage() {
-    return <LoadingAnimation />
+            <motion.div
+                className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+            >
+                <motion.div
+                    className="h-full bg-white/80 rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: SPLASH_MS / 1000, ease: 'linear' }}
+                />
+            </motion.div>
+
+            <button
+                type="button"
+                onClick={goHome}
+                className="mt-8 text-sm text-white/50 hover:text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-3 py-1"
+            >
+                Salta
+            </button>
+        </motion.div>
+    )
 }

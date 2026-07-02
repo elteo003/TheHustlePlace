@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navbar } from './navbar'
+import { PageTransition } from './page-transition'
 
 interface ConditionalLayoutProps {
     children: React.ReactNode
@@ -16,26 +17,21 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         setIsClient(true)
     }, [])
 
-    // Nascondi la navbar globale nelle pagine player, nello splash e nella home
     const isPlayerPage = pathname?.startsWith('/player/')
-    const isSplashPage = pathname === '/'
-    const isHomePage = pathname === '/home'
-    const hideNavbar = isPlayerPage || isSplashPage || isHomePage
+    const isSplash = pathname === '/'
+    const isHome = pathname === '/home'
+    const showNavbar = !isPlayerPage && !isSplash
+    const needsTopPadding = showNavbar && !isHome
 
-    // Evita hydration mismatch mostrando layout base durante SSR
     if (!isClient) {
-        return (
-            <div className="min-h-screen bg-black text-white">
-                {children}
-            </div>
-        )
+        return <div className="min-h-screen bg-black text-white">{children}</div>
     }
 
     return (
         <>
-            {!hideNavbar && <Navbar />}
-            <div className={!hideNavbar ? 'pt-20' : ''}>
-                {children}
+            {showNavbar && <Navbar immersive={isHome} />}
+            <div className={needsTopPadding ? 'pt-16' : ''}>
+                <PageTransition>{children}</PageTransition>
             </div>
         </>
     )

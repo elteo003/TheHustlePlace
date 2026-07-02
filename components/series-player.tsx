@@ -5,6 +5,7 @@ import { Play, Plus, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SeriesPlayerProps, Episode } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
+import { PosterTransition } from '@/components/ui/poster-transition'
 import { useAutoplay } from '@/hooks/useAutoplay'
 
 export function SeriesPlayer({
@@ -86,7 +87,7 @@ export function SeriesPlayer({
     }
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-black text-white pt-16">
             {/* Hero Section */}
             <div className="relative h-[70vh] bg-gradient-to-r from-black via-black/50 to-transparent">
                 {/* Backdrop */}
@@ -105,13 +106,17 @@ export function SeriesPlayer({
                     <div className="max-w-4xl mx-auto px-6 pb-16">
                         <div className="flex items-start space-x-6">
                             {/* Poster */}
-                            <div className="flex-shrink-0">
+                            <PosterTransition
+                                type="tv"
+                                id={tvShow.tmdb_id ?? tvShow.id}
+                                className="flex-shrink-0"
+                            >
                                 <img
                                     src={getImageUrl(tvShow.poster_path, 'w500')}
                                     alt={tvShow.name}
                                     className="w-48 h-72 object-cover rounded-lg shadow-2xl"
                                 />
-                            </div>
+                            </PosterTransition>
 
                             {/* Info */}
                             <div className="flex-1">

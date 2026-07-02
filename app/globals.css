@@ -231,7 +231,32 @@ body {
         background-color: rgba(255, 255, 255, 0.5);
     }
 
-    /* Scrollbar orizzontale per le sezioni */
+    /* Scrollbar orizzontale per caroselli */
+    .horizontal-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+    }
+
+    .horizontal-scroll::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .horizontal-scroll::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 0 4px;
+    }
+
+    .horizontal-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        transition: background 0.2s ease;
+    }
+
+    .horizontal-scroll:hover::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Scrollbar orizzontale per le sezioni (legacy) */
     .scrollbar-horizontal {
         scrollbar-width: thin;
         scrollbar-color: rgba(59, 130, 246, 0.6) transparent;
@@ -514,4 +539,89 @@ body::-webkit-scrollbar-thumb:hover {
 .view-transition-exiting {
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
+}
+
+/* Design system — restrained, motion-first */
+.btn-play {
+    @apply bg-white text-black font-semibold rounded-md px-5 py-2.5
+        transition-transform duration-200 ease-spring
+        hover:scale-[1.02] active:scale-[0.98]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50;
+}
+
+.btn-ghost-outline {
+    @apply border border-white/25 text-white rounded-md px-5 py-2.5 font-medium
+        transition-colors duration-200
+        hover:bg-white/10 active:bg-white/5
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30;
+}
+
+.section-title {
+    @apply text-xl sm:text-2xl font-semibold text-white tracking-tight mb-5;
+}
+
+.tab-pill-group {
+    @apply flex gap-1 bg-white/5 rounded-lg p-1;
+}
+
+.tab-pill {
+    @apply px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200
+        text-white/60 hover:text-white;
+}
+
+.tab-pill-active {
+    @apply bg-white text-black hover:text-black;
+}
+
+.icon-btn {
+    @apply p-2 rounded-md transition-colors duration-200 text-white/60 hover:text-white hover:bg-white/10
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30;
+}
+
+.icon-btn-active {
+    @apply bg-white text-black hover:text-black hover:bg-white;
+}
+
+/* View Transitions API — poster morph + nav anchor */
+::view-transition-group(*) {
+    animation-duration: 380ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+    animation-duration: 380ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+::view-transition-group(site-nav) {
+    animation: none;
+    z-index: 100;
+}
+
+::view-transition-old(site-nav) {
+    display: none;
+}
+
+::view-transition-new(site-nav) {
+    animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(*),
+    ::view-transition-new(*),
+    ::view-transition-group(*) {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

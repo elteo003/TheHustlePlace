@@ -4,9 +4,17 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
+        "dev:e2e": "next dev -p 3005",
+        "start:e2e": "next start -p 3005",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:e2e": "playwright test",
+        "test:e2e:prod": "npm run build && node scripts/e2e-prod.mjs",
+        "test:e2e:ui": "playwright test --ui",
+        "test:all": "npm run test && npm run test:e2e:prod"
     },
     "dependencies": {
         "@radix-ui/react-avatar": "^1.0.4",
@@ -33,6 +41,7 @@
         "zod": "^3.25.76"
     },
     "devDependencies": {
+        "@playwright/test": "^1.54.1",
         "@types/node": "^20.10.5",
         "@types/react": "^18.2.45",
         "@types/react-dom": "^18.2.18",
@@ -41,6 +50,7 @@
         "eslint-config-next": "14.0.4",
         "postcss": "^8.4.32",
         "tailwindcss": "^3.4.0",
-        "typescript": "^5.3.3"
+        "typescript": "^5.3.3",
+        "vitest": "^3.2.6"
     }
 }

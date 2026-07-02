@@ -1,7 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    viewTransition: true,
+  },
   images: {
-    domains: ['image.tmdb.org', 'vixsrc.to'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org',
+        pathname: '/t/p/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vixsrc.to',
+        pathname: '/**',
+      },
+    ],
   },
   env: {
     TMDB_API_KEY: process.env.TMDB_API_KEY,

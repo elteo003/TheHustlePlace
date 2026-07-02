@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SeriesPlayer } from '@/components/series-player'
-import { TVShowDetails, Episode } from '@/types'
+import { Season, TVShowDetails } from '@/types'
 import { toast } from '@/components/ui/use-toast'
 
 export default function SeriesPage() {
@@ -28,32 +28,27 @@ export default function SeriesPage() {
             setError(null)
             setLoadingMessage('Caricamento serie TV...')
 
-            // Carica i dettagli della serie TV
             const response = await fetch(`/api/tmdb/tv/${seriesId}`)
             const data = await response.json()
 
             if (data.success && data.data) {
                 const seriesData = data.data
 
-                setLoadingMessage('Verifica disponibilità episodi su VixSrc...')
-                // Carica le stagioni e gli episodi (con filtro disponibilità)
+                setLoadingMessage('Preparazione episodi...')
                 const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId)
 
-                // Calcola dinamicamente il numero di stagioni ed episodi dai dati reali
                 const actualNumberOfSeasons = seasonsWithEpisodes.length
                 const actualNumberOfEpisodes = seasonsWithEpisodes.reduce(
                     (total, season) => total + (season.episodes?.length || 0),
                     0
                 )
 
-                console.log(`📊 Conteggi dinamici - Stagioni: ${actualNumberOfSeasons}, Episodi: ${actualNumberOfEpisodes}`)
-
                 const tvShowDetails: TVShowDetails = {
                     ...seriesData,
                     seasons: seasonsWithEpisodes,
-                    number_of_seasons: actualNumberOfSeasons,  // Calcolato dinamicamente
-                    number_of_episodes: actualNumberOfEpisodes, // Calcolato dinamicamente
-                    genres: seriesData.genres || []
+                    number_of_seasons: actualNumberOfSeasons,
+                    number_of_episodes: actualNumberOfEpisodes,
+                    genres: seriesData.genres || [],
                 }
 
                 setTVShow(tvShowDetails)
@@ -62,152 +57,84 @@ export default function SeriesPage() {
             } else {
                 throw new Error('Serie TV non trovata')
             }
-        } catch (error) {
-            console.error('Errore nel caricamento della serie TV:', error)
+        } catch {
             setError('Errore nel caricamento della serie TV')
             toast({
-                title: "Errore",
-                description: "Impossibile caricare i dettagli della serie TV",
-                variant: "destructive"
+                title: 'Errore',
+                description: 'Impossibile caricare i dettagli della serie TV',
+                variant: 'destructive',
             })
         } finally {
             setLoading(false)
         }
     }
 
-    const loadSeasonsWithEpisodes = async (seriesId: string): Promise<any[]> => {
+    const loadSeasonsWithEpisodes = async (id: string): Promise<Season[]> => {
         try {
-            // Carica le stagioni e gli episodi reali da TMDB
-            const response = await fetch(`/api/tmdb/tv/${seriesId}/seasons`)
+            const response = await fetch(`/api/tmdb/tv/${id}/seasons`)
             const data = await response.json()
 
             if (data.success && data.data) {
-                console.log('✅ Stagioni caricate:', data.data.length, 'stagioni trovate')
-                
-                // Filtra gli episodi non disponibili su VixSrc
-                const filteredSeasons = await filterAvailableEpisodes(seriesId, data.data)
-                
-                return filteredSeasons
+                return filterAvailableEpisodes(id, data.data)
             }
 
-            console.warn('⚠️ Nessuna stagione trovata, uso fallback')
             return []
-        } catch (error) {
-            console.error('Errore nel caricamento delle stagioni:', error)
+        } catch {
             return []
         }
     }
 
-    const filterAvailableEpisodes = async (seriesId: string, seasons: any[]): Promise<any[]> => {
+    const filterAvailableEpisodes = async (id: string, seasons: Season[]): Promise<Season[]> => {
+        const episodes = seasons.flatMap((season) =>
+            (season.episodes || []).map((episode) => ({
+                season: season.season_number,
+                episode: episode.episode_number,
+            }))
+        )
+
+        if (episodes.length === 0) {
+            return seasons
+        }
+
         try {
-            console.log('🔍 Verifica disponibilità episodi su VixSrc...')
-            
-            // Crea un array di tutte le verifiche da fare (stagione, episodio)
-            const availabilityChecks: Array<{
-                seasonNumber: number
-                episodeNumber: number
-                episode: any
-            }> = []
-
-            seasons.forEach(season => {
-                if (season.episodes && Array.isArray(season.episodes)) {
-                    season.episodes.forEach((episode: any) => {
-                        availabilityChecks.push({
-                            seasonNumber: season.season_number,
-                            episodeNumber: episode.episode_number,
-                            episode
-                        })
-                    })
-                }
+            const response = await fetch('/api/player/check-availability/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tmdbId: parseInt(id, 10), episodes }),
             })
+            const data = await response.json()
 
-            console.log(`📺 Verificando disponibilità di ${availabilityChecks.length} episodi...`)
-
-            // Verifica disponibilità in batch (5 alla volta per non sovraccaricare)
-            const batchSize = 5
-            const availableEpisodesMap = new Map<string, boolean>()
-
-            for (let i = 0; i < availabilityChecks.length; i += batchSize) {
-                const batch = availabilityChecks.slice(i, i + batchSize)
-                
-                const batchResults = await Promise.allSettled(
-                    batch.map(async ({ seasonNumber, episodeNumber }) => {
-                        try {
-                            const checkResponse = await fetch(
-                                `/api/player/check-availability?tmdbId=${seriesId}&type=tv&season=${seasonNumber}&episode=${episodeNumber}`
-                            )
-                            const checkData = await checkResponse.json()
-                            
-                            const key = `${seasonNumber}-${episodeNumber}`
-                            return {
-                                key,
-                                available: checkData.success && checkData.data?.isAvailable === true
-                            }
-                        } catch (error) {
-                            console.warn(`Errore verifica episodio S${seasonNumber}E${episodeNumber}:`, error)
-                            return {
-                                key: `${seasonNumber}-${episodeNumber}`,
-                                available: false
-                            }
-                        }
-                    })
-                )
-
-                batchResults.forEach(result => {
-                    if (result.status === 'fulfilled') {
-                        availableEpisodesMap.set(result.value.key, result.value.available)
-                    }
-                })
-
-                // Piccola pausa tra i batch
-                if (i + batchSize < availabilityChecks.length) {
-                    await new Promise(resolve => setTimeout(resolve, 200))
-                }
+            if (!data.success || !Array.isArray(data.data?.availability)) {
+                return seasons
             }
 
-            // Filtra gli episodi mantenendo solo quelli disponibili
-            const filteredSeasons = seasons.map(season => {
-                if (!season.episodes || !Array.isArray(season.episodes)) {
-                    return season
-                }
+            const availableSet = new Set(
+                data.data.availability
+                    .filter((item: { available: boolean }) => item.available)
+                    .map((item: { season: number; episode: number }) => `${item.season}-${item.episode}`)
+            )
 
-                const availableEpisodes = season.episodes.filter((episode: any) => {
-                    const key = `${season.season_number}-${episode.episode_number}`
-                    const isAvailable = availableEpisodesMap.get(key) ?? false
-                    return isAvailable
+            return seasons
+                .map((season) => {
+                    const availableEpisodes = (season.episodes || []).filter((episode) =>
+                        availableSet.has(`${season.season_number}-${episode.episode_number}`)
+                    )
+
+                    return {
+                        ...season,
+                        episodes: availableEpisodes,
+                        episode_count: availableEpisodes.length,
+                    }
                 })
-
-                const availableCount = availableEpisodes.length
-                const totalCount = season.episodes.length
-                
-                if (availableCount < totalCount) {
-                    console.log(`⚠️ Stagione ${season.season_number}: ${availableCount}/${totalCount} episodi disponibili`)
-                }
-
-                return {
-                    ...season,
-                    episodes: availableEpisodes,
-                    episode_count: availableEpisodes.length // Aggiorna il conteggio
-                }
-            }).filter(season => season.episodes.length > 0) // Rimuovi stagioni senza episodi disponibili
-
-            const totalAvailable = filteredSeasons.reduce((sum, s) => sum + s.episodes.length, 0)
-            const totalOriginal = availabilityChecks.length
-            
-            console.log(`✅ Filtro completato: ${totalAvailable}/${totalOriginal} episodi disponibili su VixSrc`)
-
-            return filteredSeasons
-        } catch (error) {
-            console.error('Errore nel filtro disponibilità episodi:', error)
-            // In caso di errore, ritorna le stagioni originali
+                .filter((season) => season.episodes.length > 0)
+        } catch {
             return seasons
         }
     }
 
-
     const handleSeasonChange = (season: number) => {
         setCurrentSeason(season)
-        setCurrentEpisode(1) // Reset al primo episodio
+        setCurrentEpisode(1)
     }
 
     const handleEpisodeChange = (episode: number) => {
@@ -215,56 +142,21 @@ export default function SeriesPage() {
     }
 
     const handlePlay = (season: number, episode: number) => {
-        // Naviga al player dell'episodio
         router.push(`/player/tv/${seriesId}?season=${season}&episode=${episode}`)
     }
 
     const handleAutoplayNext = (season: number, episode: number) => {
-        // Aggiorna lo stato e naviga al prossimo episodio
         setCurrentSeason(season)
         setCurrentEpisode(episode)
         router.push(`/player/tv/${seriesId}?season=${season}&episode=${episode}`)
-    }
-
-    // Gestisce l'autoplay quando l'episodio finisce
-    const handleEpisodeEnded = () => {
-        if (!tvShow) return
-
-        const currentSeasonData = tvShow.seasons.find(s => s.season_number === currentSeason)
-        if (!currentSeasonData) return
-
-        // Trova il prossimo episodio
-        const nextEpisode = currentSeasonData.episodes.find(e => e.episode_number === currentEpisode + 1)
-        if (nextEpisode) {
-            // Prossimo episodio nella stessa stagione
-            handleAutoplayNext(currentSeason, currentEpisode + 1)
-        } else {
-            // Cerca nella prossima stagione
-            const nextSeason = tvShow.seasons.find(s => s.season_number === currentSeason + 1)
-            if (nextSeason && nextSeason.episodes.length > 0) {
-                handleAutoplayNext(currentSeason + 1, 1)
-            } else {
-                // Stagione completata
-                toast({
-                    title: "Stagione completata!",
-                    description: "Hai finito di guardare tutti gli episodi disponibili.",
-                    variant: "default"
-                })
-            }
-        }
     }
 
     if (loading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                     <p className="text-white text-lg">{loadingMessage}</p>
-                    {loadingMessage.includes('Verifica disponibilità') && (
-                        <p className="text-gray-400 text-sm mt-2">
-                            Questo può richiedere alcuni secondi...
-                        </p>
-                    )}
                 </div>
             </div>
         )

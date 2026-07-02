@@ -113,7 +113,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 </div>
 
                 {/* Movies Grid */}
-                <CustomScrollbar className="" containerClassName="flex gap-4">
+                <CustomScrollbar className="" containerClassName="gap-4">
                     {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path

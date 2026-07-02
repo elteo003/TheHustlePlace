@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, X } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
+import { getContentId, getPlayerPath } from '@/lib/content-navigation'
+import { useRouter } from 'next/navigation'
 
 interface SearchResult {
     id: number
@@ -20,6 +22,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onFocusChange }: SearchBarProps) {
+    const router = useRouter()
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<SearchResult[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -115,21 +118,15 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
     }
 
     const handleResultClick = (result: SearchResult) => {
-        // Usa tmdb_id se disponibile, altrimenti id
-        const itemId = result.tmdb_id || result.id
-        const url = result.type === 'movie'
-            ? `/player/movie/${itemId}`
-            : `/series/${itemId}`
-
-        window.location.href = url
+        const itemId = getContentId(result)
+        window.location.href = getPlayerPath(itemId, result.type)
         setIsOpen(false)
         setQuery('')
     }
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && query.trim()) {
-            // Naviga alla pagina di risultati di ricerca
-            window.location.href = `/search?q=${encodeURIComponent(query.trim())}`
+            router.push(`/search?q=${encodeURIComponent(query.trim())}`)
             setIsOpen(false)
         }
     }

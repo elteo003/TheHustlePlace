@@ -186,15 +186,6 @@ export interface TVShowDetails extends TVShow {
     }>;
 }
 
-export interface MoviePreviewProps {
-    movie: Movie | TVShow;
-    type: 'movie' | 'tv';
-    onPlay: (id: number) => void;
-    onDetails: (id: number) => void;
-    isHovered: boolean;
-    onHover: (hovered: boolean) => void;
-}
-
 export interface SeriesPlayerProps {
     tvShow: TVShowDetails;
     currentSeason: number;

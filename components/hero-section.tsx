@@ -6,12 +6,14 @@ import { Play, Info, Plus, Heart, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
+import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useCleanup } from '@/hooks/useCleanup'
 import { useParallax } from '@/hooks/useParallax'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useHeroControls } from '@/hooks/useHeroControls'
-import { Navbar } from '@/components/navbar'
+import { useNavbarContext } from '@/contexts/NavbarContext'
+import { useRouter } from 'next/navigation'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void
@@ -24,12 +26,19 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailers = false, onLoaded, currentHeroMovieIndex = 0, onUpcomingMovieSelect }: HeroSectionProps) {
+    const router = useRouter()
+    const { setIsVisible: setNavbarVisible } = useNavbarContext()
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
 
     // Hook personalizzati
     const { parallaxRef, scrollY } = useParallax()
     const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
+
+    useEffect(() => {
+        setNavbarVisible(showControls)
+        return () => setNavbarVisible(true)
+    }, [showControls, setNavbarVisible])
 
     const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
         delay: 1000, // Aumento il delay per dare più tempo
@@ -154,15 +163,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     const handleWatchNow = () => {
         if (featuredMovie) {
-            // Usa tmdb_id se disponibile, altrimenti id
-            const itemId = (featuredMovie as any).tmdb_id || featuredMovie.id
-            window.location.href = `/player/movie/${itemId}`
+            const itemId = getContentId(featuredMovie as { id: number; tmdb_id?: number })
+            window.location.href = getPlayerPath(itemId, 'movie')
         }
     }
 
     const handleMoreInfo = () => {
-        // Implementa modal con dettagli del film
-        console.log('More info per:', featuredMovie?.title)
+        if (featuredMovie) {
+            const itemId = getContentId(featuredMovie as { id: number; tmdb_id?: number })
+            router.push(`/movie/${itemId}`)
+        }
     }
 
 
@@ -299,7 +309,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             {renderNavbarOverlay(false)}
             <div
                 ref={hoverRef}
-                className="relative h-screen w-full overflow-hidden -mt-20"
+                className="relative h-screen w-full overflow-hidden"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
@@ -413,28 +423,20 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     <Button
                                         onClick={handleWatchNow}
                                         size="lg"
-                                        className="bg-black/40 backdrop-blur-sm border border-white/30 text-white hover:bg-black/60 hover:border-white/50 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 hover:rotate-1"
-                                        style={{
-                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(0.5deg)',
-                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                                        }}
+                                        className="btn-play text-base px-8 py-6 h-auto gap-2"
                                     >
-                                        <Play className="w-6 h-6" />
-                                        Play
+                                        <Play className="w-5 h-5 fill-current" />
+                                        Guarda
                                     </Button>
 
                                     <Button
                                         onClick={handleMoreInfo}
                                         variant="outline"
                                         size="lg"
-                                        className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-lg flex items-center gap-3 backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:-rotate-1"
-                                        style={{
-                                            transform: isHovered ? 'translateY(0) scale(1) rotate(0deg)' : 'translateY(5px) scale(0.95) rotate(-0.5deg)',
-                                            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.05s'
-                                        }}
+                                        className="btn-ghost-outline text-base px-8 py-6 h-auto gap-2"
                                     >
-                                        <Info className="w-6 h-6" />
-                                        Altre Info
+                                        <Info className="w-5 h-5" />
+                                        Dettagli
                                     </Button>
 
                                     {/* Mute/Unmute Button */}

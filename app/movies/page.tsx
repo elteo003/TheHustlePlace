@@ -1,77 +1,21 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/navbar'
-import { MoviePreview } from '@/components/movie-preview'
-import { LoadingScreen } from '@/components/loading-screen'
-import MovieGridIntegrated from '@/components/movie-grid-integrated'
+import { fetchCatalogSection } from '@/lib/server/catalog'
+import { MoviesPageClient } from '@/components/pages/movies-page-client'
 import { Movie } from '@/types'
-import { filterAvailableMovies } from '@/lib/utils'
 
-export default function MoviesPage() {
-    const router = useRouter()
+export const dynamic = 'force-dynamic'
 
-    const handlePlay = (id: number, type?: 'movie' | 'tv') => {
-        if (type === 'tv') {
-            router.push(`/series/${id}`)
-        } else {
-            router.push(`/player/movie/${id}`)
-        }
-    }
-
-    const handleDetails = (id: number, type?: 'movie' | 'tv') => {
-        if (type === 'tv') {
-            router.push(`/series/${id}`)
-        } else {
-            router.push(`/player/movie/${id}`)
-        }
-    }
-
+export default async function MoviesPage() {
+    const [popular, recent, topRated] = await Promise.all([
+        fetchCatalogSection('movie', 'popular', 10),
+        fetchCatalogSection('movie', 'recent', 10),
+        fetchCatalogSection('movie', 'top-rated', 10),
+    ])
 
     return (
-        <div className="min-h-screen bg-black">
-            <Navbar />
-
-            <main className="pt-8 pb-16">
-                <div className="max-w-7xl mx-auto px-4">
-                    <h1 className="text-3xl font-bold text-white mb-8">Film</h1>
-
-                    {/* Sezione con MovieGrid integrato */}
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-white mb-6">Film Popolari</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="popular"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                            limit={10}
-                        />
-                    </div>
-
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-white mb-6">Film Recenti</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="recent"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                            limit={10}
-                        />
-                    </div>
-
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-white mb-6">Film Migliori</h2>
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="top-rated"
-                            onPlay={handlePlay}
-                            onDetails={handleDetails}
-                            limit={10}
-                        />
-                    </div>
-                </div>
-            </main>
-        </div>
+        <MoviesPageClient
+            popular={popular as Movie[]}
+            recent={recent as Movie[]}
+            topRated={topRated as Movie[]}
+        />
     )
 }

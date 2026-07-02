@@ -386,3 +386,4 @@ export const getTopRatedTVShowsHandler = catalogController.getTopRatedTVShows.bi
 export const searchMoviesHandler = catalogController.searchMovies.bind(catalogController)
 export const searchTVShowsHandler = catalogController.searchTVShows.bind(catalogController)
 export const getGenresHandler = catalogController.getGenres.bind(catalogController)
+export const getTop10MixedHandler = catalogController.getTop10Mixed.bind(catalogController)
