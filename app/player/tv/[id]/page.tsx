@@ -5,8 +5,10 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
-import { TVShowDetails } from '@/types'
+import { TVShowDetails, Episode } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
+import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
+import { getTMDBImageUrl } from '@/lib/tmdb'
 
 interface TVShowSummary {
     id: number
@@ -50,6 +52,7 @@ export default function TVPlayerPage() {
     const [tvShow, setTVShow] = useState<TVShowSummary | null>(null)
     const [tvShowDetails, setTVShowDetails] = useState<TVShowDetails | null>(null)
     const [loading, setLoading] = useState(true)
+    const [offerNext, setOfferNext] = useState(false)
     const fetchedId = useRef<string | null>(null)
 
     useEffect(() => {
@@ -141,6 +144,18 @@ export default function TVPlayerPage() {
             : null
     )
 
+    useEffect(() => {
+        setOfferNext(false)
+    }, [season, episode])
+
+    const findEpisode = useCallback(
+        (seasonNum: number, episodeNum: number): Episode | null => {
+            const seasonData = tvShowDetails?.seasons.find((s) => s.season_number === seasonNum)
+            return seasonData?.episodes.find((e) => e.episode_number === episodeNum) ?? null
+        },
+        [tvShowDetails]
+    )
+
     const findNextEpisode = useCallback(
         (currentSeasonNum: number, currentEpisodeNum: number) => {
             if (!tvShowDetails?.seasons) return null
@@ -172,12 +187,25 @@ export default function TVPlayerPage() {
     const handleEpisodeEnded = useCallback(() => {
         const next = findNextEpisode(season, episode)
         if (next) {
-            router.push(`/player/tv/${tvId}?season=${next.season}&episode=${next.episode}`)
+            setOfferNext(true)
             return
         }
-
         router.push(`/series/${tvId}`)
     }, [episode, findNextEpisode, router, season, tvId])
+
+    const goToNextEpisode = useCallback(() => {
+        const next = findNextEpisode(season, episode)
+        if (!next) {
+            router.push(`/series/${tvId}`)
+            return
+        }
+        setOfferNext(false)
+        router.push(`/player/tv/${tvId}?season=${next.season}&episode=${next.episode}`)
+    }, [episode, findNextEpisode, router, season, tvId])
+
+    const currentEpisodeData = findEpisode(season, episode)
+    const nextRef = findNextEpisode(season, episode)
+    const nextEpisodeData = nextRef ? findEpisode(nextRef.season, nextRef.episode) : null
 
     if (loading) {
         return <PageSpinner />
@@ -198,46 +226,53 @@ export default function TVPlayerPage() {
             footer={
                 <div className="p-8 bg-black">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-2xl font-bold mb-4">Informazioni</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div>
-                                <h3 className="text-lg font-semibold mb-2">Trama</h3>
-                                <p className="text-gray-300 leading-relaxed">{tvShow.overview}</p>
+                        <h2 className="text-xl font-semibold mb-6">Trama</h2>
+                        <p className="text-sm text-white/45 mb-2">
+                            S{season}E{episode}
+                            {currentEpisodeData?.name ? ` · ${currentEpisodeData.name}` : ''}
+                        </p>
+                        <p className="text-white/80 leading-relaxed">
+                            {currentEpisodeData?.overview?.trim() ||
+                                'Nessuna trama disponibile per questo episodio.'}
+                        </p>
+                        {tvShow.overview && (
+                            <div className="mt-8 pt-6 border-t border-white/10">
+                                <h3 className="text-sm font-medium text-white/45 mb-2">La serie</h3>
+                                <p className="text-white/60 leading-relaxed">{tvShow.overview}</p>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-2">Dettagli</h3>
-                                <div className="space-y-2 text-gray-300">
-                                    <p>
-                                        <span className="font-medium">Prima messa in onda:</span>{' '}
-                                        {tvShow.first_air_date || 'N/D'}
-                                    </p>
-                                    <p>
-                                        <span className="font-medium">Stagioni:</span> {tvShow.number_of_seasons}
-                                    </p>
-                                    <p>
-                                        <span className="font-medium">Episodi:</span> {tvShow.number_of_episodes}
-                                    </p>
-                                    <p>
-                                        <span className="font-medium">In riproduzione:</span> S{season}E{episode}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             }
         >
-            <VixsrcEmbedPlayer
-                tmdbId={tvShow.tmdb_id || tvShow.id}
-                type="tv"
-                season={season}
-                episode={episode}
-                title={`${tvShow.name} - S${season}E${episode}`}
-                onEnded={handleEpisodeEnded}
-                onBack={() => router.push(`/series/${tvShow.id}`)}
-                unavailableTitle="Episodio non disponibile"
-                unavailableDescription={`L'episodio ${episode} della stagione ${season} non è disponibile su VixSrc.`}
-            />
+            <div className="relative w-full h-full">
+                <VixsrcEmbedPlayer
+                    tmdbId={tvShow.tmdb_id || tvShow.id}
+                    type="tv"
+                    season={season}
+                    episode={episode}
+                    title={`${tvShow.name} - S${season}E${episode}`}
+                    onEnded={handleEpisodeEnded}
+                    onBack={() => router.push(`/series/${tvShow.id}`)}
+                    unavailableTitle="Episodio non disponibile"
+                    unavailableDescription={`L'episodio ${episode} della stagione ${season} non è disponibile su VixSrc.`}
+                />
+                {offerNext && nextRef && (
+                    <NextEpisodeOverlay
+                        season={nextRef.season}
+                        episode={nextRef.episode}
+                        title={nextEpisodeData?.name || `Episodio ${nextRef.episode}`}
+                        overview={nextEpisodeData?.overview}
+                        stillUrl={
+                            nextEpisodeData?.still_path
+                                ? getTMDBImageUrl(nextEpisodeData.still_path, 'w500')
+                                : null
+                        }
+                        onPlayNow={goToNextEpisode}
+                        onCancel={() => setOfferNext(false)}
+                    />
+                )}
+            </div>
         </PlayerShell>
     )
 }

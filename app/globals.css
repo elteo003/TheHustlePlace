@@ -513,6 +513,22 @@ body::-webkit-scrollbar {
 }
 
 /* Design system — restrained, motion-first */
+@keyframes next-ep-fill {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.next-ep-fill {
+    transform: scaleX(0);
+    animation-name: next-ep-fill;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
 .btn-play {
     @apply bg-white text-black font-semibold rounded-md px-5 py-2.5
         transition-transform duration-200 ease-spring
