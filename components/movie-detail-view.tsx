@@ -1,6 +1,7 @@
 'use client'
 
 import { Play, Plus, Star, Clock } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getContentPosterUrl } from '@/lib/content-display'
@@ -46,12 +47,14 @@ export function MovieDetailView({ movie, onPlay }: MovieDetailViewProps) {
                         <PosterTransition
                             type="movie"
                             id={movie.tmdb_id ?? movie.id}
-                            className="flex-shrink-0"
+                            className="relative flex-shrink-0 w-40 sm:w-48 aspect-[2/3]"
                         >
-                            <img
+                            <Image
                                 src={getContentPosterUrl(movie.poster_path)}
                                 alt={movie.title}
-                                className="w-40 sm:w-48 rounded-lg shadow-2xl"
+                                fill
+                                className="object-cover rounded-lg shadow-2xl"
+                                sizes="(max-width: 640px) 160px, 192px"
                             />
                         </PosterTransition>
 

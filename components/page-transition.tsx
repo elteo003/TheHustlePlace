@@ -12,7 +12,7 @@ function shouldAnimatePage(pathname: string | null): boolean {
     if (pathname === '/' || pathname === '/home') return false
     if (pathname.startsWith('/player/')) return false
     if (pathname.startsWith('/search')) return false
-    // Morph poster gestito dalla View Transitions API
+    if (pathname.startsWith('/movies') || pathname.startsWith('/tv') || pathname.startsWith('/catalog')) return false
     if (pathname.startsWith('/movie/') || pathname.startsWith('/series/')) return false
     return true
 }
@@ -34,9 +34,9 @@ export function PageTransition({ children }: PageTransitionProps) {
         <AnimatePresence mode="wait">
             <motion.div
                 key={pathname}
-                initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: -6, filter: 'blur(2px)' }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
                 transition={{
                     duration: DURATION.normal,
                     ease: pageEase,

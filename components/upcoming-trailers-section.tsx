@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { TMDBMovie } from '@/lib/tmdb'
 import { useSmartHover } from '@/hooks/useSmartHover'
 import { useCleanup } from '@/hooks/useCleanup'
@@ -122,11 +123,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                         return (
                             <div
                                 key={movie.id}
-                                className={`flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 ease-out ${
-                                    isMovieHovered
-                                        ? 'w-64 h-36 z-10'
-                                        : 'w-48 h-28'
-                                }`}
+                                className="flex-shrink-0 w-48 h-28 rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 ease-out hover:z-10"
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
@@ -135,41 +132,37 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                 onMouseEnter={() => handleMovieMouseEnter(movie.id)}
                                 onMouseLeave={handleMovieMouseLeave}
                                 style={{
-                                    transform: isMovieHovered ? 'scale(1.1)' : 'scale(1)',
+                                    transform: isMovieHovered ? 'scale(1.08)' : 'scale(1)',
                                     zIndex: isMovieHovered ? 10 : 1,
                                     pointerEvents: 'auto',
                                     position: 'relative',
                                 }}
                             >
                                 <div className="relative w-full h-full group">
-                                    {/* Backdrop Image */}
-                                    <img
+                                    <Image
                                         src={backdropPath ? `https://image.tmdb.org/t/p/w500${backdropPath}` : '/placeholder-movie.svg'}
                                         alt={title}
-                                        className="w-full h-full object-cover transition-all duration-500"
+                                        fill
+                                        className="object-cover"
+                                        sizes="192px"
                                     />
 
-                                    {/* Overlay */}
-                                    <div className={`absolute inset-0 transition-all duration-300 ${isMovieHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
+                                    <div className={`absolute inset-0 transition-colors duration-300 ${isMovieHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
                                         }`} />
 
-                                    {/* Play Button */}
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className={`p-3 rounded-full backdrop-blur-sm border border-white/30 transition-all duration-300 ${isMovieHovered
+                                        <div className={`p-3 rounded-full backdrop-blur-sm border border-white/30 transition-transform duration-300 ${isMovieHovered
                                             ? 'bg-black/80 scale-110'
                                             : 'bg-black/60 group-hover:bg-black/80'
                                             }`}>
-                                            <svg className={`text-white fill-white transition-all duration-300 ${isMovieHovered ? 'w-6 h-6' : 'w-4 h-4'
-                                                }`} viewBox="0 0 24 24">
+                                            <svg className="text-white fill-white w-5 h-5" viewBox="0 0 24 24">
                                                 <path d="M8 5v14l11-7z" />
                                             </svg>
                                         </div>
                                     </div>
 
-                                    {/* Title */}
                                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
-                                        <h4 className={`text-white font-semibold truncate transition-all duration-300 ${isMovieHovered ? 'text-sm' : 'text-xs'
-                                            }`}>
+                                        <h4 className="text-white font-semibold truncate text-xs">
                                             {title}
                                         </h4>
                                         {isMovieHovered && (
@@ -179,7 +172,6 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                         )}
                                     </div>
 
-                                    {/* Hover Indicator */}
                                     {isMovieHovered && (
                                         <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
                                     )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Play, Star } from 'lucide-react'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { PosterTransition } from '@/components/ui/poster-transition'
@@ -26,6 +27,7 @@ export function MovieCard({
     className = '',
     type = 'movie',
 }: MovieCardProps) {
+    const router = useRouter()
     const isTouch = useIsCoarsePointer()
     const [isHovered, setIsHovered] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -38,7 +40,7 @@ export function MovieCard({
         e.preventDefault()
         e.stopPropagation()
         const itemId = getContentId(movie as { id: number; tmdb_id?: number })
-        window.location.href = getPlayerPath(itemId, type)
+        router.push(getPlayerPath(itemId, type))
     }
 
     if (!isMounted) {
@@ -66,7 +68,7 @@ export function MovieCard({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="relative bg-zinc-900 rounded-lg overflow-hidden transition-transform duration-300 ease-spring group-hover:scale-[1.03] group-hover:shadow-xl group-hover:shadow-black/40">
+            <div className="relative bg-zinc-900 rounded-lg overflow-hidden hover-lift group-hover:z-10">
                 <div className="relative aspect-[2/3] overflow-hidden">
                     <PosterTransition
                         type={type}
@@ -89,8 +91,8 @@ export function MovieCard({
                     />
 
                     <div
-                        className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
-                            showPlay ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                            showPlay ? 'opacity-100' : 'opacity-0'
                         }`}
                     >
                         <button

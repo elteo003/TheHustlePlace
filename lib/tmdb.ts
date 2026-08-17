@@ -69,7 +69,7 @@ export interface TMDBVideosResponse {
  * @returns Promise con i dati della risposta
  */
 export async function fetchFromTMDB<T>(endpoint: string): Promise<T> {
-    const apiKey = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY
+    const apiKey = process.env.TMDB_API_KEY
 
     if (!apiKey) {
         throw new Error('TMDB_API_KEY non configurata')

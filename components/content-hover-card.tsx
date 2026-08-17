@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Play, Info } from 'lucide-react'
+import Image from 'next/image'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { useTrailerPreview } from '@/hooks/useTrailerPreview'
@@ -73,7 +74,7 @@ export function ContentHoverCard({
     return (
         <>
             <div
-                className={`relative flex-shrink-0 transition-all duration-300 ease-spring cursor-pointer ${widthClass}`}
+                className={`relative flex-shrink-0 transition-transform duration-[180ms] ease-spring cursor-pointer ${widthClass}`}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 onClick={handleTap}
@@ -95,13 +96,15 @@ export function ContentHoverCard({
                     <PosterTransition
                         type={itemType}
                         id={itemId}
-                        className="w-full h-full"
+                        className="relative w-full h-full"
                     >
-                        <img
+                        <Image
                             src={getContentPosterUrl(item.poster_path)}
                             alt={title}
-                            className="w-full h-full object-cover transition-opacity duration-300"
+                            fill
+                            className="object-cover transition-opacity duration-300"
                             style={{ opacity: isExpanded && trailerUrl && !isTouch ? 0 : 1 }}
+                            sizes="(max-width: 768px) 50vw, 200px"
                         />
                     </PosterTransition>
 

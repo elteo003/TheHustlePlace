@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, Grid, List, Star, Calendar, Film, Tv } from 'lucide-react'
 import { MovieCard } from '@/components/movie-card'
 import { Movie, TVShow } from '@/types'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { cn } from '@/lib/utils'
@@ -26,6 +27,7 @@ export function SearchPageClient({
     initialTotalTVShows,
 }: SearchPageClientProps) {
     const searchParams = useSearchParams()
+    const router = useRouter()
     const urlQuery = searchParams.get('q')?.trim() || ''
 
     const [results, setResults] = useState({
@@ -263,14 +265,16 @@ export function SearchPageClient({
                                                 >
                                                     {viewMode === 'list' ? (
                                                         <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
-                                                            <div className="flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
-                                                                <img
+                                                            <div className="relative flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
+                                                                <Image
                                                                     src={getContentPosterUrl(
                                                                         movie.poster_path,
                                                                         'w500'
                                                                     )}
                                                                     alt={movie.title}
-                                                                    className="w-full h-full object-cover"
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    sizes="56px"
                                                                 />
                                                             </div>
                                                             <div className="flex-1 min-w-0">
@@ -305,10 +309,10 @@ export function SearchPageClient({
                                                                     const itemId = getContentId(
                                                                         movie as Movie
                                                                     )
-                                                                    window.location.href = getPlayerPath(
+                                                                    router.push(getPlayerPath(
                                                                         itemId,
                                                                         'movie'
-                                                                    )
+                                                                    ))
                                                                 }}
                                                                 className="btn-play text-sm py-2 flex-shrink-0"
                                                             >
@@ -351,14 +355,16 @@ export function SearchPageClient({
                                                 >
                                                     {viewMode === 'list' ? (
                                                         <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
-                                                            <div className="flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
-                                                                <img
+                                                            <div className="relative flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
+                                                                <Image
                                                                     src={getContentPosterUrl(
                                                                         tvShow.poster_path,
                                                                         'w500'
                                                                     )}
                                                                     alt={tvShow.name}
-                                                                    className="w-full h-full object-cover"
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    sizes="56px"
                                                                 />
                                                             </div>
                                                             <div className="flex-1 min-w-0">
@@ -393,10 +399,10 @@ export function SearchPageClient({
                                                                     const itemId = getContentId(
                                                                         tvShow as TVShow
                                                                     )
-                                                                    window.location.href = getPlayerPath(
+                                                                    router.push(getPlayerPath(
                                                                         itemId,
                                                                         'tv'
-                                                                    )
+                                                                    ))
                                                                 }}
                                                                 className="btn-play text-sm py-2 flex-shrink-0"
                                                             >

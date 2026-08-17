@@ -103,7 +103,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                                 {!isTouch && onPlay && (
                                     <button
                                         type="button"
-                                        className="absolute bottom-2 left-2 right-2 btn-play text-sm py-2 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-10"
+                                        className="absolute bottom-2 left-2 right-2 btn-play text-sm py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                                         onClick={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()

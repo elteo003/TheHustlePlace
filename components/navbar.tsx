@@ -86,9 +86,9 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.span
                             key={isMenuOpen ? 'close' : 'open'}
-                            initial={{ opacity: 0, rotate: -90, scale: 0.8 }}
-                            animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                            exit={{ opacity: 0, rotate: 90, scale: 0.8 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
                             className="block"
                         >
@@ -101,10 +101,10 @@ export function Navbar({ immersive = false }: NavbarProps) {
             <AnimatePresence>
                 {isMenuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                         className="md:hidden absolute top-full left-0 right-0 overflow-hidden bg-zinc-950/95 backdrop-blur-xl border-t border-white/5"
                     >
                         <div className="px-4 py-4 space-y-4">

@@ -5,9 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
-import { toast } from '@/components/ui/use-toast'
 import { TVShowDetails } from '@/types'
-
 interface TVShowSummary {
     id: number
     tmdb_id: number
@@ -172,19 +170,11 @@ export default function TVPlayerPage() {
     const handleEpisodeEnded = useCallback(() => {
         const next = findNextEpisode(season, episode)
         if (next) {
-            toast({
-                title: 'Prossimo episodio',
-                description: `Caricamento S${next.season}E${next.episode}...`,
-            })
             router.push(`/player/tv/${tvId}?season=${next.season}&episode=${next.episode}`)
             return
         }
 
-        toast({
-            title: 'Serie completata!',
-            description: 'Hai finito gli episodi disponibili.',
-        })
-        setTimeout(() => router.push(`/series/${tvId}`), 2000)
+        router.push(`/series/${tvId}`)
     }, [episode, findNextEpisode, router, season, tvId])
 
     if (loading) {

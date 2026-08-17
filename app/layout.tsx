@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from 'sonner'
 import { HLSConfigProvider } from '@/components/hls-config-provider'
 import { ConditionalLayout } from '@/components/conditional-layout'
 import { NavbarProvider } from '@/contexts/NavbarContext'
@@ -45,7 +45,7 @@ export default function RootLayout({
                 {children}
               </ConditionalLayout>
             </div>
-            <Toaster />
+            <Toaster theme="dark" position="bottom-right" closeButton richColors />
           </NavbarProvider>
         </HLSConfigProvider>
       </body>

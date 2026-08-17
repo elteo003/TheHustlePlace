@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Play, Plus, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { SeriesPlayerProps, Episode } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
@@ -109,12 +110,14 @@ export function SeriesPlayer({
                             <PosterTransition
                                 type="tv"
                                 id={tvShow.tmdb_id ?? tvShow.id}
-                                className="flex-shrink-0"
+                                className="relative flex-shrink-0 w-48 h-72"
                             >
-                                <img
+                                <Image
                                     src={getImageUrl(tvShow.poster_path, 'w500')}
                                     alt={tvShow.name}
-                                    className="w-48 h-72 object-cover rounded-lg shadow-2xl"
+                                    fill
+                                    className="object-cover rounded-lg shadow-2xl"
+                                    sizes="192px"
                                 />
                             </PosterTransition>
 
@@ -227,10 +230,12 @@ export function SeriesPlayer({
                                     <div className="flex-shrink-0">
                                         <div className="relative w-32 h-20 bg-gray-800 rounded overflow-hidden">
                                             {episode.still_path ? (
-                                                <img
+                                                <Image
                                                     src={getImageUrl(episode.still_path, 'w500')}
                                                     alt={episode.name}
-                                                    className="w-full h-full object-cover"
+                                                    fill
+                                                    className="object-cover"
+                                                    sizes="128px"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">

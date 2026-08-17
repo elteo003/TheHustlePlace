@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
-const SPLASH_MS = 1800
+const SPLASH_MS = 400
 
 export default function RootPage() {
     const router = useRouter()

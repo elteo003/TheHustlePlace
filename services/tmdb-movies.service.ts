@@ -50,9 +50,7 @@ export class TMDBMoviesService {
 
     constructor() {
         // Prova diverse fonti per la API key
-        this.apiKey = process.env.TMDB_API_KEY ||
-            process.env.NEXT_PUBLIC_TMDB_API_KEY ||
-            ''
+        this.apiKey = process.env.TMDB_API_KEY || ''
     }
 
     private checkApiKey(): void {

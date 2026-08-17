@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Search, X } from 'lucide-react'
+import Image from 'next/image'
 import { Movie, TVShow } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
@@ -119,7 +120,7 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
 
     const handleResultClick = (result: SearchResult) => {
         const itemId = getContentId(result)
-        window.location.href = getPlayerPath(itemId, result.type)
+        router.push(getPlayerPath(itemId, result.type))
         setIsOpen(false)
         setQuery('')
     }
@@ -163,7 +164,7 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
                     }}
                     onKeyPress={handleKeyPress}
                     placeholder="Cerca film e serie TV..."
-                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300"
+                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-colors duration-200"
                 />
                 {query && (
                     <button
@@ -191,12 +192,14 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
                                     onClick={() => handleResultClick(result)}
                                     className="w-full px-4 py-3 flex items-center space-x-3 hover:bg-white/10 transition-colors"
                                 >
-                                    <div className="flex-shrink-0 w-12 h-16 bg-gray-700 rounded overflow-hidden">
+                                    <div className="relative flex-shrink-0 w-12 h-16 bg-gray-700 rounded overflow-hidden">
                                         {result.poster_path && result.poster_path !== '/placeholder-movie.svg' ? (
-                                            <img
+                                            <Image
                                                 src={getTMDBImageUrl(result.poster_path, 'w500')}
                                                 alt={result.title}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
+                                                sizes="48px"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">

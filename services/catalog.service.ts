@@ -5,6 +5,8 @@ import { Movie, TVShow, Genre, CatalogFilters, PaginatedResponse, Top10Content }
 import { VixsrcScraperService } from './vixsrc-scraper.service'
 import { tmdbWrapperService } from './tmdb-wrapper.service'
 import { TMDBMovie } from './tmdb-movies.service'
+import { getVixsrcIdSet } from './vixsrc-ids.service'
+import { filterByVixsrcIds } from '@/lib/vixsrc-ids'
 
 export class CatalogService {
     private readonly VIXSRC_BASE_URL = process.env.VIXSRC_BASE_URL || 'https://vixsrc.to'
@@ -69,9 +71,10 @@ export class CatalogService {
 
             if (response && response.results) {
                 const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
-                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-                logger.info('Film now playing recuperati con successo', { count: movies.length })
-                return movies
+                const available = await this.filterAvailableMovies(movies)
+                await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
+                logger.info('Film now playing recuperati con successo', { count: available.length })
+                return available
             }
 
             return []
@@ -95,9 +98,10 @@ export class CatalogService {
 
             if (response && response.results) {
                 const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
-                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-                logger.info('Top 10 film recuperati da TMDB', { count: movies.length })
-                return movies
+                const available = await this.filterAvailableMovies(movies)
+                await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
+                logger.info('Top 10 film recuperati da TMDB', { count: available.length })
+                return available
             }
 
             return []
@@ -161,30 +165,32 @@ export class CatalogService {
             }
 
             // Recupera i top film e serie TV in parallelo
-            const [moviesResponse, tvShowsResponse] = await Promise.all([
-                tmdbWrapperService.getTopRatedMovies(10), // Prendiamo i top 10 film
-                tmdbWrapperService.getTopRatedTVShows(10) // Prendiamo i top 10 serie TV
+            const [moviesResponse, tvShowsResponse, movieIds, tvIds] = await Promise.all([
+                tmdbWrapperService.getTopRatedMovies(10),
+                tmdbWrapperService.getTopRatedTVShows(10),
+                getVixsrcIdSet('movie'),
+                getVixsrcIdSet('tv'),
             ])
 
             const allContent: Top10Content[] = []
 
-            // Converti i top 5 film
             if (moviesResponse?.results) {
                 const movies = moviesResponse.results
-                    .slice(0, 5) // Prendi solo i primi 5
                     .map((tmdbMovie: any) =>
                         this.convertMovieToTop10Content(this.convertTMDBMovieToMovie(tmdbMovie))
                     )
+                    .filter((movie) => movieIds.size === 0 || movieIds.has(movie.tmdb_id ?? movie.id))
+                    .slice(0, 5)
                 allContent.push(...movies)
             }
 
-            // Converti i top 5 serie TV
             if (tvShowsResponse && (tvShowsResponse as any).results) {
                 const tvShows = (tvShowsResponse as any).results
-                    .slice(0, 5) // Prendi solo i primi 5
                     .map((tmdbTVShow: any) =>
                         this.convertTVShowToTop10Content(this.convertTMDBTVShowToTVShow(tmdbTVShow))
                     )
+                    .filter((show) => tvIds.size === 0 || tvIds.has(show.tmdb_id ?? show.id))
+                    .slice(0, 5)
                 allContent.push(...tvShows)
             }
 
@@ -220,9 +226,10 @@ export class CatalogService {
 
             if (response && response.results) {
                 const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
-                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-                logger.info('Film popolari recuperati con successo', { count: movies.length })
-                return movies
+                const available = await this.filterAvailableMovies(movies)
+                await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
+                logger.info('Film popolari recuperati con successo', { count: available.length })
+                return available
             }
 
             return []
@@ -246,9 +253,10 @@ export class CatalogService {
 
             if (response && response.results) {
                 const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
-                await cache.set(cacheKey, movies, { ttl: this.CACHE_TTL })
-                logger.info('Film recenti recuperati con successo', { count: movies.length })
-                return movies
+                const available = await this.filterAvailableMovies(movies)
+                await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
+                logger.info('Film recenti recuperati con successo', { count: available.length })
+                return available
             }
 
             return []
@@ -640,20 +648,42 @@ export class CatalogService {
                 return cached
             }
 
-            // Usa TMDB API per la ricerca
-            const response = await tmdbWrapperService.searchMovies(query, page)
+            // Usa TMDB API per la ricerca, poi tieni solo i titoli su VixSrc
+            const ids = await getVixsrcIdSet('movie')
+            const collected: Movie[] = []
+            let tmdbPage = page
+            let totalPages = 1
+            let sourceTotal = 0
+
+            while (collected.length < 20 && tmdbPage <= page + 2) {
+                const response = await tmdbWrapperService.searchMovies(query, tmdbPage)
+                if (!response?.results?.length) {
+                    break
+                }
+
+                totalPages = response.total_pages
+                sourceTotal = response.total_results
+                const pageMovies = response.results
+                    .filter((tmdbMovie) => ids.size === 0 || ids.has(tmdbMovie.id))
+                    .map((tmdbMovie) => this.convertTMDBMovieToMovie(tmdbMovie))
+                collected.push(...pageMovies)
+                tmdbPage += 1
+                if (tmdbPage > totalPages) {
+                    break
+                }
+            }
 
             const result: PaginatedResponse<Movie> = {
-                results: response && response.results ? response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie)) : [],
-                page: page,
-                total_pages: response ? response.total_pages : 0,
-                total_results: response ? response.total_results : 0
+                results: collected.slice(0, 20),
+                page,
+                total_pages: totalPages,
+                total_results: ids.size === 0 ? sourceTotal : collected.length,
             }
 
             // Salva in cache
             await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            logger.info('Ricerca film completata', { query, count: response?.results?.length || 0 })
+            logger.info('Ricerca film completata', { query, count: result.results.length })
             return result
         } catch (error) {
             logger.error('Errore nella ricerca film', { error, query })
@@ -671,20 +701,24 @@ export class CatalogService {
                 return cached
             }
 
-            // Usa TMDB API per la ricerca
-            const tvShows = await tmdbWrapperService.searchTVShows(query, page)
+            // Usa TMDB API per la ricerca, poi tieni solo le serie su VixSrc
+            const ids = await getVixsrcIdSet('tv')
+            const tvShowsRaw = await tmdbWrapperService.searchTVShows(query, page)
+            const filtered = (tvShowsRaw || []).filter(
+                (show: { id: number }) => ids.size === 0 || ids.has(show.id)
+            )
 
             const result: PaginatedResponse<TVShow> = {
-                results: tvShows ? tvShows.map(tmdbTVShow => this.convertTMDBTVShowToTVShow(tmdbTVShow)) : [],
-                page: page,
-                total_pages: Math.ceil((tvShows?.length || 0) / 20),
-                total_results: tvShows?.length || 0
+                results: filtered.map((tmdbTVShow: any) => this.convertTMDBTVShowToTVShow(tmdbTVShow)),
+                page,
+                total_pages: Math.ceil((filtered.length || 0) / 20),
+                total_results: filtered.length || 0
             }
 
             // Salva in cache
             await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
 
-            logger.info('Ricerca serie TV completata', { query, count: tvShows?.length || 0 })
+            logger.info('Ricerca serie TV completata', { query, count: result.results.length })
             return result
         } catch (error) {
             logger.error('Errore nella ricerca serie TV', { error, query })
@@ -720,6 +754,14 @@ export class CatalogService {
             logger.error('Errore nel recupero generi', { error, type })
             throw new Error('Errore nel recupero dei generi')
         }
+    }
+
+    private async filterAvailableMovies(movies: Movie[]): Promise<Movie[]> {
+        const ids = await getVixsrcIdSet('movie')
+        if (ids.size === 0) {
+            return movies
+        }
+        return filterByVixsrcIds(movies, ids)
     }
 
     private generateCacheKey(prefix: string, params: Record<string, any>): string {

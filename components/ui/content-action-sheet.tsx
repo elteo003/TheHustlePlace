@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Info, X } from 'lucide-react'
+import Image from 'next/image'
 import { springTransition } from '@/lib/motion'
 import { ContentType } from '@/lib/content-navigation'
 
@@ -71,11 +72,15 @@ export function ContentActionSheet({
                         </button>
 
                         <div className="px-5 pb-8 pt-2 flex gap-4">
-                            <img
-                                src={posterUrl}
-                                alt=""
-                                className="w-24 h-36 object-cover rounded-lg shadow-lg flex-shrink-0"
-                            />
+                            <div className="relative w-24 h-36 flex-shrink-0">
+                                <Image
+                                    src={posterUrl}
+                                    alt=""
+                                    fill
+                                    className="object-cover rounded-lg shadow-lg"
+                                    sizes="96px"
+                                />
+                            </div>
                             <div className="flex-1 min-w-0 pt-1">
                                 <p className="text-xs uppercase tracking-wider text-white/50 mb-1">
                                     {contentType === 'tv' ? 'Serie TV' : 'Film'}

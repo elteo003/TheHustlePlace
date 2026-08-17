@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
-import { toast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import { VideoPlayerService } from '@/services/video-player.service'
 import { ContentType } from '@/lib/content-navigation'
 
@@ -54,11 +54,7 @@ export function VixsrcEmbedPlayer({
 
         timeoutRef.current = setTimeout(() => {
             setIframeError(true)
-            toast({
-                title: 'Timeout',
-                description: 'Il player non si è caricato in tempo',
-                variant: 'destructive',
-            })
+            toast.error('Il player non si è caricato in tempo')
         }, LOAD_TIMEOUT_MS)
 
         return () => {
@@ -94,20 +90,12 @@ export function VixsrcEmbedPlayer({
         clearLoadTimeout()
         setIframeLoaded(true)
         setIframeError(false)
-        toast({
-            title: 'Player caricato',
-            description: 'Il player di vixsrc.to è pronto',
-        })
     }
 
     const handleError = () => {
         clearLoadTimeout()
         setIframeError(true)
-        toast({
-            title: 'Errore player',
-            description: 'Impossibile caricare il player',
-            variant: 'destructive',
-        })
+        toast.error('Impossibile caricare il player')
     }
 
     if (iframeError) {

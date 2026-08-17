@@ -31,7 +31,6 @@ export function HomePageClient({
     const [isCheckingApi, setIsCheckingApi] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
-    const [pageLoaded, setPageLoaded] = useState(false)
 
     useEffect(() => {
         setIsCheckingApi(true)
@@ -40,11 +39,6 @@ export function HomePageClient({
             .then((data) => setHasApiKey(data.hasApiKey))
             .catch(() => setHasApiKey(false))
             .finally(() => setIsCheckingApi(false))
-    }, [])
-
-    useEffect(() => {
-        const timer = setTimeout(() => setPageLoaded(true), 100)
-        return () => clearTimeout(timer)
     }, [])
 
     if (!hasApiKey && !isCheckingApi) {
@@ -63,11 +57,7 @@ export function HomePageClient({
                     onUpcomingMovieSelect={() => setShowUpcomingTrailers(false)}
                 />
 
-                <div
-                    className={`relative z-10 transition-all duration-1000 delay-300 ${
-                        pageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                    }`}
-                >
+                <div className="relative z-10">
                     {watchHistory.length > 0 && (
                         <section className="py-8">
                             <div className="container mx-auto px-4">

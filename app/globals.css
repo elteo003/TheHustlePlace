@@ -20,8 +20,14 @@ body {
 }
 
 @layer components {
-    .card-hover {
-        @apply transition-all duration-500 ease-out hover:scale-110 hover:z-10;
+    .hover-lift {
+        @apply transition-transform duration-[180ms] ease-spring;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .hover-lift:hover {
+            transform: scale(1.03);
+        }
     }
 }
 
@@ -91,41 +97,25 @@ body {
                 rgba(0, 0, 0, 0.8) 100%);
     }
 
-    .card-hover {
-        @apply transition-all duration-300 ease-in-out;
-    }
-
-    .card-hover:hover {
-        @apply transform scale-105 shadow-2xl;
-    }
-
-    .premium-button {
-        @apply bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl;
-    }
-
-    .glass-effect {
-        @apply bg-white/10 backdrop-blur-md border border-white/20;
-    }
-
-    .text-gradient {
-        @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
-    }
-
-    .logo-gradient {
-        @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
-    }
-
     .movie-card {
-        @apply relative overflow-hidden rounded-lg shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105;
+        @apply relative overflow-hidden rounded-lg shadow-lg transition-transform duration-[180ms] ease-spring;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .movie-card:hover {
+            transform: scale(1.03);
+        }
     }
 
     .movie-card::before {
         content: '';
-        @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300;
+        @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-200;
     }
 
-    .movie-card:hover::before {
-        @apply opacity-100;
+    @media (hover: hover) and (pointer: fine) {
+        .movie-card:hover::before {
+            @apply opacity-100;
+        }
     }
 
     .navbar-blur {
@@ -510,7 +500,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .animate-fade-out-down {
-    animation: fadeOutDown 0.3s ease-in forwards;
+    animation: fadeOutDown 0.2s ease-out forwards;
 }
 
 .animate-slide-in-left {
@@ -523,7 +513,7 @@ body::-webkit-scrollbar-thumb:hover {
 
 /* Smooth transitions for view mode changes */
 .view-transition {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .view-transition-entering {
@@ -545,8 +535,14 @@ body::-webkit-scrollbar-thumb:hover {
 .btn-play {
     @apply bg-white text-black font-semibold rounded-md px-5 py-2.5
         transition-transform duration-200 ease-spring
-        hover:scale-[1.02] active:scale-[0.98]
+        active:scale-[0.98]
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-play:hover {
+        transform: scale(1.02);
+    }
 }
 
 .btn-ghost-outline {
@@ -620,8 +616,14 @@ body::-webkit-scrollbar-thumb:hover {
     *,
     *::before,
     *::after {
-        animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    *:not(.keep-fade),
+    *:not(.keep-fade)::before,
+    *:not(.keep-fade)::after {
+        animation-duration: 0.01ms !important;
     }
 }

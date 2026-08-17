@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
-import { toast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 
 export default function SeriesPage() {
     const params = useParams()
@@ -59,11 +59,7 @@ export default function SeriesPage() {
             }
         } catch {
             setError('Errore nel caricamento della serie TV')
-            toast({
-                title: 'Errore',
-                description: 'Impossibile caricare i dettagli della serie TV',
-                variant: 'destructive',
-            })
+            toast.error('Impossibile caricare i dettagli della serie TV')
         } finally {
             setLoading(false)
         }

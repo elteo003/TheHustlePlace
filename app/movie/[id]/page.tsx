@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MovieDetailView, MovieDetails } from '@/components/movie-detail-view'
 import { getPlayerPath } from '@/lib/content-navigation'
-import { toast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 
 export default function MovieDetailPage() {
     const params = useParams()
@@ -48,11 +48,7 @@ export default function MovieDetailPage() {
                 }
             } catch {
                 setError('Impossibile caricare il film')
-                toast({
-                    title: 'Errore',
-                    description: 'Non siamo riusciti a caricare i dettagli del film.',
-                    variant: 'destructive',
-                })
+                toast.error('Non siamo riusciti a caricare i dettagli del film.')
             } finally {
                 setLoading(false)
             }

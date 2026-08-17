@@ -62,7 +62,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
                                 <div
-                                    className="h-full bg-white transition-all duration-500"
+                                    className="h-full bg-white transition-[width] duration-500"
                                     style={{ width: `${entry.progress}%` }}
                                 />
                             </div>
