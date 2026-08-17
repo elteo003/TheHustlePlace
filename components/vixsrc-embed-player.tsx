@@ -120,7 +120,13 @@ export function VixsrcEmbedPlayer({
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Button
                             size="lg"
-                            onClick={() => window.open(playerUrl.split('?')[0], '_blank')}
+                            onClick={() =>
+                                window.open(
+                                    playerUrl.split('?')[0],
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                )
+                            }
                             className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             <Play className="w-5 h-5 mr-2" />
@@ -155,7 +161,8 @@ export function VixsrcEmbedPlayer({
                 allowFullScreen
                 title={title}
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
-                loading="lazy"
+                referrerPolicy="no-referrer"
+                loading="eager"
                 onLoad={handleLoad}
                 onError={handleError}
             />
