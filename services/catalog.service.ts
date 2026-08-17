@@ -175,7 +175,7 @@ export class CatalogService {
             const allContent: Top10Content[] = []
 
             if (moviesResponse?.results) {
-                const movies = moviesResponse.results
+                const movies: Top10Content[] = moviesResponse.results
                     .map((tmdbMovie: any) =>
                         this.convertMovieToTop10Content(this.convertTMDBMovieToMovie(tmdbMovie))
                     )
@@ -184,8 +184,8 @@ export class CatalogService {
                 allContent.push(...movies)
             }
 
-            if (tvShowsResponse && (tvShowsResponse as any).results) {
-                const tvShows = (tvShowsResponse as any).results
+            if (tvShowsResponse && (tvShowsResponse as { results?: unknown[] }).results) {
+                const tvShows: Top10Content[] = (tvShowsResponse as { results: unknown[] }).results
                     .map((tmdbTVShow: any) =>
                         this.convertTVShowToTop10Content(this.convertTMDBTVShowToTVShow(tmdbTVShow))
                     )

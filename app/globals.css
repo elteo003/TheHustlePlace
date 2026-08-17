@@ -21,7 +21,8 @@ body {
 
 @layer components {
     .hover-lift {
-        @apply transition-transform duration-[180ms] ease-spring;
+        @apply transition-transform ease-spring;
+        transition-duration: 180ms;
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -98,7 +99,8 @@ body {
     }
 
     .movie-card {
-        @apply relative overflow-hidden rounded-lg shadow-lg transition-transform duration-[180ms] ease-spring;
+        @apply relative overflow-hidden rounded-lg shadow-lg transition-transform ease-spring;
+        transition-duration: 180ms;
     }
 
     @media (hover: hover) and (pointer: fine) {

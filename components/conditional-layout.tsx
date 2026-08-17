@@ -29,7 +29,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     return (
         <>
-            {showNavbar && <Navbar immersive={isHome} />}
+            {showNavbar && <Navbar immersive={false} />}
             <div className={needsTopPadding ? 'pt-16' : ''}>
                 <PageTransition>{children}</PageTransition>
             </div>

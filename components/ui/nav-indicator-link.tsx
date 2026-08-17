@@ -42,6 +42,7 @@ export function NavIndicatorLink({
     return (
         <Link
             href={href}
+            prefetch
             onClick={onClick}
             className={cn(
                 'relative px-3 py-1.5 rounded-md text-sm font-medium outline-none',
