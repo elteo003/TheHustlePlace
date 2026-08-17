@@ -7,6 +7,7 @@ import { Movie, TVShow } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { useRouter } from 'next/navigation'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SearchResult {
     id: number
@@ -164,7 +165,7 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
                     }}
                     onKeyPress={handleKeyPress}
                     placeholder="Cerca film e serie TV..."
-                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-colors duration-200"
+                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-colors duration-200"
                 />
                 {query && (
                     <button
@@ -180,9 +181,8 @@ export function SearchBar({ onFocusChange }: SearchBarProps) {
             {isOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto">
                     {isLoading ? (
-                        <div className="p-4 text-center text-gray-300">
-                            <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                            Ricerca in corso...
+                        <div className="p-6 flex justify-center">
+                            <Spinner size="sm" />
                         </div>
                     ) : results.length > 0 ? (
                         <div className="py-2">

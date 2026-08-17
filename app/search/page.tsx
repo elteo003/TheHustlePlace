@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { fetchSearchResults } from '@/lib/server/catalog'
 import { SearchPageClient } from '@/components/pages/search-page-client'
+import { Spinner } from '@/components/ui/spinner'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,8 +23,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <main className="min-h-screen bg-black">
                     <div className="container mx-auto px-4 py-8">
                         <div className="flex items-center justify-center h-64">
-                            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span className="ml-3 text-white/50">Caricamento...</span>
+                            <Spinner />
                         </div>
                     </div>
                 </main>

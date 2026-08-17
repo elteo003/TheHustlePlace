@@ -14,6 +14,7 @@ import { useSmartHover } from '@/hooks/useSmartHover'
 import { useHeroControls } from '@/hooks/useHeroControls'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
+import { Spinner } from '@/components/ui/spinner'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void
@@ -181,16 +182,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     if (loading) {
         return (
             <div className="relative h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                    <h2 className="text-3xl font-bold text-white mb-4">Caricamento film con trailer...</h2>
-                    <p className="text-gray-400 text-lg">Verifico disponibilità trailer YouTube</p>
-                    <div className="mt-4 flex items-center justify-center space-x-2">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                </div>
+                <Spinner />
             </div>
         )
     }

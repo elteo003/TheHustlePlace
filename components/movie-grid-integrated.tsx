@@ -105,8 +105,13 @@ export default function MovieGridIntegrated({
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="flex gap-4 overflow-hidden py-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="flex-shrink-0 w-[140px] aspect-[2/3] rounded-lg shimmer"
+                    />
+                ))}
             </div>
         )
     }

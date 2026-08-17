@@ -6,6 +6,8 @@ import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { TVShowDetails } from '@/types'
+import { PageSpinner } from '@/components/ui/spinner'
+
 interface TVShowSummary {
     id: number
     tmdb_id: number
@@ -178,11 +180,7 @@ export default function TVPlayerPage() {
     }, [episode, findNextEpisode, router, season, tvId])
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-white text-xl">Caricamento...</div>
-            </div>
-        )
+        return <PageSpinner />
     }
 
     if (!tvShow) {

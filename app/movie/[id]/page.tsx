@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { MovieDetailView, MovieDetails } from '@/components/movie-detail-view'
 import { getPlayerPath } from '@/lib/content-navigation'
 import { toast } from 'sonner'
+import { PageSpinner } from '@/components/ui/spinner'
 
 export default function MovieDetailPage() {
     const params = useParams()
@@ -58,11 +59,7 @@ export default function MovieDetailPage() {
     }, [movieId])
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            </div>
-        )
+        return <PageSpinner />
     }
 
     if (error || !movie) {

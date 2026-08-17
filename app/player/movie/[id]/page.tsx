@@ -7,6 +7,7 @@ import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { Movie } from '@/types'
+import { PageSpinner } from '@/components/ui/spinner'
 
 interface MovieDetails extends Movie {
     runtime?: number
@@ -103,11 +104,7 @@ export default function MoviePlayerPage() {
     )
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-white text-xl">Caricamento...</div>
-            </div>
-        )
+        return <PageSpinner />
     }
 
     if (!movie) {

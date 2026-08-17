@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
 import { toast } from 'sonner'
+import { PageSpinner } from '@/components/ui/spinner'
 
 export default function SeriesPage() {
     const params = useParams()
@@ -15,7 +16,6 @@ export default function SeriesPage() {
     const [currentSeason, setCurrentSeason] = useState(1)
     const [currentEpisode, setCurrentEpisode] = useState(1)
     const [loading, setLoading] = useState(true)
-    const [loadingMessage, setLoadingMessage] = useState('Caricamento serie TV...')
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
@@ -26,7 +26,6 @@ export default function SeriesPage() {
         try {
             setLoading(true)
             setError(null)
-            setLoadingMessage('Caricamento serie TV...')
 
             const response = await fetch(`/api/tmdb/tv/${seriesId}`)
             const data = await response.json()
@@ -34,7 +33,6 @@ export default function SeriesPage() {
             if (data.success && data.data) {
                 const seriesData = data.data
 
-                setLoadingMessage('Preparazione episodi...')
                 const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId)
 
                 const actualNumberOfSeasons = seasonsWithEpisodes.length
@@ -148,14 +146,7 @@ export default function SeriesPage() {
     }
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-white text-lg">{loadingMessage}</p>
-                </div>
-            </div>
-        )
+        return <PageSpinner />
     }
 
     if (error || !tvShow) {
@@ -166,7 +157,7 @@ export default function SeriesPage() {
                     <p className="text-gray-400 mb-6">La serie TV richiesta non è disponibile.</p>
                     <button
                         onClick={() => router.back()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                        className="btn-ghost-outline"
                     >
                         Torna indietro
                     </button>

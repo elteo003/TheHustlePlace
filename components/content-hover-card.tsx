@@ -10,6 +10,7 @@ import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { ContentActionSheet } from '@/components/ui/content-action-sheet'
 import { PosterTransition } from '@/components/ui/poster-transition'
 import { DetailLink } from '@/components/ui/detail-link'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -124,7 +125,7 @@ export function ContentHoverCard({
 
                     {isExpanded && isLoading && !isTouch && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                            <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <Spinner size="sm" />
                         </div>
                     )}
 

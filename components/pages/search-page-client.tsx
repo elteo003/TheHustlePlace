@@ -10,6 +10,7 @@ import Image from 'next/image'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SearchPageClientProps {
     query: string
@@ -131,8 +132,7 @@ export function SearchPageClient({
             <main className="min-h-screen bg-black">
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex items-center justify-center h-64">
-                        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span className="ml-3 text-white/50">Ricerca in corso...</span>
+                        <Spinner />
                     </div>
                 </div>
             </main>

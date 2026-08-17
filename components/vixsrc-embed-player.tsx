@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
 import { toast } from 'sonner'
+import { Spinner } from '@/components/ui/spinner'
 import { VideoPlayerService } from '@/services/video-player.service'
 import { ContentType } from '@/lib/content-navigation'
 
@@ -140,7 +141,7 @@ export function VixsrcEmbedPlayer({
         <div className="relative z-10 w-full h-full">
             {!iframeLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white" />
+                    <Spinner size="md" />
                 </div>
             )}
             <iframe

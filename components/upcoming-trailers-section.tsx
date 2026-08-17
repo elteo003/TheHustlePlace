@@ -173,7 +173,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     </div>
 
                                     {isMovieHovered && (
-                                        <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                                        <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-white rounded-full" />
                                     )}
                                 </div>
                             </div>
