@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { HLSConfigProvider } from '@/components/hls-config-provider'
 import { ConditionalLayout } from '@/components/conditional-layout'
 import { NavbarProvider } from '@/contexts/NavbarContext'
+import { PremiumScrollbar } from '@/components/premium-scrollbar'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -46,6 +47,7 @@ export default function RootLayout({
               </ConditionalLayout>
             </div>
             <Toaster theme="dark" position="bottom-right" closeButton richColors />
+            <PremiumScrollbar />
           </NavbarProvider>
         </HLSConfigProvider>
       </body>

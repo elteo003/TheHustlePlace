@@ -199,15 +199,27 @@ body {
     }
 }
 
-/* Scrollbar: pill bianca flottante, track invisibile */
+/* Scrollbar nativa: nascosta sul documento, bianca nei pannelli */
 :root {
-    --scrollbar-size: 12px;
-    --scrollbar-thumb: rgba(255, 255, 255, 0.22);
-    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.48);
+    --scrollbar-size: 10px;
+    --scrollbar-thumb: rgba(255, 255, 255, 0.55);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.9);
 }
 
 html {
     color-scheme: dark;
+}
+
+html,
+body {
+    scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
 }
 
 * {
@@ -217,7 +229,7 @@ html {
 
 *::-webkit-scrollbar {
     width: var(--scrollbar-size);
-    height: 10px;
+    height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -227,7 +239,7 @@ html {
 *::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-thumb);
     border-radius: 999px;
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     background-clip: padding-box;
 }
 
@@ -243,6 +255,63 @@ html {
     display: none;
     width: 0;
     height: 0;
+}
+
+.premium-scrollbar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 80;
+    width: 14px;
+    height: 100vh;
+    padding: 10px 4px;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-scrollbar.is-active,
+.premium-scrollbar:hover {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.premium-scrollbar-thumb {
+    width: 5px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+    cursor: grab;
+    transform-origin: center;
+    transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.premium-scrollbar.is-active .premium-scrollbar-thumb,
+.premium-scrollbar:hover .premium-scrollbar-thumb {
+    width: 6px;
+}
+
+.premium-scrollbar-thumb:hover {
+    width: 8px;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.55);
+}
+
+.premium-scrollbar-thumb:active {
+    cursor: grabbing;
+    width: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .premium-scrollbar {
+        transform: none;
+        transition: opacity 0.15s linear;
+    }
 }
 
 /* Loading animations */
