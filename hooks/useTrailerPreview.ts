@@ -40,7 +40,7 @@ async function fetchTrailerEmbedUrl(id: number, type: ContentType): Promise<stri
         return null
     }
 
-    const embedUrl = getYouTubeEmbedUrl(selected.key, true, true, true)
+    const embedUrl = `${getYouTubeEmbedUrl(selected.key, true, true, true)}&iv_load_policy=3&playsinline=1&fs=0`
     trailerCache.set(key, embedUrl)
     return embedUrl
 }

@@ -18,9 +18,12 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
 
     return (
         <div className="w-full">
-            <CustomScrollbar className="pb-4" containerClassName="gap-4">
+            <CustomScrollbar className="pt-2 pb-8" containerClassName="gap-4 items-start">
                 {movies.map((movie) => (
-                    <div key={movie.id} className="flex-shrink-0">
+                    <div
+                        key={movie.id}
+                        className={`flex-shrink-0 ${expandedId === movie.id ? 'z-30' : 'z-0'}`}
+                    >
                         <ContentHoverCard
                             item={movie}
                             type={type}
