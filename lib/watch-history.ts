@@ -1,4 +1,5 @@
 import { ContentType } from '@/lib/content-navigation'
+import { nextWatchProgress } from '@/lib/watch-progress'
 
 export interface WatchHistoryEntry {
     id: number
@@ -56,9 +57,7 @@ export function trackWatchEntry(input: TrackWatchInput): void {
     const key = `${input.type}-${input.id}`
     const existing = entries.find((e) => `${e.type}-${e.id}` === key)
 
-    const progress = existing
-        ? Math.min(95, existing.progress + 12)
-        : 18
+    const progress = nextWatchProgress(existing?.progress)
 
     const entry: WatchHistoryEntry = {
         ...input,
@@ -71,6 +70,11 @@ export function trackWatchEntry(input: TrackWatchInput): void {
 
     if (isBrowser()) {
         window.dispatchEvent(new CustomEvent('watch-history-updated'))
+        void fetch('/api/watch-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+        }).catch(() => undefined)
     }
 }
 
@@ -79,5 +83,8 @@ export function removeWatchEntry(id: number, type: ContentType): void {
     writeAll(readAll().filter((e) => `${e.type}-${e.id}` !== key))
     if (isBrowser()) {
         window.dispatchEvent(new CustomEvent('watch-history-updated'))
+        void fetch(`/api/watch-history?id=${id}&type=${type}`, {
+            method: 'DELETE',
+        }).catch(() => undefined)
     }
 }

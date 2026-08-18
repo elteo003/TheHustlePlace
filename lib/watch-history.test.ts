@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { getWatchHistory, trackWatchEntry, removeWatchEntry } from '@/lib/watch-history'
+import { nextWatchProgress } from '@/lib/watch-progress'
 
 describe('watch-history', () => {
     beforeEach(() => {
@@ -41,5 +42,14 @@ describe('watch-history', () => {
         trackWatchEntry({ id: 9, type: 'movie', title: 'X' })
         removeWatchEntry(9, 'movie')
         expect(getWatchHistory()).toHaveLength(0)
+    })
+})
+
+describe('nextWatchProgress', () => {
+    it('parte da 18 e sale di 12 fino a 95', () => {
+        expect(nextWatchProgress()).toBe(18)
+        expect(nextWatchProgress(18)).toBe(30)
+        expect(nextWatchProgress(90)).toBe(95)
+        expect(nextWatchProgress(95)).toBe(95)
     })
 })
