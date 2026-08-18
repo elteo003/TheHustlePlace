@@ -3,6 +3,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { Play } from 'lucide-react'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
@@ -103,7 +104,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                                 {!isTouch && onPlay && (
                                     <button
                                         type="button"
-                                        className="absolute bottom-2 left-2 right-2 btn-play text-sm py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                                        className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                         onClick={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()
@@ -111,7 +112,9 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                                         }}
                                         aria-label={`Guarda ${title}`}
                                     >
-                                        Guarda
+                                        <span className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                                            <Play className="w-5 h-5 fill-current ml-0.5" />
+                                        </span>
                                     </button>
                                 )}
                             </DetailLink>

@@ -160,11 +160,10 @@ export function ContentHoverCard({
                                             e.stopPropagation()
                                             onPlay(itemId, itemType)
                                         }}
-                                        className="btn-play text-sm py-2 px-4 flex items-center gap-1.5"
+                                        className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
                                         aria-label={`Guarda ${title}`}
                                     >
-                                        <Play className="w-4 h-4 fill-current" />
-                                        Guarda
+                                        <Play className="w-4 h-4 fill-current ml-0.5" />
                                     </button>
                                 )}
                                 {onDetails && (
