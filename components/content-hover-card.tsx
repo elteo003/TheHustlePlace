@@ -144,26 +144,6 @@ export function ContentHoverCard({
                         </button>
                     )}
 
-                    {isExpanded && !isTouch && onPlay && (
-                        <div
-                            className={`absolute left-0 right-0 top-0 z-20 flex items-end justify-start p-3 pointer-events-none ${
-                                variant === 'carousel' ? 'h-[200px]' : 'inset-0'
-                            }`}
-                        >
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onPlay(itemId, itemType)
-                                }}
-                                className="pointer-events-auto w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
-                                aria-label={`Guarda ${title}`}
-                            >
-                                <Play className="w-5 h-5 fill-current ml-0.5" />
-                            </button>
-                        </div>
-                    )}
-
                     {isExpanded && !isTouch && (
                         <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                             <h3 className="text-white font-semibold text-base mb-1.5 line-clamp-2">
@@ -172,17 +152,33 @@ export function ContentHoverCard({
                             <p className="text-white/60 text-sm line-clamp-2 mb-3">
                                 {item.overview || 'Descrizione non disponibile'}
                             </p>
-                            {onDetails && (
-                                <DetailLink
-                                    id={itemId}
-                                    type={itemType}
-                                    className="btn-ghost-outline text-sm py-2 px-4 inline-flex items-center gap-1.5"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <Info className="w-4 h-4" />
-                                    Dettagli
-                                </DetailLink>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {onPlay && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onPlay(itemId, itemType)
+                                        }}
+                                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-transform duration-200 hover:scale-105"
+                                        aria-label={`Guarda ${title}`}
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Play
+                                    </button>
+                                )}
+                                {onDetails && (
+                                    <DetailLink
+                                        id={itemId}
+                                        type={itemType}
+                                        className="btn-ghost-outline text-sm py-2 px-4 inline-flex items-center gap-1.5"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Info className="w-4 h-4" />
+                                        Dettagli
+                                    </DetailLink>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
