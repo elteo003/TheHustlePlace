@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Play, Info, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -174,7 +174,7 @@ export function ContentHoverCard({
                     }}
                     onMouseEnter={cancelClose}
                     onMouseLeave={scheduleClose}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                 >
                     <div className="relative aspect-video bg-zinc-900">
                         <Image
