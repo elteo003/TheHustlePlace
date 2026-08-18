@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import { SearchBar } from '@/components/search-bar'
+import { DeviceCodeButton } from '@/components/device-code-button'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { NavIndicatorLink, NAV_LINKS } from '@/components/ui/nav-indicator-link'
 import { springTransition } from '@/lib/motion'
@@ -74,28 +75,31 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     <SearchBar onFocusChange={setSearchFocused} />
                 </div>
 
-                <motion.button
-                    type="button"
-                    className="md:hidden p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    aria-expanded={isMenuOpen}
-                    aria-label={isMenuOpen ? 'Chiudi menu' : 'Apri menu'}
-                    whileTap={{ scale: 0.94 }}
-                    transition={springTransition}
-                >
-                    <AnimatePresence mode="wait" initial={false}>
-                        <motion.span
-                            key={isMenuOpen ? 'close' : 'open'}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="block"
-                        >
-                            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </motion.span>
-                    </AnimatePresence>
-                </motion.button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <DeviceCodeButton />
+                    <motion.button
+                        type="button"
+                        className="md:hidden p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        aria-expanded={isMenuOpen}
+                        aria-label={isMenuOpen ? 'Chiudi menu' : 'Apri menu'}
+                        whileTap={{ scale: 0.94 }}
+                        transition={springTransition}
+                    >
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                                key={isMenuOpen ? 'close' : 'open'}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="block"
+                            >
+                                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            </motion.span>
+                        </AnimatePresence>
+                    </motion.button>
+                </div>
             </div>
 
             <AnimatePresence>

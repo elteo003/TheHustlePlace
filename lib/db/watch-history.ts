@@ -2,6 +2,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { WatchHistoryEntry } from '@/lib/watch-history'
 import { nextWatchProgress } from '@/lib/watch-progress'
 import { getDb, isDatabaseConfigured } from './index'
+import { ensureProfile } from './profiles'
 import { watchHistory } from './schema'
 
 export { isDatabaseConfigured, nextWatchProgress }
@@ -22,14 +23,15 @@ export function toWatchHistoryEntry(row: typeof watchHistory.$inferSelect): Watc
 
 export async function listWatchHistory(deviceId: string): Promise<WatchHistoryEntry[]> {
     const db = getDb()
-    if (!db) {
+    const profile = await ensureProfile(deviceId)
+    if (!db || !profile) {
         return []
     }
 
     const rows = await db
         .select()
         .from(watchHistory)
-        .where(eq(watchHistory.deviceId, deviceId))
+        .where(eq(watchHistory.profileId, profile.id))
         .orderBy(desc(watchHistory.watchedAt))
         .limit(12)
 
@@ -50,7 +52,8 @@ export interface UpsertWatchInput {
 
 export async function upsertWatchHistory(input: UpsertWatchInput): Promise<number> {
     const db = getDb()
-    if (!db) {
+    const profile = await ensureProfile(input.deviceId)
+    if (!db || !profile) {
         return nextWatchProgress()
     }
 
@@ -59,7 +62,7 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
         .from(watchHistory)
         .where(
             and(
-                eq(watchHistory.deviceId, input.deviceId),
+                eq(watchHistory.profileId, profile.id),
                 eq(watchHistory.contentType, input.type),
                 eq(watchHistory.tmdbId, input.id)
             )
@@ -73,6 +76,7 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
         .insert(watchHistory)
         .values({
             deviceId: input.deviceId,
+            profileId: profile.id,
             tmdbId: input.id,
             contentType: input.type,
             title: input.title,
@@ -85,8 +89,9 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
             watchedAt: now,
         })
         .onConflictDoUpdate({
-            target: [watchHistory.deviceId, watchHistory.contentType, watchHistory.tmdbId],
+            target: [watchHistory.profileId, watchHistory.contentType, watchHistory.tmdbId],
             set: {
+                deviceId: input.deviceId,
                 title: input.title,
                 posterPath: input.poster_path ?? null,
                 backdropPath: input.backdrop_path ?? null,
@@ -107,7 +112,8 @@ export async function deleteWatchHistory(
     type: 'movie' | 'tv'
 ): Promise<void> {
     const db = getDb()
-    if (!db) {
+    const profile = await ensureProfile(deviceId)
+    if (!db || !profile) {
         return
     }
 
@@ -115,7 +121,7 @@ export async function deleteWatchHistory(
         .delete(watchHistory)
         .where(
             and(
-                eq(watchHistory.deviceId, deviceId),
+                eq(watchHistory.profileId, profile.id),
                 eq(watchHistory.contentType, type),
                 eq(watchHistory.tmdbId, tmdbId)
             )

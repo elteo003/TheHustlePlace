@@ -1,4 +1,6 @@
 /** Easing curves — snappy, restrained (motion.dev / Linear-style). */
+/** CSS `ease` — hover, color, small success states (clipboard → check). */
+export const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)'
 export const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 export const EASE_SPRING = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
