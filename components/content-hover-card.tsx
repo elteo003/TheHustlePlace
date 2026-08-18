@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Play, Info, Star } from 'lucide-react'
 import Image from 'next/image'
@@ -16,8 +16,6 @@ import { Spinner } from '@/components/ui/spinner'
 import { Movie, TVShow } from '@/types'
 
 const EXPAND_DELAY_MS = 260
-const PREVIEW_WIDTH = 320
-const PREVIEW_PAD = 16
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -49,11 +47,9 @@ export function ContentHoverCard({
 }: ContentHoverCardProps) {
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
-    const slotRef = useRef<HTMLDivElement>(null)
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [sheetOpen, setSheetOpen] = useState(false)
-    const [previewPos, setPreviewPos] = useState<{ top: number; left: number } | null>(null)
     const [portalReady, setPortalReady] = useState(false)
 
     const itemType = resolveContentType(item, type)
@@ -61,7 +57,7 @@ export function ContentHoverCard({
     const title = getContentTitle(item, itemType)
     const year = getYear(item, itemType)
     const rating = item.vote_average > 0 ? item.vote_average.toFixed(1) : null
-    const previewImage = getContentPosterUrl(item.backdrop_path || item.poster_path, 'w780')
+    const previewImage = getContentPosterUrl(item.backdrop_path || item.poster_path, 'original')
 
     const { trailerUrl, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
@@ -69,41 +65,29 @@ export function ContentHoverCard({
         400
     )
 
-    const placePreview = () => {
-        const slot = slotRef.current
-        if (!slot) return
-        const rect = slot.getBoundingClientRect()
-        const left = Math.min(
-            Math.max(PREVIEW_PAD, rect.left + rect.width / 2 - PREVIEW_WIDTH / 2),
-            window.innerWidth - PREVIEW_WIDTH - PREVIEW_PAD
-        )
-        const estimatedHeight = PREVIEW_WIDTH * (9 / 16) + 112
-        const top = Math.min(
-            Math.max(PREVIEW_PAD, rect.top - 12),
-            window.innerHeight - estimatedHeight - PREVIEW_PAD
-        )
-        setPreviewPos({ top, left })
-    }
-
-    useLayoutEffect(() => {
-        if (!isExpanded || isTouch) {
-            setPreviewPos(null)
-            return
+    const closeNow = () => {
+        if (expandTimer.current) {
+            clearTimeout(expandTimer.current)
+            expandTimer.current = null
         }
-        placePreview()
-    }, [isExpanded, isTouch])
+        if (closeTimer.current) {
+            clearTimeout(closeTimer.current)
+            closeTimer.current = null
+        }
+        onCollapse()
+        resetPreview()
+    }
 
     useEffect(() => {
         if (!isExpanded) return
-        const collapse = () => {
-            onCollapse()
-            resetPreview()
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeNow()
         }
-        window.addEventListener('scroll', collapse, true)
-        window.addEventListener('resize', collapse)
+        window.addEventListener('keydown', onKey)
+        window.addEventListener('scroll', closeNow, true)
         return () => {
-            window.removeEventListener('scroll', collapse, true)
-            window.removeEventListener('resize', collapse)
+            window.removeEventListener('keydown', onKey)
+            window.removeEventListener('scroll', closeNow, true)
         }
     }, [isExpanded, onCollapse, resetPreview])
 
@@ -122,17 +106,14 @@ export function ContentHoverCard({
         }
     }
 
-    const scheduleClose = () => {
+    const scheduleClose = (delay = 400) => {
         if (isTouch) return
         if (expandTimer.current) {
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
         cancelClose()
-        closeTimer.current = setTimeout(() => {
-            onCollapse()
-            resetPreview()
-        }, 120)
+        closeTimer.current = setTimeout(closeNow, delay)
     }
 
     const handleMouseEnter = () => {
@@ -156,96 +137,105 @@ export function ContentHoverCard({
 
     const motionTransition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }
+        : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
 
     const preview = (
         <AnimatePresence>
-            {isExpanded && !isTouch && previewPos && (
-                <motion.div
-                    initial={reduceMotion ? false : { opacity: 0, scale: 0.84 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
-                    transition={motionTransition}
-                    className="fixed z-[80] overflow-hidden rounded-xl bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.65)] ring-1 ring-white/10 origin-top"
-                    style={{
-                        top: previewPos.top,
-                        left: previewPos.left,
-                        width: PREVIEW_WIDTH,
-                    }}
-                    onMouseEnter={cancelClose}
-                    onMouseLeave={scheduleClose}
-                    onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-                >
-                    <div className="relative aspect-video bg-zinc-900">
-                        <Image
-                            src={previewImage}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="320px"
-                            style={{ opacity: trailerUrl ? 0 : 1 }}
-                        />
-                        {trailerUrl && (
-                            <iframe
-                                src={trailerUrl}
-                                className="absolute inset-0 h-full w-full pointer-events-none"
-                                tabIndex={-1}
-                                allow="autoplay; encrypted-media"
-                                title={`Trailer ${title}`}
+            {isExpanded && !isTouch && (
+                <>
+                    <motion.button
+                        type="button"
+                        aria-label="Chiudi anteprima"
+                        initial={reduceMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={reduceMotion ? undefined : { opacity: 0 }}
+                        transition={motionTransition}
+                        className="fixed inset-0 z-[80] bg-black/70"
+                        onClick={closeNow}
+                    />
+                    <motion.div
+                        role="dialog"
+                        aria-label={title}
+                        initial={reduceMotion ? false : { opacity: 0, scale: 0.92, x: '-50%', y: '-50%' }}
+                        animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+                        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
+                        transition={motionTransition}
+                        className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,960px)] overflow-hidden rounded-2xl bg-zinc-950 shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
+                        onMouseEnter={cancelClose}
+                        onMouseLeave={() => scheduleClose(180)}
+                        onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+                    >
+                        <div className="relative aspect-video bg-zinc-900">
+                            <Image
+                                src={previewImage}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="960px"
+                                style={{ opacity: trailerUrl ? 0 : 1 }}
                             />
-                        )}
-                        {isLoading && !trailerUrl && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                <Spinner size="sm" />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-3.5">
-                        <h3 className="text-white font-semibold text-[15px] leading-snug line-clamp-1">
-                            {title}
-                        </h3>
-                        {(year || rating) && (
-                            <p className="mt-1 flex items-center gap-2 text-xs text-white/55">
-                                {year && <span>{year}</span>}
-                                {year && rating && <span className="text-white/25">·</span>}
-                                {rating && (
-                                    <span className="inline-flex items-center gap-1">
-                                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                        {rating}
-                                    </span>
-                                )}
-                            </p>
-                        )}
-                        <div className="mt-3 flex items-center gap-2">
-                            {onPlay && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        onPlay(itemId, itemType)
-                                    }}
-                                    className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-3.5 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-transform duration-200 hover:scale-105"
-                                    aria-label={`Guarda ${title}`}
-                                >
-                                    <Play className="w-4 h-4" />
-                                    Play
-                                </button>
+                            {trailerUrl && (
+                                <iframe
+                                    src={trailerUrl}
+                                    className="absolute inset-0 h-full w-full pointer-events-none"
+                                    tabIndex={-1}
+                                    allow="autoplay; encrypted-media"
+                                    title={`Trailer ${title}`}
+                                />
                             )}
-                            {onDetails && (
-                                <DetailLink
-                                    id={itemId}
-                                    type={itemType}
-                                    className="btn-ghost-outline text-sm py-2 px-3.5 inline-flex items-center gap-1.5"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <Info className="w-4 h-4" />
-                                    Dettagli
-                                </DetailLink>
+                            {isLoading && !trailerUrl && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                    <Spinner size="sm" />
+                                </div>
                             )}
                         </div>
-                    </div>
-                </motion.div>
+
+                        <div className="p-5">
+                            <h3 className="text-white font-semibold text-xl leading-snug line-clamp-1">
+                                {title}
+                            </h3>
+                            {(year || rating) && (
+                                <p className="mt-1.5 flex items-center gap-2 text-sm text-white/55">
+                                    {year && <span>{year}</span>}
+                                    {year && rating && <span className="text-white/25">·</span>}
+                                    {rating && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                            {rating}
+                                        </span>
+                                    )}
+                                </p>
+                            )}
+                            <div className="mt-4 flex items-center gap-2">
+                                {onPlay && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onPlay(itemId, itemType)
+                                        }}
+                                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-5 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-transform duration-200 hover:scale-105"
+                                        aria-label={`Guarda ${title}`}
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Play
+                                    </button>
+                                )}
+                                {onDetails && (
+                                    <DetailLink
+                                        id={itemId}
+                                        type={itemType}
+                                        className="btn-ghost-outline text-sm py-2.5 px-4 inline-flex items-center gap-1.5"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Info className="w-4 h-4" />
+                                        Dettagli
+                                    </DetailLink>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                </>
             )}
         </AnimatePresence>
     )
@@ -253,12 +243,11 @@ export function ContentHoverCard({
     return (
         <>
             <div
-                ref={slotRef}
                 className={`relative flex-shrink-0 ${
                     variant === 'carousel' ? 'w-[200px] h-[300px]' : 'w-full aspect-[2/3]'
-                } ${isExpanded ? 'z-30' : 'z-0'}`}
+                }`}
                 onMouseEnter={handleMouseEnter}
-                onMouseLeave={scheduleClose}
+                onMouseLeave={() => scheduleClose(400)}
                 onClick={handleTap}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
