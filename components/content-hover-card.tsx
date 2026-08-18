@@ -16,6 +16,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Movie, TVShow } from '@/types'
 
 const EXPAND_DELAY_MS = 1000
+const CLOSE_ARM_MS = 400
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -25,7 +26,7 @@ interface ContentHoverCardProps {
     onCollapse: () => void
     onPlay?: (id: number, type?: ContentType) => void
     onDetails?: (id: number, type?: ContentType) => void
-    variant?: 'carousel' | 'grid'
+    variant?: 'carousel' | 'grid' | 'top10'
 }
 
 function getYear(item: ContentItem, type: ContentType): number | null {
@@ -49,9 +50,9 @@ export function ContentHoverCard({
     const reduceMotion = useReducedMotion()
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const expandedRef = useRef(false)
+    const closeArmed = useRef(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
-    const [isHovered, setIsHovered] = useState(false)
     const [trailerReady, setTrailerReady] = useState(false)
 
     const itemType = resolveContentType(item, type)
@@ -74,7 +75,7 @@ export function ContentHoverCard({
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
-        setIsHovered(false)
+        closeArmed.current = false
         onCollapse()
     }
 
@@ -98,6 +99,18 @@ export function ContentHoverCard({
     }, [isExpanded, onCollapse, resetPreview])
 
     useEffect(() => {
+        if (!isExpanded) {
+            closeArmed.current = false
+            return
+        }
+        closeArmed.current = false
+        const arm = setTimeout(() => {
+            closeArmed.current = true
+        }, CLOSE_ARM_MS)
+        return () => clearTimeout(arm)
+    }, [isExpanded])
+
+    useEffect(() => {
         setPortalReady(true)
         return () => {
             if (expandTimer.current) clearTimeout(expandTimer.current)
@@ -110,12 +123,15 @@ export function ContentHoverCard({
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
-        setIsHovered(false)
+    }
+
+    const handlePreviewMouseLeave = () => {
+        if (!closeArmed.current) return
+        closeNow()
     }
 
     const handleMouseEnter = () => {
         if (isTouch) return
-        setIsHovered(true)
         if (expandTimer.current) clearTimeout(expandTimer.current)
         expandTimer.current = setTimeout(() => {
             onExpand()
@@ -147,7 +163,7 @@ export function ContentHoverCard({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={motionTransition}
-                    className="fixed inset-0 z-[80] bg-black/65"
+                    className="fixed inset-0 z-[90] bg-black/70"
                     onClick={closeNow}
                 />
             )}
@@ -160,8 +176,8 @@ export function ContentHoverCard({
                     animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
                     exit={{ opacity: 0, scale: 0.98, x: '-50%', y: '-50%' }}
                     transition={motionTransition}
-                    className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,920px)] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
-                    onMouseLeave={closeNow}
+                    className="fixed left-1/2 top-1/2 z-[91] w-[min(96vw,calc((100vh-4rem)*16/9))] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
+                    onMouseLeave={handlePreviewMouseLeave}
                     onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                 >
                     <div className="relative aspect-video overflow-hidden bg-zinc-900">
@@ -170,7 +186,7 @@ export function ContentHoverCard({
                             alt=""
                             fill
                             className="object-cover transition-opacity duration-500 ease-out"
-                            sizes="920px"
+                            sizes="96vw"
                             style={{ opacity: trailerReady ? 0 : 1 }}
                         />
                         {trailerUrl && (
@@ -251,8 +267,12 @@ export function ContentHoverCard({
     return (
         <>
             <div
-                className={`relative flex-shrink-0 ${
-                    variant === 'carousel' ? 'w-[200px] h-[300px]' : 'w-full aspect-[2/3]'
+                className={`group relative flex-shrink-0 hover:z-20 ${
+                    variant === 'top10'
+                        ? 'z-[1] w-[120px] sm:w-[140px] md:w-[160px] aspect-[2/3]'
+                        : variant === 'carousel'
+                          ? 'w-[200px] h-[300px]'
+                          : 'w-full aspect-[2/3]'
                 }`}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
@@ -267,7 +287,7 @@ export function ContentHoverCard({
                 tabIndex={0}
                 aria-label={title}
             >
-                <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-900 hover-lift">
+                <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-900">
                     <PosterTransition type={itemType} id={itemId} className="absolute inset-0">
                         <Image
                             src={getContentPosterUrl(item.poster_path)}
@@ -278,23 +298,23 @@ export function ContentHoverCard({
                         />
                     </PosterTransition>
 
-                    {!isTouch && onPlay && (
+                    {!isTouch && (
                         <button
                             type="button"
-                            className={`absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity duration-300 ease-out ${
-                                isHovered && !isExpanded
-                                    ? 'opacity-100'
-                                    : 'opacity-0 pointer-events-none'
+                            className={`absolute inset-0 z-10 flex items-center justify-center bg-black/45 transition-opacity duration-300 ease-out ${
+                                isExpanded
+                                    ? 'opacity-0 pointer-events-none'
+                                    : 'opacity-0 group-hover:opacity-100'
                             }`}
                             onClick={(e) => {
                                 e.stopPropagation()
-                                onPlay(itemId, itemType)
+                                onPlay?.(itemId, itemType)
                             }}
                             aria-label={`Guarda ${title}`}
                         >
                             <span
-                                className={`w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg transition-transform duration-300 ease-out ${
-                                    isHovered && !isExpanded ? 'scale-100' : 'scale-90'
+                                className={`rounded-full bg-white text-black flex items-center justify-center shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300 ease-out ${
+                                    variant === 'top10' ? 'w-11 h-11' : 'w-12 h-12'
                                 }`}
                             >
                                 <Play className="w-5 h-5 fill-current ml-0.5" />

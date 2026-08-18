@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ContentType } from '@/lib/content-navigation'
+import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem } from '@/lib/content-display'
 import { ContentHoverCard } from '@/components/content-hover-card'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
@@ -19,23 +19,26 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
     return (
         <div className="w-full">
             <CustomScrollbar className="pt-2 pb-8" containerClassName="gap-4 items-start">
-                {movies.map((movie) => (
-                    <div
-                        key={movie.id}
-                        className={`flex-shrink-0 ${expandedId === movie.id ? 'z-30' : 'z-0'}`}
-                    >
-                        <ContentHoverCard
-                            item={movie}
-                            type={type}
-                            variant="carousel"
-                            isExpanded={expandedId === movie.id}
-                            onExpand={() => setExpandedId(movie.id)}
-                            onCollapse={() => setExpandedId(null)}
-                            onPlay={onPlay}
-                            onDetails={onDetails}
-                        />
-                    </div>
-                ))}
+                {movies.map((movie) => {
+                    const id = getContentId(movie)
+                    return (
+                        <div
+                            key={id}
+                            className={`flex-shrink-0 ${expandedId === id ? 'z-30' : 'z-0 hover:z-20'}`}
+                        >
+                            <ContentHoverCard
+                                item={movie}
+                                type={type}
+                                variant="carousel"
+                                isExpanded={expandedId === id}
+                                onExpand={() => setExpandedId(id)}
+                                onCollapse={() => setExpandedId(null)}
+                                onPlay={onPlay}
+                                onDetails={onDetails}
+                            />
+                        </div>
+                    )
+                })}
             </CustomScrollbar>
         </div>
     )
