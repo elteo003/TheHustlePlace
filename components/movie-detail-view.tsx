@@ -91,10 +91,14 @@ export function MovieDetailView({ movie, onPlay }: MovieDetailViewProps) {
                                 {movie.overview || 'Descrizione non disponibile.'}
                             </p>
 
-                            <div className="flex flex-wrap gap-3">
-                                <button type="button" onClick={onPlay} className="btn-play flex items-center gap-2">
-                                    <Play className="w-5 h-5 fill-current" />
-                                    Guarda ora
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onPlay}
+                                    className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+                                    aria-label={`Guarda ${movie.title}`}
+                                >
+                                    <Play className="w-5 h-5 fill-current ml-0.5" />
                                 </button>
                                 <Button
                                     variant="outline"
