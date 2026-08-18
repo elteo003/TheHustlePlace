@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Play, Star } from 'lucide-react'
@@ -29,9 +29,7 @@ export function MovieCard({
 }: MovieCardProps) {
     const router = useRouter()
     const isTouch = useIsCoarsePointer()
-    const [showPlay, setShowPlay] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
-    const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         setIsMounted(true)
@@ -61,24 +59,8 @@ export function MovieCard({
         return getTMDBImageUrl(posterPath, 'w500')
     }
 
-    const showPlayButton = isTouch || showPlay
-
     return (
-        <div
-            className={`relative group cursor-pointer ${className}`}
-            onMouseEnter={() => {
-                if (isTouch) return
-                if (playTimer.current) clearTimeout(playTimer.current)
-                playTimer.current = setTimeout(() => setShowPlay(true), 500)
-            }}
-            onMouseLeave={() => {
-                if (playTimer.current) {
-                    clearTimeout(playTimer.current)
-                    playTimer.current = null
-                }
-                setShowPlay(false)
-            }}
-        >
+        <div className={`relative group cursor-pointer ${className}`}>
             <div className="relative bg-zinc-900 rounded-lg overflow-hidden hover-lift group-hover:z-10">
                 <div className="relative aspect-[2/3] overflow-hidden">
                     <PosterTransition
@@ -95,27 +77,29 @@ export function MovieCard({
                         />
                     </PosterTransition>
 
-                    <div
-                        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
-                            showPlayButton ? 'opacity-100' : 'opacity-0'
-                        }`}
-                    />
-
-                    <div
-                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                            showPlayButton ? 'opacity-100' : 'opacity-0'
-                        }`}
-                    >
+                    {!isTouch && (
                         <button
                             type="button"
                             onClick={handlePlay}
-                            className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-transform duration-200 hover:scale-105"
+                            className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"
                             aria-label={`Guarda ${movie.title}`}
                         >
-                            <Play className="w-5 h-5" />
-                            Play
+                            <span className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300 ease-out">
+                                <Play className="w-5 h-5 fill-current ml-0.5" />
+                            </span>
                         </button>
-                    </div>
+                    )}
+
+                    {isTouch && (
+                        <button
+                            type="button"
+                            onClick={handlePlay}
+                            className="absolute bottom-2 right-2 z-10 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shadow-lg"
+                            aria-label={`Guarda ${movie.title}`}
+                        >
+                            <Play className="w-4 h-4 fill-current ml-0.5" />
+                        </button>
+                    )}
 
                     {showRank && rank && (
                         <div className="absolute top-2 left-2 w-8 h-8 rounded-md bg-black/70 backdrop-blur-sm flex items-center justify-center">

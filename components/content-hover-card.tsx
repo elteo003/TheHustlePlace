@@ -15,8 +15,7 @@ import { DetailLink } from '@/components/ui/detail-link'
 import { Spinner } from '@/components/ui/spinner'
 import { Movie, TVShow } from '@/types'
 
-const PLAY_DELAY_MS = 500
-const EXPAND_DELAY_MS = 800
+const EXPAND_DELAY_MS = 1000
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -49,10 +48,11 @@ export function ContentHoverCard({
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const expandedRef = useRef(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
-    const [showPlay, setShowPlay] = useState(false)
+    const [isHovered, setIsHovered] = useState(false)
+    const [trailerReady, setTrailerReady] = useState(false)
 
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
@@ -67,17 +67,20 @@ export function ContentHoverCard({
         400
     )
 
+    expandedRef.current = isExpanded
+
     const closeNow = () => {
         if (expandTimer.current) {
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
-        if (playTimer.current) {
-            clearTimeout(playTimer.current)
-            playTimer.current = null
-        }
-        setShowPlay(false)
+        setIsHovered(false)
         onCollapse()
+    }
+
+    const handlePreviewExit = () => {
+        if (expandedRef.current) return
+        setTrailerReady(false)
         resetPreview()
     }
 
@@ -98,7 +101,6 @@ export function ContentHoverCard({
         setPortalReady(true)
         return () => {
             if (expandTimer.current) clearTimeout(expandTimer.current)
-            if (playTimer.current) clearTimeout(playTimer.current)
         }
     }, [])
 
@@ -108,18 +110,13 @@ export function ContentHoverCard({
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
-        if (playTimer.current) {
-            clearTimeout(playTimer.current)
-            playTimer.current = null
-        }
-        setShowPlay(false)
+        setIsHovered(false)
     }
 
     const handleMouseEnter = () => {
         if (isTouch) return
-        if (playTimer.current) clearTimeout(playTimer.current)
+        setIsHovered(true)
         if (expandTimer.current) clearTimeout(expandTimer.current)
-        playTimer.current = setTimeout(() => setShowPlay(true), PLAY_DELAY_MS)
         expandTimer.current = setTimeout(() => {
             onExpand()
             scheduleTrailerLoad()
@@ -137,65 +134,71 @@ export function ContentHoverCard({
 
     const motionTransition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.28, ease: [0.16, 1, 0.3, 1] }
+        : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }
 
     const preview = (
-        <AnimatePresence>
+        <AnimatePresence onExitComplete={handlePreviewExit}>
             {isExpanded && !isTouch && (
-                <>
-                    <motion.button
-                        type="button"
-                        aria-label="Chiudi anteprima"
-                        initial={reduceMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={reduceMotion ? undefined : { opacity: 0 }}
-                        transition={motionTransition}
-                        className="fixed inset-0 z-[80] bg-black/65"
-                        onClick={closeNow}
-                    />
-                    <motion.div
-                        role="dialog"
-                        aria-label={title}
-                        initial={reduceMotion ? false : { opacity: 0, scale: 0.92, x: '-50%', y: '-50%' }}
-                        animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-                        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
-                        transition={motionTransition}
-                        className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,920px)] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
-                        onMouseLeave={closeNow}
-                        onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-                    >
-                        <div className="relative aspect-video overflow-hidden bg-zinc-900">
-                            <Image
-                                src={previewImage}
-                                alt=""
-                                fill
-                                className="object-cover"
-                                sizes="920px"
-                                style={{ opacity: trailerUrl ? 0 : 1 }}
+                <motion.button
+                    key="preview-dim"
+                    type="button"
+                    aria-label="Chiudi anteprima"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={motionTransition}
+                    className="fixed inset-0 z-[80] bg-black/65"
+                    onClick={closeNow}
+                />
+            )}
+            {isExpanded && !isTouch && (
+                <motion.div
+                    key="preview-card"
+                    role="dialog"
+                    aria-label={title}
+                    initial={{ opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
+                    animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+                    exit={{ opacity: 0, scale: 0.98, x: '-50%', y: '-50%' }}
+                    transition={motionTransition}
+                    className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,920px)] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
+                    onMouseLeave={closeNow}
+                    onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+                >
+                    <div className="relative aspect-video overflow-hidden bg-zinc-900">
+                        <Image
+                            src={previewImage}
+                            alt=""
+                            fill
+                            className="object-cover transition-opacity duration-500 ease-out"
+                            sizes="920px"
+                            style={{ opacity: trailerReady ? 0 : 1 }}
+                        />
+                        {trailerUrl && (
+                            <iframe
+                                src={trailerUrl}
+                                className={`pointer-events-none transition-opacity duration-500 ease-out ${
+                                    trailerReady ? 'opacity-100' : 'opacity-0'
+                                }`}
+                                tabIndex={-1}
+                                allow="autoplay; encrypted-media"
+                                title={`Trailer ${title}`}
+                                onLoad={() => setTrailerReady(true)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    width: '100%',
+                                    height: '100%',
+                                    transform: 'translate(-50%, -50%) scale(1.12)',
+                                    border: 0,
+                                }}
                             />
-                            {trailerUrl && (
-                                <iframe
-                                    src={trailerUrl}
-                                    className="pointer-events-none"
-                                    tabIndex={-1}
-                                    allow="autoplay; encrypted-media"
-                                    title={`Trailer ${title}`}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        width: '100%',
-                                        height: '100%',
-                                        transform: 'translate(-50%, -50%) scale(1.12)',
-                                        border: 0,
-                                    }}
-                                />
-                            )}
-                            {isLoading && !trailerUrl && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                    <Spinner size="sm" />
-                                </div>
-                            )}
+                        )}
+                        {isLoading && !trailerReady && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                <Spinner size="sm" />
+                            </div>
+                        )}
 
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
@@ -241,7 +244,6 @@ export function ContentHoverCard({
                             </div>
                         </div>
                     </motion.div>
-                </>
             )}
         </AnimatePresence>
     )
@@ -277,24 +279,27 @@ export function ContentHoverCard({
                     </PosterTransition>
 
                     {!isTouch && onPlay && (
-                        <div
-                            className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
-                                showPlay && !isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        <button
+                            type="button"
+                            className={`absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity duration-300 ease-out ${
+                                isHovered && !isExpanded
+                                    ? 'opacity-100'
+                                    : 'opacity-0 pointer-events-none'
                             }`}
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onPlay(itemId, itemType)
+                            }}
+                            aria-label={`Guarda ${title}`}
                         >
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onPlay(itemId, itemType)
-                                }}
-                                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-transform duration-200 hover:scale-105"
-                                aria-label={`Guarda ${title}`}
+                            <span
+                                className={`w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg transition-transform duration-300 ease-out ${
+                                    isHovered && !isExpanded ? 'scale-100' : 'scale-90'
+                                }`}
                             >
-                                <Play className="w-5 h-5" />
-                                Play
-                            </button>
-                        </div>
+                                <Play className="w-5 h-5 fill-current ml-0.5" />
+                            </span>
+                        </button>
                     )}
 
                     {isTouch && onPlay && (
