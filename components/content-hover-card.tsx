@@ -126,97 +126,105 @@ export function ContentHoverCard({
     const preview = (
         <AnimatePresence>
             {isExpanded && !isTouch && (
-                <motion.div
-                    role="dialog"
-                    aria-label={title}
-                    initial={reduceMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={reduceMotion ? undefined : { opacity: 0 }}
-                    transition={motionTransition}
-                    className="fixed inset-0 z-[80] overflow-hidden bg-black"
-                    onClick={closeNow}
-                >
-                    <div className="absolute inset-0 overflow-hidden">
-                        <Image
-                            src={previewImage}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="100vw"
-                            style={{ opacity: trailerUrl ? 0 : 1 }}
-                        />
-                        {trailerUrl && (
-                            <iframe
-                                src={trailerUrl}
-                                className="pointer-events-none"
-                                tabIndex={-1}
-                                allow="autoplay; encrypted-media"
-                                title={`Trailer ${title}`}
-                                style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    width: '100vw',
-                                    height: '100vh',
-                                    transform: 'translate(-50%, -50%) scale(1.08)',
-                                    border: 0,
-                                }}
-                            />
-                        )}
-                        {isLoading && !trailerUrl && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                <Spinner size="sm" />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent pointer-events-none" />
-                    <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" />
-
-                    <div
-                        className="absolute bottom-16 left-4 z-10 max-w-2xl px-4"
+                <>
+                    <motion.button
+                        type="button"
+                        aria-label="Chiudi anteprima"
+                        initial={reduceMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={reduceMotion ? undefined : { opacity: 0 }}
+                        transition={motionTransition}
+                        className="fixed inset-0 z-[80] bg-black/65"
+                        onClick={closeNow}
+                    />
+                    <motion.div
+                        role="dialog"
+                        aria-label={title}
+                        initial={reduceMotion ? false : { opacity: 0, scale: 0.92, x: '-50%', y: '-50%' }}
+                        animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+                        exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
+                        transition={motionTransition}
+                        className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,920px)] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
                         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                     >
-                        <h3 className="text-4xl md:text-6xl font-bold text-white leading-tight">
-                            {title}
-                        </h3>
-                        {(year || rating) && (
-                            <p className="mt-3 flex items-center gap-2 text-base text-white/60">
-                                {year && <span>{year}</span>}
-                                {year && rating && <span className="text-white/25">·</span>}
-                                {rating && (
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                        {rating}
-                                    </span>
+                        <div className="relative aspect-video overflow-hidden bg-zinc-900">
+                            <Image
+                                src={previewImage}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="920px"
+                                style={{ opacity: trailerUrl ? 0 : 1 }}
+                            />
+                            {trailerUrl && (
+                                <iframe
+                                    src={trailerUrl}
+                                    className="pointer-events-none"
+                                    tabIndex={-1}
+                                    allow="autoplay; encrypted-media"
+                                    title={`Trailer ${title}`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        width: '100%',
+                                        height: '100%',
+                                        transform: 'translate(-50%, -50%) scale(1.12)',
+                                        border: 0,
+                                    }}
+                                />
+                            )}
+                            {isLoading && !trailerUrl && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                    <Spinner size="sm" />
+                                </div>
+                            )}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                            <div className="absolute bottom-0 left-0 right-0 z-10 p-5">
+                                <h3 className="text-white font-semibold text-xl leading-snug line-clamp-1">
+                                    {title}
+                                </h3>
+                                {(year || rating) && (
+                                    <p className="mt-1 flex items-center gap-2 text-sm text-white/60">
+                                        {year && <span>{year}</span>}
+                                        {year && rating && <span className="text-white/25">·</span>}
+                                        {rating && (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                                {rating}
+                                            </span>
+                                        )}
+                                    </p>
                                 )}
-                            </p>
-                        )}
-                        <div className="mt-8 flex flex-wrap items-center gap-3">
-                            {onPlay && (
-                                <button
-                                    type="button"
-                                    onClick={() => onPlay(itemId, itemType)}
-                                    className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-transform duration-200 hover:scale-105"
-                                    aria-label={`Guarda ${title}`}
-                                >
-                                    <Play className="w-5 h-5" />
-                                    Play
-                                </button>
-                            )}
-                            {onDetails && (
-                                <DetailLink
-                                    id={itemId}
-                                    type={itemType}
-                                    className="btn-ghost-outline px-6 py-3 inline-flex items-center gap-2"
-                                >
-                                    <Info className="w-5 h-5" />
-                                    Dettagli
-                                </DetailLink>
-                            )}
+                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                    {onPlay && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onPlay(itemId, itemType)}
+                                            className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-5 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition-transform duration-200 hover:scale-105"
+                                            aria-label={`Guarda ${title}`}
+                                        >
+                                            <Play className="w-4 h-4" />
+                                            Play
+                                        </button>
+                                    )}
+                                    {onDetails && (
+                                        <DetailLink
+                                            id={itemId}
+                                            type={itemType}
+                                            className="btn-ghost-outline text-sm py-2.5 px-4 inline-flex items-center gap-1.5"
+                                        >
+                                            <Info className="w-4 h-4" />
+                                            Dettagli
+                                        </DetailLink>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                </>
             )}
         </AnimatePresence>
     )
