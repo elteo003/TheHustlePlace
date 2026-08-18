@@ -1,13 +1,27 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 const iconEase = [0.25, 0.1, 0.25, 1] as const
 const iconTransition = { duration: 0.15, ease: iconEase }
 
 const hidden = { opacity: 0, scale: 0.9, filter: 'blur(2px)' }
 const visible = { opacity: 1, scale: 1, filter: 'blur(0px)' }
+
+function usePrefersReducedMotion() {
+    const [reduced, setReduced] = useState(false)
+
+    useEffect(() => {
+        const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+        const update = () => setReduced(media.matches)
+        update()
+        media.addEventListener('change', update)
+        return () => media.removeEventListener('change', update)
+    }, [])
+
+    return reduced
+}
 
 interface CopyButtonProps {
     value: string
@@ -16,7 +30,7 @@ interface CopyButtonProps {
 
 export function CopyButton({ value, disabled }: CopyButtonProps) {
     const [copied, setCopied] = useState(false)
-    const reduceMotion = useReducedMotion()
+    const reduceMotion = usePrefersReducedMotion()
     const transition = reduceMotion ? { duration: 0 } : iconTransition
 
     useEffect(() => {
