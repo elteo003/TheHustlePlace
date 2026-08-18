@@ -9,8 +9,6 @@ import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useCleanup } from '@/hooks/useCleanup'
 import { useParallax } from '@/hooks/useParallax'
-import { useSmartHover } from '@/hooks/useSmartHover'
-import { useHeroControls } from '@/hooks/useHeroControls'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
@@ -31,27 +29,21 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
 
-    // Hook personalizzati
     const { parallaxRef, scrollY } = useParallax()
-    const { showControls, setShowControls, isHovered, setIsHovered, isScrolled, initialLoad, shouldShowControls } = useHeroControls()
+    const [metaHovered, setMetaHovered] = useState(false)
+    const [introVisible, setIntroVisible] = useState(true)
+    const showMeta = metaHovered || introVisible
 
     useEffect(() => {
-        const shouldShowNavbar = showControls || loading || !!error || !featuredMovie
-        setNavbarVisible(shouldShowNavbar)
+        setNavbarVisible(true)
         return () => setNavbarVisible(true)
-    }, [showControls, loading, error, featuredMovie, setNavbarVisible])
+    }, [setNavbarVisible])
 
-    const { isHovered: smartHovered, hoverRef, handleMouseEnter, handleMouseLeave } = useSmartHover({
-        delay: 1000, // Aumento il delay per dare più tempo
-        onEnter: () => {
-            setShowControls(true)
-            setIsHovered(true)
-        },
-        onLeave: () => {
-            setIsHovered(false)
-            // La logica di nascondimento è gestita da useHeroControls
-        }
-    })
+    useEffect(() => {
+        setIntroVisible(true)
+        const timer = setTimeout(() => setIntroVisible(false), 1800)
+        return () => clearTimeout(timer)
+    }, [featuredMovie?.id])
 
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
@@ -203,86 +195,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     return (
         <>
-            <style jsx>{`
-                @keyframes slideInUp {
-                    0% {
-                        opacity: 0;
-                        transform: translateY(40px) scale(0.95);
-                    }
-                    50% {
-                        opacity: 0.8;
-                        transform: translateY(20px) scale(0.98);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-                
-                @keyframes slideOutDown {
-                    0% {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                    50% {
-                        opacity: 0.8;
-                        transform: translateY(20px) scale(0.98);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: translateY(40px) scale(0.95);
-                    }
-                }
-                
-                @keyframes fadeIn {
-                    0% {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-                
-                @keyframes fadeOut {
-                    0% {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                }
-                
-                @keyframes slideInFromTop {
-                    0% {
-                        opacity: 0;
-                        transform: translateY(-100%);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                
-                @keyframes slideOutToTop {
-                    0% {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: translateY(-100%);
-                    }
-                }
-            `}</style>
             <div
-                ref={hoverRef}
                 className="relative h-screen w-full overflow-hidden"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
             >
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -294,15 +208,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             allow="autoplay; encrypted-media; fullscreen"
                             allowFullScreen
                             style={{
-                                filter: isHovered ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.5) saturate(0.8)',
+                                filter: showMeta ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.7) saturate(0.95)',
                                 width: '100vw',
                                 height: '100vh',
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
-                                transform: isHovered
+                                transform: showMeta
                                     ? 'translate(-50%, -50%) scale(1.05)'
-                                    : 'translate(-50%, -50%) scale(1.1)',
+                                    : 'translate(-50%, -50%) scale(1.08)',
                                 transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                             }}
                         />
@@ -311,12 +225,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             className="w-full h-full bg-cover bg-center"
                             style={{
                                 backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
-                                filter: isHovered ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.4) saturate(0.8) contrast(0.9)',
+                                filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
                                 width: '100vw',
                                 height: '100vh',
-                                backgroundSize: isHovered ? '105%' : '110%',
-                                backgroundPosition: isHovered ? 'center 45%' : 'center 50%',
-                                transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                                backgroundSize: showMeta ? '105%' : '108%',
+                                backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
+                                transform: showMeta ? 'scale(1.02)' : 'scale(1)',
                                 transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                             }}
                         />
@@ -324,53 +238,30 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 </div>
 
                 {/* Overlay Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-700 ease-out ${showControls && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
+                <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-300 ease-out ${showMeta && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
 
 
                 {/* Content */}
-                <div className={`relative z-10 h-full flex items-end transition-opacity duration-500 ${!showUpcomingTrailers ? 'opacity-100' : 'opacity-0'}`}>
-                    {showControls && (
-                        <div
-                            className="absolute bottom-16 left-4 px-4"
-                            style={{
-                                animation: 'slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                                transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)'
-                            }}
-                        >
+                <div className={`relative z-10 h-full flex items-end ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
+                    <div
+                        className={`absolute bottom-16 left-4 px-4 transition-[opacity,transform] duration-300 ease-out ${
+                            showMeta && !showUpcomingTrailers
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-3'
+                        }`}
+                        onMouseEnter={() => setMetaHovered(true)}
+                        onMouseLeave={() => setMetaHovered(false)}
+                    >
                             <div className="max-w-2xl">
-                                {/* Title */}
-                                <h1
-                                    className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
-                                    style={{
-                                        animation: 'fadeIn 0.6s ease-out 0.2s both',
-                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.98)',
-                                        transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                                    }}
-                                >
+                                <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                                     {featuredMovie.title}
                                 </h1>
 
-                                {/* Overview */}
-                                <p
-                                    className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3"
-                                    style={{
-                                        animation: 'fadeIn 0.6s ease-out 0.4s both',
-                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.98)',
-                                        transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s'
-                                    }}
-                                >
+                                <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
                                     {featuredMovie.overview}
                                 </p>
 
-                                {/* Rating */}
-                                <div
-                                    className="flex items-center mb-8"
-                                    style={{
-                                        animation: 'fadeIn 0.6s ease-out 0.6s both',
-                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-                                        transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s'
-                                    }}
-                                >
+                                <div className="flex items-center mb-8">
                                     <div className="flex items-center">
                                         <div className="text-yellow-400 text-2xl mr-2">★</div>
                                         <span className="text-white text-xl font-semibold">
@@ -382,15 +273,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     </div>
                                 </div>
 
-                                {/* Buttons */}
-                                <div
-                                    className="flex flex-col sm:flex-row gap-4"
-                                    style={{
-                                        animation: 'fadeIn 0.6s ease-out 0.8s both',
-                                        transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(25px) scale(0.98)',
-                                        transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
-                                    }}
-                                >
+                                <div className="flex flex-col sm:flex-row gap-4">
                                     <button
                                         type="button"
                                         onClick={handleWatchNow}
@@ -409,7 +292,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                         Dettagli
                                     </button>
 
-                                    {/* Mute/Unmute Button */}
                                     {trailer && (
                                         <button
                                             type="button"
@@ -430,7 +312,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     </button>
                                 </div>
 
-                                {/* Release Date */}
                                 {featuredMovie.release_date && (
                                     <div className="mt-6">
                                         <span className="text-gray-300 text-lg">
@@ -439,12 +320,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Bottom Gradient */}
-                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-700 ease-out ${showControls ? 'opacity-100' : 'opacity-20'}`} style={{ zIndex: 1 }} />
+                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ease-out ${showMeta ? 'opacity-100' : 'opacity-20'}`} style={{ zIndex: 1 }} />
 
                 {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
                 {(trailerEnded || showUpcomingTrailers) && movies.length > 0 && (
@@ -456,9 +335,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 changeToMovie(index)
                                 // Nasconde la sezione prossimi film quando si seleziona un film
                                 setTrailerEnded(false)
-                                // Mostra i controlli per il nuovo film
-                                setShowControls(true)
-                                // Reset del timer per il nuovo film
+                                setIntroVisible(true)
                                 resetTimer()
                                 // Notifica al parent di nascondere la sezione prossimi
                                 onUpcomingMovieSelect?.(index)
