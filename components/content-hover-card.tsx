@@ -15,7 +15,8 @@ import { DetailLink } from '@/components/ui/detail-link'
 import { Spinner } from '@/components/ui/spinner'
 import { Movie, TVShow } from '@/types'
 
-const EXPAND_DELAY_MS = 260
+const PLAY_DELAY_MS = 500
+const EXPAND_DELAY_MS = 800
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -48,8 +49,10 @@ export function ContentHoverCard({
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
+    const [showPlay, setShowPlay] = useState(false)
 
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
@@ -69,6 +72,11 @@ export function ContentHoverCard({
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
+        if (playTimer.current) {
+            clearTimeout(playTimer.current)
+            playTimer.current = null
+        }
+        setShowPlay(false)
         onCollapse()
         resetPreview()
     }
@@ -90,6 +98,7 @@ export function ContentHoverCard({
         setPortalReady(true)
         return () => {
             if (expandTimer.current) clearTimeout(expandTimer.current)
+            if (playTimer.current) clearTimeout(playTimer.current)
         }
     }, [])
 
@@ -99,11 +108,18 @@ export function ContentHoverCard({
             clearTimeout(expandTimer.current)
             expandTimer.current = null
         }
+        if (playTimer.current) {
+            clearTimeout(playTimer.current)
+            playTimer.current = null
+        }
+        setShowPlay(false)
     }
 
     const handleMouseEnter = () => {
         if (isTouch) return
+        if (playTimer.current) clearTimeout(playTimer.current)
         if (expandTimer.current) clearTimeout(expandTimer.current)
+        playTimer.current = setTimeout(() => setShowPlay(true), PLAY_DELAY_MS)
         expandTimer.current = setTimeout(() => {
             onExpand()
             scheduleTrailerLoad()
@@ -145,6 +161,7 @@ export function ContentHoverCard({
                         exit={reduceMotion ? undefined : { opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
                         transition={motionTransition}
                         className="fixed left-1/2 top-1/2 z-[81] w-[min(92vw,920px)] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
+                        onMouseLeave={closeNow}
                         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                     >
                         <div className="relative aspect-video overflow-hidden bg-zinc-900">
@@ -258,6 +275,27 @@ export function ContentHoverCard({
                             sizes="(max-width: 768px) 50vw, 200px"
                         />
                     </PosterTransition>
+
+                    {!isTouch && onPlay && (
+                        <div
+                            className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
+                                showPlay && !isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                            }`}
+                        >
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onPlay(itemId, itemType)
+                                }}
+                                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-transform duration-200 hover:scale-105"
+                                aria-label={`Guarda ${title}`}
+                            >
+                                <Play className="w-5 h-5" />
+                                Play
+                            </button>
+                        </div>
+                    )}
 
                     {isTouch && onPlay && (
                         <button

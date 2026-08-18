@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Play, Star } from 'lucide-react'
@@ -29,8 +29,9 @@ export function MovieCard({
 }: MovieCardProps) {
     const router = useRouter()
     const isTouch = useIsCoarsePointer()
-    const [isHovered, setIsHovered] = useState(false)
+    const [showPlay, setShowPlay] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const playTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         setIsMounted(true)
@@ -60,13 +61,23 @@ export function MovieCard({
         return getTMDBImageUrl(posterPath, 'w500')
     }
 
-    const showPlay = isTouch || isHovered
+    const showPlayButton = isTouch || showPlay
 
     return (
         <div
             className={`relative group cursor-pointer ${className}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={() => {
+                if (isTouch) return
+                if (playTimer.current) clearTimeout(playTimer.current)
+                playTimer.current = setTimeout(() => setShowPlay(true), 500)
+            }}
+            onMouseLeave={() => {
+                if (playTimer.current) {
+                    clearTimeout(playTimer.current)
+                    playTimer.current = null
+                }
+                setShowPlay(false)
+            }}
         >
             <div className="relative bg-zinc-900 rounded-lg overflow-hidden hover-lift group-hover:z-10">
                 <div className="relative aspect-[2/3] overflow-hidden">
@@ -86,13 +97,13 @@ export function MovieCard({
 
                     <div
                         className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
-                            showPlay ? 'opacity-100' : 'opacity-0'
+                            showPlayButton ? 'opacity-100' : 'opacity-0'
                         }`}
                     />
 
                     <div
                         className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                            showPlay ? 'opacity-100' : 'opacity-0'
+                            showPlayButton ? 'opacity-100' : 'opacity-0'
                         }`}
                     >
                         <button
