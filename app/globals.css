@@ -531,19 +531,14 @@ body::-webkit-scrollbar {
 
 .btn-play {
     @apply bg-white text-black font-semibold rounded-md px-5 py-2.5
-        transition-transform duration-200 ease-spring
+        transition-[opacity,transform] duration-200 ease-spring
+        hover:opacity-80
         active:scale-[0.98]
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50;
 }
 
-@media (hover: hover) and (pointer: fine) {
-    .btn-play:hover {
-        transform: scale(1.02);
-    }
-}
-
 .btn-ghost-outline {
-    @apply border border-white/25 text-white rounded-md px-5 py-2.5 font-medium
+    @apply border border-white/25 bg-transparent text-white rounded-md px-5 py-2.5 font-medium
         transition-colors duration-200
         hover:bg-white/10 active:bg-white/5
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30;

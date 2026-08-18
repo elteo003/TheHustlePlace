@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Button } from '@/components/ui/button'
 import { Play, Info, Volume2, VolumeX } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
@@ -193,9 +192,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
-                    <Button onClick={() => window.location.reload()} className="btn-play">
+                    <button type="button" onClick={() => window.location.reload()} className="btn-play">
                         Riprova
-                    </Button>
+                    </button>
                 </div>
             </div>
         )
@@ -392,46 +391,43 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                         transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
                                     }}
                                 >
-                                    <Button
+                                    <button
+                                        type="button"
                                         onClick={handleWatchNow}
-                                        size="lg"
-                                        className="btn-play text-base px-8 py-6 h-auto gap-2"
+                                        className="btn-play text-base px-8 py-6 h-auto inline-flex items-center justify-center gap-2"
                                     >
                                         <Play className="w-5 h-5 fill-current" />
                                         Guarda
-                                    </Button>
+                                    </button>
 
-                                    <Button
+                                    <button
+                                        type="button"
                                         onClick={handleMoreInfo}
-                                        variant="outline"
-                                        size="lg"
-                                        className="btn-ghost-outline text-base px-8 py-6 h-auto gap-2"
+                                        className="btn-ghost-outline text-base px-8 py-6 h-auto inline-flex items-center justify-center gap-2"
                                     >
                                         <Info className="w-5 h-5" />
                                         Dettagli
-                                    </Button>
+                                    </button>
 
                                     {/* Mute/Unmute Button */}
                                     {trailer && (
-                                        <Button
+                                        <button
+                                            type="button"
                                             onClick={toggleAudio}
-                                            variant="ghost"
-                                            size="lg"
-                                            className="icon-btn h-auto px-4 py-3"
+                                            className="icon-btn h-auto px-4 py-3 inline-flex items-center justify-center"
                                         >
                                             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                             <span className="sr-only">{isMuted ? 'Attiva audio' : 'Disattiva audio'}</span>
-                                        </Button>
+                                        </button>
                                     )}
 
-                                    <Button
+                                    <button
+                                        type="button"
                                         onClick={changeToNextMovie}
-                                        variant="outline"
-                                        size="lg"
                                         className="btn-ghost-outline text-base px-6 py-6 h-auto"
                                     >
                                         Prossimo
-                                    </Button>
+                                    </button>
                                 </div>
 
                                 {/* Release Date */}
