@@ -279,10 +279,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
                 <div className={`relative z-10 h-full ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
                     <div
-                        className={`absolute inset-x-0 bottom-0 px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0 transition-[opacity,transform] duration-200 ease-out-expo ${
+                        className={`hero-meta-hit absolute inset-x-0 bottom-0 px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0 transition-[opacity,transform] duration-200 ease-out-expo ${
                             metaVisible
                                 ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 pointer-events-none motion-safe:translate-y-2'
+                                : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
                         }`}
                         onMouseEnter={() => setMetaHovered(true)}
                         onMouseLeave={() => setMetaHovered(false)}

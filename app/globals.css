@@ -32,6 +32,12 @@ body {
     }
 }
 
+@media (hover: hover) and (pointer: fine) {
+    .hero-meta-hit {
+        pointer-events: auto;
+    }
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;
