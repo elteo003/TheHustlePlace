@@ -10,6 +10,9 @@ Questo indice fornisce una mappa completa di tutta la documentazione disponibile
 doc/
 ├── 📄 README.md                    # Documentazione principale
 ├── 📄 INDEX.md                     # Questo indice
+├── 📁 blueprints/                  # Spec di feature da implementare
+│   ├── 📄 README.md
+│   └── 📄 hero-trailer-audio-visibility.md
 ├── 📄 recent-updates.md            # Ultimi aggiornamenti
 ├── 📄 architecture-diagrams.md     # Diagrammi Mermaid
 ├── 📄 troubleshooting.md           # Guida risoluzione problemi
@@ -57,6 +60,10 @@ doc/
 - **[Concurrency & Scaling](concurrency-and-scaling.md)** - Scalabilità
 
 ## 🔧 **Guide per Categoria**
+
+### 📐 **Blueprint di feature**
+- **[Indice blueprint](blueprints/README.md)** - Spec di implementazione
+- **[Audio hero al cambio visibilità](blueprints/hero-trailer-audio-visibility.md)** - Mute/unmute trailer hero sullo scroll
 
 ### 🏗️ **Architettura e Design**
 - **[Architecture Diagrams](architecture-diagrams.md)** - Diagrammi Mermaid completi
@@ -163,6 +170,7 @@ doc/
 - **"Setup"** → [Configuration](configuration.md), [README](README.md)
 - **"Error"** → [Troubleshooting](troubleshooting.md), [JavaScript Errors Fix](javascript-errors-fix.md)
 - **"Architecture"** → [Architecture](architecture-diagram.md), [Architecture Diagrams](architecture-diagrams.md)
+- **"Hero audio" / "scroll mute"** → [Audio hero al cambio visibilità](blueprints/hero-trailer-audio-visibility.md)
 
 ### 🔍 **Per Problema**
 - **"Build Error"** → [Troubleshooting](troubleshooting.md)

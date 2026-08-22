@@ -25,3 +25,4 @@ Sezione hero interattiva con trailer e azioni.
 
 ## Collegamenti
 - Moduli: 06, 08, 12, 15
+- Blueprint (proposto): [`hero-trailer-audio-visibility`](../../../blueprints/hero-trailer-audio-visibility.md) — mute/unmute del trailer quando la hero esce e rientra nel viewport.
