@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Play, Info, Volume2, VolumeX } from 'lucide-react'
+import { Play, Info, Volume2, VolumeX, SkipForward } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
@@ -168,11 +168,42 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         }
     }
 
+    const releaseYear = featuredMovie?.release_date
+        ? new Date(featuredMovie.release_date).getFullYear()
+        : null
+    const rating =
+        featuredMovie && featuredMovie.vote_average > 0
+            ? featuredMovie.vote_average.toFixed(1)
+            : null
+
+    const renderIconControls = () => (
+        <>
+            {trailer && (
+                <button
+                    type="button"
+                    onClick={toggleAudio}
+                    className="icon-btn h-11 w-11 inline-flex items-center justify-center"
+                    aria-label={isMuted ? 'Attiva audio' : 'Disattiva audio'}
+                >
+                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+            )}
+            <button
+                type="button"
+                onClick={changeToNextMovie}
+                className="icon-btn h-11 w-11 inline-flex items-center justify-center"
+                aria-label="Prossimo titolo"
+            >
+                <SkipForward className="w-5 h-5" />
+            </button>
+        </>
+    )
+
 
     // Mostra loading durante verifica trailer
     if (loading) {
         return (
-            <div className="relative h-screen bg-black flex items-center justify-center">
+            <div className="relative h-dvh bg-black flex items-center justify-center">
                 <Spinner />
             </div>
         )
@@ -180,7 +211,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     if (error || !featuredMovie) {
         return (
-            <div className="relative h-screen bg-black flex items-center justify-center">
+            <div className="relative h-dvh bg-black flex items-center justify-center px-4">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
@@ -192,11 +223,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         )
     }
 
+    const metaVisible = showMeta && !showUpcomingTrailers
 
     return (
         <>
             <div
-                className="relative h-screen w-full overflow-hidden"
+                className="relative h-dvh w-full overflow-hidden"
             >
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -204,126 +236,110 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         <iframe
                             ref={iframeRef}
                             src={getYouTubeEmbedUrl(trailer, true, isMuted)}
-                            className="w-full h-full object-cover"
+                            className="absolute inset-0 h-full w-full object-cover"
                             allow="autoplay; encrypted-media; fullscreen"
                             allowFullScreen
                             style={{
                                 filter: showMeta ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.7) saturate(0.95)',
-                                width: '100vw',
-                                height: '100vh',
-                                position: 'absolute',
                                 top: '50%',
                                 left: '50%',
+                                width: '100%',
+                                height: '100%',
                                 transform: showMeta
                                     ? 'translate(-50%, -50%) scale(1.05)'
                                     : 'translate(-50%, -50%) scale(1.08)',
-                                transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
                             }}
                         />
                     ) : (
                         <div
-                            className="w-full h-full bg-cover bg-center"
+                            className="h-full w-full bg-cover bg-center"
                             style={{
                                 backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
                                 filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
-                                width: '100vw',
-                                height: '100vh',
                                 backgroundSize: showMeta ? '105%' : '108%',
                                 backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
                                 transform: showMeta ? 'scale(1.02)' : 'scale(1)',
-                                transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
                             }}
                         />
                     )}
                 </div>
 
-                {/* Overlay Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent transition-opacity duration-300 ease-out ${showMeta && !showUpcomingTrailers ? 'opacity-100' : 'opacity-10'}`} />
+                <div
+                    className={`absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent md:bg-gradient-to-r md:from-black/70 md:via-black/45 md:to-transparent transition-opacity duration-200 ease-out ${
+                        metaVisible ? 'opacity-100' : 'opacity-10'
+                    }`}
+                />
+                <div
+                    className={`absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent md:h-32 transition-opacity duration-200 ease-out ${
+                        showMeta ? 'opacity-100' : 'opacity-20'
+                    }`}
+                />
 
-
-                {/* Content */}
-                <div className={`relative z-10 h-full flex items-end ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
+                <div className={`relative z-10 h-full ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
                     <div
-                        className={`absolute bottom-16 left-4 px-4 transition-[opacity,transform] duration-300 ease-out ${
-                            showMeta && !showUpcomingTrailers
+                        className={`absolute inset-x-0 bottom-0 px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0 transition-[opacity,transform] duration-200 ease-out-expo ${
+                            metaVisible
                                 ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 translate-y-3'
+                                : 'opacity-0 pointer-events-none motion-safe:translate-y-2'
                         }`}
                         onMouseEnter={() => setMetaHovered(true)}
                         onMouseLeave={() => setMetaHovered(false)}
                     >
-                            <div className="max-w-2xl">
-                                <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                                    {featuredMovie.title}
-                                </h1>
-
-                                <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed line-clamp-3">
-                                    {featuredMovie.overview}
-                                </p>
-
-                                <div className="flex items-center mb-8">
-                                    <div className="flex items-center">
-                                        <div className="text-yellow-400 text-2xl mr-2">★</div>
-                                        <span className="text-white text-xl font-semibold">
-                                            {featuredMovie.vote_average.toFixed(1)}
-                                        </span>
-                                        <span className="text-gray-400 ml-2">
-                                            ({featuredMovie.vote_count.toLocaleString()} voti)
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={handleWatchNow}
-                                        className="btn-play text-base px-8 py-6 h-auto inline-flex items-center justify-center gap-2"
-                                    >
-                                        <Play className="w-5 h-5 fill-current" />
-                                        Guarda
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleMoreInfo}
-                                        className="btn-ghost-outline text-base px-8 py-6 h-auto inline-flex items-center justify-center gap-2"
-                                    >
-                                        <Info className="w-5 h-5" />
-                                        Dettagli
-                                    </button>
-
-                                    {trailer && (
-                                        <button
-                                            type="button"
-                                            onClick={toggleAudio}
-                                            className="icon-btn h-auto px-4 py-3 inline-flex items-center justify-center"
-                                        >
-                                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                                            <span className="sr-only">{isMuted ? 'Attiva audio' : 'Disattiva audio'}</span>
-                                        </button>
-                                    )}
-
-                                    <button
-                                        type="button"
-                                        onClick={changeToNextMovie}
-                                        className="btn-ghost-outline text-base px-6 py-6 h-auto"
-                                    >
-                                        Prossimo
-                                    </button>
-                                </div>
-
-                                {featuredMovie.release_date && (
-                                    <div className="mt-6">
-                                        <span className="text-gray-300 text-lg">
-                                            Uscito il {new Date(featuredMovie.release_date).toLocaleDateString('it-IT')}
-                                        </span>
-                                    </div>
-                                )}
+                        <div className="flex items-start justify-between gap-3">
+                            <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-white line-clamp-2 sm:text-5xl lg:text-7xl">
+                                {featuredMovie.title}
+                            </h1>
+                            <div className="flex shrink-0 items-center gap-1 sm:hidden">
+                                {renderIconControls()}
                             </div>
+                        </div>
+
+                        {(releaseYear || rating) && (
+                            <p className="mt-2 flex items-center gap-2 text-sm text-white/70">
+                                {releaseYear && <span>{releaseYear}</span>}
+                                {releaseYear && rating && <span className="text-white/25">·</span>}
+                                {rating && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="text-amber-400">★</span>
+                                        {rating}
+                                    </span>
+                                )}
+                            </p>
+                        )}
+
+                        {featuredMovie.overview && (
+                            <p className="mt-3 hidden text-base leading-relaxed text-white/75 line-clamp-2 md:block lg:mt-4 lg:text-xl lg:line-clamp-3">
+                                {featuredMovie.overview}
+                            </p>
+                        )}
+
+                        <div className="mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:items-center sm:gap-3">
+                            <button
+                                type="button"
+                                onClick={handleWatchNow}
+                                className="btn-play h-12 w-full sm:w-auto px-6 inline-flex items-center justify-center gap-2"
+                            >
+                                <Play className="w-5 h-5 fill-current" />
+                                Guarda
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleMoreInfo}
+                                className="btn-ghost-outline h-12 w-full sm:w-auto px-6 inline-flex items-center justify-center gap-2"
+                            >
+                                <Info className="w-5 h-5" />
+                                Dettagli
+                            </button>
+
+                            <div className="hidden items-center gap-1 sm:flex">
+                                {renderIconControls()}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent transition-opacity duration-300 ease-out ${showMeta ? 'opacity-100' : 'opacity-20'}`} style={{ zIndex: 1 }} />
 
                 {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
                 {(trailerEnded || showUpcomingTrailers) && movies.length > 0 && (
