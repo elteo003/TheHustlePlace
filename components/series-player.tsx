@@ -193,16 +193,26 @@ export function SeriesPlayer({
                                             onPlay(selectedSeason, episode.episode_number)
                                         }}
                                         className={`w-full flex items-start gap-4 py-5 text-left transition-colors ${
-                                            watched || selected
-                                                ? 'bg-white/[0.04]'
-                                                : 'hover:bg-white/[0.03]'
+                                            watched
+                                                ? 'episode-watched'
+                                                : selected
+                                                  ? 'bg-white/[0.04]'
+                                                  : 'hover:bg-white/[0.03]'
                                         }`}
                                     >
-                                        <span className="w-8 flex-shrink-0 text-white/35 text-lg font-medium pt-6">
+                                        <span
+                                            className={`w-8 flex-shrink-0 text-lg font-medium pt-6 ${
+                                                watched ? 'text-white' : 'text-white/35'
+                                            }`}
+                                        >
                                             {episode.episode_number}
                                         </span>
 
-                                        <div className="relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group">
+                                        <div
+                                            className={`relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group ${
+                                                watched ? 'ring-1 ring-white/70' : ''
+                                            }`}
+                                        >
                                             {episode.still_path ? (
                                                 <Image
                                                     src={getImageUrl(episode.still_path, 'w500')}
@@ -239,7 +249,7 @@ export function SeriesPlayer({
                                                 )}
                                             </div>
                                             {watched && (
-                                                <p className="text-[11px] uppercase tracking-[0.14em] text-white/55 mb-1">
+                                                <p className="text-[11px] uppercase tracking-[0.14em] text-white/80 mb-1">
                                                     Ultima vista
                                                 </p>
                                             )}
