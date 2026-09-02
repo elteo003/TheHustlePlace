@@ -192,12 +192,10 @@ export function SeriesPlayer({
                                             onEpisodeChange(episode.episode_number)
                                             onPlay(selectedSeason, episode.episode_number)
                                         }}
-                                        className={`w-full flex items-start gap-4 py-5 text-left transition-colors border-l-2 ${
-                                            watched
-                                                ? 'bg-white/[0.07] border-white'
-                                                : selected
-                                                  ? 'bg-white/[0.04] border-transparent'
-                                                  : 'border-transparent hover:bg-white/[0.03]'
+                                        className={`w-full flex items-start gap-4 py-5 text-left transition-colors ${
+                                            watched || selected
+                                                ? 'bg-white/[0.04]'
+                                                : 'hover:bg-white/[0.03]'
                                         }`}
                                     >
                                         <span className="w-8 flex-shrink-0 text-white/35 text-lg font-medium pt-6">
