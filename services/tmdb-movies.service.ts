@@ -116,6 +116,9 @@ export class TMDBMoviesService {
      * Ottiene i dettagli di un film specifico
      */
     async getMovieDetails(movieId: number): Promise<TMDBMovie> {
+        if (!Number.isFinite(movieId) || movieId <= 0) {
+            throw new Error('TMDB movie id non valido')
+        }
         return this.makeRequest<TMDBMovie>(`/movie/${movieId}`)
     }
 
@@ -149,6 +152,9 @@ export class TMDBMoviesService {
      * Ottiene i dettagli di una serie TV
      */
     async getTVShowDetails(tvShowId: number): Promise<any> {
+        if (!Number.isFinite(tvShowId) || tvShowId <= 0) {
+            return null
+        }
         const response = await this.makeRequest(`/tv/${tvShowId}`)
 
         if (response) {

@@ -43,8 +43,9 @@ export function PlayerShell({
         if (chromePaused) return
         setChromeVisible(true)
         if (idleRef.current) clearTimeout(idleRef.current)
+        if (onNext) return
         idleRef.current = setTimeout(() => setChromeVisible(false), IDLE_MS)
-    }, [chromePaused])
+    }, [chromePaused, onNext])
 
     useEffect(() => {
         if (chromePaused) {
@@ -61,6 +62,12 @@ export function PlayerShell({
     const chromeInteractive = chromeVisible && !chromePaused
     const fadeClass = reduceMotion ? '' : 'transition-opacity duration-300 ease-out'
     const interactive = chromeInteractive ? 'pointer-events-auto' : 'pointer-events-none'
+
+    useEffect(() => {
+        if (!onNext || chromePaused) return
+        setChromeVisible(true)
+        if (idleRef.current) clearTimeout(idleRef.current)
+    }, [onNext, chromePaused])
 
     return (
         <div className="min-h-screen bg-black text-white">

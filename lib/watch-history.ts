@@ -1,5 +1,5 @@
 import { ContentType } from '@/lib/content-navigation'
-import { nextWatchProgress } from '@/lib/watch-progress'
+import { progressPercent, resumeStartAt } from '@/lib/watch-progress'
 
 export interface WatchHistoryEntry {
     id: number
@@ -11,6 +11,8 @@ export interface WatchHistoryEntry {
     episode?: number
     /** 0–100 */
     progress: number
+    currentTime?: number
+    duration?: number
     watchedAt: number
 }
 
@@ -44,14 +46,34 @@ export function getWatchHistory(): WatchHistoryEntry[] {
 
 export function getLastWatchedEpisode(
     id: number
-): { season: number; episode: number; progress: number } | null {
+): { season: number; episode: number; progress: number; currentTime?: number } | null {
     const entry = getWatchHistory().find((item) => item.type === 'tv' && item.id === id)
     if (!entry || entry.season == null || entry.episode == null) return null
     return {
         season: entry.season,
         episode: entry.episode,
-        progress: entry.progress,
+        progress: entry.progress ?? 0,
+        currentTime: entry.currentTime,
     }
+}
+
+export function getResumeStartAt(
+    id: number,
+    type: ContentType,
+    season?: number,
+    episode?: number
+): number | undefined {
+    const entry = getWatchHistory().find((item) => item.type === type && item.id === id)
+    if (!entry) return undefined
+    if (type === 'tv') {
+        if (season == null || episode == null) return undefined
+        if (entry.season !== season || entry.episode !== episode) return undefined
+    }
+    return resumeStartAt({
+        currentTime: entry.currentTime,
+        duration: entry.duration,
+        progress: entry.progress,
+    })
 }
 
 export interface TrackWatchInput {
@@ -62,6 +84,9 @@ export interface TrackWatchInput {
     backdrop_path?: string | null
     season?: number
     episode?: number
+    currentTime?: number
+    duration?: number
+    progress?: number
 }
 
 export function trackWatchEntry(input: TrackWatchInput): void {
@@ -69,10 +94,18 @@ export function trackWatchEntry(input: TrackWatchInput): void {
     const key = `${input.type}-${input.id}`
     const existing = entries.find((e) => `${e.type}-${e.id}` === key)
 
-    const progress = nextWatchProgress(existing?.progress)
+    const currentTime = input.currentTime ?? existing?.currentTime
+    const duration = input.duration ?? existing?.duration
+    const progress =
+        input.progress ??
+        (currentTime != null && duration != null && duration > 0
+            ? progressPercent(currentTime, duration)
+            : existing?.progress ?? 0)
 
     const entry: WatchHistoryEntry = {
         ...input,
+        currentTime,
+        duration,
         progress,
         watchedAt: Date.now(),
     }
@@ -85,7 +118,17 @@ export function trackWatchEntry(input: TrackWatchInput): void {
         void fetch('/api/watch-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(input),
+            body: JSON.stringify({
+                id: input.id,
+                type: input.type,
+                title: input.title,
+                poster_path: input.poster_path,
+                backdrop_path: input.backdrop_path,
+                season: input.season,
+                episode: input.episode,
+                position_seconds: Math.max(0, Math.floor(currentTime ?? 0)),
+                progress,
+            }),
         }).catch(() => undefined)
     }
 }

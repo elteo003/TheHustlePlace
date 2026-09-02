@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import { VideoPlayerService } from '@/services/video-player.service'
 import { ContentType } from '@/lib/content-navigation'
+import { parseVixsrcPlayerMessage, VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 30000
 
@@ -16,6 +17,8 @@ interface VixsrcEmbedPlayerProps {
     season?: number
     episode?: number
     title: string
+    startAt?: number
+    onPlayback?: (playback: VixsrcPlayerEvent) => void
     onEnded?: () => void
     onBack?: () => void
     unavailableTitle?: string
@@ -28,6 +31,8 @@ export function VixsrcEmbedPlayer({
     season,
     episode,
     title,
+    startAt,
+    onPlayback,
     onEnded,
     onBack,
     unavailableTitle = 'Contenuto non disponibile',
@@ -38,12 +43,7 @@ export function VixsrcEmbedPlayer({
     const [iframeError, setIframeError] = useState(false)
     const [iframeLoaded, setIframeLoaded] = useState(false)
 
-    const playerUrl = playerService.getPlayerUrl(
-        tmdbId,
-        type,
-        season,
-        episode
-    )
+    const playerUrl = playerService.getPlayerUrl(tmdbId, type, season, episode, startAt)
 
     useEffect(() => {
         setIframeError(false)
@@ -66,19 +66,20 @@ export function VixsrcEmbedPlayer({
     }, [playerUrl])
 
     useEffect(() => {
-        if (!onEnded) return
+        if (!onPlayback && !onEnded) return
 
         const handleMessage = (event: MessageEvent) => {
-            if (!event.origin?.includes('vixsrc.to')) return
-            if (!event.data || typeof event.data !== 'object') return
-            if (event.data.type === 'ended') {
-                onEnded()
+            const playback = parseVixsrcPlayerMessage(event.origin, event.data)
+            if (!playback) return
+            onPlayback?.(playback)
+            if (playback.event === 'ended') {
+                onEnded?.()
             }
         }
 
         window.addEventListener('message', handleMessage)
         return () => window.removeEventListener('message', handleMessage)
-    }, [onEnded])
+    }, [onEnded, onPlayback])
 
     const clearLoadTimeout = () => {
         if (timeoutRef.current) {

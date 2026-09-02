@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contentTmdbId, filterByVixsrcIds } from './vixsrc-ids'
+import { contentTmdbId, collectVixsrcTmdbIds, filterByVixsrcIds } from './vixsrc-ids'
 
 describe('vixsrc-ids', () => {
     it('usa tmdb_id quando presente', () => {
@@ -15,5 +15,14 @@ describe('vixsrc-ids', () => {
             { id: 30, title: 'c' },
         ]
         expect(filterByVixsrcIds(items, ids).map((item) => item.title)).toEqual(['a', 'b'])
+    })
+
+    it('scarta tmdb_id null o invalidi dalla lista vixsrc', () => {
+        expect(
+            collectVixsrcTmdbIds(
+                [{ tmdb_id: null }, { tmdb_id: 1399 }, { tmdb_id: 0 }, { tmdb_id: 1396 }, { tmdb_id: 1399 }],
+                20
+            )
+        ).toEqual([1399, 1396])
     })
 })

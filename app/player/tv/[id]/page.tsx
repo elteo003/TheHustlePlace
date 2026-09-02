@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
@@ -10,6 +10,8 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getPlayerPath, getSeriesPath } from '@/lib/content-navigation'
+import { getResumeStartAt } from '@/lib/watch-history'
+import { isNearEnd } from '@/lib/watch-progress'
 
 interface TVShowSummary {
     id: number
@@ -54,6 +56,7 @@ export default function TVPlayerPage() {
     const [tvShowDetails, setTVShowDetails] = useState<TVShowDetails | null>(null)
     const [loading, setLoading] = useState(true)
     const [offerNext, setOfferNext] = useState(false)
+    const [nearEnd, setNearEnd] = useState(false)
     const fetchedId = useRef<string | null>(null)
 
     useEffect(() => {
@@ -131,7 +134,12 @@ export default function TVPlayerPage() {
         fetchTVShowDetails()
     }, [tvId])
 
-    useTrackWatch(
+    const startAt = useMemo(
+        () => getResumeStartAt(parseInt(tvId, 10), 'tv', season, episode),
+        [tvId, season, episode]
+    )
+
+    const trackPlayback = useTrackWatch(
         tvShow
             ? {
                   id: tvShow.tmdb_id || tvShow.id,
@@ -147,6 +155,7 @@ export default function TVPlayerPage() {
 
     useEffect(() => {
         setOfferNext(false)
+        setNearEnd(false)
     }, [season, episode])
 
     const findEpisode = useCallback(
@@ -205,8 +214,19 @@ export default function TVPlayerPage() {
             return
         }
         setOfferNext(false)
+        setNearEnd(false)
         router.replace(getPlayerPath(parseInt(tvId, 10), 'tv', next))
     }, [episode, exitPlayer, findNextEpisode, router, season, tvId])
+
+    const handlePlayback = useCallback(
+        (playback: Parameters<typeof trackPlayback>[0]) => {
+            trackPlayback(playback)
+            if (playback.duration <= 0) return
+            const next = findNextEpisode(season, episode)
+            setNearEnd(Boolean(next) && isNearEnd(playback.currentTime, playback.duration))
+        },
+        [episode, findNextEpisode, season, trackPlayback]
+    )
 
     const currentEpisodeData = findEpisode(season, episode)
     const nextRef = findNextEpisode(season, episode)
@@ -228,7 +248,7 @@ export default function TVPlayerPage() {
         <PlayerShell
             backdropPath={tvShow.backdrop_path}
             onBack={exitPlayer}
-            onNext={nextRef ? goToNextEpisode : undefined}
+            onNext={nearEnd && nextRef ? goToNextEpisode : undefined}
             nextLabel={nextRef ? `S${nextRef.season} E${nextRef.episode}` : undefined}
             title={`${tvShow.name} · S${season}E${episode}`}
             chromePaused={offerNext}
@@ -261,6 +281,8 @@ export default function TVPlayerPage() {
                     season={season}
                     episode={episode}
                     title={`${tvShow.name} - S${season}E${episode}`}
+                    startAt={startAt}
+                    onPlayback={handlePlayback}
                     onEnded={handleEpisodeEnded}
                     onBack={exitPlayer}
                     unavailableTitle="Episodio non disponibile"

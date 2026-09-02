@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
+import { getResumeStartAt } from '@/lib/watch-history'
 import { Movie } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
 
@@ -90,8 +91,12 @@ export default function MoviePlayerPage() {
     }, [movieId])
 
     const tmdbId = movie?.tmdb_id || movie?.id
+    const startAt = useMemo(
+        () => (tmdbId ? getResumeStartAt(tmdbId, 'movie') : undefined),
+        [tmdbId]
+    )
 
-    useTrackWatch(
+    const trackPlayback = useTrackWatch(
         movie && tmdbId
             ? {
                   id: tmdbId,
@@ -159,6 +164,8 @@ export default function MoviePlayerPage() {
                     tmdbId={movie.tmdb_id || movie.id}
                     type="movie"
                     title={movie.title}
+                    startAt={startAt}
+                    onPlayback={trackPlayback}
                     onBack={() => router.back()}
                     unavailableDescription="Questo film non è attualmente disponibile per lo streaming su vixsrc.to"
                 />

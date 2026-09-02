@@ -17,6 +17,7 @@ export function toWatchHistoryEntry(row: typeof watchHistory.$inferSelect): Watc
         season: row.season ?? undefined,
         episode: row.episode ?? undefined,
         progress: row.progress,
+        currentTime: row.positionSeconds,
         watchedAt: row.watchedAt.getTime(),
     }
 }
@@ -48,13 +49,14 @@ export interface UpsertWatchInput {
     season?: number
     episode?: number
     position_seconds?: number
+    progress?: number
 }
 
 export async function upsertWatchHistory(input: UpsertWatchInput): Promise<number> {
     const db = getDb()
     const profile = await ensureProfile(input.deviceId)
     if (!db || !profile) {
-        return nextWatchProgress()
+        return input.progress ?? 0
     }
 
     const existing = await db
@@ -69,7 +71,7 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
         )
         .limit(1)
 
-    const progress = nextWatchProgress(existing[0]?.progress)
+    const progress = input.progress ?? existing[0]?.progress ?? 0
     const now = new Date()
 
     await db

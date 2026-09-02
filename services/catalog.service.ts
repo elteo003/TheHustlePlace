@@ -6,7 +6,7 @@ import { VixsrcScraperService } from './vixsrc-scraper.service'
 import { tmdbWrapperService } from './tmdb-wrapper.service'
 import { TMDBMovie } from './tmdb-movies.service'
 import { getVixsrcIdSet } from './vixsrc-ids.service'
-import { filterByVixsrcIds } from '@/lib/vixsrc-ids'
+import { filterByVixsrcIds, collectVixsrcTmdbIds } from '@/lib/vixsrc-ids'
 
 export class CatalogService {
     private readonly VIXSRC_BASE_URL = process.env.VIXSRC_BASE_URL || 'https://vixsrc.to'
@@ -281,7 +281,7 @@ export class CatalogService {
                 const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/movie?lang=it`)
 
                 if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = response.data.map((item: any) => item.tmdb_id)
+                    const tmdbIds = collectVixsrcTmdbIds(response.data, 20)
 
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 film alla volta per evitare rate limiting
@@ -478,7 +478,7 @@ export class CatalogService {
                 const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/tv?lang=it`)
 
                 if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = response.data.map((item: any) => item.tmdb_id)
+                    const tmdbIds = collectVixsrcTmdbIds(response.data, 20)
 
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 serie TV alla volta per evitare rate limiting

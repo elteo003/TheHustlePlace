@@ -39,7 +39,7 @@ describe('content-display', () => {
     })
 
     it('preferisce contentType sull item', () => {
-        expect(resolveContentType({ id: 1, contentType: 'tv' }, 'movie')).toBe('tv')
-        expect(resolveContentType({ id: 1 }, 'movie')).toBe('movie')
+        expect(resolveContentType({ contentType: 'tv' }, 'movie')).toBe('tv')
+        expect(resolveContentType({}, 'movie')).toBe('movie')
     })
 })

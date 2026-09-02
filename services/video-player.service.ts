@@ -102,18 +102,27 @@ export class VideoPlayerService {
     }
 
     // Metodo per ottenere l'URL diretto del player di vixsrc.to
-    getPlayerUrl(tmdbId: number, type: 'movie' | 'tv', season?: number, episode?: number): string {
+    getPlayerUrl(
+        tmdbId: number,
+        type: 'movie' | 'tv',
+        season?: number,
+        episode?: number,
+        startAt?: number
+    ): string {
         const baseUrl = type === 'movie'
             ? `${this.VIXSRC_BASE_URL}/movie/${tmdbId}`
             : `${this.VIXSRC_BASE_URL}/tv/${tmdbId}/${season}/${episode}`
 
-        // Aggiungi parametri di personalizzazione secondo la documentazione VixSrc
         const params = new URLSearchParams({
-            lang: 'it',                    // Lingua italiana per audio
-            autoplay: 'false',            // Non autoplay per migliore UX
-            primaryColor: 'B20710',       // Colore primario (rosso Netflix-style)
-            secondaryColor: '170000'      // Colore secondario (rosso scuro)
+            lang: 'it',
+            autoplay: 'false',
+            primaryColor: 'B20710',
+            secondaryColor: '170000',
         })
+
+        if (startAt != null && startAt > 0) {
+            params.set('startAt', String(Math.floor(startAt)))
+        }
 
         return `${baseUrl}?${params.toString()}`
     }

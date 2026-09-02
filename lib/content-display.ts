@@ -15,7 +15,7 @@ export function getContentTitle(item: ContentItem, type: ContentType = 'movie'):
 }
 
 export function resolveContentType(
-    item: ContentItem,
+    item: { contentType?: ContentType },
     fallback: ContentType = 'movie'
 ): ContentType {
     return item.contentType ?? fallback

@@ -19,6 +19,7 @@ const trackSchema = z.object({
     season: z.number().int().positive().optional(),
     episode: z.number().int().positive().optional(),
     position_seconds: z.number().int().min(0).optional(),
+    progress: z.number().int().min(0).max(100).optional(),
 })
 
 export async function GET() {
