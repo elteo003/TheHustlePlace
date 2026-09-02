@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import { SeriesPlayerProps, Episode } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { PosterTransition } from '@/components/ui/poster-transition'
@@ -115,15 +114,15 @@ export function SeriesPlayer({
                                     {tvShow.overview}
                                 </p>
 
-                                <Button
-                                    size="lg"
+                                <button
+                                    type="button"
                                     onClick={() => onPlay(selectedSeason, selectedEpisode)}
-                                    className="btn-play gap-2"
+                                    className="btn-play inline-flex items-center gap-2"
                                 >
                                     <Play className="w-5 h-5 fill-current" />
                                     {isContinuing ? 'Continua' : 'Guarda'}
                                     {selectedEpisodeData ? ` S${selectedSeason}E${selectedEpisode}` : ''}
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     </div>

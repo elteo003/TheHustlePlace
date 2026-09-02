@@ -610,7 +610,7 @@ body::-webkit-scrollbar {
 .btn-play {
     @apply bg-white text-black font-semibold rounded-md px-5 py-2.5
         transition-[opacity,transform] duration-200 ease-spring
-        hover:opacity-80
+        hover:bg-white hover:text-black hover:opacity-80
         active:scale-[0.98]
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50;
 }

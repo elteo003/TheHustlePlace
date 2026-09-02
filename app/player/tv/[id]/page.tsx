@@ -9,8 +9,7 @@ import { TVShowDetails, Episode } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
 import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
 import { getTMDBImageUrl } from '@/lib/tmdb'
-import { getLastBrowsePath, resolvePlayerExit } from '@/lib/player-exit'
-import { getPlayerPath } from '@/lib/content-navigation'
+import { getPlayerPath, getSeriesPath } from '@/lib/content-navigation'
 
 interface TVShowSummary {
     id: number
@@ -187,8 +186,8 @@ export default function TVPlayerPage() {
     )
 
     const exitPlayer = useCallback(() => {
-        router.replace(resolvePlayerExit(getLastBrowsePath()))
-    }, [router])
+        router.replace(getSeriesPath(tvId, { season, episode }))
+    }, [episode, router, season, tvId])
 
     const handleEpisodeEnded = useCallback(() => {
         const next = findNextEpisode(season, episode)

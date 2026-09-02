@@ -147,13 +147,17 @@ export function VixsrcEmbedPlayer({
             <iframe
                 src={playerUrl}
                 className="w-full h-full border-0"
-                allowFullScreen
                 title={title}
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
+                allowFullScreen
                 referrerPolicy="no-referrer"
                 loading="eager"
                 onLoad={handleLoad}
                 onError={handleError}
+                {...{
+                    webkitallowfullscreen: 'true',
+                    mozallowfullscreen: 'true',
+                }}
             />
         </div>
     )
