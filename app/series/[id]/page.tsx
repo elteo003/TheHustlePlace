@@ -6,6 +6,9 @@ import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
 import { toast } from 'sonner'
 import { PageSpinner } from '@/components/ui/spinner'
+import { getLastWatchedEpisode } from '@/lib/watch-history'
+import { resolveSeriesResume } from '@/lib/series-resume'
+import { getPlayerPath } from '@/lib/content-navigation'
 
 export default function SeriesPage() {
     const params = useParams()
@@ -15,6 +18,11 @@ export default function SeriesPage() {
     const [tvShow, setTVShow] = useState<TVShowDetails | null>(null)
     const [currentSeason, setCurrentSeason] = useState(1)
     const [currentEpisode, setCurrentEpisode] = useState(1)
+    const [lastWatched, setLastWatched] = useState<{
+        season: number
+        episode: number
+        progress: number
+    } | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -50,8 +58,22 @@ export default function SeriesPage() {
                 }
 
                 setTVShow(tvShowDetails)
-                setCurrentSeason(1)
-                setCurrentEpisode(1)
+
+                const numericId = parseInt(seriesId, 10)
+                const watched = Number.isFinite(numericId) ? getLastWatchedEpisode(numericId) : null
+                setLastWatched(watched)
+
+                const query = new URLSearchParams(window.location.search)
+                const querySeason = parseInt(query.get('season') || '', 10)
+                const queryEpisode = parseInt(query.get('episode') || '', 10)
+                const resume = resolveSeriesResume({
+                    querySeason: Number.isFinite(querySeason) ? querySeason : null,
+                    queryEpisode: Number.isFinite(queryEpisode) ? queryEpisode : null,
+                    lastWatched: watched,
+                    seasons: seasonsWithEpisodes,
+                })
+                setCurrentSeason(resume.season)
+                setCurrentEpisode(resume.episode)
             } else {
                 throw new Error('Serie TV non trovata')
             }
@@ -136,13 +158,13 @@ export default function SeriesPage() {
     }
 
     const handlePlay = (season: number, episode: number) => {
-        router.push(`/player/tv/${seriesId}?season=${season}&episode=${episode}`)
+        router.replace(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
     }
 
     const handleAutoplayNext = (season: number, episode: number) => {
         setCurrentSeason(season)
         setCurrentEpisode(episode)
-        router.push(`/player/tv/${seriesId}?season=${season}&episode=${episode}`)
+        router.replace(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
     }
 
     if (loading) {
@@ -171,6 +193,7 @@ export default function SeriesPage() {
             tvShow={tvShow}
             currentSeason={currentSeason}
             currentEpisode={currentEpisode}
+            lastWatched={lastWatched}
             onSeasonChange={handleSeasonChange}
             onEpisodeChange={handleEpisodeChange}
             onPlay={handlePlay}

@@ -9,6 +9,8 @@ import { TVShowDetails, Episode } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
 import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
 import { getTMDBImageUrl } from '@/lib/tmdb'
+import { getLastBrowsePath, resolvePlayerExit } from '@/lib/player-exit'
+import { getPlayerPath } from '@/lib/content-navigation'
 
 interface TVShowSummary {
     id: number
@@ -184,24 +186,28 @@ export default function TVPlayerPage() {
         [tvShowDetails]
     )
 
+    const exitPlayer = useCallback(() => {
+        router.replace(resolvePlayerExit(getLastBrowsePath()))
+    }, [router])
+
     const handleEpisodeEnded = useCallback(() => {
         const next = findNextEpisode(season, episode)
         if (next) {
             setOfferNext(true)
             return
         }
-        router.push(`/series/${tvId}`)
-    }, [episode, findNextEpisode, router, season, tvId])
+        exitPlayer()
+    }, [episode, exitPlayer, findNextEpisode, season])
 
     const goToNextEpisode = useCallback(() => {
         const next = findNextEpisode(season, episode)
         if (!next) {
-            router.push(`/series/${tvId}`)
+            exitPlayer()
             return
         }
         setOfferNext(false)
-        router.push(`/player/tv/${tvId}?season=${next.season}&episode=${next.episode}`)
-    }, [episode, findNextEpisode, router, season, tvId])
+        router.replace(getPlayerPath(parseInt(tvId, 10), 'tv', next))
+    }, [episode, exitPlayer, findNextEpisode, router, season, tvId])
 
     const currentEpisodeData = findEpisode(season, episode)
     const nextRef = findNextEpisode(season, episode)
@@ -222,7 +228,11 @@ export default function TVPlayerPage() {
     return (
         <PlayerShell
             backdropPath={tvShow.backdrop_path}
-            onBack={() => router.back()}
+            onBack={exitPlayer}
+            onNext={nextRef ? goToNextEpisode : undefined}
+            nextLabel={nextRef ? `S${nextRef.season} E${nextRef.episode}` : undefined}
+            title={`${tvShow.name} · S${season}E${episode}`}
+            chromePaused={offerNext}
             footer={
                 <div className="p-8 bg-black">
                     <div className="max-w-4xl mx-auto">
@@ -253,7 +263,7 @@ export default function TVPlayerPage() {
                     episode={episode}
                     title={`${tvShow.name} - S${season}E${episode}`}
                     onEnded={handleEpisodeEnded}
-                    onBack={() => router.push(`/series/${tvShow.id}`)}
+                    onBack={exitPlayer}
                     unavailableTitle="Episodio non disponibile"
                     unavailableDescription={`L'episodio ${episode} della stagione ${season} non è disponibile su VixSrc.`}
                 />

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navbar } from './navbar'
 import { PageTransition } from './page-transition'
+import { rememberBrowsePath } from '@/lib/player-exit'
 
 interface ConditionalLayoutProps {
     children: React.ReactNode
@@ -16,6 +17,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     useEffect(() => {
         setIsClient(true)
     }, [])
+
+    useEffect(() => {
+        if (!isClient || !pathname) return
+        rememberBrowsePath(`${pathname}${window.location.search}`)
+    }, [isClient, pathname])
 
     const isPlayerPage = pathname?.startsWith('/player/')
     const isSplash = pathname === '/'

@@ -42,6 +42,18 @@ export function getWatchHistory(): WatchHistoryEntry[] {
     return readAll().sort((a, b) => b.watchedAt - a.watchedAt)
 }
 
+export function getLastWatchedEpisode(
+    id: number
+): { season: number; episode: number; progress: number } | null {
+    const entry = getWatchHistory().find((item) => item.type === 'tv' && item.id === id)
+    if (!entry || entry.season == null || entry.episode == null) return null
+    return {
+        season: entry.season,
+        episode: entry.episode,
+        progress: entry.progress,
+    }
+}
+
 export interface TrackWatchInput {
     id: number
     type: ContentType

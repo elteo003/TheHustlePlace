@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Play, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { SeriesPlayerProps, Episode } from '@/types'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { PosterTransition } from '@/components/ui/poster-transition'
+import { useReducedMotion } from '@/hooks/useMediaQuery'
 
 export function SeriesPlayer({
     tvShow,
     currentSeason,
     currentEpisode,
+    lastWatched,
     onSeasonChange,
     onEpisodeChange,
     onPlay,
@@ -20,16 +22,33 @@ export function SeriesPlayer({
     const [selectedSeason, setSelectedSeason] = useState(currentSeason)
     const [selectedEpisode, setSelectedEpisode] = useState(currentEpisode)
     const [showSeasonSelector, setShowSeasonSelector] = useState(false)
+    const watchedRowRef = useRef<HTMLButtonElement | null>(null)
+    const didScroll = useRef(false)
+    const reduceMotion = useReducedMotion()
 
     const currentSeasonData = tvShow.seasons.find((s) => s.season_number === selectedSeason)
     const selectedEpisodeData = currentSeasonData?.episodes.find(
         (e) => e.episode_number === selectedEpisode
     )
+    const isContinuing =
+        lastWatched != null &&
+        lastWatched.season === selectedSeason &&
+        lastWatched.episode === selectedEpisode
 
     useEffect(() => {
         setSelectedSeason(currentSeason)
         setSelectedEpisode(currentEpisode)
+        didScroll.current = false
     }, [currentSeason, currentEpisode])
+
+    useEffect(() => {
+        if (didScroll.current || !watchedRowRef.current) return
+        watchedRowRef.current.scrollIntoView({
+            block: 'center',
+            behavior: reduceMotion ? 'auto' : 'smooth',
+        })
+        didScroll.current = true
+    }, [selectedSeason, selectedEpisode, currentSeasonData, reduceMotion])
 
     const handleSeasonChange = (seasonNumber: number) => {
         setSelectedSeason(seasonNumber)
@@ -102,7 +121,7 @@ export function SeriesPlayer({
                                     className="btn-play gap-2"
                                 >
                                     <Play className="w-5 h-5 fill-current" />
-                                    Guarda
+                                    {isContinuing ? 'Continua' : 'Guarda'}
                                     {selectedEpisodeData ? ` S${selectedSeason}E${selectedEpisode}` : ''}
                                 </Button>
                             </div>
@@ -159,18 +178,26 @@ export function SeriesPlayer({
                     {currentSeasonData && (
                         <div className="divide-y divide-white/10 border-t border-white/10">
                             {currentSeasonData.episodes.map((episode: Episode) => {
-                                const active = episode.episode_number === selectedEpisode
+                                const watched =
+                                    lastWatched?.season === selectedSeason &&
+                                    lastWatched.episode === episode.episode_number
+                                const selected = episode.episode_number === selectedEpisode
                                 return (
                                     <button
                                         key={episode.id}
                                         type="button"
+                                        ref={watched ? watchedRowRef : undefined}
                                         onClick={() => {
                                             setSelectedEpisode(episode.episode_number)
                                             onEpisodeChange(episode.episode_number)
                                             onPlay(selectedSeason, episode.episode_number)
                                         }}
-                                        className={`w-full flex items-start gap-4 py-5 text-left transition-colors ${
-                                            active ? 'bg-white/[0.04]' : 'hover:bg-white/[0.03]'
+                                        className={`w-full flex items-start gap-4 py-5 text-left transition-colors border-l-2 ${
+                                            watched
+                                                ? 'bg-white/[0.07] border-white'
+                                                : selected
+                                                  ? 'bg-white/[0.04] border-transparent'
+                                                  : 'border-transparent hover:bg-white/[0.03]'
                                         }`}
                                     >
                                         <span className="w-8 flex-shrink-0 text-white/35 text-lg font-medium pt-6">
@@ -192,6 +219,14 @@ export function SeriesPlayer({
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Play className="w-9 h-9 fill-white text-white" />
                                             </div>
+                                            {watched && lastWatched?.progress != null && lastWatched.progress > 0 && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                                                    <div
+                                                        className="h-full bg-white"
+                                                        style={{ width: `${lastWatched.progress}%` }}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex-1 min-w-0 pt-0.5">
@@ -205,6 +240,11 @@ export function SeriesPlayer({
                                                     </span>
                                                 )}
                                             </div>
+                                            {watched && (
+                                                <p className="text-[11px] uppercase tracking-[0.14em] text-white/55 mb-1">
+                                                    Ultima vista
+                                                </p>
+                                            )}
                                             <p className="text-sm text-white/55 leading-relaxed line-clamp-3">
                                                 {episode.overview?.trim() ||
                                                     'Nessuna trama disponibile per questo episodio.'}

@@ -21,3 +21,13 @@ export function getPlayerPath(
 export function getDetailsPath(id: number, type: ContentType): string {
     return type === 'tv' ? `/series/${id}` : `/movie/${id}`
 }
+
+export function getSeriesPath(
+    id: number | string,
+    options?: { season?: number; episode?: number }
+): string {
+    if (options?.season != null && options?.episode != null) {
+        return `/series/${id}?season=${options.season}&episode=${options.episode}`
+    }
+    return `/series/${id}`
+}

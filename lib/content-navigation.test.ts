@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getContentId, getDetailsPath, getPlayerPath } from '@/lib/content-navigation'
+import { getContentId, getDetailsPath, getPlayerPath, getSeriesPath } from '@/lib/content-navigation'
 
 describe('content-navigation', () => {
     it('risolve il TMDB id con fallback su id', () => {
@@ -18,5 +18,10 @@ describe('content-navigation', () => {
     it('genera il path dettagli coerente col tipo', () => {
         expect(getDetailsPath(7, 'movie')).toBe('/movie/7')
         expect(getDetailsPath(7, 'tv')).toBe('/series/7')
+    })
+
+    it('genera il path serie con puntata opzionale', () => {
+        expect(getSeriesPath(42)).toBe('/series/42')
+        expect(getSeriesPath(42, { season: 3, episode: 8 })).toBe('/series/42?season=3&episode=8')
     })
 })

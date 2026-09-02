@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { getWatchHistory, trackWatchEntry, removeWatchEntry } from '@/lib/watch-history'
+import { getWatchHistory, getLastWatchedEpisode, trackWatchEntry, removeWatchEntry } from '@/lib/watch-history'
 import { nextWatchProgress } from '@/lib/watch-progress'
 
 describe('watch-history', () => {
@@ -42,6 +42,14 @@ describe('watch-history', () => {
         trackWatchEntry({ id: 9, type: 'movie', title: 'X' })
         removeWatchEntry(9, 'movie')
         expect(getWatchHistory()).toHaveLength(0)
+    })
+
+    it('restituisce la puntata TV più recente per id', () => {
+        trackWatchEntry({ id: 11, type: 'tv', title: 'Serie', season: 3, episode: 4 })
+        expect(getLastWatchedEpisode(11)).toEqual(
+            expect.objectContaining({ season: 3, episode: 4 })
+        )
+        expect(getLastWatchedEpisode(99)).toBeNull()
     })
 })
 
