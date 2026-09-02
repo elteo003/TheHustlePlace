@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navbar } from './navbar'
 import { PageTransition } from './page-transition'
+import { TrailerPeekProvider } from '@/contexts/trailer-peek-context'
 import { rememberBrowsePath } from '@/lib/player-exit'
 
 interface ConditionalLayoutProps {
@@ -34,11 +35,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     }
 
     return (
-        <>
+        <TrailerPeekProvider>
             {showNavbar && <Navbar immersive={false} />}
             <div className={needsTopPadding ? 'pt-16' : ''}>
                 <PageTransition>{children}</PageTransition>
             </div>
-        </>
+        </TrailerPeekProvider>
     )
 }

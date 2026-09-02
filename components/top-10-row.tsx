@@ -6,6 +6,8 @@ import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
 import { ContentHoverCard } from '@/components/content-hover-card'
+import { TrailerDock } from '@/components/trailer-dock'
+import { useRowPeek } from '@/contexts/trailer-peek-context'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 
 interface Top10RowProps {
@@ -18,10 +20,13 @@ interface Top10RowProps {
 export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowProps) {
     const isTouch = useIsCoarsePointer()
     const [expandedId, setExpandedId] = useState<number | null>(null)
+    const { peekId, onPeek, onClose } = useRowPeek()
+    const peekItem = items.find((item) => getContentId(item) === peekId) ?? null
 
     return (
-        <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2">
-            {items.map((item, index) => {
+        <div>
+            <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2">
+                {items.map((item, index) => {
                 const rank = index + 1
                 const itemType = resolveContentType(item, type)
                 const itemId = getContentId(item)
@@ -31,7 +36,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                     <motion.div
                         key={itemId}
                         className={`relative flex-shrink-0 flex items-end ${
-                            expandedId === itemId ? 'z-30' : 'z-0 hover:z-20'
+                            expandedId === itemId || peekId === itemId ? 'z-30' : 'z-0 hover:z-20'
                         }`}
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -59,6 +64,8 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                             isExpanded={!isTouch && expandedId === itemId}
                             onExpand={() => setExpandedId(itemId)}
                             onCollapse={() => setExpandedId(null)}
+                            onPeek={() => onPeek(itemId)}
+                            isPeeking={peekId === itemId}
                             onPlay={onPlay}
                             onDetails={onDetails}
                         />
@@ -69,6 +76,16 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                     </motion.div>
                 )
             })}
-        </CustomScrollbar>
+            </CustomScrollbar>
+            {isTouch && (
+                <TrailerDock
+                    item={peekItem}
+                    type={type}
+                    onClose={onClose}
+                    onPlay={onPlay}
+                    onDetails={onDetails}
+                />
+            )}
+        </div>
     )
 }

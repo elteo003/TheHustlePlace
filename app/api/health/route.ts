@@ -2,13 +2,32 @@ import { NextResponse } from 'next/server'
 import { redisCache } from '@/utils/redis-cache'
 import { cache } from '@/utils/cache'
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('timeout')), ms)
+        promise.then(
+            (value) => {
+                clearTimeout(timer)
+                resolve(value)
+            },
+            (error) => {
+                clearTimeout(timer)
+                reject(error)
+            }
+        )
+    })
+}
+
 export async function GET() {
     try {
         const startTime = Date.now()
         
         // Check cache health
-        const redisHealth = await redisCache.isHealthy()
-        const cacheStats = await redisCache.getStats()
+        const redisHealth = await withTimeout(redisCache.isHealthy(), 1500).catch(() => false)
+        const cacheStats = await withTimeout(redisCache.getStats(), 1500).catch(() => ({
+            type: 'memory' as const,
+            size: 0,
+        }))
         
         // Check memory cache stats
         const memoryCacheSize = cache['memoryCache']?.size || 0

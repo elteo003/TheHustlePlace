@@ -24,6 +24,8 @@ interface ContentHoverCardProps {
     isExpanded: boolean
     onExpand: () => void
     onCollapse: () => void
+    onPeek?: () => void
+    isPeeking?: boolean
     onPlay?: (id: number, type?: ContentType) => void
     onDetails?: (id: number, type?: ContentType) => void
     variant?: 'carousel' | 'grid' | 'top10'
@@ -42,6 +44,8 @@ export function ContentHoverCard({
     isExpanded,
     onExpand,
     onCollapse,
+    onPeek,
+    isPeeking = false,
     onPlay,
     onDetails,
     variant = 'carousel',
@@ -141,6 +145,10 @@ export function ContentHoverCard({
 
     const handleTap = () => {
         if (isTouch) {
+            if (onPeek) {
+                onPeek()
+                return
+            }
             setSheetOpen(true)
             return
         }
@@ -287,7 +295,11 @@ export function ContentHoverCard({
                 tabIndex={0}
                 aria-label={title}
             >
-                <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-900">
+                <div
+                    className={`relative h-full w-full overflow-hidden rounded-lg bg-zinc-900 ${
+                        isPeeking ? 'ring-1 ring-white/70' : ''
+                    }`}
+                >
                     <PosterTransition type={itemType} id={itemId} className="absolute inset-0">
                         <Image
                             src={getContentPosterUrl(item.poster_path)}

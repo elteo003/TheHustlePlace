@@ -19,6 +19,14 @@ export function formatPairCode(code: string): string {
     return `${raw.slice(0, 4)}-${raw.slice(4)}`
 }
 
+export function splitPairCode(code: string): { left: string; right: string } {
+    const raw = normalizePairCode(code)
+    return {
+        left: raw.slice(0, 4),
+        right: raw.slice(4, PAIR_CODE_LENGTH),
+    }
+}
+
 export function isValidPairCode(input: string): boolean {
     return normalizePairCode(input).length === PAIR_CODE_LENGTH
 }

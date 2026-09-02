@@ -4,6 +4,11 @@ export const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)'
 export const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 export const EASE_SPRING = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
+/** Vaul / sheet enter-exit — steep ease-out, ~200ms. */
+export const sheetEase = [0.32, 0.72, 0, 1] as const
+/** Dock / overlay settle — expo-out. */
+export const dockEase = [0.19, 1, 0.22, 1] as const
+
 export const DURATION = {
     fast: 0.15,
     normal: 0.25,

@@ -10,7 +10,11 @@ function cacheKey(id: number, type: ContentType) {
     return `${type}-${id}`
 }
 
-async function fetchTrailerEmbedUrl(id: number, type: ContentType): Promise<string | null> {
+export function buildTrailerEmbedUrl(videoKey: string, muted: boolean): string {
+    return `${getYouTubeEmbedUrl(videoKey, true, muted, true)}&iv_load_policy=3&playsinline=1&fs=0`
+}
+
+async function fetchTrailerKey(id: number, type: ContentType): Promise<string | null> {
     const key = cacheKey(id, type)
     const cached = trailerCache.get(key)
     if (cached) return cached
@@ -33,20 +37,20 @@ async function fetchTrailerEmbedUrl(id: number, type: ContentType): Promise<stri
         ) ||
         videos.find(
             (video: { type: string; site: string; key: string }) =>
-                (video.type === 'Trailer' || video.type === 'Teaser') && video.site === 'YouTube'
+                (video.type === 'Trailer' || video.type === 'Teaser') &&
+                video.site === 'YouTube'
         )
 
     if (!selected?.key) {
         return null
     }
 
-    const embedUrl = `${getYouTubeEmbedUrl(selected.key, true, false, true)}&iv_load_policy=3&playsinline=1&fs=0`
-    trailerCache.set(key, embedUrl)
-    return embedUrl
+    trailerCache.set(key, selected.key)
+    return selected.key
 }
 
 export function useTrailerPreview(id: number, type: ContentType, delayMs = 700) {
-    const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
+    const [trailerKey, setTrailerKey] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -59,7 +63,7 @@ export function useTrailerPreview(id: number, type: ContentType, delayMs = 700) 
 
     const resetPreview = useCallback(() => {
         clearScheduledLoad()
-        setTrailerUrl(null)
+        setTrailerKey(null)
         setIsLoading(false)
     }, [clearScheduledLoad])
 
@@ -68,17 +72,20 @@ export function useTrailerPreview(id: number, type: ContentType, delayMs = 700) 
         timeoutRef.current = setTimeout(async () => {
             setIsLoading(true)
             try {
-                const embedUrl = await fetchTrailerEmbedUrl(id, type)
-                setTrailerUrl(embedUrl)
+                const key = await fetchTrailerKey(id, type)
+                setTrailerKey(key)
             } catch {
-                setTrailerUrl(null)
+                setTrailerKey(null)
             } finally {
                 setIsLoading(false)
             }
         }, delayMs)
     }, [clearScheduledLoad, delayMs, id, type])
 
+    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, false) : null
+
     return {
+        trailerKey,
         trailerUrl,
         isLoading,
         scheduleTrailerLoad,

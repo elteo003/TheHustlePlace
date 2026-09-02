@@ -18,7 +18,9 @@ export function useMediaQuery(query: string): boolean {
 }
 
 export function useIsCoarsePointer(): boolean {
-    return useMediaQuery('(pointer: coarse)')
+    const coarse = useMediaQuery('(pointer: coarse)')
+    const noHover = useMediaQuery('(hover: none)')
+    return coarse || noHover
 }
 
 export function useReducedMotion(): boolean {
