@@ -13,6 +13,10 @@ describe('content-navigation', () => {
         expect(getPlayerPath(42, 'tv', { season: 2, episode: 3 })).toBe(
             '/player/tv/42?season=2&episode=3'
         )
+        expect(getPlayerPath(42, 'movie', { startAt: 90 })).toBe('/player/movie/42?startAt=90')
+        expect(getPlayerPath(42, 'tv', { season: 2, episode: 3, startAt: 80 })).toBe(
+            '/player/tv/42?startAt=80&season=2&episode=3'
+        )
     })
 
     it('genera il path dettagli coerente col tipo', () => {

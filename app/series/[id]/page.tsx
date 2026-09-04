@@ -6,7 +6,7 @@ import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
 import { toast } from 'sonner'
 import { PageSpinner } from '@/components/ui/spinner'
-import { getLastWatchedEpisode } from '@/lib/watch-history'
+import { getLastWatchedEpisode, getResumeStartAt } from '@/lib/watch-history'
 import { resolveSeriesResume } from '@/lib/series-resume'
 import { getPlayerPath } from '@/lib/content-navigation'
 
@@ -158,7 +158,14 @@ export default function SeriesPage() {
     }
 
     const handlePlay = (season: number, episode: number) => {
-        router.push(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
+        const seriesTmdbId = parseInt(seriesId, 10)
+        router.push(
+            getPlayerPath(seriesTmdbId, 'tv', {
+                season,
+                episode,
+                startAt: getResumeStartAt(seriesTmdbId, 'tv', season, episode),
+            })
+        )
     }
 
     const handleAutoplayNext = (season: number, episode: number) => {

@@ -61,7 +61,8 @@ export function getResumeStartAt(
     id: number,
     type: ContentType,
     season?: number,
-    episode?: number
+    episode?: number,
+    runtimeSeconds?: number
 ): number | undefined {
     const entry = getWatchHistory().find((item) => item.type === type && item.id === id)
     if (!entry) return undefined
@@ -69,11 +70,63 @@ export function getResumeStartAt(
         if (season == null || episode == null) return undefined
         if (entry.season !== season || entry.episode !== episode) return undefined
     }
+    const duration =
+        entry.duration && entry.duration > 0 ? entry.duration : runtimeSeconds
     return resumeStartAt({
         currentTime: entry.currentTime,
-        duration: entry.duration,
+        duration,
         progress: entry.progress,
     })
+}
+
+export function resolvePlayerStartAt(input: {
+    id: number
+    type: ContentType
+    season?: number
+    episode?: number
+    urlStartAt?: number
+    runtimeSeconds?: number
+}): number | undefined {
+    if (input.urlStartAt != null) {
+        return resumeStartAt({
+            currentTime: input.urlStartAt,
+            duration: input.runtimeSeconds,
+        })
+    }
+    return getResumeStartAt(
+        input.id,
+        input.type,
+        input.season,
+        input.episode,
+        input.runtimeSeconds
+    )
+}
+
+export function syncWatchHistoryFromRemote(remote: WatchHistoryEntry[]): WatchHistoryEntry[] {
+    const local = readAll()
+    const map = new Map(local.map((entry) => [`${entry.type}-${entry.id}`, entry]))
+
+    for (const row of remote) {
+        const key = `${row.type}-${row.id}`
+        const prev = map.get(key)
+        if (!prev) {
+            map.set(key, row)
+            continue
+        }
+
+        const newer = (row.watchedAt ?? 0) >= (prev.watchedAt ?? 0) ? row : prev
+        const currentTime = Math.max(prev.currentTime ?? 0, row.currentTime ?? 0)
+        map.set(key, {
+            ...newer,
+            currentTime: currentTime > 0 ? currentTime : newer.currentTime,
+            duration: row.duration && row.duration > 0 ? row.duration : prev.duration,
+            progress: Math.max(prev.progress ?? 0, row.progress ?? 0),
+        })
+    }
+
+    const merged = [...map.values()].sort((a, b) => b.watchedAt - a.watchedAt).slice(0, MAX_ENTRIES)
+    writeAll(merged)
+    return merged
 }
 
 export interface TrackWatchInput {

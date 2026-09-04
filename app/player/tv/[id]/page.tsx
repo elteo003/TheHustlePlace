@@ -10,8 +10,8 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getPlayerPath, getSeriesPath } from '@/lib/content-navigation'
-import { getResumeStartAt } from '@/lib/watch-history'
-import { isNearEnd } from '@/lib/watch-progress'
+import { resolvePlayerStartAt } from '@/lib/watch-history'
+import { isNearEnd, parseStartAtParam } from '@/lib/watch-progress'
 
 interface TVShowSummary {
     id: number
@@ -134,11 +134,6 @@ export default function TVPlayerPage() {
         fetchTVShowDetails()
     }, [tvId])
 
-    const startAt = useMemo(
-        () => getResumeStartAt(parseInt(tvId, 10), 'tv', season, episode),
-        [tvId, season, episode]
-    )
-
     const trackPlayback = useTrackWatch(
         tvShow
             ? {
@@ -193,6 +188,18 @@ export default function TVPlayerPage() {
         },
         [tvShowDetails]
     )
+
+    const startAt = useMemo(() => {
+        const runtime = findEpisode(season, episode)?.runtime
+        return resolvePlayerStartAt({
+            id: parseInt(tvId, 10),
+            type: 'tv',
+            season,
+            episode,
+            urlStartAt: parseStartAtParam(searchParams.get('startAt')),
+            runtimeSeconds: runtime && runtime > 0 ? runtime * 60 : undefined,
+        })
+    }, [episode, findEpisode, searchParams, season, tvId])
 
     const exitPlayer = useCallback(() => {
         router.replace(getSeriesPath(tvId, { season, episode }))

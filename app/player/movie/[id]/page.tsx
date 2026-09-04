@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
-import { getResumeStartAt } from '@/lib/watch-history'
+import { resolvePlayerStartAt } from '@/lib/watch-history'
+import { parseStartAtParam } from '@/lib/watch-progress'
 import { Movie } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
 
@@ -40,6 +41,7 @@ function createFallbackMovie(movieId: string): MovieDetails {
 
 export default function MoviePlayerPage() {
     const params = useParams()
+    const searchParams = useSearchParams()
     const router = useRouter()
     const movieId = params.id as string
     const [movie, setMovie] = useState<MovieDetails | null>(null)
@@ -92,8 +94,16 @@ export default function MoviePlayerPage() {
 
     const tmdbId = movie?.tmdb_id || movie?.id
     const startAt = useMemo(
-        () => (tmdbId ? getResumeStartAt(tmdbId, 'movie') : undefined),
-        [tmdbId]
+        () =>
+            tmdbId
+                ? resolvePlayerStartAt({
+                      id: tmdbId,
+                      type: 'movie',
+                      urlStartAt: parseStartAtParam(searchParams.get('startAt')),
+                      runtimeSeconds: movie?.runtime ? movie.runtime * 60 : undefined,
+                  })
+                : undefined,
+        [movie?.runtime, searchParams, tmdbId]
     )
 
     const trackPlayback = useTrackWatch(

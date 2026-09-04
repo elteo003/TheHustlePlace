@@ -86,6 +86,7 @@ describe('watch-history', () => {
         })
         expect(getResumeStartAt(11, 'tv', 1, 2)).toBe(80)
         expect(getResumeStartAt(11, 'tv', 1, 3)).toBeUndefined()
+        expect(getResumeStartAt(11, 'tv', 1, 2, 1400)).toBe(80)
     })
 })
 
@@ -106,6 +107,8 @@ describe('watch-progress', () => {
         expect(resumeStartAt({ currentTime: 80, duration: 1400 })).toBe(80)
         expect(resumeStartAt({ currentTime: 3, duration: 1400 })).toBeUndefined()
         expect(resumeStartAt({ currentTime: 1390, duration: 1400 })).toBeUndefined()
+        expect(resumeStartAt({ progress: 50, duration: 1800 })).toBe(900)
+        expect(resumeStartAt({ progress: 50 })).toBeUndefined()
     })
 })
 

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { WatchHistoryEntry } from '@/lib/watch-history'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { getPlayerPath } from '@/lib/content-navigation'
+import { resumeStartAt } from '@/lib/watch-progress'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
 import { useRouter } from 'next/navigation'
 
@@ -40,6 +41,11 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 getPlayerPath(entry.id, entry.type, {
                                     season: entry.season,
                                     episode: entry.episode,
+                                    startAt: resumeStartAt({
+                                        currentTime: entry.currentTime,
+                                        duration: entry.duration,
+                                        progress: entry.progress,
+                                    }),
                                 })
                             )
                         }

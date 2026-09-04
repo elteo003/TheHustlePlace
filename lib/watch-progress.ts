@@ -32,17 +32,35 @@ export function isNearEnd(
     return currentTime > 0 && duration - currentTime <= thresholdSeconds
 }
 
+export function parseStartAtParam(raw: string | null | undefined): number | undefined {
+    if (raw == null || raw === '') return undefined
+    const value = Number(raw)
+    if (!Number.isFinite(value) || value < RESUME_MIN_SECONDS) return undefined
+    return Math.floor(value)
+}
+
 export function resumeStartAt(input: {
     currentTime?: number | null
     duration?: number | null
     progress?: number | null
 }): number | undefined {
-    const time = input.currentTime
+    const duration = input.duration
+    let time = input.currentTime
+    if (
+        (time == null || !Number.isFinite(time) || time < RESUME_MIN_SECONDS) &&
+        input.progress != null &&
+        input.progress > 0 &&
+        input.progress < COMPLETE_RATIO * 100 &&
+        duration != null &&
+        duration > 0
+    ) {
+        time = (input.progress / 100) * duration
+    }
+
     if (time == null || !Number.isFinite(time) || time < RESUME_MIN_SECONDS) {
         return undefined
     }
 
-    const duration = input.duration
     if (duration != null && duration > 0) {
         if (time / duration >= COMPLETE_RATIO) return undefined
         if (duration - time <= NEAR_END_SECONDS) return undefined
