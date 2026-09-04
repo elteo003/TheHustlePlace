@@ -191,6 +191,13 @@ export interface SeriesPlayerProps {
     currentSeason: number;
     currentEpisode: number;
     lastWatched?: { season: number; episode: number; progress?: number } | null;
+    episodeProgress?: Array<{
+        season: number
+        episode: number
+        progress: number
+        currentTime?: number
+        duration?: number
+    }> | null;
     onSeasonChange: (season: number) => void;
     onEpisodeChange: (episode: number) => void;
     onPlay: (season: number, episode: number) => void;

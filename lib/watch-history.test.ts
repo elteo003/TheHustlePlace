@@ -3,6 +3,7 @@ import {
     getWatchHistory,
     getLastWatchedEpisode,
     getResumeStartAt,
+    getSeriesEpisodeProgress,
     trackWatchEntry,
     removeWatchEntry,
 } from '@/lib/watch-history'
@@ -87,6 +88,31 @@ describe('watch-history', () => {
         expect(getResumeStartAt(11, 'tv', 1, 2)).toBe(80)
         expect(getResumeStartAt(11, 'tv', 1, 3)).toBeUndefined()
         expect(getResumeStartAt(11, 'tv', 1, 2, 1400)).toBe(80)
+    })
+
+    it('conserva il minutaggio di ogni puntata', () => {
+        trackWatchEntry({
+            id: 11,
+            type: 'tv',
+            title: 'Serie',
+            season: 1,
+            episode: 1,
+            currentTime: 400,
+            duration: 1400,
+        })
+        trackWatchEntry({
+            id: 11,
+            type: 'tv',
+            title: 'Serie',
+            season: 1,
+            episode: 2,
+            currentTime: 90,
+            duration: 1300,
+        })
+        expect(getResumeStartAt(11, 'tv', 1, 1)).toBe(400)
+        expect(getResumeStartAt(11, 'tv', 1, 2)).toBe(90)
+        expect(getLastWatchedEpisode(11)).toEqual(expect.objectContaining({ season: 1, episode: 2 }))
+        expect(getSeriesEpisodeProgress(11).map((item) => item.episode).sort()).toEqual([1, 2])
     })
 })
 

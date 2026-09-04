@@ -1,6 +1,15 @@
 import { ContentType } from '@/lib/content-navigation'
 import { progressPercent, resumeStartAt } from '@/lib/watch-progress'
 
+export interface EpisodeProgress {
+    season: number
+    episode: number
+    /** 0–100 */
+    progress: number
+    currentTime?: number
+    duration?: number
+}
+
 export interface WatchHistoryEntry {
     id: number
     type: ContentType
@@ -13,7 +22,47 @@ export interface WatchHistoryEntry {
     progress: number
     currentTime?: number
     duration?: number
+    /** Progresso per puntata; la riga principale resta l'ultima vista. */
+    episodes?: EpisodeProgress[]
     watchedAt: number
+}
+
+function sameEpisode(a: { season?: number; episode?: number }, season?: number, episode?: number) {
+    return a.season === season && a.episode === episode
+}
+
+function findEpisodeProgress(
+    entry: WatchHistoryEntry | undefined,
+    season?: number,
+    episode?: number
+): EpisodeProgress | undefined {
+    if (!entry || season == null || episode == null) return undefined
+    const stored = entry.episodes?.find((item) => sameEpisode(item, season, episode))
+    if (stored) return stored
+    if (sameEpisode(entry, season, episode)) {
+        return {
+            season,
+            episode,
+            progress: entry.progress ?? 0,
+            currentTime: entry.currentTime,
+            duration: entry.duration,
+        }
+    }
+    return undefined
+}
+
+function upsertEpisodeProgress(
+    existing: EpisodeProgress[] | undefined,
+    next: EpisodeProgress
+): EpisodeProgress[] {
+    const list = existing ? [...existing] : []
+    const index = list.findIndex((item) => sameEpisode(item, next.season, next.episode))
+    if (index >= 0) {
+        list[index] = next
+    } else {
+        list.push(next)
+    }
+    return list
 }
 
 const STORAGE_KEY = 'thp_watch_history'
@@ -57,6 +106,26 @@ export function getLastWatchedEpisode(
     }
 }
 
+export function getSeriesEpisodeProgress(id: number): EpisodeProgress[] {
+    const entry = getWatchHistory().find((item) => item.type === 'tv' && item.id === id)
+    if (!entry) return []
+    const list = entry.episodes ? [...entry.episodes] : []
+    if (
+        entry.season != null &&
+        entry.episode != null &&
+        !list.some((item) => sameEpisode(item, entry.season, entry.episode))
+    ) {
+        list.push({
+            season: entry.season,
+            episode: entry.episode,
+            progress: entry.progress ?? 0,
+            currentTime: entry.currentTime,
+            duration: entry.duration,
+        })
+    }
+    return list
+}
+
 export function getResumeStartAt(
     id: number,
     type: ContentType,
@@ -67,11 +136,16 @@ export function getResumeStartAt(
     const entry = getWatchHistory().find((item) => item.type === type && item.id === id)
     if (!entry) return undefined
     if (type === 'tv') {
-        if (season == null || episode == null) return undefined
-        if (entry.season !== season || entry.episode !== episode) return undefined
+        const slot = findEpisodeProgress(entry, season, episode)
+        if (!slot) return undefined
+        const duration = slot.duration && slot.duration > 0 ? slot.duration : runtimeSeconds
+        return resumeStartAt({
+            currentTime: slot.currentTime,
+            duration,
+            progress: slot.progress,
+        })
     }
-    const duration =
-        entry.duration && entry.duration > 0 ? entry.duration : runtimeSeconds
+    const duration = entry.duration && entry.duration > 0 ? entry.duration : runtimeSeconds
     return resumeStartAt({
         currentTime: entry.currentTime,
         duration,
@@ -116,11 +190,13 @@ export function syncWatchHistoryFromRemote(remote: WatchHistoryEntry[]): WatchHi
 
         const newer = (row.watchedAt ?? 0) >= (prev.watchedAt ?? 0) ? row : prev
         const currentTime = Math.max(prev.currentTime ?? 0, row.currentTime ?? 0)
+        const episodes = prev.episodes ?? row.episodes
         map.set(key, {
             ...newer,
             currentTime: currentTime > 0 ? currentTime : newer.currentTime,
             duration: row.duration && row.duration > 0 ? row.duration : prev.duration,
             progress: Math.max(prev.progress ?? 0, row.progress ?? 0),
+            episodes,
         })
     }
 
@@ -147,19 +223,36 @@ export function trackWatchEntry(input: TrackWatchInput): void {
     const key = `${input.type}-${input.id}`
     const existing = entries.find((e) => `${e.type}-${e.id}` === key)
 
-    const currentTime = input.currentTime ?? existing?.currentTime
-    const duration = input.duration ?? existing?.duration
+    const priorEpisode =
+        input.type === 'tv' ? findEpisodeProgress(existing, input.season, input.episode) : undefined
+    const reuseRoot = input.type !== 'tv' || sameEpisode(existing ?? {}, input.season, input.episode)
+    const currentTime =
+        input.currentTime ?? priorEpisode?.currentTime ?? (reuseRoot ? existing?.currentTime : undefined)
+    const duration =
+        input.duration ?? priorEpisode?.duration ?? (reuseRoot ? existing?.duration : undefined)
     const progress =
         input.progress ??
         (currentTime != null && duration != null && duration > 0
             ? progressPercent(currentTime, duration)
-            : existing?.progress ?? 0)
+            : priorEpisode?.progress ?? (reuseRoot ? existing?.progress : 0) ?? 0)
+
+    const episodes =
+        input.type === 'tv' && input.season != null && input.episode != null
+            ? upsertEpisodeProgress(existing?.episodes, {
+                  season: input.season,
+                  episode: input.episode,
+                  progress,
+                  currentTime,
+                  duration,
+              })
+            : existing?.episodes
 
     const entry: WatchHistoryEntry = {
         ...input,
         currentTime,
         duration,
         progress,
+        episodes,
         watchedAt: Date.now(),
     }
 

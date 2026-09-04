@@ -6,7 +6,7 @@ import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
 import { toast } from 'sonner'
 import { PageSpinner } from '@/components/ui/spinner'
-import { getLastWatchedEpisode, getResumeStartAt } from '@/lib/watch-history'
+import { getLastWatchedEpisode, getResumeStartAt, getSeriesEpisodeProgress } from '@/lib/watch-history'
 import { resolveSeriesResume } from '@/lib/series-resume'
 import { getPlayerPath } from '@/lib/content-navigation'
 
@@ -23,11 +23,26 @@ export default function SeriesPage() {
         episode: number
         progress: number
     } | null>(null)
+    const [episodeProgress, setEpisodeProgress] = useState<
+        Array<{ season: number; episode: number; progress: number }>
+    >([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         fetchSeriesDetails()
+    }, [seriesId])
+
+    useEffect(() => {
+        const numericId = parseInt(seriesId, 10)
+        if (!Number.isFinite(numericId)) return
+        const refreshProgress = () => {
+            setLastWatched(getLastWatchedEpisode(numericId))
+            setEpisodeProgress(getSeriesEpisodeProgress(numericId))
+        }
+        refreshProgress()
+        window.addEventListener('watch-history-updated', refreshProgress)
+        return () => window.removeEventListener('watch-history-updated', refreshProgress)
     }, [seriesId])
 
     const fetchSeriesDetails = async () => {
@@ -62,6 +77,7 @@ export default function SeriesPage() {
                 const numericId = parseInt(seriesId, 10)
                 const watched = Number.isFinite(numericId) ? getLastWatchedEpisode(numericId) : null
                 setLastWatched(watched)
+                setEpisodeProgress(Number.isFinite(numericId) ? getSeriesEpisodeProgress(numericId) : [])
 
                 const query = new URLSearchParams(window.location.search)
                 const querySeason = parseInt(query.get('season') || '', 10)
@@ -159,11 +175,20 @@ export default function SeriesPage() {
 
     const handlePlay = (season: number, episode: number) => {
         const seriesTmdbId = parseInt(seriesId, 10)
+        const runtime = tvShow?.seasons
+            .find((item) => item.season_number === season)
+            ?.episodes.find((item) => item.episode_number === episode)?.runtime
         router.push(
             getPlayerPath(seriesTmdbId, 'tv', {
                 season,
                 episode,
-                startAt: getResumeStartAt(seriesTmdbId, 'tv', season, episode),
+                startAt: getResumeStartAt(
+                    seriesTmdbId,
+                    'tv',
+                    season,
+                    episode,
+                    runtime && runtime > 0 ? runtime * 60 : undefined
+                ),
             })
         )
     }
@@ -201,6 +226,7 @@ export default function SeriesPage() {
             currentSeason={currentSeason}
             currentEpisode={currentEpisode}
             lastWatched={lastWatched}
+            episodeProgress={episodeProgress}
             onSeasonChange={handleSeasonChange}
             onEpisodeChange={handleEpisodeChange}
             onPlay={handlePlay}
