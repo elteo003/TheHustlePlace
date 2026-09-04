@@ -95,7 +95,9 @@ describe('watch-progress', () => {
         expect(progressPercent(0, 0)).toBe(0)
     })
 
-    it('riconosce la fine puntata', () => {
+    it('mostra Prossima dagli ultimi 5 minuti', () => {
+        expect(isNearEnd(900, 1200)).toBe(true)
+        expect(isNearEnd(899, 1200)).toBe(false)
         expect(isNearEnd(1185, 1200)).toBe(true)
         expect(isNearEnd(100, 1200)).toBe(false)
     })

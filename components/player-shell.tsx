@@ -7,7 +7,7 @@ import { useReducedMotion } from '@/hooks/useMediaQuery'
 const IDLE_MS = 2500
 
 const chromeBtnClass =
-    'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40'
+    'inline-flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40'
 
 interface PlayerShellProps {
     backdropPath?: string | null
@@ -16,6 +16,8 @@ interface PlayerShellProps {
     nextLabel?: string
     title?: string
     chromePaused?: boolean
+    /** Tiene la chrome visibile (ultimi minuti della puntata). */
+    pinChrome?: boolean
     children: ReactNode
     footer?: ReactNode
 }
@@ -27,6 +29,7 @@ export function PlayerShell({
     nextLabel,
     title,
     chromePaused = false,
+    pinChrome = false,
     children,
     footer,
 }: PlayerShellProps) {
@@ -43,9 +46,9 @@ export function PlayerShell({
         if (chromePaused) return
         setChromeVisible(true)
         if (idleRef.current) clearTimeout(idleRef.current)
-        if (onNext) return
+        if (pinChrome) return
         idleRef.current = setTimeout(() => setChromeVisible(false), IDLE_MS)
-    }, [chromePaused, onNext])
+    }, [chromePaused, pinChrome])
 
     useEffect(() => {
         if (chromePaused) {
@@ -64,10 +67,10 @@ export function PlayerShell({
     const interactive = chromeInteractive ? 'pointer-events-auto' : 'pointer-events-none'
 
     useEffect(() => {
-        if (!onNext || chromePaused) return
+        if (!pinChrome || chromePaused) return
         setChromeVisible(true)
         if (idleRef.current) clearTimeout(idleRef.current)
-    }, [onNext, chromePaused])
+    }, [pinChrome, chromePaused])
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -78,11 +81,11 @@ export function PlayerShell({
                         style={{ backgroundImage: `url(${backdropUrl})` }}
                     />
                 )}
-                <div className="relative w-full h-screen">
-                    {children}
+                <div className="player-stage relative w-full">
+                    <div className="player-video">{children}</div>
 
                     {!chromePaused && (
-                        <>
+                        <div className="player-hit-zones">
                             <div
                                 className="absolute top-0 left-0 z-40 h-16 w-44"
                                 onMouseEnter={revealChrome}
@@ -97,16 +100,20 @@ export function PlayerShell({
                                     onTouchStart={revealChrome}
                                 />
                             )}
-                        </>
+                        </div>
                     )}
 
                     <div
-                        className={`absolute inset-0 z-50 pointer-events-none ${fadeClass} ${
-                            chromeInteractive ? 'opacity-100' : 'opacity-0'
+                        className={`player-chrome z-50 ${fadeClass} ${
+                            chromePaused
+                                ? 'player-chrome-paused'
+                                : chromeInteractive
+                                  ? 'player-chrome-on'
+                                  : 'player-chrome-off'
                         }`}
                     >
-                        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent px-4 sm:px-6 pt-5 pb-10">
-                            <div className="flex items-center gap-3">
+                        <div className="player-chrome-inner">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     type="button"
                                     onClick={onBack}
@@ -117,7 +124,9 @@ export function PlayerShell({
                                     Indietro
                                 </button>
                                 {title && (
-                                    <p className="min-w-0 flex-1 truncate text-sm text-white/70">{title}</p>
+                                    <p className="min-w-0 flex-1 truncate text-sm text-white/70">
+                                        {title}
+                                    </p>
                                 )}
                                 {onNext && (
                                     <button

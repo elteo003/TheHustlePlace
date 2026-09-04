@@ -158,13 +158,13 @@ export default function SeriesPage() {
     }
 
     const handlePlay = (season: number, episode: number) => {
-        router.replace(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
+        router.push(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
     }
 
     const handleAutoplayNext = (season: number, episode: number) => {
         setCurrentSeason(season)
         setCurrentEpisode(episode)
-        router.replace(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
+        router.push(getPlayerPath(parseInt(seriesId, 10), 'tv', { season, episode }))
     }
 
     if (loading) {

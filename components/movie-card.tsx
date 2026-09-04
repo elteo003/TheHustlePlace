@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Play, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { PosterTransition } from '@/components/ui/poster-transition'
+import { PlayMark } from '@/components/ui/play-mark'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { TMDBMovie, getTMDBImageUrl } from '@/lib/tmdb'
 import { Movie } from '@/types'
@@ -84,9 +85,7 @@ export function MovieCard({
                             className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"
                             aria-label={`Guarda ${movie.title}`}
                         >
-                            <span className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300 ease-out">
-                                <Play className="w-5 h-5 fill-current ml-0.5" />
-                            </span>
+                            <PlayMark className="w-12 h-12 scale-90 group-hover:scale-100 transition-transform duration-300 ease-out" />
                         </button>
                     )}
 
@@ -94,10 +93,10 @@ export function MovieCard({
                         <button
                             type="button"
                             onClick={handlePlay}
-                            className="absolute bottom-2 right-2 z-10 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shadow-lg"
+                            className="absolute inset-0 z-10 flex items-center justify-center"
                             aria-label={`Guarda ${movie.title}`}
                         >
-                            <Play className="w-4 h-4 fill-current ml-0.5" />
+                            <PlayMark pulse className="h-12 w-12" iconClassName="h-5 w-5" />
                         </button>
                     )}
 

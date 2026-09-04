@@ -248,8 +248,9 @@ export default function TVPlayerPage() {
         <PlayerShell
             backdropPath={tvShow.backdrop_path}
             onBack={exitPlayer}
-            onNext={nearEnd && nextRef ? goToNextEpisode : undefined}
+            onNext={nextRef ? goToNextEpisode : undefined}
             nextLabel={nextRef ? `S${nextRef.season} E${nextRef.episode}` : undefined}
+            pinChrome={nearEnd}
             title={`${tvShow.name} · S${season}E${episode}`}
             chromePaused={offerNext}
             footer={

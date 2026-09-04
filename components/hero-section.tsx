@@ -321,7 +321,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 onClick={handleWatchNow}
                                 className="btn-play h-12 w-full sm:w-auto px-6 inline-flex items-center justify-center gap-2"
                             >
-                                <Play className="w-5 h-5 fill-current" />
+                                <Play className="w-5 h-5 fill-current play-mark-pulse" />
                                 Guarda
                             </button>
 

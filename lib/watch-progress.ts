@@ -1,4 +1,6 @@
 export const NEAR_END_SECONDS = 20
+/** Mostra «Prossima» negli ultimi 5 minuti della puntata. */
+export const NEXT_EPISODE_SECONDS = 5 * 60
 export const RESUME_MIN_SECONDS = 5
 export const COMPLETE_RATIO = 0.95
 export const PROGRESS_SAVE_MIN_SECONDS = 5
@@ -22,7 +24,7 @@ export function progressPercent(currentTime: number, duration: number): number {
 export function isNearEnd(
     currentTime: number,
     duration: number,
-    thresholdSeconds = NEAR_END_SECONDS
+    thresholdSeconds = NEXT_EPISODE_SECONDS
 ): boolean {
     if (!Number.isFinite(currentTime) || !Number.isFinite(duration) || duration <= 0) {
         return false

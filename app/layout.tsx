@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
@@ -8,6 +8,13 @@ import { NavbarProvider } from '@/contexts/NavbarContext'
 import { PremiumScrollbar } from '@/components/premium-scrollbar'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+    themeColor: '#000000',
+}
 
 export const metadata: Metadata = {
   title: 'TheHustlePlace - Streaming Premium',

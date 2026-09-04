@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Play, Info, Star } from 'lucide-react'
+import { PlayMark } from '@/components/ui/play-mark'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
@@ -324,27 +325,25 @@ export function ContentHoverCard({
                             }}
                             aria-label={`Guarda ${title}`}
                         >
-                            <span
-                                className={`rounded-full bg-white text-black flex items-center justify-center shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300 ease-out ${
+                            <PlayMark
+                                className={`scale-90 group-hover:scale-100 transition-transform duration-300 ease-out ${
                                     variant === 'top10' ? 'w-11 h-11' : 'w-12 h-12'
                                 }`}
-                            >
-                                <Play className="w-5 h-5 fill-current ml-0.5" />
-                            </span>
+                            />
                         </button>
                     )}
 
                     {isTouch && onPlay && (
                         <button
                             type="button"
-                            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shadow-lg"
+                            className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onPlay(itemId, itemType)
                             }}
                             aria-label={`Guarda ${title}`}
                         >
-                            <Play className="w-4 h-4 fill-current ml-0.5" />
+                            <PlayMark pulse className="h-12 w-12" iconClassName="h-5 w-5" />
                         </button>
                     )}
                 </div>

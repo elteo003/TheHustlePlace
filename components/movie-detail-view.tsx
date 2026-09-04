@@ -98,7 +98,7 @@ export function MovieDetailView({ movie, onPlay }: MovieDetailViewProps) {
                                     className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border border-white/30 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-transform duration-200 hover:scale-105 active:scale-95"
                                     aria-label={`Guarda ${movie.title}`}
                                 >
-                                    <Play className="w-5 h-5 fill-current" />
+                                    <Play className="w-5 h-5 fill-current play-mark-pulse" />
                                     Play
                                 </button>
                                 <Button

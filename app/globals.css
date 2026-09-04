@@ -543,6 +543,116 @@ body::-webkit-scrollbar {
     }
 }
 
+/* Player: sul telefono la chrome sta SOPRA l'iframe (riga vera),
+   così i tap non finiscono nel player cross-origin. Sul desktop resta overlay. */
+.player-stage {
+    display: grid;
+    grid-template-areas: 'chrome' 'video';
+    grid-template-rows: auto 1fr;
+    height: 100dvh;
+}
+
+.player-chrome {
+    grid-area: chrome;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.55));
+}
+
+.player-video {
+    grid-area: video;
+    position: relative;
+    min-height: 0;
+    height: 100%;
+}
+
+.player-chrome-inner {
+    padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.player-chrome-paused {
+    display: none;
+}
+
+.player-hit-zones {
+    display: none;
+}
+
+.player-chrome-off,
+.player-chrome-on {
+    opacity: 1;
+}
+
+.player-chrome-off .player-chrome-inner button,
+.player-chrome-on .player-chrome-inner button {
+    pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .player-stage {
+        display: block;
+        height: 100vh;
+    }
+
+    .player-video {
+        height: 100%;
+        min-height: 100vh;
+    }
+
+    .player-chrome {
+        position: absolute;
+        inset: 0;
+        background: none;
+        pointer-events: none;
+        padding-top: 0;
+    }
+
+    .player-chrome-inner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to bottom, rgb(0 0 0 / 0.7), transparent);
+        padding: 1.25rem 1.5rem 2.5rem;
+    }
+
+    .player-hit-zones {
+        display: contents;
+    }
+
+    .player-chrome-off {
+        opacity: 0;
+    }
+
+    .player-chrome-on {
+        opacity: 1;
+    }
+
+    .player-chrome-off .player-chrome-inner button {
+        pointer-events: none;
+    }
+}
+
+@keyframes play-breathe {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+.play-mark-pulse {
+    animation: play-breathe 2.4s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .play-mark-pulse {
+        animation: none;
+    }
+}
+
 @keyframes episode-light-sweep {
     from {
         transform: translateX(-80%);
