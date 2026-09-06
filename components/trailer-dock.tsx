@@ -7,7 +7,8 @@ import Image from 'next/image'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { useTrailerPreview, buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
-import { useReducedMotion } from '@/hooks/useMediaQuery'
+import { useIsPhoneLandscape, useReducedMotion } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
 import { shouldDismissSheet } from '@/lib/sheet-gesture'
 import { postYouTubeCommand, startYouTubePreview } from '@/lib/youtube-command'
 import { Spinner } from '@/components/ui/spinner'
@@ -127,6 +128,7 @@ function TrailerStage({
     onDetails?: (id: number, type?: ContentType) => void
 }) {
     const reduceMotion = useReducedMotion()
+    const isPhoneLandscape = useIsPhoneLandscape()
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
     const title = getContentTitle(item, itemType)
@@ -376,7 +378,12 @@ function TrailerStage({
                 )}
 
                 <div
-                    className="absolute inset-x-0 top-0 z-10 flex touch-none items-center justify-center pb-4 pt-[max(0.85rem,env(safe-area-inset-top))]"
+                    className={cn(
+                        'absolute inset-x-0 top-0 z-10 flex touch-none items-center justify-center',
+                        isPhoneLandscape
+                            ? 'pb-2 pt-[max(0.45rem,env(safe-area-inset-top))]'
+                            : 'pb-4 pt-[max(0.85rem,env(safe-area-inset-top))]'
+                    )}
                     onPointerDown={onHandlePointerDown}
                     onPointerMove={onHandlePointerMove}
                     onPointerUp={endHandlePull}
@@ -387,20 +394,37 @@ function TrailerStage({
 
                 <div
                     ref={chromeRef}
-                    className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent pt-24"
+                    className={cn(
+                        'pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent',
+                        isPhoneLandscape ? 'pt-12' : 'pt-24'
+                    )}
                     style={{
                         opacity: open ? 1 : 0,
                         transition: `opacity ${FADE_MS}ms ${EASE_OPACITY}`,
                     }}
                 >
-                    <div className="pointer-events-auto flex items-end gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <div
+                        className={cn(
+                            'pointer-events-auto flex items-end',
+                            isPhoneLandscape
+                                ? 'gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+                                : 'gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'
+                        )}
+                    >
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-base font-semibold text-white">{title}</p>
-                            <p className="text-[11px] text-white/45">Trascina la barretta per chiudere</p>
+                            <p className={cn('truncate font-semibold text-white', isPhoneLandscape ? 'text-sm' : 'text-base')}>
+                                {title}
+                            </p>
+                            {!isPhoneLandscape && (
+                                <p className="text-[11px] text-white/45">Trascina la barretta per chiudere</p>
+                            )}
                         </div>
                         <button
                             type="button"
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
+                            className={cn(
+                                'flex shrink-0 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20',
+                                isPhoneLandscape ? 'h-9 w-9' : 'h-11 w-11'
+                            )}
                             onClick={toggleAudio}
                             aria-label={muted ? 'Attiva audio' : 'Disattiva audio'}
                         >
@@ -410,7 +434,10 @@ function TrailerStage({
                             <button
                                 type="button"
                                 onClick={() => onPlay(itemId, itemType)}
-                                className="btn-play flex items-center gap-1.5 px-4 py-2 text-sm"
+                                className={cn(
+                                    'btn-play flex items-center gap-1.5 text-sm',
+                                    isPhoneLandscape ? 'px-3 py-1.5' : 'px-4 py-2'
+                                )}
                             >
                                 <Play className="h-3.5 w-3.5 fill-current" />
                                 Guarda
@@ -420,7 +447,10 @@ function TrailerStage({
                             <DetailLink
                                 id={itemId}
                                 type={itemType}
-                                className="btn-ghost-outline inline-flex items-center gap-1 px-3 py-2 text-sm"
+                                className={cn(
+                                    'btn-ghost-outline inline-flex items-center gap-1 text-sm',
+                                    isPhoneLandscape ? 'px-2 py-1.5' : 'px-3 py-2'
+                                )}
                                 onClick={(event) => {
                                     event.stopPropagation()
                                     onDetails(itemId, itemType)

@@ -32,3 +32,12 @@ export function useIsCoarsePointer(): boolean {
 export function useReducedMotion(): boolean {
     return useMediaQuery('(prefers-reduced-motion: reduce)')
 }
+
+export function resolveIsPhoneLandscape(isCoarse: boolean, isShort: boolean): boolean {
+    return isCoarse && isShort
+}
+
+/** Telefono girato: dito + altezza bassa. Non usare solo la larghezza. */
+export function useIsPhoneLandscape(): boolean {
+    return resolveIsPhoneLandscape(useIsCoarsePointer(), useMediaQuery('(max-height: 500px)'))
+}

@@ -11,9 +11,10 @@ interface UpcomingTrailersSectionProps {
     movies: TMDBMovie[]
     currentMovieIndex: number
     onMovieSelect: (index: number) => void
+    compact?: boolean
 }
 
-export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSelect }: UpcomingTrailersSectionProps) {
+export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSelect, compact = false }: UpcomingTrailersSectionProps) {
     const [countdown, setCountdown] = useState(10)
     const [isAutoPlaying, setIsAutoPlaying] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
@@ -95,17 +96,21 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     return (
         <div 
-            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent ${
+                compact
+                    ? 'pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+                    : 'pt-8 pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+            }`}
             onMouseEnter={sectionMouseEnter}
             onMouseLeave={sectionMouseLeave}
             style={{ zIndex: 10 }}
         >
-            <div className="mb-4 flex items-center justify-center px-4">
-                    <div className="flex items-center gap-2 text-white">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <div className={`flex items-center justify-center px-4 ${compact ? 'mb-2' : 'mb-4'}`}>
+                    <div className={`flex items-center text-white ${compact ? 'gap-1.5' : 'gap-2'}`}>
+                        <svg className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm font-medium">
+                        <span className={compact ? 'text-xs font-medium' : 'text-sm font-medium'}>
                             Prossimo film tra: <span className="text-blue-400 font-bold">{countdown}s</span>
                         </span>
                     </div>
@@ -121,7 +126,9 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                         return (
                             <div
                                 key={movie.id}
-                                className="h-28 w-48 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 ease-out hover:z-10"
+                                className={`flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 ease-out hover:z-10 ${
+                                    compact ? 'h-20 w-36' : 'h-28 w-48'
+                                }`}
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
@@ -142,7 +149,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                         alt={title}
                                         fill
                                         className="object-cover"
-                                        sizes="192px"
+                                        sizes={compact ? '144px' : '192px'}
                                     />
 
                                     <div className={`absolute inset-0 transition-colors duration-300 ${isMovieHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
@@ -159,7 +166,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                         </div>
                                     </div>
 
-                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                                    <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent ${compact ? 'p-2' : 'p-3'}`}>
                                         <h4 className="text-white font-semibold truncate text-xs">
                                             {title}
                                         </h4>
@@ -180,11 +187,15 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 </CustomScrollbar>
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-black from-40% to-transparent"
+                    className={`pointer-events-none absolute inset-y-0 left-0 z-10 bg-gradient-to-r from-black from-40% to-transparent ${
+                        compact ? 'w-14' : 'w-20'
+                    }`}
                 />
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-black from-40% to-transparent"
+                    className={`pointer-events-none absolute inset-y-0 right-0 z-10 bg-gradient-to-l from-black from-40% to-transparent ${
+                        compact ? 'w-14' : 'w-20'
+                    }`}
                 />
                 </div>
         </div>

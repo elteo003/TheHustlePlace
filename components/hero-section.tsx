@@ -10,7 +10,8 @@ import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
-import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import { useIsCoarsePointer, useIsPhoneLandscape } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
 import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 import { listenToYouTubePlayer, readYouTubePlayerState, YOUTUBE_ENDED, YOUTUBE_PLAYING } from '@/lib/youtube-command'
 
@@ -30,6 +31,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
     const isTouch = useIsCoarsePointer()
+    const isPhoneLandscape = useIsPhoneLandscape()
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
     const showMeta = isTouch || metaHovered || introVisible
@@ -195,7 +197,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 <button
                     type="button"
                     onClick={toggleAudio}
-                    className="icon-btn h-11 w-11 inline-flex items-center justify-center"
+                    className={cn(
+                        'icon-btn inline-flex items-center justify-center',
+                        isPhoneLandscape ? 'h-9 w-9' : 'h-11 w-11'
+                    )}
                     aria-label={isMuted ? 'Attiva audio' : 'Disattiva audio'}
                 >
                     {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -204,7 +209,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             <button
                 type="button"
                 onClick={changeToNextMovie}
-                className="icon-btn h-11 w-11 inline-flex items-center justify-center"
+                className={cn(
+                    'icon-btn inline-flex items-center justify-center',
+                    isPhoneLandscape ? 'h-9 w-9' : 'h-11 w-11'
+                )}
                 aria-label="Prossimo titolo"
             >
                 <SkipForward className="w-5 h-5" />
@@ -290,27 +298,46 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     }`}
                 />
 
+                {isPhoneLandscape && metaVisible && (
+                    <div className="absolute top-[max(3.25rem,calc(env(safe-area-inset-top)+2.75rem))] right-[max(1rem,env(safe-area-inset-right))] z-20 flex items-center gap-1">
+                        {renderIconControls()}
+                    </div>
+                )}
+
                 <div className={`relative z-10 h-full ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
                     <div
-                        className={`hero-meta-hit absolute inset-x-0 bottom-0 px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0 transition-[opacity,transform] duration-200 ease-out-expo ${
+                        className={cn(
+                            'hero-meta-hit absolute inset-x-0 bottom-0 transition-[opacity,transform] duration-200 ease-out-expo',
+                            isPhoneLandscape
+                                ? 'pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-6 pb-[max(0.6rem,env(safe-area-inset-bottom))]'
+                                : 'px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0',
                             metaVisible
                                 ? 'opacity-100 translate-y-0'
                                 : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
-                        }`}
+                        )}
                         onMouseEnter={() => setMetaHovered(true)}
                         onMouseLeave={() => setMetaHovered(false)}
                     >
                         <div className="flex items-start justify-between gap-3">
-                            <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-white line-clamp-2 sm:text-5xl lg:text-7xl">
+                            <h1
+                                className={cn(
+                                    'font-bold leading-[1.1] tracking-tight text-white',
+                                    isPhoneLandscape
+                                        ? 'line-clamp-1 text-2xl'
+                                        : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
+                                )}
+                            >
                                 {featuredMovie.title}
                             </h1>
-                            <div className="flex shrink-0 items-center gap-1 sm:hidden">
-                                {renderIconControls()}
-                            </div>
+                            {!isPhoneLandscape && (
+                                <div className="flex shrink-0 items-center gap-1 sm:hidden">
+                                    {renderIconControls()}
+                                </div>
+                            )}
                         </div>
 
                         {(releaseYear || rating) && (
-                            <p className="mt-2 flex items-center gap-2 text-sm text-white/70">
+                            <p className={cn('flex items-center gap-2 text-white/70', isPhoneLandscape ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
                                 {releaseYear && <span>{releaseYear}</span>}
                                 {releaseYear && rating && <span className="text-white/25">·</span>}
                                 {rating && (
@@ -322,17 +349,27 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             </p>
                         )}
 
-                        {featuredMovie.overview && (
+                        {featuredMovie.overview && !isPhoneLandscape && (
                             <p className="mt-3 hidden text-base leading-relaxed text-white/75 line-clamp-2 md:block lg:mt-4 lg:text-xl lg:line-clamp-3">
                                 {featuredMovie.overview}
                             </p>
                         )}
 
-                        <div className="mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:items-center sm:gap-3">
+                        <div
+                            className={cn(
+                                'flex items-center',
+                                isPhoneLandscape
+                                    ? 'mt-2 flex-row gap-2'
+                                    : 'mt-4 flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3'
+                            )}
+                        >
                             <button
                                 type="button"
                                 onClick={handleWatchNow}
-                                className="btn-play h-12 w-full sm:w-auto px-6 inline-flex items-center justify-center gap-2"
+                                className={cn(
+                                    'btn-play inline-flex items-center justify-center gap-2',
+                                    isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
+                                )}
                             >
                                 <Play className="w-5 h-5 fill-current play-mark-pulse" />
                                 Guarda
@@ -341,15 +378,20 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             <button
                                 type="button"
                                 onClick={handleMoreInfo}
-                                className="btn-ghost-outline h-12 w-full sm:w-auto px-6 inline-flex items-center justify-center gap-2"
+                                className={cn(
+                                    'btn-ghost-outline inline-flex items-center justify-center gap-2',
+                                    isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
+                                )}
                             >
                                 <Info className="w-5 h-5" />
                                 Dettagli
                             </button>
 
-                            <div className="hidden items-center gap-1 sm:flex">
-                                {renderIconControls()}
-                            </div>
+                            {!isPhoneLandscape && (
+                                <div className="hidden items-center gap-1 sm:flex">
+                                    {renderIconControls()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -360,6 +402,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         <UpcomingTrailersSection
                             movies={movies}
                             currentMovieIndex={currentIndex}
+                            compact={isPhoneLandscape}
                             onMovieSelect={(index) => {
                                 changeToMovie(index)
                                 // Nasconde la sezione prossimi film quando si seleziona un film

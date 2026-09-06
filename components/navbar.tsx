@@ -11,6 +11,7 @@ import { NavIndicatorLink, NAV_LINKS } from '@/components/ui/nav-indicator-link'
 import { springTransition } from '@/lib/motion'
 import { NAV_VIEW_TRANSITION_NAME } from '@/lib/view-transitions'
 import { cn } from '@/lib/utils'
+import { useIsPhoneLandscape } from '@/hooks/useMediaQuery'
 
 interface NavbarProps {
     immersive?: boolean
@@ -20,6 +21,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
     const { isVisible: contextVisible } = useNavbarContext()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
+    const isPhoneLandscape = useIsPhoneLandscape()
 
     const shouldShow = !immersive || contextVisible || searchFocused || isMenuOpen
 
@@ -34,8 +36,11 @@ export function Navbar({ immersive = false }: NavbarProps) {
             transition={springTransition}
             style={{ viewTransitionName: NAV_VIEW_TRANSITION_NAME }}
             className={cn(
-                'fixed top-0 left-0 right-0 z-50 px-4 py-3 border-b border-white/5',
+                'fixed top-0 left-0 right-0 z-50 border-b border-white/5',
                 'bg-black/70 backdrop-blur-xl',
+                isPhoneLandscape
+                    ? 'py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]'
+                    : 'px-4 py-3',
                 !shouldShow && 'pointer-events-none'
             )}
         >
@@ -46,20 +51,28 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     aria-label="TheHustlePlace — Home"
                 >
                     <motion.div
-                        className="w-8 h-8 bg-white rounded-lg flex items-center justify-center"
+                        className={cn(
+                            'bg-white rounded-lg flex items-center justify-center',
+                            isPhoneLandscape ? 'h-7 w-7' : 'h-8 w-8'
+                        )}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.97 }}
                         transition={springTransition}
                     >
                         <span className="text-black font-bold text-sm">H</span>
                     </motion.div>
-                    <span className="text-lg font-semibold text-white tracking-tight hidden sm:block">
+                    <span
+                        className={cn(
+                            'text-lg font-semibold text-white tracking-tight',
+                            isPhoneLandscape ? 'hidden' : 'hidden sm:block'
+                        )}
+                    >
                         TheHustlePlace
                     </span>
                 </Link>
 
                 <LayoutGroup id="main-nav">
-                    <div className="hidden md:flex items-center gap-0.5">
+                    <div className={cn('items-center gap-0.5', isPhoneLandscape ? 'hidden' : 'hidden md:flex')}>
                         {NAV_LINKS.map(({ href, label }) => (
                             <NavIndicatorLink
                                 key={href}
@@ -71,7 +84,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     </div>
                 </LayoutGroup>
 
-                <div className="hidden lg:block flex-1 max-w-sm mx-4">
+                <div className={cn('flex-1 max-w-sm mx-4', isPhoneLandscape ? 'hidden' : 'hidden lg:block')}>
                     <SearchBar onFocusChange={setSearchFocused} />
                 </div>
 
@@ -79,7 +92,10 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     <DeviceCodeButton />
                     <motion.button
                         type="button"
-                        className="md:hidden p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md"
+                        className={cn(
+                            'p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-md',
+                            !isPhoneLandscape && 'md:hidden'
+                        )}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-expanded={isMenuOpen}
                         aria-label={isMenuOpen ? 'Chiudi menu' : 'Apri menu'}
@@ -109,7 +125,10 @@ export function Navbar({ immersive = false }: NavbarProps) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                        className="md:hidden absolute top-full left-0 right-0 overflow-hidden bg-zinc-950/95 backdrop-blur-xl border-t border-white/5"
+                        className={cn(
+                            'absolute top-full left-0 right-0 overflow-hidden bg-zinc-950/95 backdrop-blur-xl border-t border-white/5',
+                            !isPhoneLandscape && 'md:hidden'
+                        )}
                     >
                         <div className="px-4 py-4 space-y-4">
                             <SearchBar onFocusChange={setSearchFocused} />
