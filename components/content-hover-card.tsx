@@ -318,7 +318,7 @@ export function ContentHoverCard({
             >
                 <div
                     className={`relative h-full w-full overflow-hidden rounded-lg bg-zinc-900 ${
-                        isPeeking ? 'ring-1 ring-white/70' : ''
+                        isPeeking ? 'opacity-0' : ''
                     }`}
                 >
                     <PosterTransition type={itemType} id={itemId} className="absolute inset-0">

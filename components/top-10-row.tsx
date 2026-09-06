@@ -20,7 +20,7 @@ interface Top10RowProps {
 export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowProps) {
     const isTouch = useIsCoarsePointer()
     const [expandedId, setExpandedId] = useState<number | null>(null)
-    const { peekId, onPeek, onClose } = useRowPeek()
+    const { peekId, isPosterHidden, onPeek, onClose, onExited } = useRowPeek()
     const peekItem = items.find((item) => getContentId(item) === peekId) ?? null
 
     return (
@@ -65,7 +65,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                             onExpand={() => setExpandedId(itemId)}
                             onCollapse={() => setExpandedId(null)}
                             onPeek={() => onPeek(itemId)}
-                            isPeeking={peekId === itemId}
+                            isPeeking={isPosterHidden(itemId)}
                             onPlay={onPlay}
                             onDetails={onDetails}
                         />
@@ -81,6 +81,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                 item={isTouch ? peekItem : null}
                 type={peekItem ? resolveContentType(peekItem, type) : type}
                 onClose={onClose}
+                onExited={onExited}
                 onPlay={onPlay}
                 onDetails={onDetails}
             />

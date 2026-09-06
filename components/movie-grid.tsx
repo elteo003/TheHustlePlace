@@ -19,7 +19,7 @@ interface MovieGridProps {
 export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }: MovieGridProps) {
     const isTouch = useIsCoarsePointer()
     const [expandedId, setExpandedId] = useState<number | null>(null)
-    const { peekId, onPeek, onClose } = useRowPeek()
+    const { peekId, isPosterHidden, onPeek, onClose, onExited } = useRowPeek()
     const peekItem = movies.find((movie) => getContentId(movie) === peekId) ?? null
 
     return (
@@ -40,7 +40,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
                                 onExpand={() => setExpandedId(id)}
                                 onCollapse={() => setExpandedId(null)}
                                 onPeek={() => onPeek(id)}
-                                isPeeking={peekId === id}
+                                isPeeking={isPosterHidden(id)}
                                 onPlay={onPlay}
                                 onDetails={onDetails}
                             />
@@ -52,6 +52,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
                 item={isTouch ? peekItem : null}
                 type={type}
                 onClose={onClose}
+                onExited={onExited}
                 onPlay={onPlay}
                 onDetails={onDetails}
             />

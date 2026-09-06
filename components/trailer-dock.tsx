@@ -1,15 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
 import { Play, Info, Volume2, VolumeX } from 'lucide-react'
 import Image from 'next/image'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { useTrailerPreview, buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
-import { sheetEase } from '@/lib/motion'
 import { shouldDismissSheet } from '@/lib/sheet-gesture'
 import { Spinner } from '@/components/ui/spinner'
 import { DetailLink } from '@/components/ui/detail-link'
@@ -18,39 +16,120 @@ interface TrailerDockProps {
     item: ContentItem | null
     type?: ContentType
     onClose: () => void
+    onExited?: () => void
     onPlay?: (id: number, type?: ContentType) => void
     onDetails?: (id: number, type?: ContentType) => void
 }
 
-function readPosterOrigin(itemId: number) {
-    if (typeof document === 'undefined') {
-        return { x: 0, y: 96, scale: 0.72 }
-    }
-    const node = document.querySelector(`[data-trailer-origin="${itemId}"]`)
-    if (!(node instanceof HTMLElement)) {
-        return { x: 0, y: 96, scale: 0.72 }
-    }
-    const rect = node.getBoundingClientRect()
-    const scale = Math.min(rect.width / window.innerWidth, rect.height / window.innerHeight)
+const VAUL = 'cubic-bezier(0.32, 0.72, 0, 1)'
+const EASE_OPACITY = 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+const ENTER_MS = 360
+const EXIT_MS = 240
+const FADE_MS = 200
+const SNAP_MS = 200
+
+type PosterOrigin = {
+    width: number
+    height: number
+    startTransform: string
+    endTransform: string
+}
+
+function readPosterOrigin(itemId: number): PosterOrigin {
+    const vw = typeof window === 'undefined' ? 390 : window.innerWidth
+    const vh = typeof window === 'undefined' ? 844 : window.innerHeight
+    const node = typeof document === 'undefined'
+        ? null
+        : document.querySelector(`[data-trailer-origin="${itemId}"]`)
+    const rect =
+        node instanceof HTMLElement
+            ? node.getBoundingClientRect()
+            : { left: vw / 2 - 60, top: vh * 0.28, width: 120, height: 180 }
+    const coverScale = Math.max(vw / rect.width, vh / rect.height)
     return {
-        x: rect.left + rect.width / 2 - window.innerWidth / 2,
-        y: rect.top + rect.height / 2 - window.innerHeight / 2,
-        scale: Math.min(0.88, Math.max(0.22, scale)),
+        width: rect.width,
+        height: rect.height,
+        startTransform: `translate3d(${rect.left}px, ${rect.top}px, 0) scale(1)`,
+        endTransform: `translate3d(${(vw - rect.width * coverScale) / 2}px, ${
+            (vh - rect.height * coverScale) / 2
+        }px, 0) scale(${coverScale})`,
     }
+}
+
+function play(el: HTMLElement | null, keyframes: Keyframe[], duration: number, easing: string) {
+    if (!el) return Promise.resolve()
+    el.getAnimations().forEach((animation) => animation.cancel())
+    return el
+        .animate(keyframes, { duration, easing, fill: 'forwards' })
+        .finished.then(() => undefined)
+        .catch(() => undefined)
 }
 
 export function TrailerDock({
     item,
     type = 'movie',
     onClose,
+    onExited,
     onPlay,
     onDetails,
 }: TrailerDockProps) {
+    const [portalReady, setPortalReady] = useState(false)
+    const [shown, setShown] = useState<ContentItem | null>(item)
+    const onExitedRef = useRef(onExited)
+    onExitedRef.current = onExited
+
+    const finishExit = useCallback(() => {
+        setShown(null)
+        onExitedRef.current?.()
+    }, [])
+
+    useEffect(() => {
+        setPortalReady(true)
+    }, [])
+
+    useEffect(() => {
+        if (item) setShown(item)
+    }, [item])
+
+    if (!portalReady || !shown) return null
+
+    return createPortal(
+        <TrailerStage
+            key={getContentId(shown)}
+            item={shown}
+            type={type}
+            leaving={!item}
+            onClose={onClose}
+            onExited={finishExit}
+            onPlay={onPlay}
+            onDetails={onDetails}
+        />,
+        document.body
+    )
+}
+
+function TrailerStage({
+    item,
+    type,
+    onClose,
+    leaving,
+    onExited,
+    onPlay,
+    onDetails,
+}: {
+    item: ContentItem
+    type: ContentType
+    onClose: () => void
+    leaving: boolean
+    onExited?: () => void
+    onPlay?: (id: number, type?: ContentType) => void
+    onDetails?: (id: number, type?: ContentType) => void
+}) {
     const reduceMotion = useReducedMotion()
-    const itemType = item ? resolveContentType(item, type) : type
-    const itemId = item ? getContentId(item) : 0
-    const title = item ? getContentTitle(item, itemType) : ''
-    const poster = item ? getContentPosterUrl(item.backdrop_path || item.poster_path, 'original') : ''
+    const itemType = resolveContentType(item, type)
+    const itemId = getContentId(item)
+    const title = getContentTitle(item, itemType)
+    const cardPoster = getContentPosterUrl(item.poster_path)
 
     const { trailerKey, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
@@ -59,17 +138,22 @@ export function TrailerDock({
     )
     const [muted, setMuted] = useState(true)
     const [ready, setReady] = useState(false)
-    const [portalReady, setPortalReady] = useState(false)
+    const [open, setOpen] = useState(reduceMotion)
     const iframeRef = useRef<HTMLIFrameElement>(null)
+    const backdropRef = useRef<HTMLDivElement>(null)
     const sheetRef = useRef<HTMLDivElement>(null)
+    const posterRef = useRef<HTMLDivElement>(null)
+    const videoRef = useRef<HTMLDivElement>(null)
+    const chromeRef = useRef<HTMLDivElement>(null)
     const handleStartY = useRef(0)
     const handleStartAt = useRef(0)
-    const origin = useMemo(
-        () => (item ? readPosterOrigin(itemId) : { x: 0, y: 96, scale: 0.72 }),
-        [item, itemId]
-    )
-    const originRef = useRef(origin)
-    originRef.current = origin
+    const pullY = useRef(0)
+    const exitViaPull = useRef(false)
+    const originRef = useRef<PosterOrigin>(readPosterOrigin(itemId))
+    const onCloseRef = useRef(onClose)
+    const openRef = useRef(open)
+    onCloseRef.current = onClose
+    openRef.current = open
 
     const kickPlayback = () => {
         const frame = iframeRef.current?.contentWindow
@@ -83,206 +167,266 @@ export function TrailerDock({
     }
 
     useEffect(() => {
-        setPortalReady(true)
-    }, [])
-
-    useEffect(() => {
-        setMuted(true)
-        setReady(false)
-        if (sheetRef.current) {
-            sheetRef.current.style.transform = ''
-            sheetRef.current.style.transition = ''
-        }
-        if (!item) {
-            resetPreview()
-            return
+        originRef.current = readPosterOrigin(itemId)
+        const origin = originRef.current
+        const poster = posterRef.current
+        if (poster) {
+            poster.style.width = `${origin.width}px`
+            poster.style.height = `${origin.height}px`
+            poster.style.transform = origin.startTransform
+            poster.style.borderRadius = '8px'
         }
         scheduleTrailerLoad()
-    }, [itemId, itemType, item, resetPreview, scheduleTrailerLoad])
 
-    useEffect(() => {
-        if (!item) return
         const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') onClose()
+            if (event.key === 'Escape') onCloseRef.current()
         }
         window.addEventListener('keydown', onKey)
+
+        let cancelled = false
+        if (reduceMotion) {
+            if (backdropRef.current) backdropRef.current.style.opacity = '1'
+            if (poster) {
+                poster.style.transform = origin.endTransform
+                poster.style.borderRadius = '0px'
+            }
+            setOpen(true)
+        } else {
+            void play(backdropRef.current, [{ opacity: 0 }, { opacity: 1 }], FADE_MS, EASE_OPACITY)
+            void play(
+                poster,
+                [
+                    { transform: origin.startTransform, borderRadius: '8px' },
+                    { transform: origin.endTransform, borderRadius: '0px' },
+                ],
+                ENTER_MS,
+                VAUL
+            ).then(() => {
+                if (!cancelled) setOpen(true)
+            })
+        }
+
         return () => {
+            cancelled = true
             document.body.style.overflow = previousOverflow
             window.removeEventListener('keydown', onKey)
+            resetPreview()
         }
-    }, [item, onClose])
+    }, [itemId, reduceMotion, scheduleTrailerLoad, resetPreview])
+
+    useEffect(() => {
+        if (!leaving) return
+        if (exitViaPull.current) {
+            onExited?.()
+            return
+        }
+
+        const origin = originRef.current
+        const fadeOut = openRef.current
+            ? [
+                  play(videoRef.current, [{ opacity: 1 }, { opacity: 0 }], 120, EASE_OPACITY),
+                  play(chromeRef.current, [{ opacity: 1 }, { opacity: 0 }], 120, EASE_OPACITY),
+              ]
+            : []
+
+        const finish = reduceMotion
+            ? play(backdropRef.current, [{ opacity: 1 }, { opacity: 0 }], 120, EASE_OPACITY)
+            : Promise.all([
+                  ...fadeOut,
+                  play(
+                      posterRef.current,
+                      [
+                          { transform: origin.endTransform, borderRadius: '0px' },
+                          { transform: origin.startTransform, borderRadius: '8px' },
+                      ],
+                      EXIT_MS,
+                      VAUL
+                  ),
+                  play(backdropRef.current, [{ opacity: 1 }, { opacity: 0 }], EXIT_MS, EASE_OPACITY),
+              ])
+
+        void finish.then(() => onExited?.())
+    }, [leaving, reduceMotion, onExited])
+
+    const setSheetY = (y: number, withTransition: boolean) => {
+        const sheet = sheetRef.current
+        if (!sheet) return
+        pullY.current = y
+        sheet.style.transition = withTransition ? `transform ${SNAP_MS}ms ${VAUL}` : 'none'
+        sheet.style.transform = `translate3d(0, ${y}px, 0)`
+    }
 
     const onHandlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
         if (reduceMotion) return
         handleStartY.current = event.clientY
         handleStartAt.current = event.timeStamp
         event.currentTarget.setPointerCapture(event.pointerId)
-        if (sheetRef.current) {
-            sheetRef.current.style.transition = 'none'
-        }
+        setSheetY(pullY.current, false)
     }
 
     const onHandlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-        if (!event.currentTarget.hasPointerCapture(event.pointerId) || !sheetRef.current) return
-        const dy = Math.max(0, event.clientY - handleStartY.current)
-        sheetRef.current.style.transform = `translate3d(0, ${dy}px, 0)`
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+        setSheetY(Math.max(0, event.clientY - handleStartY.current), false)
     }
 
     const endHandlePull = (event: PointerEvent<HTMLDivElement>) => {
         if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
         event.currentTarget.releasePointerCapture(event.pointerId)
-        const offsetY = event.clientY - handleStartY.current
+        const offsetY = pullY.current
         const velocityY = (offsetY / Math.max(event.timeStamp - handleStartAt.current, 1)) * 1000
-        if (shouldDismissSheet(offsetY, velocityY)) {
-            onClose()
+        if (!shouldDismissSheet(offsetY, velocityY)) {
+            setSheetY(0, true)
             return
         }
-        if (sheetRef.current) {
-            sheetRef.current.style.transition = 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1)'
-            sheetRef.current.style.transform = 'translate3d(0, 0, 0)'
-        }
+
+        exitViaPull.current = true
+        const end = window.innerHeight
+        const duration = Math.min(320, Math.max(160, 280 - velocityY / 12))
+        void Promise.all([
+            play(
+                sheetRef.current,
+                [
+                    { transform: `translate3d(0, ${offsetY}px, 0)` },
+                    { transform: `translate3d(0, ${end}px, 0)` },
+                ],
+                duration,
+                VAUL
+            ),
+            play(backdropRef.current, [{ opacity: 1 }, { opacity: 0 }], duration, EASE_OPACITY),
+        ]).then(() => onClose())
     }
 
     const embedUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, muted) : null
-    const travel = reduceMotion
-        ? { duration: 0.16, ease: 'easeOut' as const }
-        : { duration: 0.44, ease: sheetEase }
-    const leave = reduceMotion
-        ? { duration: 0.12 }
-        : { duration: 0.28, ease: sheetEase }
+    const origin = originRef.current
+    const showVideo = open && ready
 
-    const overlay = (
-        <AnimatePresence>
-            {item && (
-                <motion.section
-                    key={`sottocinema-${itemId}`}
-                    aria-modal="true"
-                    aria-label={`Anteprima trailer ${title}`}
-                    className="fixed inset-0 z-[92] h-dvh w-screen overflow-hidden bg-black overscroll-none"
-                    initial={
-                        reduceMotion
-                            ? { opacity: 0 }
-                            : {
-                                  opacity: 0.7,
-                                  x: origin.x,
-                                  y: origin.y,
-                                  scale: origin.scale,
-                                  borderRadius: 12,
-                              }
-                    }
-                    animate={{ opacity: 1, x: 0, y: 0, scale: 1, borderRadius: 0 }}
-                    exit={
-                        reduceMotion
-                            ? { opacity: 0, transition: leave }
-                            : {
-                                  opacity: 0.45,
-                                  x: originRef.current.x,
-                                  y: originRef.current.y,
-                                  scale: originRef.current.scale,
-                                  borderRadius: 12,
-                                  transition: leave,
-                              }
-                    }
-                    transition={travel}
+    return (
+        <section
+            aria-modal="true"
+            aria-label={`Anteprima trailer ${title}`}
+            className="fixed inset-0 z-[92] h-dvh w-screen overflow-hidden overscroll-none"
+        >
+            <div ref={backdropRef} className="absolute inset-0 bg-black" style={{ opacity: 0 }} />
+
+            <div ref={sheetRef} className="absolute inset-0">
+                <div
+                    ref={posterRef}
+                    className="absolute left-0 top-0 overflow-hidden bg-zinc-900"
+                    style={{
+                        width: origin.width,
+                        height: origin.height,
+                        transformOrigin: '0 0',
+                        transform: origin.startTransform,
+                        borderRadius: 8,
+                    }}
                 >
-                    <div ref={sheetRef} className="relative h-full w-full bg-black">
-                        {poster && (
-                            <Image
-                                src={poster}
-                                alt=""
-                                fill
-                                className="object-cover"
-                                sizes="100vw"
-                                style={{ opacity: ready ? 0 : 1 }}
-                            />
-                        )}
-                        {embedUrl && (
-                            <iframe
-                                ref={iframeRef}
-                                key={`${trailerKey}-${muted ? 'm' : 'u'}`}
-                                src={embedUrl}
-                                title={`Trailer ${title}`}
-                                className={`pointer-events-none border-0 transition-opacity duration-300 ease-out ${
-                                    ready ? 'opacity-100' : 'opacity-0'
-                                }`}
-                                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                                onLoad={() => {
-                                    setReady(true)
-                                    kickPlayback()
-                                }}
-                                style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    width: 'max(100vw, 177.78dvh)',
-                                    height: 'max(100dvh, 56.25vw)',
-                                    transform: 'translate(-50%, -50%) scale(1.08)',
-                                }}
-                            />
-                        )}
-                        {isLoading && !ready && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                <Spinner size="sm" />
-                            </div>
-                        )}
+                    <Image
+                        src={cardPoster}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="50vw"
+                        priority
+                    />
+                </div>
 
-                        <div
-                            className="absolute inset-x-0 top-0 z-10 flex touch-none items-center justify-center pb-4 pt-[max(0.85rem,env(safe-area-inset-top))]"
-                            onPointerDown={onHandlePointerDown}
-                            onPointerMove={onHandlePointerMove}
-                            onPointerUp={endHandlePull}
-                            onPointerCancel={endHandlePull}
-                        >
-                            <div className="h-1 w-10 rounded-full bg-white/35" aria-hidden />
-                        </div>
+                <div
+                    ref={videoRef}
+                    className="absolute inset-0"
+                    style={{
+                        opacity: showVideo ? 1 : 0,
+                        transition: `opacity ${FADE_MS}ms ${EASE_OPACITY}`,
+                    }}
+                >
+                    {embedUrl && (
+                        <iframe
+                            ref={iframeRef}
+                            key={`${trailerKey}-${muted ? 'm' : 'u'}`}
+                            src={embedUrl}
+                            title={`Trailer ${title}`}
+                            className="pointer-events-none border-0"
+                            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                            onLoad={() => {
+                                setReady(true)
+                                kickPlayback()
+                            }}
+                            style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                width: 'max(100vw, 177.78dvh)',
+                                height: 'max(100dvh, 56.25vw)',
+                                transform: 'translate(-50%, -50%) scale(1.08)',
+                            }}
+                        />
+                    )}
+                </div>
 
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent pt-24">
-                            <div className="pointer-events-auto flex items-end gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-base font-semibold text-white">{title}</p>
-                                    <p className="text-[11px] text-white/45">Trascina la barretta per chiudere</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
-                                    onClick={() => setMuted((value) => !value)}
-                                    aria-label={muted ? 'Attiva audio' : 'Disattiva audio'}
-                                >
-                                    {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                                </button>
-                                {onPlay && (
-                                    <button
-                                        type="button"
-                                        onClick={() => onPlay(itemId, itemType)}
-                                        className="btn-play flex items-center gap-1.5 px-4 py-2 text-sm"
-                                    >
-                                        <Play className="h-3.5 w-3.5 fill-current" />
-                                        Guarda
-                                    </button>
-                                )}
-                                {onDetails && (
-                                    <DetailLink
-                                        id={itemId}
-                                        type={itemType}
-                                        className="btn-ghost-outline inline-flex items-center gap-1 px-3 py-2 text-sm"
-                                        onClick={(event) => {
-                                            event.stopPropagation()
-                                            onDetails(itemId, itemType)
-                                        }}
-                                    >
-                                        <Info className="h-3.5 w-3.5" />
-                                    </DetailLink>
-                                )}
-                            </div>
-                        </div>
+                {isLoading && open && !ready && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Spinner size="sm" />
                     </div>
-                </motion.section>
-            )}
-        </AnimatePresence>
-    )
+                )}
 
-    if (!portalReady) return null
-    return createPortal(overlay, document.body)
+                <div
+                    className="absolute inset-x-0 top-0 z-10 flex touch-none items-center justify-center pb-4 pt-[max(0.85rem,env(safe-area-inset-top))]"
+                    onPointerDown={onHandlePointerDown}
+                    onPointerMove={onHandlePointerMove}
+                    onPointerUp={endHandlePull}
+                    onPointerCancel={endHandlePull}
+                >
+                    <div className="h-1 w-10 rounded-full bg-white/35" aria-hidden />
+                </div>
+
+                <div
+                    ref={chromeRef}
+                    className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black via-black/55 to-transparent pt-24"
+                    style={{
+                        opacity: open ? 1 : 0,
+                        transition: `opacity ${FADE_MS}ms ${EASE_OPACITY}`,
+                    }}
+                >
+                    <div className="pointer-events-auto flex items-end gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-semibold text-white">{title}</p>
+                            <p className="text-[11px] text-white/45">Trascina la barretta per chiudere</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
+                            onClick={() => setMuted((value) => !value)}
+                            aria-label={muted ? 'Attiva audio' : 'Disattiva audio'}
+                        >
+                            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        </button>
+                        {onPlay && (
+                            <button
+                                type="button"
+                                onClick={() => onPlay(itemId, itemType)}
+                                className="btn-play flex items-center gap-1.5 px-4 py-2 text-sm"
+                            >
+                                <Play className="h-3.5 w-3.5 fill-current" />
+                                Guarda
+                            </button>
+                        )}
+                        {onDetails && (
+                            <DetailLink
+                                id={itemId}
+                                type={itemType}
+                                className="btn-ghost-outline inline-flex items-center gap-1 px-3 py-2 text-sm"
+                                onClick={(event) => {
+                                    event.stopPropagation()
+                                    onDetails(itemId, itemType)
+                                }}
+                            >
+                                <Info className="h-3.5 w-3.5" />
+                            </DetailLink>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    )
 }
