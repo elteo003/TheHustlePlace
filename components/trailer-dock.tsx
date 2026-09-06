@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useDragControls } from 'framer-motion'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Play, Info, Volume2, VolumeX } from 'lucide-react'
 import Image from 'next/image'
 import { ContentType, getContentId } from '@/lib/content-navigation'
@@ -42,7 +42,10 @@ export function TrailerDock({
     const [muted, setMuted] = useState(true)
     const [ready, setReady] = useState(false)
     const iframeRef = useRef<HTMLIFrameElement>(null)
-    const dragControls = useDragControls()
+    const handleStartY = useRef(0)
+    const handleStartAt = useRef(0)
+    const [pullY, setPullY] = useState(0)
+    const [pulling, setPulling] = useState(false)
 
     const kickPlayback = () => {
         const frame = iframeRef.current?.contentWindow
@@ -58,12 +61,39 @@ export function TrailerDock({
     useEffect(() => {
         setMuted(true)
         setReady(false)
+        setPullY(0)
+        setPulling(false)
         if (!item) {
             resetPreview()
             return
         }
         scheduleTrailerLoad()
     }, [itemId, itemType, item, resetPreview, scheduleTrailerLoad])
+
+    const onHandlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+        if (reduceMotion) return
+        handleStartY.current = event.clientY
+        handleStartAt.current = event.timeStamp
+        setPulling(true)
+        event.currentTarget.setPointerCapture(event.pointerId)
+    }
+
+    const onHandlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+        setPullY(Math.max(0, event.clientY - handleStartY.current))
+    }
+
+    const endHandlePull = (event: PointerEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+        event.currentTarget.releasePointerCapture(event.pointerId)
+        const offsetY = event.clientY - handleStartY.current
+        const velocityY = (offsetY / Math.max(event.timeStamp - handleStartAt.current, 1)) * 1000
+        setPulling(false)
+        setPullY(0)
+        if (shouldDismissSheet(offsetY, velocityY)) {
+            onClose()
+        }
+    }
 
     const embedUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, muted) : null
     const enter = reduceMotion
@@ -81,31 +111,20 @@ export function TrailerDock({
                     aria-label={`Anteprima trailer ${title}`}
                     className="relative mt-3 overflow-hidden rounded-2xl bg-zinc-950 ring-1 ring-white/10"
                     initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
-                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: pullY }}
                     exit={
                         reduceMotion
                             ? { opacity: 0, transition: exit }
                             : { opacity: 0, y: 12, transition: exit }
                     }
-                    transition={enter}
-                    drag={reduceMotion ? false : 'y'}
-                    dragListener={false}
-                    dragControls={dragControls}
-                    dragConstraints={{ top: 0, bottom: 0 }}
-                    dragElastic={0.18}
-                    dragDirectionLock
-                    onDragEnd={(_event: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-                        if (shouldDismissSheet(info.offset.y, info.velocity.y)) {
-                            onClose()
-                        }
-                    }}
+                    transition={pulling ? { duration: 0 } : enter}
                 >
                     <div
                         className="flex touch-none items-center justify-center py-3"
-                        onPointerDown={(event) => {
-                            if (reduceMotion) return
-                            dragControls.start(event)
-                        }}
+                        onPointerDown={onHandlePointerDown}
+                        onPointerMove={onHandlePointerMove}
+                        onPointerUp={endHandlePull}
+                        onPointerCancel={endHandlePull}
                     >
                         <div className="h-1 w-10 rounded-full bg-white/25" aria-hidden />
                     </div>
