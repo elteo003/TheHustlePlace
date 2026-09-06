@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Play, Info, Volume2, VolumeX, SkipForward } from 'lucide-react'
-import { TMDBMovie, getTMDBImageUrl, getYouTubeEmbedUrl, findMainTrailer } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl, findMainTrailer } from '@/lib/tmdb'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
 import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
-import { useCleanup } from '@/hooks/useCleanup'
-import { useParallax } from '@/hooks/useParallax'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
+import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void
@@ -28,11 +28,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const { setIsVisible: setNavbarVisible } = useNavbarContext()
     // Usa il context per stato globale
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
-
-    const { parallaxRef, scrollY } = useParallax()
+    const isTouch = useIsCoarsePointer()
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
-    const showMeta = metaHovered || introVisible
+    const showMeta = isTouch || metaHovered || introVisible
 
     useEffect(() => {
         setNavbarVisible(true)
@@ -41,51 +40,32 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     useEffect(() => {
         setIntroVisible(true)
+        if (isTouch) return
         const timer = setTimeout(() => setIntroVisible(false), 1800)
         return () => clearTimeout(timer)
-    }, [featuredMovie?.id])
+    }, [featuredMovie?.id, isTouch])
 
     // Stati locali semplificati
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
     const iframeRef = useRef<HTMLIFrameElement>(null)
 
-    // Funzione per controllare l'audio senza riavviare il video
+    const sendYoutube = (func: string) => {
+        iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ event: 'command', func, args: [] }),
+            'https://www.youtube.com'
+        )
+    }
+
+    const kickPlayback = () => {
+        sendYoutube('mute')
+        sendYoutube('playVideo')
+    }
+
     const toggleAudio = () => {
-        if (iframeRef.current && iframeRef.current.contentWindow) {
-            try {
-                const command = isMuted ? 'unMute' : 'mute'
-                
-                // Prova diversi formati di comando
-                const commands = [
-                    JSON.stringify({ event: 'command', func: command }),
-                    JSON.stringify({ event: 'command', func: command, args: '' }),
-                    `{"event":"command","func":"${command}"}`,
-                    `{"event":"command","func":"${command}","args":""}`
-                ]
-                
-                commands.forEach(cmd => {
-                    iframeRef.current?.contentWindow?.postMessage(cmd, 'https://www.youtube.com')
-                })
-                
-                // Fallback: aggiorna l'URL dell'iframe
-                setTimeout(() => {
-                    if (iframeRef.current) {
-                        const currentSrc = iframeRef.current.src
-                        const newMuted = !isMuted
-                        const newSrc = getYouTubeEmbedUrl(trailer!, true, newMuted)
-                        if (currentSrc !== newSrc) {
-                            iframeRef.current.src = newSrc
-                        }
-                    }
-                }, 100)
-                
-            } catch (error) {
-                console.error('❌ Errore PostMessage:', error)
-            }
-        }
-        
-        setIsMuted(!isMuted)
+        const nextMuted = !isMuted
+        setIsMuted(nextMuted)
+        sendYoutube(nextMuted ? 'mute' : 'unMute')
     }
 
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
@@ -107,7 +87,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     useEffect(() => {
         if (featuredMovie) {
             setTrailerEnded(false)
-            console.log('🎬 Film cambiato, reset trailerEnded per far riapparire sezione prossimi')
+            setIsMuted(true)
         }
     }, [featuredMovie, setTrailerEnded])
 
@@ -235,20 +215,19 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     {trailer ? (
                         <iframe
                             ref={iframeRef}
-                            src={getYouTubeEmbedUrl(trailer, true, isMuted)}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            allow="autoplay; encrypted-media; fullscreen"
-                            allowFullScreen
+                            key={trailer}
+                            src={buildTrailerEmbedUrl(trailer, true)}
+                            title={`Trailer ${featuredMovie.title}`}
+                            className="pointer-events-none border-0"
+                            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                            onLoad={kickPlayback}
                             style={{
-                                filter: showMeta ? 'brightness(0.9) saturate(1.1)' : 'brightness(0.7) saturate(0.95)',
+                                position: 'absolute',
                                 top: '50%',
                                 left: '50%',
-                                width: '100%',
-                                height: '100%',
-                                transform: showMeta
-                                    ? 'translate(-50%, -50%) scale(1.05)'
-                                    : 'translate(-50%, -50%) scale(1.08)',
-                                transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
+                                width: 'max(100vw, 177.78dvh)',
+                                height: 'max(100dvh, 56.25vw)',
+                                transform: 'translate(-50%, -50%) scale(1.08)',
                             }}
                         />
                     ) : (
