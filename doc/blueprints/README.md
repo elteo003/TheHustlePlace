@@ -16,6 +16,7 @@ Un blueprint descrive contratto, vincoli, architettura, diagrammi e piano di lav
 
 | Blueprint | Stato | Area |
 |---|---|---|
+| [Interazioni telefono](phone-interactions.md) | implementato | catalogo, trailer dock, player VixSrc |
 | [Audio hero al cambio visibilità](hero-trailer-audio-visibility.md) | proposto | `HeroSection`, trailer YouTube |
 
 ## Collegamenti
