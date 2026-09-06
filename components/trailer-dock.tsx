@@ -58,6 +58,14 @@ function readPosterOrigin(itemId: number): PosterOrigin {
     }
 }
 
+function applyPosterOrigin(poster: HTMLElement | null, origin: PosterOrigin, phase: 'start' | 'end') {
+    if (!poster) return
+    poster.style.width = `${origin.width}px`
+    poster.style.height = `${origin.height}px`
+    poster.style.transform = phase === 'end' ? origin.endTransform : origin.startTransform
+    poster.style.borderRadius = phase === 'end' ? '0px' : '8px'
+}
+
 function play(el: HTMLElement | null, keyframes: Keyframe[], duration: number, easing: string) {
     if (!el) return Promise.resolve()
     el.getAnimations().forEach((animation) => animation.cancel())
@@ -157,8 +165,10 @@ function TrailerStage({
     const originRef = useRef<PosterOrigin>(readPosterOrigin(itemId))
     const onCloseRef = useRef(onClose)
     const openRef = useRef(open)
+    const leavingRef = useRef(leaving)
     onCloseRef.current = onClose
     openRef.current = open
+    leavingRef.current = leaving
 
     const kickPlayback = () => {
         startYouTubePreview(iframeRef.current?.contentWindow, mutedRef.current)
@@ -177,12 +187,7 @@ function TrailerStage({
         originRef.current = readPosterOrigin(itemId)
         const origin = originRef.current
         const poster = posterRef.current
-        if (poster) {
-            poster.style.width = `${origin.width}px`
-            poster.style.height = `${origin.height}px`
-            poster.style.transform = origin.startTransform
-            poster.style.borderRadius = '8px'
-        }
+        applyPosterOrigin(poster, origin, 'start')
         scheduleTrailerLoad()
 
         const previousOverflow = document.body.style.overflow
@@ -195,10 +200,7 @@ function TrailerStage({
         let cancelled = false
         if (reduceMotion) {
             if (backdropRef.current) backdropRef.current.style.opacity = '1'
-            if (poster) {
-                poster.style.transform = origin.endTransform
-                poster.style.borderRadius = '0px'
-            }
+            applyPosterOrigin(poster, origin, 'end')
             setOpen(true)
         } else {
             void play(backdropRef.current, [{ opacity: 0 }, { opacity: 1 }], FADE_MS, EASE_OPACITY)
@@ -222,6 +224,48 @@ function TrailerStage({
             resetPreview()
         }
     }, [itemId, reduceMotion, scheduleTrailerLoad, resetPreview])
+
+    useEffect(() => {
+        let lastWidth = window.innerWidth
+        let lastHeight = window.innerHeight
+
+        const snapCoverToViewport = () => {
+            if (leavingRef.current || exitViaPull.current) return
+            const next = readPosterOrigin(itemId)
+            originRef.current = next
+            const poster = posterRef.current
+            if (!poster) return
+            poster.getAnimations().forEach((animation) => animation.cancel())
+            applyPosterOrigin(poster, next, 'end')
+            if (!openRef.current) setOpen(true)
+        }
+
+        let frame = 0
+        const schedule = () => {
+            if (frame) cancelAnimationFrame(frame)
+            frame = requestAnimationFrame(() => {
+                frame = 0
+                const width = window.innerWidth
+                const height = window.innerHeight
+                const rotated = width > height !== lastWidth > lastHeight
+                const jumped = Math.abs(width - lastWidth) > 64 || Math.abs(height - lastHeight) > 64
+                lastWidth = width
+                lastHeight = height
+                if (!rotated && !jumped) return
+                snapCoverToViewport()
+            })
+        }
+
+        window.addEventListener('resize', schedule)
+        window.addEventListener('orientationchange', schedule)
+        window.visualViewport?.addEventListener('resize', schedule)
+        return () => {
+            if (frame) cancelAnimationFrame(frame)
+            window.removeEventListener('resize', schedule)
+            window.removeEventListener('orientationchange', schedule)
+            window.visualViewport?.removeEventListener('resize', schedule)
+        }
+    }, [itemId])
 
     useEffect(() => {
         if (!leaving) return
@@ -325,8 +369,8 @@ function TrailerStage({
                         width: origin.width,
                         height: origin.height,
                         transformOrigin: '0 0',
-                        transform: origin.startTransform,
-                        borderRadius: 8,
+                        transform: open ? origin.endTransform : origin.startTransform,
+                        borderRadius: open ? 0 : 8,
                     }}
                 >
                     <Image

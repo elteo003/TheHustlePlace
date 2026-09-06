@@ -298,8 +298,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                     }`}
                 />
 
-                {isPhoneLandscape && metaVisible && (
-                    <div className="absolute top-[max(3.25rem,calc(env(safe-area-inset-top)+2.75rem))] right-[max(1rem,env(safe-area-inset-right))] z-20 flex items-center gap-1">
+                {isTouch && metaVisible && (
+                    <div
+                        className={cn(
+                            'absolute z-20 flex items-center gap-1',
+                            isPhoneLandscape
+                                ? 'top-[max(3.25rem,calc(env(safe-area-inset-top)+2.75rem))] right-[max(1rem,env(safe-area-inset-right))]'
+                                : 'top-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))] right-4'
+                        )}
+                    >
                         {renderIconControls()}
                     </div>
                 )}
@@ -318,23 +325,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         onMouseEnter={() => setMetaHovered(true)}
                         onMouseLeave={() => setMetaHovered(false)}
                     >
-                        <div className="flex items-start justify-between gap-3">
-                            <h1
-                                className={cn(
-                                    'font-bold leading-[1.1] tracking-tight text-white',
-                                    isPhoneLandscape
-                                        ? 'line-clamp-1 text-2xl'
-                                        : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
-                                )}
-                            >
-                                {featuredMovie.title}
-                            </h1>
-                            {!isPhoneLandscape && (
-                                <div className="flex shrink-0 items-center gap-1 sm:hidden">
-                                    {renderIconControls()}
-                                </div>
+                        <h1
+                            className={cn(
+                                'font-bold leading-[1.1] tracking-tight text-white',
+                                isPhoneLandscape
+                                    ? 'line-clamp-1 text-2xl'
+                                    : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
                             )}
-                        </div>
+                        >
+                            {featuredMovie.title}
+                        </h1>
 
                         {(releaseYear || rating) && (
                             <p className={cn('flex items-center gap-2 text-white/70', isPhoneLandscape ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
@@ -387,7 +387,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 Dettagli
                             </button>
 
-                            {!isPhoneLandscape && (
+                            {!isTouch && (
                                 <div className="hidden items-center gap-1 sm:flex">
                                     {renderIconControls()}
                                 </div>
