@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
+import { listenToYouTubePlayer, readYouTubePlayerState, YOUTUBE_ENDED, YOUTUBE_PLAYING } from '@/lib/youtube-command'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void
@@ -49,6 +50,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
     const iframeRef = useRef<HTMLIFrameElement>(null)
+    const trailerPlayedRef = useRef(false)
 
     const sendYoutube = (func: string) => {
         iframeRef.current?.contentWindow?.postMessage(
@@ -60,6 +62,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const kickPlayback = () => {
         sendYoutube('mute')
         sendYoutube('playVideo')
+        listenToYouTubePlayer(iframeRef.current?.contentWindow)
     }
 
     const toggleAudio = () => {
@@ -68,13 +71,43 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         sendYoutube(nextMuted ? 'mute' : 'unMute')
     }
 
+    const onTrailerEndedRef = useRef(onTrailerEnded)
+    onTrailerEndedRef.current = onTrailerEnded
+
+    const hideEndedTrailer = useCallback(() => {
+        setTrailer(null)
+        onTrailerEndedRef.current?.()
+    }, [])
+
     const { trailerEnded, setTrailerEnded, resetTimer } = useTrailerTimer({
         trailer,
-        onTrailerEnded: () => {
-            setTrailer(null)
-            onTrailerEnded?.()
-        }
+        onTrailerEnded: hideEndedTrailer,
     })
+
+    const finishTrailer = useCallback(() => {
+        setTrailerEnded(true)
+        hideEndedTrailer()
+    }, [hideEndedTrailer, setTrailerEnded])
+
+    useEffect(() => {
+        trailerPlayedRef.current = false
+    }, [trailer])
+
+    useEffect(() => {
+        const onMessage = (event: MessageEvent) => {
+            const state = readYouTubePlayerState(event.origin, event.data)
+            if (state == null) return
+            if (state === YOUTUBE_PLAYING) {
+                trailerPlayedRef.current = true
+                return
+            }
+            if (state === YOUTUBE_ENDED && trailerPlayedRef.current) {
+                finishTrailer()
+            }
+        }
+        window.addEventListener('message', onMessage)
+        return () => window.removeEventListener('message', onMessage)
+    }, [finishTrailer])
 
     // Notifica quando la Hero Section è caricata
     useEffect(() => {
@@ -212,7 +245,18 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             >
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
-                    {trailer ? (
+                    <div
+                        className="h-full w-full bg-cover bg-center"
+                        style={{
+                            backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
+                            filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
+                            backgroundSize: showMeta ? '105%' : '108%',
+                            backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
+                            transform: showMeta ? 'scale(1.02)' : 'scale(1)',
+                            transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
+                        }}
+                    />
+                    {trailer && (
                         <iframe
                             ref={iframeRef}
                             key={trailer}
@@ -228,18 +272,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 width: 'max(100vw, 177.78dvh)',
                                 height: 'max(100dvh, 56.25vw)',
                                 transform: 'translate(-50%, -50%) scale(1.08)',
-                            }}
-                        />
-                    ) : (
-                        <div
-                            className="h-full w-full bg-cover bg-center"
-                            style={{
-                                backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
-                                filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
-                                backgroundSize: showMeta ? '105%' : '108%',
-                                backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
-                                transform: showMeta ? 'scale(1.02)' : 'scale(1)',
-                                transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
                             }}
                         />
                     )}
