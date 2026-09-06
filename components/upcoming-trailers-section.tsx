@@ -95,14 +95,12 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     return (
         <div 
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent p-6"
+            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
             onMouseEnter={sectionMouseEnter}
             onMouseLeave={sectionMouseLeave}
             style={{ zIndex: 10 }}
         >
-            <div className="container mx-auto">
-                {/* Countdown */}
-                <div className="mb-4 flex items-center justify-center">
+            <div className="mb-4 flex items-center justify-center px-4">
                     <div className="flex items-center gap-2 text-white">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -113,8 +111,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                     </div>
                 </div>
 
-                {/* Movies Grid */}
-                <div className="relative overflow-hidden">
+                <div className="relative w-full overflow-hidden">
                 <CustomScrollbar className="[&_.horizontal-scroll]:mx-0 [&_.horizontal-scroll]:px-0 [&_.horizontal-scroll]:pb-0" containerClassName="gap-4">
                     {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
@@ -183,14 +180,13 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 </CustomScrollbar>
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-black from-35% to-transparent"
+                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-black from-40% to-transparent"
                 />
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-black from-35% to-transparent"
+                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-black from-40% to-transparent"
                 />
                 </div>
-            </div>
         </div>
     )
 }
