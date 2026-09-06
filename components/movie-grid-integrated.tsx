@@ -33,6 +33,8 @@ function normalizeResults(
     if (section === 'trending') {
         return (results as Top10Content[]).map((item) => ({
             ...item,
+            title: item.title || item.name,
+            name: item.name || item.title,
             contentType: item.type ?? type,
             tmdb_id: item.tmdb_id ?? item.id,
         })) as Movie[]

@@ -126,6 +126,7 @@ export interface PlayerEvent {
 export interface Top10Content {
     id: number;
     title: string;
+    name?: string;
     overview: string;
     poster_path?: string;
     backdrop_path?: string;

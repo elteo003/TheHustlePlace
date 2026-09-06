@@ -36,10 +36,12 @@ describe('content-display', () => {
 
         expect(getContentTitle(movie, 'movie')).toBe('Inception')
         expect(getContentTitle(show, 'tv')).toBe('Breaking Bad')
+        expect(getContentTitle({ id: 3, title: 'The Office' } as Movie, 'tv')).toBe('The Office')
     })
 
     it('preferisce contentType sull item', () => {
         expect(resolveContentType({ contentType: 'tv' }, 'movie')).toBe('tv')
+        expect(resolveContentType({ type: 'tv' }, 'movie')).toBe('tv')
         expect(resolveContentType({}, 'movie')).toBe('movie')
     })
 })

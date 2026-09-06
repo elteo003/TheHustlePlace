@@ -8,17 +8,17 @@ export type ContentItem = (Movie | TVShow) & {
 }
 
 export function getContentTitle(item: ContentItem, type: ContentType = 'movie'): string {
-    if (type === 'tv') {
-        return (item as TVShow).name || 'Titolo non disponibile'
-    }
-    return (item as Movie).title || 'Titolo non disponibile'
+    const movieTitle = (item as Movie).title?.trim()
+    const showName = (item as TVShow).name?.trim()
+    const title = type === 'tv' ? showName || movieTitle : movieTitle || showName
+    return title || 'Titolo non disponibile'
 }
 
 export function resolveContentType(
-    item: { contentType?: ContentType },
+    item: { contentType?: ContentType; type?: ContentType },
     fallback: ContentType = 'movie'
 ): ContentType {
-    return item.contentType ?? fallback
+    return item.contentType ?? item.type ?? fallback
 }
 
 export function getContentPosterUrl(path?: string | null, size: 'w500' | 'w780' | 'original' = 'w500') {

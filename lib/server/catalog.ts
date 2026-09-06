@@ -16,6 +16,8 @@ export async function fetchCatalogSection(
             const top10 = await catalogService.getTop10Mixed()
             results = top10.map((item) => ({
                 ...item,
+                title: item.title || item.name,
+                name: item.name || item.title,
                 contentType: item.type,
                 tmdb_id: item.tmdb_id ?? item.id,
             })) as Top10Content[]

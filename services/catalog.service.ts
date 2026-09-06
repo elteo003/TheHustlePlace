@@ -137,6 +137,7 @@ export class CatalogService {
         return {
             id: tvShow.id,
             title: tvShow.name,
+            name: tvShow.name,
             overview: tvShow.overview,
             poster_path: tvShow.poster_path,
             backdrop_path: tvShow.backdrop_path,
