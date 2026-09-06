@@ -183,7 +183,7 @@ export function SeriesPlayer({
                                     lastWatched?.season === selectedSeason &&
                                     lastWatched.episode === episode.episode_number
                                 const progress =
-                                    episodeProgress.find(
+                                    (episodeProgress ?? []).find(
                                         (item) =>
                                             item.season === selectedSeason &&
                                             item.episode === episode.episode_number
