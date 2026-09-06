@@ -265,13 +265,15 @@ body::-webkit-scrollbar {
 
 .horizontal-scroll {
     touch-action: pan-x;
-    scrollbar-width: none;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none;
 }
 
 .horizontal-scroll::-webkit-scrollbar {
-    display: none;
-    height: 0;
-    width: 0;
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    background: transparent;
 }
 
 .premium-scrollbar {
@@ -280,8 +282,10 @@ body::-webkit-scrollbar {
     right: 0;
     z-index: 80;
     width: 14px;
-    height: 100vh;
+    height: 100dvh;
     padding: 10px 4px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     pointer-events: auto;
     opacity: 0;
     transform: translateX(8px);

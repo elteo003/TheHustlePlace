@@ -55,7 +55,7 @@ export function CustomScrollbar({
         <div className={className}>
             <div
                 ref={scrollRef}
-                className="horizontal-scroll touch-pan-x overflow-x-auto overflow-y-hidden -mx-1 px-1 pb-1"
+                className="horizontal-scroll touch-pan-x overflow-x-auto overflow-y-hidden -mx-1 px-1 pb-0"
                 style={{ WebkitOverflowScrolling: 'touch' }}
             >
                 <div

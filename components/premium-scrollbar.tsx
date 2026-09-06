@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readPageScrollMetrics } from '@/lib/page-scroll'
 
 const MIN_THUMB = 48
-const HIDE_MS = 1000
+const HIDE_MS = 1200
 
 export function PremiumScrollbar() {
     const thumbRef = useRef<HTMLDivElement>(null)
@@ -14,11 +15,10 @@ export function PremiumScrollbar() {
     const [needed, setNeeded] = useState(false)
 
     const updateThumb = useCallback(() => {
-        const root = document.documentElement
-        const scrollTop = root.scrollTop
-        const scrollHeight = root.scrollHeight
-        const clientHeight = root.clientHeight
-        const canScroll = scrollHeight > clientHeight + 2
+        const { clientHeight, scrollHeight, scrollTop, canScroll } = readPageScrollMetrics(
+            window,
+            document
+        )
         const ratio = clientHeight / Math.max(scrollHeight, 1)
         const height = Math.max(MIN_THUMB, ratio * clientHeight)
         const maxTop = Math.max(clientHeight - height, 0)
@@ -51,7 +51,8 @@ export function PremiumScrollbar() {
             show()
         }
 
-        window.addEventListener('scroll', onScroll, { passive: true })
+        window.addEventListener('scroll', onScroll, { passive: true, capture: true })
+        document.addEventListener('scroll', onScroll, { passive: true, capture: true })
         window.addEventListener('touchmove', onScroll, { passive: true })
         window.addEventListener('resize', updateThumb)
 
@@ -60,7 +61,8 @@ export function PremiumScrollbar() {
         if (document.body) ro.observe(document.body)
 
         return () => {
-            window.removeEventListener('scroll', onScroll)
+            window.removeEventListener('scroll', onScroll, true)
+            document.removeEventListener('scroll', onScroll, true)
             window.removeEventListener('touchmove', onScroll)
             window.removeEventListener('resize', updateThumb)
             ro.disconnect()
@@ -75,12 +77,12 @@ export function PremiumScrollbar() {
     useEffect(() => {
         const onMove = (event: PointerEvent) => {
             if (!dragRef.current) return
-            const root = document.documentElement
-            const maxScroll = root.scrollHeight - root.clientHeight
-            const maxTop = root.clientHeight - metricsRef.current.height
+            const { clientHeight, scrollHeight } = readPageScrollMetrics(window, document)
+            const maxScroll = scrollHeight - clientHeight
+            const maxTop = clientHeight - metricsRef.current.height
             if (maxTop <= 0) return
             const delta = event.clientY - dragRef.current.startY
-            root.scrollTop = dragRef.current.startScroll + (delta / maxTop) * maxScroll
+            window.scrollTo(0, dragRef.current.startScroll + (delta / maxTop) * maxScroll)
         }
 
         const onUp = () => {
@@ -102,7 +104,7 @@ export function PremiumScrollbar() {
         event.stopPropagation()
         dragRef.current = {
             startY: event.clientY,
-            startScroll: document.documentElement.scrollTop,
+            startScroll: readPageScrollMetrics(window, document).scrollTop,
         }
         document.body.style.userSelect = 'none'
         setActive(true)
@@ -111,10 +113,8 @@ export function PremiumScrollbar() {
 
     const onTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         if (event.target !== event.currentTarget) return
-        const root = document.documentElement
-        const maxScroll = root.scrollHeight - root.clientHeight
-        const ratio = event.clientY / root.clientHeight
-        root.scrollTop = ratio * maxScroll
+        const { clientHeight, scrollHeight } = readPageScrollMetrics(window, document)
+        window.scrollTo(0, (event.clientY / clientHeight) * (scrollHeight - clientHeight))
         show()
     }
 
