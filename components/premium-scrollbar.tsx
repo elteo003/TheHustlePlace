@@ -1,11 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 
 const MIN_THUMB = 48
 const HIDE_MS = 1000
 
 export function PremiumScrollbar() {
+    const isCoarse = useIsCoarsePointer()
     const thumbRef = useRef<HTMLDivElement>(null)
     const metricsRef = useRef({ top: 0, height: MIN_THUMB, needed: false })
     const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -116,7 +118,7 @@ export function PremiumScrollbar() {
         show()
     }
 
-    if (!needed) return null
+    if (isCoarse || !needed) return null
 
     return (
         <div

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { Play, Info, Volume2, VolumeX } from 'lucide-react'
 import Image from 'next/image'
 import { ContentType, getContentId } from '@/lib/content-navigation'
@@ -42,6 +42,7 @@ export function TrailerDock({
     const [muted, setMuted] = useState(true)
     const [ready, setReady] = useState(false)
     const iframeRef = useRef<HTMLIFrameElement>(null)
+    const dragControls = useDragControls()
 
     const kickPlayback = () => {
         const frame = iframeRef.current?.contentWindow
@@ -78,7 +79,6 @@ export function TrailerDock({
                 <motion.section
                     key="sottocinema"
                     aria-label={`Anteprima trailer ${title}`}
-                    style={{ willChange: 'transform' }}
                     className="relative mt-3 overflow-hidden rounded-2xl bg-zinc-950 ring-1 ring-white/10"
                     initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
                     animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
@@ -89,15 +89,26 @@ export function TrailerDock({
                     }
                     transition={enter}
                     drag={reduceMotion ? false : 'y'}
+                    dragListener={false}
+                    dragControls={dragControls}
                     dragConstraints={{ top: 0, bottom: 0 }}
                     dragElastic={0.18}
+                    dragDirectionLock
                     onDragEnd={(_event: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
                         if (shouldDismissSheet(info.offset.y, info.velocity.y)) {
                             onClose()
                         }
                     }}
                 >
-                    <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-white/25" aria-hidden />
+                    <div
+                        className="flex touch-none items-center justify-center py-3"
+                        onPointerDown={(event) => {
+                            if (reduceMotion) return
+                            dragControls.start(event)
+                        }}
+                    >
+                        <div className="h-1 w-10 rounded-full bg-white/25" aria-hidden />
+                    </div>
 
                     <div className="relative aspect-video overflow-hidden bg-zinc-900">
                         {poster && (
@@ -146,7 +157,7 @@ export function TrailerDock({
                     <div className="flex items-center gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                         <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-white">{title}</p>
-                            <p className="text-[11px] text-white/45">Scorri giù per chiudere</p>
+                            <p className="text-[11px] text-white/45">Trascina la barretta per chiudere</p>
                         </div>
                         {onPlay && (
                             <button

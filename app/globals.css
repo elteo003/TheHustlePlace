@@ -263,6 +263,17 @@ body::-webkit-scrollbar {
     height: 0;
 }
 
+.horizontal-scroll {
+    touch-action: pan-x;
+}
+
+@media (hover: none), (pointer: coarse) {
+    .premium-scrollbar {
+        display: none;
+        pointer-events: none;
+    }
+}
+
 .premium-scrollbar {
     position: fixed;
     top: 0;
