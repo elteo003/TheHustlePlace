@@ -33,7 +33,7 @@ test.describe('Telefono: codice e sottocinema', () => {
         expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 2)
     })
 
-    test('tap su una locandina apre il sottocinema sotto la riga', async ({ page }) => {
+    test('tap su una locandina apre il trailer a schermo intero', async ({ page }) => {
         test.slow()
         await page.goto('/home', { waitUntil: 'domcontentloaded', timeout: 60_000 })
         await expect(page.getByRole('heading', { name: 'Top 10 Titoli Oggi' })).toBeVisible({
@@ -45,5 +45,17 @@ test.describe('Telefono: codice e sottocinema', () => {
 
         const dock = page.getByRole('region', { name: /Anteprima trailer/ })
         await expect(dock).toBeVisible({ timeout: 15_000 })
+        await expect(dock).toBeInViewport()
+
+        const viewport = page.viewportSize()
+        const box = await dock.boundingBox()
+        expect(viewport).toBeTruthy()
+        expect(box).toBeTruthy()
+        if (!viewport || !box) {
+            return
+        }
+
+        expect(box.width).toBeGreaterThan(viewport.width * 0.9)
+        expect(box.height).toBeGreaterThan(viewport.height * 0.85)
     })
 })

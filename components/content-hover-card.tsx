@@ -314,6 +314,7 @@ export function ContentHoverCard({
                 role="button"
                 tabIndex={0}
                 aria-label={title}
+                data-trailer-origin={itemId}
             >
                 <div
                     className={`relative h-full w-full overflow-hidden rounded-lg bg-zinc-900 ${

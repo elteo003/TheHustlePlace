@@ -21,7 +21,7 @@ Sul telefono non esiste hover. Desktop e telefono **non condividono** l’overla
 | Tap | Effetto |
 |---|---|
 | Cerchio Play | Apre `/player/...` (VixSrc) |
-| Poster in una riga (Top 10, caroselli) | Peek: anello sulla card + `TrailerDock` **sotto la riga** |
+| Poster in una riga (Top 10, caroselli) | Peek: anello sulla card + `TrailerDock` **a schermo intero**, parte dal poster e si anima al centro |
 | Stesso poster di nuovo | Chiude il dock |
 | Poster senza peek di riga | `ContentActionSheet` dal basso (Guarda / Dettagli) |
 
@@ -30,7 +30,7 @@ Una sola peek alla volta in pagina (`TrailerPeekProvider`). Cambio route chiude.
 **Trailer (YouTube, non il film)**
 
 - Desktop: dopo 1s di hover, overlay centrale (`ContentHoverCard` portal).
-- Telefono: niente overlay. Embed nel `TrailerDock` sotto la riga, muted di default, volume nel dock, swipe-down per chiudere.
+- Telefono: overlay fullscreen (`TrailerDock` in portal). Parte dalla locandina e si anima al centro, muted di default, volume nel dock, swipe-down sulla barretta per chiudere.
 - Hero: trailer YouTube in pagina su entrambi; sul telefono CTA compatte, niente tap fantasma sulle meta.
 
 **Player (VixSrc, il film / la puntata)**
