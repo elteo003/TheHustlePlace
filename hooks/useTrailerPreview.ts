@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { ContentType } from '@/lib/content-navigation'
-import { getYouTubeEmbedUrl } from '@/lib/tmdb'
+import { findMainTrailer, getYouTubeEmbedUrl, type TMDBVideo } from '@/lib/tmdb'
 
 const trailerCache = new Map<string, string>()
 
@@ -27,19 +27,7 @@ export async function prefetchTrailerKey(id: number, type: ContentType): Promise
         return null
     }
 
-    const videos = data.data.results
-    const selected =
-        videos.find(
-            (video: { type: string; site: string; official?: boolean; key: string }) =>
-                (video.type === 'Trailer' || video.type === 'Teaser') &&
-                video.site === 'YouTube' &&
-                video.official === true
-        ) ||
-        videos.find(
-            (video: { type: string; site: string; key: string }) =>
-                (video.type === 'Trailer' || video.type === 'Teaser') &&
-                video.site === 'YouTube'
-        )
+    const selected = findMainTrailer(data.data.results as TMDBVideo[])
 
     if (!selected?.key) {
         return null

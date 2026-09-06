@@ -9,6 +9,7 @@ import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType }
 import { useTrailerPreview, buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { shouldDismissSheet } from '@/lib/sheet-gesture'
+import { postYouTubeCommand, startYouTubePreview } from '@/lib/youtube-command'
 import { Spinner } from '@/components/ui/spinner'
 import { DetailLink } from '@/components/ui/detail-link'
 
@@ -137,6 +138,8 @@ function TrailerStage({
         0
     )
     const [muted, setMuted] = useState(true)
+    const mutedRef = useRef(true)
+    mutedRef.current = muted
     const [ready, setReady] = useState(false)
     const [open, setOpen] = useState(reduceMotion)
     const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -156,14 +159,16 @@ function TrailerStage({
     openRef.current = open
 
     const kickPlayback = () => {
-        const frame = iframeRef.current?.contentWindow
-        if (!frame) return
-        ;['mute', 'playVideo'].forEach((func) => {
-            frame.postMessage(
-                JSON.stringify({ event: 'command', func, args: [] }),
-                'https://www.youtube.com'
-            )
-        })
+        startYouTubePreview(iframeRef.current?.contentWindow, mutedRef.current)
+    }
+
+    const toggleAudio = () => {
+        const nextMuted = !muted
+        setMuted(nextMuted)
+        postYouTubeCommand(iframeRef.current?.contentWindow, nextMuted ? 'mute' : 'unMute')
+        if (!nextMuted) {
+            postYouTubeCommand(iframeRef.current?.contentWindow, 'setVolume', [100])
+        }
     }
 
     useEffect(() => {
@@ -298,7 +303,7 @@ function TrailerStage({
         ]).then(() => onClose())
     }
 
-    const embedUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, muted) : null
+    const embedUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, true) : null
     const origin = originRef.current
     const showVideo = open && ready
 
@@ -343,7 +348,7 @@ function TrailerStage({
                     {embedUrl && (
                         <iframe
                             ref={iframeRef}
-                            key={`${trailerKey}-${muted ? 'm' : 'u'}`}
+                            key={trailerKey}
                             src={embedUrl}
                             title={`Trailer ${title}`}
                             className="pointer-events-none border-0"
@@ -396,7 +401,7 @@ function TrailerStage({
                         <button
                             type="button"
                             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
-                            onClick={() => setMuted((value) => !value)}
+                            onClick={toggleAudio}
                             aria-label={muted ? 'Attiva audio' : 'Disattiva audio'}
                         >
                             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

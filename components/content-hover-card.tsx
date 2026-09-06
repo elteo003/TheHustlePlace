@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { buildTrailerEmbedUrl, prefetchTrailerKey, useTrailerPreview } from '@/hooks/useTrailerPreview'
+import { postYouTubeCommand, startYouTubePreview } from '@/lib/youtube-command'
 import { useIsCoarsePointer, useReducedMotion } from '@/hooks/useMediaQuery'
 import { ContentActionSheet } from '@/components/ui/content-action-sheet'
 import { PosterTransition } from '@/components/ui/poster-transition'
@@ -60,6 +61,9 @@ export function ContentHoverCard({
     const [portalReady, setPortalReady] = useState(false)
     const [trailerReady, setTrailerReady] = useState(false)
     const [trailerMuted, setTrailerMuted] = useState(true)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+    const mutedRef = useRef(true)
+    mutedRef.current = trailerMuted
 
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
@@ -73,7 +77,16 @@ export function ContentHoverCard({
         itemType,
         400
     )
-    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, trailerMuted) : null
+    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, true) : null
+
+    const toggleAudio = () => {
+        const nextMuted = !trailerMuted
+        setTrailerMuted(nextMuted)
+        postYouTubeCommand(iframeRef.current?.contentWindow, nextMuted ? 'mute' : 'unMute')
+        if (!nextMuted) {
+            postYouTubeCommand(iframeRef.current?.contentWindow, 'setVolume', [100])
+        }
+    }
 
     expandedRef.current = isExpanded
 
@@ -204,7 +217,8 @@ export function ContentHoverCard({
                         />
                         {trailerUrl && (
                             <iframe
-                                key={`${trailerKey}-${trailerMuted ? 'm' : 'u'}`}
+                                ref={iframeRef}
+                                key={trailerKey}
                                 src={trailerUrl}
                                 className={`pointer-events-none transition-opacity duration-500 ease-out ${
                                     trailerReady ? 'opacity-100' : 'opacity-0'
@@ -212,7 +226,10 @@ export function ContentHoverCard({
                                 tabIndex={-1}
                                 allow="autoplay; encrypted-media"
                                 title={`Trailer ${title}`}
-                                onLoad={() => setTrailerReady(true)}
+                                onLoad={() => {
+                                    setTrailerReady(true)
+                                    startYouTubePreview(iframeRef.current?.contentWindow, mutedRef.current)
+                                }}
                                 style={{
                                     position: 'absolute',
                                     top: '50%',
@@ -233,7 +250,7 @@ export function ContentHoverCard({
                             <button
                                 type="button"
                                 className="absolute top-3 right-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
-                                onClick={() => setTrailerMuted((value) => !value)}
+                                onClick={toggleAudio}
                                 aria-label={trailerMuted ? 'Attiva audio' : 'Disattiva audio'}
                             >
                                 {trailerMuted ? (
