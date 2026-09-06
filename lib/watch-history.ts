@@ -200,7 +200,9 @@ export function syncWatchHistoryFromRemote(remote: WatchHistoryEntry[]): WatchHi
         })
     }
 
-    const merged = [...map.values()].sort((a, b) => b.watchedAt - a.watchedAt).slice(0, MAX_ENTRIES)
+    const merged = Array.from(map.values())
+        .sort((a, b) => b.watchedAt - a.watchedAt)
+        .slice(0, MAX_ENTRIES)
     writeAll(merged)
     return merged
 }
