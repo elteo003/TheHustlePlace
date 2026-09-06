@@ -265,13 +265,13 @@ body::-webkit-scrollbar {
 
 .horizontal-scroll {
     touch-action: pan-x;
+    scrollbar-width: none;
 }
 
-@media (hover: none), (pointer: coarse) {
-    .premium-scrollbar {
-        display: none;
-        pointer-events: none;
-    }
+.horizontal-scroll::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
 }
 
 .premium-scrollbar {

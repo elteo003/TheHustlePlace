@@ -236,7 +236,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         )
     }
 
-    const metaVisible = showMeta && !showUpcomingTrailers
+    const showUpcoming = trailerEnded || showUpcomingTrailers
+    const metaVisible = showMeta && !showUpcoming
 
     return (
         <>
@@ -249,14 +250,15 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         className="h-full w-full bg-cover bg-center"
                         style={{
                             backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: 'cover',
                             filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
-                            backgroundSize: showMeta ? '105%' : '108%',
                             backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
                             transform: showMeta ? 'scale(1.02)' : 'scale(1)',
                             transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
                         }}
                     />
-                    {trailer && (
+                    {trailer && !showUpcoming && (
                         <iframe
                             ref={iframeRef}
                             key={trailer}
@@ -353,7 +355,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 </div>
 
                 {/* Upcoming Trailers Section - Mostra solo quando il trailer finisce */}
-                {(trailerEnded || showUpcomingTrailers) && movies.length > 0 && (
+                {showUpcoming && movies.length > 0 && (
                     <>
                         <UpcomingTrailersSection
                             movies={movies}

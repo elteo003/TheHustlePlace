@@ -142,37 +142,41 @@ export async function getMovieDetails(movieId: number): Promise<TMDBMovie> {
     return fetchFromTMDB<TMDBMovie>(`movie/${movieId}`)
 }
 
+function isYouTubePreview(video: TMDBVideo): boolean {
+    return (
+        video.site === 'YouTube' &&
+        (video.type === 'Trailer' || video.type === 'Teaser')
+    )
+}
+
+function hasItalianName(video: TMDBVideo): boolean {
+    return /(^|[^a-z])(ita|italiano|italian)([^a-z]|$)/i.test(video.name ?? '')
+}
+
+function trailerLanguageScore(video: TMDBVideo): number {
+    let score = 0
+    if (video.iso_639_1 === 'it') score += 100
+    if (hasItalianName(video)) score += 80
+    if (video.iso_3166_1 === 'IT') score += 15
+    if (video.type === 'Trailer') score += 10
+    if (video.official) score += 5
+    if (video.iso_639_1 === 'en') score += 1
+    return score
+}
+
 /**
- * Trova il trailer YouTube principale
+ * Trailer YouTube da mostrare: italiano anche se non ufficiale, poi inglese, poi qualunque.
  */
 export function findMainTrailer(videos: TMDBVideo[]): TMDBVideo | null {
-    // Cerca trailer ufficiale in italiano
-    let trailer = videos.find(video =>
-        (video.type === 'Trailer' || video.type === 'Teaser') &&
-        video.official &&
-        video.site === 'YouTube' &&
-        video.iso_639_1 === 'it'
+    const candidates = videos.filter(isYouTubePreview)
+    if (candidates.length === 0) return null
+
+    const italian = candidates.filter(
+        (video) => video.iso_639_1 === 'it' || hasItalianName(video)
     )
+    const pool = italian.length > 0 ? italian : candidates
 
-    // Se non trova in italiano, cerca in inglese
-    if (!trailer) {
-        trailer = videos.find(video =>
-            (video.type === 'Trailer' || video.type === 'Teaser') &&
-            video.official &&
-            video.site === 'YouTube' &&
-            video.iso_639_1 === 'en'
-        )
-    }
-
-    // Se non trova ufficiale, cerca qualsiasi trailer/teaser YouTube
-    if (!trailer) {
-        trailer = videos.find(video =>
-            (video.type === 'Trailer' || video.type === 'Teaser') &&
-            video.site === 'YouTube'
-        )
-    }
-
-    return trailer || null
+    return [...pool].sort((left, right) => trailerLanguageScore(right) - trailerLanguageScore(left))[0] ?? null
 }
 
 /**

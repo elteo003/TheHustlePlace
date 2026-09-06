@@ -1,13 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 
 const MIN_THUMB = 48
 const HIDE_MS = 1000
 
 export function PremiumScrollbar() {
-    const isCoarse = useIsCoarsePointer()
     const thumbRef = useRef<HTMLDivElement>(null)
     const metricsRef = useRef({ top: 0, height: MIN_THUMB, needed: false })
     const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -54,6 +52,7 @@ export function PremiumScrollbar() {
         }
 
         window.addEventListener('scroll', onScroll, { passive: true })
+        window.addEventListener('touchmove', onScroll, { passive: true })
         window.addEventListener('resize', updateThumb)
 
         const ro = new ResizeObserver(updateThumb)
@@ -62,6 +61,7 @@ export function PremiumScrollbar() {
 
         return () => {
             window.removeEventListener('scroll', onScroll)
+            window.removeEventListener('touchmove', onScroll)
             window.removeEventListener('resize', updateThumb)
             ro.disconnect()
             if (hideTimer.current) clearTimeout(hideTimer.current)
@@ -118,7 +118,7 @@ export function PremiumScrollbar() {
         show()
     }
 
-    if (isCoarse || !needed) return null
+    if (!needed) return null
 
     return (
         <div

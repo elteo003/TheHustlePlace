@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { logger } from '@/lib/utils'
+import { findMainTrailer, type TMDBVideo } from '@/lib/tmdb'
 
 export interface TMDBMovie {
     id: number
@@ -28,6 +29,8 @@ export interface TMDBTrailer {
     type: string
     official: boolean
     published_at: string
+    iso_639_1?: string
+    iso_3166_1?: string
 }
 
 export interface TMDBResponse<T> {
@@ -126,7 +129,9 @@ export class TMDBMoviesService {
      * Ottiene i trailer di un film
      */
     async getMovieTrailers(movieId: number): Promise<TMDBTrailerResponse> {
-        return this.makeRequest<TMDBTrailerResponse>(`/movie/${movieId}/videos`)
+        return this.makeRequest<TMDBTrailerResponse>(`/movie/${movieId}/videos`, {
+            include_video_language: 'it,en,null',
+        })
     }
 
     /**
@@ -302,24 +307,10 @@ export class TMDBMoviesService {
      */
     async getMainTrailer(movieId: number): Promise<TMDBTrailer | null> {
         try {
-            const trailers = await this.getMovieTrailers(movieId)
+            const trailers = await this.getMovieVideos(movieId)
+            if (!trailers?.results?.length) return null
 
-            // Cerca trailer ufficiale su YouTube
-            const officialTrailer = trailers.results.find(trailer =>
-                trailer.site === 'YouTube' &&
-                (trailer.type === 'Trailer' || trailer.type === 'Teaser') &&
-                trailer.official
-            )
-
-            if (officialTrailer) return officialTrailer
-
-            // Fallback al primo trailer/teaser disponibile
-            const anyTrailer = trailers.results.find(trailer =>
-                trailer.site === 'YouTube' &&
-                (trailer.type === 'Trailer' || trailer.type === 'Teaser')
-            )
-
-            return anyTrailer || null
+            return findMainTrailer(trailers.results as TMDBVideo[]) as TMDBTrailer | null
         } catch (error) {
             logger.error('Errore nel recupero trailer', { movieId, error })
             return null

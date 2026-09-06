@@ -95,14 +95,14 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
 
     return (
         <div 
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-6"
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent p-6"
             onMouseEnter={sectionMouseEnter}
             onMouseLeave={sectionMouseLeave}
             style={{ zIndex: 10 }}
         >
-            <div className="w-full md:container md:mx-auto">
+            <div className="container mx-auto">
                 {/* Countdown */}
-                <div className="mb-4 flex items-center justify-center px-4 md:px-0">
+                <div className="mb-4 flex items-center justify-center">
                     <div className="flex items-center gap-2 text-white">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -114,7 +114,8 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                 </div>
 
                 {/* Movies Grid */}
-                <CustomScrollbar className="[&_.horizontal-scroll]:mx-0 [&_.horizontal-scroll]:px-0" containerClassName="gap-2 md:gap-4">
+                <div className="relative overflow-hidden">
+                <CustomScrollbar className="[&_.horizontal-scroll]:mx-0 [&_.horizontal-scroll]:px-0 [&_.horizontal-scroll]:pb-0" containerClassName="gap-4">
                     {upcomingMovies.map(({ movie, originalIndex }, index) => {
                         const title = movie.title || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path
@@ -123,7 +124,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                         return (
                             <div
                                 key={movie.id}
-                                className="h-36 w-[92vw] flex-shrink-0 cursor-pointer overflow-hidden rounded-none transition-transform duration-300 ease-out hover:z-10 md:h-28 md:w-48 md:rounded-lg"
+                                className="h-28 w-48 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 ease-out hover:z-10"
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
@@ -144,7 +145,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                         alt={title}
                                         fill
                                         className="object-cover"
-                                        sizes="(max-width: 768px) 92vw, 192px"
+                                        sizes="192px"
                                     />
 
                                     <div className={`absolute inset-0 transition-colors duration-300 ${isMovieHovered ? 'bg-black/20' : 'bg-black/40 group-hover:bg-black/20'
@@ -180,6 +181,15 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                         )
                     })}
                 </CustomScrollbar>
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-black from-35% to-transparent"
+                />
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-black from-35% to-transparent"
+                />
+                </div>
             </div>
         </div>
     )

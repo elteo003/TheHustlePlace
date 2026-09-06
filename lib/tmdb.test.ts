@@ -25,6 +25,24 @@ describe('findMainTrailer', () => {
         expect(selected?.key).toBe('it-official')
     })
 
+    it('prende l\'italiano non ufficiale prima dell\'inglese ufficiale', () => {
+        const selected = findMainTrailer([
+            video({ key: 'en-official', iso_639_1: 'en', official: true }),
+            video({ key: 'it-unofficial', iso_639_1: 'it', official: false }),
+        ])
+
+        expect(selected?.key).toBe('it-unofficial')
+    })
+
+    it('riconosce l\'italiano dal titolo anche se iso_639_1 è inglese', () => {
+        const selected = findMainTrailer([
+            video({ key: 'en-official', iso_639_1: 'en', name: 'Official Trailer' }),
+            video({ key: 'it-named', iso_639_1: 'en', name: 'Trailer Ufficiale Italiano' }),
+        ])
+
+        expect(selected?.key).toBe('it-named')
+    })
+
     it('ignora i clip non YouTube e i tipi diversi da trailer/teaser', () => {
         const selected = findMainTrailer([
             video({ key: 'clip', iso_639_1: 'it', type: 'Clip' }),
