@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Play, Info, Volume2, VolumeX } from 'lucide-react'
 import Image from 'next/image'
@@ -37,10 +37,22 @@ export function TrailerDock({
     const { trailerKey, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
         itemType,
-        180
+        0
     )
     const [muted, setMuted] = useState(true)
     const [ready, setReady] = useState(false)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+
+    const kickPlayback = () => {
+        const frame = iframeRef.current?.contentWindow
+        if (!frame) return
+        ;['mute', 'playVideo'].forEach((func) => {
+            frame.postMessage(
+                JSON.stringify({ event: 'command', func, args: [] }),
+                'https://www.youtube.com'
+            )
+        })
+    }
 
     useEffect(() => {
         setMuted(true)
@@ -100,14 +112,18 @@ export function TrailerDock({
                         )}
                         {embedUrl && (
                             <iframe
+                                ref={iframeRef}
                                 key={`${trailerKey}-${muted ? 'm' : 'u'}`}
                                 src={embedUrl}
                                 title={`Trailer ${title}`}
                                 className={`pointer-events-none absolute inset-0 h-full w-full border-0 transition-opacity duration-300 ease-out ${
                                     ready ? 'opacity-100' : 'opacity-0'
                                 }`}
-                                allow="autoplay; encrypted-media"
-                                onLoad={() => setReady(true)}
+                                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                                onLoad={() => {
+                                    setReady(true)
+                                    kickPlayback()
+                                }}
                             />
                         )}
                         {isLoading && !ready && (

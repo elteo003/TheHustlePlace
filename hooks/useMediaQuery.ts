@@ -17,10 +17,16 @@ export function useMediaQuery(query: string): boolean {
     return matches
 }
 
-export function useIsCoarsePointer(): boolean {
-    const coarse = useMediaQuery('(pointer: coarse)')
-    const noHover = useMediaQuery('(hover: none)')
+export function resolveIsCoarsePointer(coarse: boolean, noHover: boolean): boolean {
     return coarse || noHover
+}
+
+/** Telefono/dito. Non usare la presenza di un mouse per spegnere il dock. */
+export function useIsCoarsePointer(): boolean {
+    return resolveIsCoarsePointer(
+        useMediaQuery('(pointer: coarse)'),
+        useMediaQuery('(hover: none)')
+    )
 }
 
 export function useReducedMotion(): boolean {

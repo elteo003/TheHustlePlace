@@ -331,7 +331,9 @@ export class TMDBMoviesService {
      */
     async getMovieVideos(movieId: number): Promise<TMDBTrailerResponse | null> {
         try {
-            const response = await this.makeRequest(`/movie/${movieId}/videos`)
+            const response = await this.makeRequest(`/movie/${movieId}/videos`, {
+                include_video_language: 'it,en,null',
+            })
             return response as TMDBTrailerResponse
         } catch (error) {
             logger.error('Errore nel recupero video film', { movieId, error })
@@ -344,7 +346,9 @@ export class TMDBMoviesService {
      */
     async getTVShowVideos(tvShowId: number): Promise<TMDBTrailerResponse | null> {
         try {
-            const response = await this.makeRequest(`/tv/${tvShowId}/videos`)
+            const response = await this.makeRequest(`/tv/${tvShowId}/videos`, {
+                include_video_language: 'it,en,null',
+            })
             return response as TMDBTrailerResponse
         } catch (error) {
             logger.error('Errore nel recupero video serie TV', { tvShowId, error })

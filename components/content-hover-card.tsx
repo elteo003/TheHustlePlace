@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { Play, Info, Star } from 'lucide-react'
+import { Play, Info, Star, Volume2, VolumeX } from 'lucide-react'
 import { PlayMark } from '@/components/ui/play-mark'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
-import { useTrailerPreview } from '@/hooks/useTrailerPreview'
+import { buildTrailerEmbedUrl, prefetchTrailerKey, useTrailerPreview } from '@/hooks/useTrailerPreview'
 import { useIsCoarsePointer, useReducedMotion } from '@/hooks/useMediaQuery'
 import { ContentActionSheet } from '@/components/ui/content-action-sheet'
 import { PosterTransition } from '@/components/ui/poster-transition'
@@ -59,6 +59,7 @@ export function ContentHoverCard({
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
     const [trailerReady, setTrailerReady] = useState(false)
+    const [trailerMuted, setTrailerMuted] = useState(true)
 
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
@@ -67,11 +68,12 @@ export function ContentHoverCard({
     const rating = item.vote_average > 0 ? item.vote_average.toFixed(1) : null
     const previewImage = getContentPosterUrl(item.backdrop_path || item.poster_path, 'original')
 
-    const { trailerUrl, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
+    const { trailerKey, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
         itemType,
         400
     )
+    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, trailerMuted) : null
 
     expandedRef.current = isExpanded
 
@@ -87,6 +89,7 @@ export function ContentHoverCard({
     const handlePreviewExit = () => {
         if (expandedRef.current) return
         setTrailerReady(false)
+        setTrailerMuted(true)
         resetPreview()
     }
 
@@ -147,6 +150,7 @@ export function ContentHoverCard({
     const handleTap = () => {
         if (isTouch) {
             if (onPeek) {
+                void prefetchTrailerKey(itemId, itemType)
                 onPeek()
                 return
             }
@@ -200,6 +204,7 @@ export function ContentHoverCard({
                         />
                         {trailerUrl && (
                             <iframe
+                                key={`${trailerKey}-${trailerMuted ? 'm' : 'u'}`}
                                 src={trailerUrl}
                                 className={`pointer-events-none transition-opacity duration-500 ease-out ${
                                     trailerReady ? 'opacity-100' : 'opacity-0'
@@ -223,6 +228,20 @@ export function ContentHoverCard({
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                                 <Spinner size="sm" />
                             </div>
+                        )}
+                        {trailerKey && (
+                            <button
+                                type="button"
+                                className="absolute top-3 right-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-white/20"
+                                onClick={() => setTrailerMuted((value) => !value)}
+                                aria-label={trailerMuted ? 'Attiva audio' : 'Disattiva audio'}
+                            >
+                                {trailerMuted ? (
+                                    <VolumeX className="h-4 w-4" />
+                                ) : (
+                                    <Volume2 className="h-4 w-4" />
+                                )}
+                            </button>
                         )}
 
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />

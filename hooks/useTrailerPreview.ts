@@ -14,7 +14,7 @@ export function buildTrailerEmbedUrl(videoKey: string, muted: boolean): string {
     return `${getYouTubeEmbedUrl(videoKey, true, muted, true)}&iv_load_policy=3&playsinline=1&fs=0`
 }
 
-async function fetchTrailerKey(id: number, type: ContentType): Promise<string | null> {
+export async function prefetchTrailerKey(id: number, type: ContentType): Promise<string | null> {
     const key = cacheKey(id, type)
     const cached = trailerCache.get(key)
     if (cached) return cached
@@ -69,20 +69,25 @@ export function useTrailerPreview(id: number, type: ContentType, delayMs = 700) 
 
     const scheduleTrailerLoad = useCallback(() => {
         clearScheduledLoad()
-        timeoutRef.current = setTimeout(async () => {
+        const run = async () => {
             setIsLoading(true)
             try {
-                const key = await fetchTrailerKey(id, type)
+                const key = await prefetchTrailerKey(id, type)
                 setTrailerKey(key)
             } catch {
                 setTrailerKey(null)
             } finally {
                 setIsLoading(false)
             }
-        }, delayMs)
+        }
+        if (delayMs <= 0) {
+            void run()
+            return
+        }
+        timeoutRef.current = setTimeout(run, delayMs)
     }, [clearScheduledLoad, delayMs, id, type])
 
-    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, false) : null
+    const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, true) : null
 
     return {
         trailerKey,

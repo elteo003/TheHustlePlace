@@ -48,15 +48,13 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
                     )
                 })}
             </CustomScrollbar>
-            {isTouch && (
-                <TrailerDock
-                    item={peekItem}
-                    type={type}
-                    onClose={onClose}
-                    onPlay={onPlay}
-                    onDetails={onDetails}
-                />
-            )}
+            <TrailerDock
+                item={isTouch ? peekItem : null}
+                type={type}
+                onClose={onClose}
+                onPlay={onPlay}
+                onDetails={onDetails}
+            />
         </div>
     )
 }

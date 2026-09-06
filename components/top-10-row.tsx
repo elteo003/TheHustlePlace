@@ -77,15 +77,13 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                 )
             })}
             </CustomScrollbar>
-            {isTouch && (
-                <TrailerDock
-                    item={peekItem}
-                    type={type}
-                    onClose={onClose}
-                    onPlay={onPlay}
-                    onDetails={onDetails}
-                />
-            )}
+            <TrailerDock
+                item={isTouch ? peekItem : null}
+                type={peekItem ? resolveContentType(peekItem, type) : type}
+                onClose={onClose}
+                onPlay={onPlay}
+                onDetails={onDetails}
+            />
         </div>
     )
 }
