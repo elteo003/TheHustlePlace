@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveVixsrcHls } from '@/services/vixsrc-hls.service'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
+export const preferredRegion = ['mxp1', 'fra1', 'cdg1']
+export const maxDuration = 60
 
 export async function GET(request: NextRequest) {
     const tmdbId = Number(request.nextUrl.searchParams.get('tmdbId'))
