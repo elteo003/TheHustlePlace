@@ -17,6 +17,36 @@ export function isAllowedHlsUrl(raw: string): boolean {
     }
 }
 
+export function unwrapJinaBody(text: string): string {
+    const marker = 'Markdown Content:'
+    const index = text.indexOf(marker)
+    return index >= 0 ? text.slice(index + marker.length).trim() : text
+}
+
+export function unwrapAllOriginsBody(text: string): string {
+    const trimmed = text.trim()
+    if (!trimmed.startsWith('{')) return text
+    try {
+        const json = JSON.parse(trimmed) as { contents?: unknown }
+        return typeof json.contents === 'string' ? json.contents : text
+    } catch {
+        return text
+    }
+}
+
+export function parseVixsrcApiSrc(text: string): string | null {
+    const body = unwrapJinaBody(unwrapAllOriginsBody(text))
+    const match = body.match(/\{"src":"([^"]+)"/)
+    if (match?.[1]) return match[1].replace(/\\\//g, '/')
+    try {
+        const json = JSON.parse(body) as { src?: unknown }
+        if (typeof json.src === 'string' && json.src.startsWith('/')) return json.src
+    } catch {
+        return null
+    }
+    return null
+}
+
 export function parseVixsrcEmbedHtml(html: string): VixsrcMasterPlaylist | null {
     const token = html.match(/['"]token['"]\s*:\s*['"]([^'"]+)['"]/)?.[1]
     const expires = html.match(/['"]expires['"]\s*:\s*['"]([^'"]+)['"]/)?.[1]

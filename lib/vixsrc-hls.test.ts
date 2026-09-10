@@ -5,6 +5,7 @@ import {
     classifyHlsRef,
     isAllowedHlsUrl,
     isM3u8Playlist,
+    parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
     rewriteM3u8,
     rewriteM3u8Browser,
@@ -26,6 +27,14 @@ const embedHtml = `
         window.canPlayFHD = true
         <script>(function(s){s.dataset.zone='10874703',s.src='https://spbgc.com/tag.min.js'})</script>
 `
+
+describe('parseVixsrcApiSrc', () => {
+    it('legge src da JSON, Jina e AllOrigins', () => {
+        expect(parseVixsrcApiSrc('{"src":"\\/embed\\/1?token=a"}')).toBe('/embed/1?token=a')
+        expect(parseVixsrcApiSrc('Title:\n\nMarkdown Content:\n{"src":"\\/embed\\/2"}')).toBe('/embed/2')
+        expect(parseVixsrcApiSrc('{"contents":"{\\"src\\":\\"/embed/3\\"}"}')).toBe('/embed/3')
+    })
+})
 
 describe('parseVixsrcEmbedHtml', () => {
     it('legge token, playlist e id senza eseguire lo script ads', () => {

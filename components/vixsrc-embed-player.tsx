@@ -90,10 +90,11 @@ export function VixsrcEmbedPlayer({
                 const response = await fetch(`/api/player/resolve?${query.toString()}`)
                 const payload = (await response.json()) as {
                     success?: boolean
+                    error?: string
                     data?: { master?: string; parts?: Record<string, string>; videoId?: number }
                 }
                 if (!response.ok || !payload.success || !payload.data?.master) {
-                    throw new Error('Stream non disponibile')
+                    throw new Error(payload.error || 'Stream non disponibile')
                 }
                 if (cancelled) return
 
@@ -142,11 +143,11 @@ export function VixsrcEmbedPlayer({
                 } else {
                     throw new Error('HLS non supportato')
                 }
-            } catch {
+            } catch (error) {
                 if (cancelled) return
                 window.clearTimeout(timeout)
                 setError(true)
-                toast.error('Impossibile caricare il player')
+                toast.error(error instanceof Error ? error.message : 'Impossibile caricare il player')
             }
         }
 

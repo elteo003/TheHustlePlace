@@ -6,8 +6,11 @@ import {
     bytesToBase64,
     classifyHlsRef,
     isAllowedHlsUrl,
+    parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
     rewriteM3u8Browser,
+    unwrapAllOriginsBody,
+    unwrapJinaBody,
 } from '@/lib/vixsrc-hls'
 
 export interface ResolvedVixsrcHls {
@@ -28,6 +31,8 @@ export const VIXSRC_FETCH_HEADERS = {
     'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8',
 } as const
 
+type FetchMode = 'direct' | 'allorigins' | 'jina'
+
 export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
     const headers = new Headers(VIXSRC_FETCH_HEADERS)
     if (extra) {
@@ -36,37 +41,69 @@ export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
     return headers
 }
 
-function mergeCookies(existing: string, setCookies: string[]): string {
-    const map = new Map<string, string>()
-    for (const pair of existing.split(';')) {
-        const trimmed = pair.trim()
-        if (!trimmed) continue
-        const eq = trimmed.indexOf('=')
-        if (eq > 0) map.set(trimmed.slice(0, eq), trimmed.slice(eq + 1))
-    }
-    for (const raw of setCookies) {
-        const [nv] = raw.split(';')
-        const eq = nv.indexOf('=')
-        if (eq > 0) map.set(nv.slice(0, eq).trim(), nv.slice(eq + 1).trim())
-    }
-    const cookies: string[] = []
-    map.forEach((value, key) => {
-        cookies.push(`${key}=${value}`)
-    })
-    return cookies.join('; ')
-}
-
 class VixsrcSession {
-    private cookie = ''
+    private mode: FetchMode | null = null
 
     async fetch(url: string, extra?: HeadersInit): Promise<Response> {
-        const headers = vixsrcRequestHeaders(extra)
-        if (this.cookie) headers.set('Cookie', this.cookie)
-        const response = await fetch(url, { headers, cache: 'no-store', redirect: 'follow' })
-        const setCookies =
-            typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : []
-        if (setCookies.length) this.cookie = mergeCookies(this.cookie, setCookies)
-        return response
+        if (!this.mode) {
+            this.mode = await this.pickMode(url, extra)
+            logger.info('Transport VixSrc scelto', { mode: this.mode })
+        }
+        return this.fetchMode(this.mode, url, extra)
+    }
+
+    private async pickMode(url: string, extra?: HeadersInit): Promise<FetchMode> {
+        const modes: FetchMode[] = ['direct', 'allorigins', 'jina']
+        let lastError = 'API VixSrc non disponibile (403)'
+        for (let i = 0; i < modes.length; i++) {
+            const mode = modes[i]
+            try {
+                const response = await this.fetchMode(mode, url, extra)
+                if (response.ok) return mode
+                lastError = `API VixSrc non disponibile (${response.status}, ${mode})`
+            } catch (error) {
+                lastError = error instanceof Error ? error.message : lastError
+            }
+        }
+        throw new Error(lastError)
+    }
+
+    private async fetchMode(mode: FetchMode, url: string, extra?: HeadersInit): Promise<Response> {
+        if (mode === 'direct') {
+            return fetch(url, {
+                headers: vixsrcRequestHeaders(extra),
+                cache: 'no-store',
+                redirect: 'follow',
+            })
+        }
+        if (mode === 'allorigins') {
+            const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            const response = await fetch(proxy, {
+                cache: 'no-store',
+                redirect: 'follow',
+                signal: AbortSignal.timeout(20000),
+            })
+            if (!response.ok) return response
+            const buffer = await response.arrayBuffer()
+            return new Response(buffer, {
+                status: 200,
+                headers: { 'content-type': response.headers.get('content-type') || 'application/octet-stream' },
+            })
+        }
+        const jina = await fetch(`https://r.jina.ai/${url}`, {
+            headers: { 'X-Return-Format': extra && String(extra).includes('json') ? 'text' : 'html' },
+            cache: 'no-store',
+            signal: AbortSignal.timeout(20000),
+        })
+        const raw = await jina.text()
+        if (!jina.ok) {
+            return new Response(raw, { status: jina.status })
+        }
+        const body = unwrapJinaBody(unwrapAllOriginsBody(raw))
+        if (body.includes('AssertionFailureError') || body.includes('unexpected content type')) {
+            throw new Error('Manifest VixSrc non disponibile (jina)')
+        }
+        return new Response(body, { status: 200, headers: { 'content-type': 'text/plain' } })
     }
 }
 
@@ -94,33 +131,23 @@ export async function resolveVixsrcHls(input: {
     if (cached?.master) return cached
 
     const session = new VixsrcSession()
-    await session.fetch(`${VIXSRC_BASE_URL}/`, { Accept: 'text/html' }).catch(() => undefined)
-
     const apiPath =
         input.type === 'movie'
             ? `/api/movie/${input.tmdbId}?lang=${encodeURIComponent(lang)}`
             : `/api/tv/${input.tmdbId}/${input.season}/${input.episode}?lang=${encodeURIComponent(lang)}`
 
-    const apiResponse = await readOk(
-        await session.fetch(`${VIXSRC_BASE_URL}${apiPath}`, { Accept: 'application/json' }),
-        'API VixSrc'
-    )
-
-    const apiJson = (await apiResponse.json()) as { src?: unknown }
-    if (typeof apiJson.src !== 'string' || !apiJson.src.startsWith('/')) {
+    const apiResponse = await readOk(await session.fetch(`${VIXSRC_BASE_URL}${apiPath}`), 'API VixSrc')
+    const src = parseVixsrcApiSrc(await apiResponse.text())
+    if (!src) {
         throw new Error('Risposta API VixSrc senza embed')
     }
 
-    const embedUrl = new URL(apiJson.src, VIXSRC_BASE_URL)
+    const embedUrl = new URL(src, VIXSRC_BASE_URL)
     if (embedUrl.origin !== new URL(VIXSRC_BASE_URL).origin) {
         throw new Error('Embed VixSrc su origin non attesa')
     }
 
-    const embedResponse = await readOk(
-        await session.fetch(embedUrl.toString(), { Accept: 'text/html', Referer: `${VIXSRC_BASE_URL}/` }),
-        'Embed VixSrc'
-    )
-
+    const embedResponse = await readOk(await session.fetch(embedUrl.toString()), 'Embed VixSrc')
     const parsed = parseVixsrcEmbedHtml(await embedResponse.text())
     if (!parsed) {
         throw new Error('Playlist VixSrc non trovata nell\'embed')
@@ -166,15 +193,15 @@ async function assembleBrowserStream(
         const url = pending.shift()
         if (!url || fetched.has(url)) continue
 
-        const response = await readOk(await session.fetch(url, { Referer: `${VIXSRC_BASE_URL}/` }), 'Manifest VixSrc')
+        const response = await readOk(await session.fetch(url), 'Manifest VixSrc')
         const body = await response.text()
+        if (!body.trimStart().startsWith('#EXTM3U') && !body.includes('#EXT')) {
+            throw new Error('Manifest VixSrc non valido')
+        }
         if (!keyUri) {
             const keyUrl = findKeyUrl(body, url)
             if (keyUrl) {
-                const keyResponse = await readOk(
-                    await session.fetch(keyUrl, { Referer: `${VIXSRC_BASE_URL}/` }),
-                    'Chiave VixSrc'
-                )
+                const keyResponse = await readOk(await session.fetch(keyUrl), 'Chiave VixSrc')
                 keyUri = `data:application/octet-stream;base64,${bytesToBase64(new Uint8Array(await keyResponse.arrayBuffer()))}`
             }
         }
