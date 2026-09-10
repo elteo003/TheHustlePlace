@@ -2,6 +2,7 @@ import { cache } from '@/utils/cache'
 import { logger } from '@/utils/logger'
 import {
     VIXSRC_PART_PREFIX,
+    buildHomeRelayFetchUrl,
     buildVixsrcPlaylistUrl,
     bytesToBase64,
     classifyHlsRef,
@@ -31,9 +32,11 @@ export const VIXSRC_FETCH_HEADERS = {
     'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8',
 } as const
 
-type FetchMode = 'direct' | 'allorigins' | 'jina'
+type FetchMode = 'home' | 'direct' | 'allorigins' | 'jina'
 
-const FETCH_MODES: FetchMode[] = ['direct', 'allorigins', 'jina']
+function fetchModes(): FetchMode[] {
+    return process.env.VIXSRC_RELAY_URL ? ['home', 'direct', 'allorigins', 'jina'] : ['direct', 'allorigins', 'jina']
+}
 
 export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
     const headers = new Headers(VIXSRC_FETCH_HEADERS)
@@ -68,6 +71,20 @@ class VixsrcSession {
     }
 
     private async fetchMode(url: string, extra?: HeadersInit): Promise<Response> {
+        if (this.mode === 'home') {
+            const relay = process.env.VIXSRC_RELAY_URL
+            const token = process.env.VIXSRC_RELAY_TOKEN
+            const proxied = relay ? buildHomeRelayFetchUrl(relay, url) : null
+            if (!relay || !token || !proxied) {
+                return new Response('Relay di casa non configurato', { status: 503 })
+            }
+            return fetch(proxied, {
+                headers: { 'x-relay-token': token },
+                cache: 'no-store',
+                redirect: 'follow',
+                signal: AbortSignal.timeout(25000),
+            })
+        }
         if (this.mode === 'direct') {
             return fetch(url, {
                 headers: vixsrcRequestHeaders(extra),
@@ -129,8 +146,9 @@ export async function resolveVixsrcHls(input: {
     const apiUrl = `${VIXSRC_BASE_URL}${apiPath}`
 
     let lastError = 'API VixSrc non disponibile (403)'
-    for (let i = 0; i < FETCH_MODES.length; i++) {
-        const mode = FETCH_MODES[i]
+    const modes = fetchModes()
+    for (let i = 0; i < modes.length; i++) {
+        const mode = modes[i]
         const session = new VixsrcSession(mode)
         try {
             const stream = await resolveWithSession(session, apiUrl, lang)

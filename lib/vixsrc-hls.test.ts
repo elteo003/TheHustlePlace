@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     VIXSRC_PART_PREFIX,
+    buildHomeRelayFetchUrl,
     buildVixsrcPlaylistUrl,
     classifyHlsRef,
     isAllowedHlsUrl,
@@ -72,6 +73,15 @@ describe('buildVixsrcPlaylistUrl', () => {
         expect(parsed.searchParams.get('expires')).toBe('1794259445')
         expect(parsed.searchParams.get('h')).toBe('1')
         expect(parsed.searchParams.get('lang')).toBe('it')
+    })
+})
+
+describe('buildHomeRelayFetchUrl', () => {
+    it('firma solo host VixSrc verso il relay di casa', () => {
+        expect(buildHomeRelayFetchUrl('https://relay.example', 'https://vixsrc.to/api/movie/1')).toBe(
+            'https://relay.example/fetch?u=' + encodeURIComponent('https://vixsrc.to/api/movie/1')
+        )
+        expect(buildHomeRelayFetchUrl('https://relay.example', 'https://spbgc.com/x')).toBeNull()
     })
 })
 

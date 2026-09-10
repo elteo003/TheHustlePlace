@@ -12,6 +12,38 @@ import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 55000
+const HOME_RELAY_URL =
+    process.env.NEXT_PUBLIC_VIXSRC_RELAY_URL || 'https://strength-estimates-calculations-said.trycloudflare.com'
+
+type PlaybackPayload = {
+    master?: string
+    parts?: Record<string, string>
+    videoId?: number
+    error?: string
+}
+
+async function readResolve(response: Response): Promise<PlaybackPayload> {
+    const json = (await response.json()) as {
+        success?: boolean
+        error?: string
+        data?: { master?: string; parts?: Record<string, string>; videoId?: number }
+    }
+    if (!response.ok || !json.success || !json.data?.master) {
+        return { error: json.error || `HTTP ${response.status}` }
+    }
+    return json.data
+}
+
+async function resolvePlayback(query: URLSearchParams): Promise<PlaybackPayload> {
+    try {
+        const home = await fetch(`${HOME_RELAY_URL}/resolve?${query.toString()}`)
+        const payload = await readResolve(home)
+        if (payload.master) return payload
+    } catch {
+        // Il resolve su Vercel resta il fallback se la ZimaBoard non risponde.
+    }
+    return readResolve(await fetch(`/api/player/resolve?${query.toString()}`))
+}
 
 interface VixsrcEmbedPlayerProps {
     tmdbId: number
@@ -87,24 +119,19 @@ export function VixsrcEmbedPlayer({
 
         const start = async () => {
             try {
-                const response = await fetch(`/api/player/resolve?${query.toString()}`)
-                const payload = (await response.json()) as {
-                    success?: boolean
-                    error?: string
-                    data?: { master?: string; parts?: Record<string, string>; videoId?: number }
-                }
-                if (!response.ok || !payload.success || !payload.data?.master) {
+                const payload = await resolvePlayback(query)
+                if (!payload.master) {
                     throw new Error(payload.error || 'Stream non disponibile')
                 }
                 if (cancelled) return
 
                 const source = createVixsrcBrowserSource({
-                    master: payload.data.master,
-                    parts: payload.data.parts ?? {},
+                    master: payload.master,
+                    parts: payload.parts ?? {},
                 })
                 revokeSource = source.revoke
                 const playlist = source.url
-                const videoId = payload.data.videoId
+                const videoId = payload.videoId
                 const onReady = () => {
                     if (cancelled) return
                     window.clearTimeout(timeout)

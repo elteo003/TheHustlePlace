@@ -17,6 +17,17 @@ export function isAllowedHlsUrl(raw: string): boolean {
     }
 }
 
+export function buildHomeRelayFetchUrl(relayBase: string, target: string): string | null {
+    if (!isAllowedHlsUrl(target)) return null
+    try {
+        const base = new URL(relayBase)
+        if (base.protocol !== 'https:' && base.protocol !== 'http:') return null
+        return `${base.origin}/fetch?u=${encodeURIComponent(target)}`
+    } catch {
+        return null
+    }
+}
+
 export function decodeHtmlEntities(text: string): string {
     return text
         .replace(/&amp;/g, '&')

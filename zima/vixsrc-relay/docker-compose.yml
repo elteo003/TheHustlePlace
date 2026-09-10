@@ -1,0 +1,22 @@
+services:
+  relay:
+    image: python:3.12-alpine
+    container_name: hustle-vixsrc-relay
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      RELAY_TOKEN: ${RELAY_TOKEN}
+      PORT: "8787"
+    volumes:
+      - ./relay.py:/app/relay.py:ro
+    command: python /app/relay.py
+    ports:
+      - "8787:8787"
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: hustle-vixsrc-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://relay:8787
+    depends_on:
+      - relay
