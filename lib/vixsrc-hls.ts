@@ -76,3 +76,66 @@ export function isM3u8Playlist(contentType: string, body: string): boolean {
     if (type.includes('mpegurl') || type.includes('m3u8')) return true
     return body.trimStart().startsWith('#EXTM3U')
 }
+
+export const VIXSRC_PART_PREFIX = '__PART__'
+
+export type HlsRefKind = 'cdn' | 'playlist' | 'key' | 'drop'
+
+export function classifyHlsRef(absolute: string): HlsRefKind {
+    if (!isAllowedHlsUrl(absolute)) return 'drop'
+    const url = new URL(absolute)
+    if (url.hostname.endsWith('vix-content.net')) return 'cdn'
+    if (url.pathname.includes('/storage/') || url.pathname.endsWith('.key')) return 'key'
+    return 'playlist'
+}
+
+export function rewriteM3u8Browser(
+    body: string,
+    sourceUrl: string,
+    resolveRef: (absolute: string, kind: Exclude<HlsRefKind, 'drop'>) => string
+): string {
+    return body
+        .split(/\r?\n/)
+        .map((line) => {
+            const trimmed = line.trim()
+            if (!trimmed) return line
+            if (trimmed.startsWith('#')) {
+                return line.replace(/URI="([^"]+)"/gi, (_match, uri: string) => {
+                    const absolute = new URL(uri, sourceUrl).toString()
+                    const kind = classifyHlsRef(absolute)
+                    if (kind === 'drop') return 'URI=""'
+                    return `URI="${resolveRef(absolute, kind)}"`
+                })
+            }
+            const absolute = resolvePlaylistRef(trimmed, sourceUrl)
+            if (!absolute) return ''
+            const kind = classifyHlsRef(absolute)
+            if (kind === 'drop') return ''
+            return resolveRef(absolute, kind)
+        })
+        .join('\n')
+}
+
+export function bytesToBase64(bytes: Uint8Array): string {
+    let binary = ''
+    for (const byte of bytes) binary += String.fromCharCode(byte)
+    return btoa(binary)
+}
+
+export function createVixsrcBrowserSource(input: { master: string; parts: Record<string, string> }) {
+    const created: string[] = []
+    let master = input.master
+    for (const [id, text] of Object.entries(input.parts)) {
+        const url = URL.createObjectURL(new Blob([text], { type: 'application/vnd.apple.mpegurl' }))
+        created.push(url)
+        master = master.split(`${VIXSRC_PART_PREFIX}${id}.m3u8`).join(url)
+    }
+    const masterUrl = URL.createObjectURL(new Blob([master], { type: 'application/vnd.apple.mpegurl' }))
+    created.push(masterUrl)
+    return {
+        url: masterUrl,
+        revoke: () => {
+            for (const url of created) URL.revokeObjectURL(url)
+        },
+    }
+}

@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import { ContentType } from '@/lib/content-navigation'
 import { HLS_CONFIG } from '@/utils/hls-config'
+import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 30000
@@ -67,6 +68,7 @@ export function VixsrcEmbedPlayer({
         if (!video) return
 
         let cancelled = false
+        let revokeSource: (() => void) | undefined
         const timeout = window.setTimeout(() => {
             if (!cancelled) {
                 setError(true)
@@ -88,14 +90,19 @@ export function VixsrcEmbedPlayer({
                 const response = await fetch(`/api/player/resolve?${query.toString()}`)
                 const payload = (await response.json()) as {
                     success?: boolean
-                    data?: { playlist?: string; videoId?: number }
+                    data?: { master?: string; parts?: Record<string, string>; videoId?: number }
                 }
-                if (!response.ok || !payload.success || !payload.data?.playlist) {
+                if (!response.ok || !payload.success || !payload.data?.master) {
                     throw new Error('Stream non disponibile')
                 }
                 if (cancelled) return
 
-                const playlist = payload.data.playlist
+                const source = createVixsrcBrowserSource({
+                    master: payload.data.master,
+                    parts: payload.data.parts ?? {},
+                })
+                revokeSource = source.revoke
+                const playlist = source.url
                 const videoId = payload.data.videoId
                 const onReady = () => {
                     if (cancelled) return
@@ -156,6 +163,7 @@ export function VixsrcEmbedPlayer({
             video.onloadedmetadata = null
             hlsRef.current?.destroy()
             hlsRef.current = null
+            revokeSource?.()
             video.removeAttribute('src')
             video.load()
         }

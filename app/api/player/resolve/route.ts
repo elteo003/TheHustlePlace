@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveVixsrcHls } from '@/services/vixsrc-hls.service'
 
+export const runtime = 'edge'
+
 export async function GET(request: NextRequest) {
     const tmdbId = Number(request.nextUrl.searchParams.get('tmdbId'))
     const type = request.nextUrl.searchParams.get('type') === 'tv' ? 'tv' : 'movie'
@@ -25,7 +27,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             success: true,
             data: {
-                playlist: `/api/player/hls?u=${encodeURIComponent(resolved.playlistUrl)}`,
+                master: resolved.master,
+                parts: resolved.parts,
                 videoId: resolved.videoId,
             },
         })

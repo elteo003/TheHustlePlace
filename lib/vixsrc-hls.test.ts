@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+    VIXSRC_PART_PREFIX,
     buildVixsrcPlaylistUrl,
+    classifyHlsRef,
     isAllowedHlsUrl,
     isM3u8Playlist,
     parseVixsrcEmbedHtml,
     rewriteM3u8,
+    rewriteM3u8Browser,
 } from './vixsrc-hls'
 
 const embedHtml = `
@@ -87,6 +90,39 @@ describe('rewriteM3u8', () => {
             `/api/player/hls?u=${encodeURIComponent('https://vixsrc.to/playlist/170060?type=video&rendition=720p')}`
         )
         expect(rewritten).not.toContain('spbgc.com')
+    })
+})
+
+describe('classifyHlsRef', () => {
+    it('separa CDN, playlist, chiave e host esterni', () => {
+        expect(classifyHlsRef('https://sc-u10-01.vix-content.net/hls/a.ts')).toBe('cdn')
+        expect(classifyHlsRef('https://vixsrc.to/playlist/1?type=video')).toBe('playlist')
+        expect(classifyHlsRef('https://vixsrc.to/storage/enc.key')).toBe('key')
+        expect(classifyHlsRef('https://spbgc.com/ad.ts')).toBe('drop')
+    })
+})
+
+describe('rewriteM3u8Browser', () => {
+    it('lascia i segmenti sul CDN, inlinea la chiave e marca le playlist figlie', () => {
+        const source = 'https://vixsrc.to/playlist/170060?type=video'
+        const body = [
+            '#EXTM3U',
+            '#EXT-X-KEY:METHOD=AES-128,URI="https://vixsrc.to/storage/enc.key"',
+            '#EXTINF:8,',
+            'https://sc-u10-01.vix-content.net/hls/0000.ts?token=abc',
+            'https://spbgc.com/ad.ts',
+        ].join('\n')
+
+        const rewritten = rewriteM3u8Browser(body, source, (absolute, kind) => {
+            if (kind === 'cdn') return absolute
+            if (kind === 'key') return 'data:application/octet-stream;base64,QQ=='
+            return `${VIXSRC_PART_PREFIX}p0`
+        })
+
+        expect(rewritten).toContain('URI="data:application/octet-stream;base64,QQ=="')
+        expect(rewritten).toContain('https://sc-u10-01.vix-content.net/hls/0000.ts?token=abc')
+        expect(rewritten).not.toContain('spbgc.com')
+        expect(rewritten).not.toContain('/api/player/hls')
     })
 })
 

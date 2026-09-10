@@ -93,7 +93,7 @@ class CacheService {
 export const cache = new CacheService()
 
 // Cleanup expired cache entries every hour
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
     setInterval(() => {
         cache.cleanup()
     }, 3600000) // 1 hour
