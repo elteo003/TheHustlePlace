@@ -11,7 +11,7 @@ import { HLS_CONFIG } from '@/utils/hls-config'
 import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
-const LOAD_TIMEOUT_MS = 30000
+const LOAD_TIMEOUT_MS = 55000
 
 interface VixsrcEmbedPlayerProps {
     tmdbId: number

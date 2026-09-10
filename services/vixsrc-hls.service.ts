@@ -33,6 +33,8 @@ export const VIXSRC_FETCH_HEADERS = {
 
 type FetchMode = 'direct' | 'allorigins' | 'jina'
 
+const FETCH_MODES: FetchMode[] = ['direct', 'allorigins', 'jina']
+
 export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
     const headers = new Headers(VIXSRC_FETCH_HEADERS)
     if (extra) {
@@ -42,41 +44,38 @@ export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
 }
 
 class VixsrcSession {
-    private mode: FetchMode | null = null
+    constructor(private readonly mode: FetchMode) {}
 
     async fetch(url: string, extra?: HeadersInit): Promise<Response> {
-        if (!this.mode) {
-            this.mode = await this.pickMode(url, extra)
-            logger.info('Transport VixSrc scelto', { mode: this.mode })
-        }
-        return this.fetchMode(this.mode, url, extra)
+        return this.fetchMode(url, extra)
     }
 
-    private async pickMode(url: string, extra?: HeadersInit): Promise<FetchMode> {
-        const modes: FetchMode[] = ['direct', 'allorigins', 'jina']
-        let lastError = 'API VixSrc non disponibile (403)'
-        for (let i = 0; i < modes.length; i++) {
-            const mode = modes[i]
-            try {
-                const response = await this.fetchMode(mode, url, extra)
-                if (response.ok) return mode
-                lastError = `API VixSrc non disponibile (${response.status}, ${mode})`
-            } catch (error) {
-                lastError = error instanceof Error ? error.message : lastError
-            }
+    async fetchText(url: string, extra?: HeadersInit): Promise<string> {
+        const response = await this.fetchMode(url, extra)
+        const text = await response.text()
+        if (!response.ok) {
+            throw new Error(`${this.mode} ${response.status}`)
         }
-        throw new Error(lastError)
+        return text
     }
 
-    private async fetchMode(mode: FetchMode, url: string, extra?: HeadersInit): Promise<Response> {
-        if (mode === 'direct') {
+    async fetchManifest(url: string): Promise<string> {
+        const body = await this.fetchText(url)
+        if (!body.includes('#EXTM3U') && !body.includes('#EXT-X')) {
+            throw new Error(`Manifest VixSrc non valido (${this.mode})`)
+        }
+        return body
+    }
+
+    private async fetchMode(url: string, extra?: HeadersInit): Promise<Response> {
+        if (this.mode === 'direct') {
             return fetch(url, {
                 headers: vixsrcRequestHeaders(extra),
                 cache: 'no-store',
                 redirect: 'follow',
             })
         }
-        if (mode === 'allorigins') {
+        if (this.mode === 'allorigins') {
             const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
             const response = await fetch(proxy, {
                 cache: 'no-store',
@@ -91,7 +90,7 @@ class VixsrcSession {
             })
         }
         const jina = await fetch(`https://r.jina.ai/${url}`, {
-            headers: { 'X-Return-Format': extra && String(extra).includes('json') ? 'text' : 'html' },
+            headers: { 'X-Return-Format': 'html', Accept: 'text/html' },
             cache: 'no-store',
             signal: AbortSignal.timeout(20000),
         })
@@ -101,17 +100,10 @@ class VixsrcSession {
         }
         const body = unwrapJinaBody(unwrapAllOriginsBody(raw))
         if (body.includes('AssertionFailureError') || body.includes('unexpected content type')) {
-            throw new Error('Manifest VixSrc non disponibile (jina)')
+            return new Response(body, { status: 422 })
         }
         return new Response(body, { status: 200, headers: { 'content-type': 'text/plain' } })
     }
-}
-
-async function readOk(response: Response, label: string): Promise<Response> {
-    if (!response.ok) {
-        throw new Error(`${label} non disponibile (${response.status})`)
-    }
-    return response
 }
 
 export async function resolveVixsrcHls(input: {
@@ -130,14 +122,37 @@ export async function resolveVixsrcHls(input: {
     const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
     if (cached?.master) return cached
 
-    const session = new VixsrcSession()
     const apiPath =
         input.type === 'movie'
             ? `/api/movie/${input.tmdbId}?lang=${encodeURIComponent(lang)}`
             : `/api/tv/${input.tmdbId}/${input.season}/${input.episode}?lang=${encodeURIComponent(lang)}`
+    const apiUrl = `${VIXSRC_BASE_URL}${apiPath}`
 
-    const apiResponse = await readOk(await session.fetch(`${VIXSRC_BASE_URL}${apiPath}`), 'API VixSrc')
-    const src = parseVixsrcApiSrc(await apiResponse.text())
+    let lastError = 'API VixSrc non disponibile (403)'
+    for (let i = 0; i < FETCH_MODES.length; i++) {
+        const mode = FETCH_MODES[i]
+        const session = new VixsrcSession(mode)
+        try {
+            const stream = await resolveWithSession(session, apiUrl, lang)
+            await cache.set(cacheKey, stream, { ttl: CACHE_TTL_SECONDS })
+            logger.info('Playlist VixSrc risolta', {
+                tmdbId: input.tmdbId,
+                type: input.type,
+                videoId: stream.videoId,
+                mode,
+            })
+            return stream
+        } catch (error) {
+            lastError = error instanceof Error ? error.message : lastError
+            logger.warn('Transport VixSrc fallito', { mode, error: lastError, tmdbId: input.tmdbId })
+        }
+    }
+
+    throw new Error(lastError)
+}
+
+async function resolveWithSession(session: VixsrcSession, apiUrl: string, lang: string): Promise<ResolvedVixsrcHls> {
+    const src = parseVixsrcApiSrc(await session.fetchText(apiUrl))
     if (!src) {
         throw new Error('Risposta API VixSrc senza embed')
     }
@@ -147,8 +162,8 @@ export async function resolveVixsrcHls(input: {
         throw new Error('Embed VixSrc su origin non attesa')
     }
 
-    const embedResponse = await readOk(await session.fetch(embedUrl.toString()), 'Embed VixSrc')
-    const parsed = parseVixsrcEmbedHtml(await embedResponse.text())
+    const embedHtml = await session.fetchText(embedUrl.toString())
+    const parsed = parseVixsrcEmbedHtml(embedHtml) ?? parseVixsrcEmbedHtml(unwrapJinaBody(embedHtml))
     if (!parsed) {
         throw new Error('Playlist VixSrc non trovata nell\'embed')
     }
@@ -158,10 +173,7 @@ export async function resolveVixsrcHls(input: {
         throw new Error('Playlist VixSrc su host non consentito')
     }
 
-    const stream = await assembleBrowserStream(session, playlistUrl, parsed.videoId)
-    await cache.set(cacheKey, stream, { ttl: CACHE_TTL_SECONDS })
-    logger.info('Playlist VixSrc risolta', { tmdbId: input.tmdbId, type: input.type, videoId: parsed.videoId })
-    return stream
+    return assembleBrowserStream(session, playlistUrl, parsed.videoId)
 }
 
 async function assembleBrowserStream(
@@ -193,15 +205,14 @@ async function assembleBrowserStream(
         const url = pending.shift()
         if (!url || fetched.has(url)) continue
 
-        const response = await readOk(await session.fetch(url), 'Manifest VixSrc')
-        const body = await response.text()
-        if (!body.trimStart().startsWith('#EXTM3U') && !body.includes('#EXT')) {
-            throw new Error('Manifest VixSrc non valido')
-        }
+        const body = await session.fetchManifest(url)
         if (!keyUri) {
             const keyUrl = findKeyUrl(body, url)
             if (keyUrl) {
-                const keyResponse = await readOk(await session.fetch(keyUrl), 'Chiave VixSrc')
+                const keyResponse = await session.fetch(keyUrl)
+                if (!keyResponse.ok) {
+                    throw new Error(`Chiave VixSrc non disponibile (${keyResponse.status})`)
+                }
                 keyUri = `data:application/octet-stream;base64,${bytesToBase64(new Uint8Array(await keyResponse.arrayBuffer()))}`
             }
         }

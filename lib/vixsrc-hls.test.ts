@@ -33,6 +33,11 @@ describe('parseVixsrcApiSrc', () => {
         expect(parseVixsrcApiSrc('{"src":"\\/embed\\/1?token=a"}')).toBe('/embed/1?token=a')
         expect(parseVixsrcApiSrc('Title:\n\nMarkdown Content:\n{"src":"\\/embed\\/2"}')).toBe('/embed/2')
         expect(parseVixsrcApiSrc('{"contents":"{\\"src\\":\\"/embed/3\\"}"}')).toBe('/embed/3')
+        expect(
+            parseVixsrcApiSrc(
+                '<pre>{"src":"\\/embed\\/777603?token=abc&amp;expires=1&amp;lang=it"}</pre>'
+            )
+        ).toBe('/embed/777603?token=abc&expires=1&lang=it')
     })
 })
 

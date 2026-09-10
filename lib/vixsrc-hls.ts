@@ -17,6 +17,15 @@ export function isAllowedHlsUrl(raw: string): boolean {
     }
 }
 
+export function decodeHtmlEntities(text: string): string {
+    return text
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#0?39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+}
+
 export function unwrapJinaBody(text: string): string {
     const marker = 'Markdown Content:'
     const index = text.indexOf(marker)
@@ -37,10 +46,12 @@ export function unwrapAllOriginsBody(text: string): string {
 export function parseVixsrcApiSrc(text: string): string | null {
     const body = unwrapJinaBody(unwrapAllOriginsBody(text))
     const match = body.match(/\{"src":"([^"]+)"/)
-    if (match?.[1]) return match[1].replace(/\\\//g, '/')
+    if (match?.[1]) return decodeHtmlEntities(match[1].replace(/\\\//g, '/'))
     try {
         const json = JSON.parse(body) as { src?: unknown }
-        if (typeof json.src === 'string' && json.src.startsWith('/')) return json.src
+        if (typeof json.src === 'string' && json.src.startsWith('/')) {
+            return decodeHtmlEntities(json.src)
+        }
     } catch {
         return null
     }
