@@ -18,6 +18,11 @@ export const HLS_CONFIG = {
     lowLatencyMode: false,
     backBufferLength: 90,
 
+    // Le playlist arrivano da blob: senza stima alta hls.js parte dal 480p
+    testBandwidth: false,
+    capLevelToPlayerSize: false,
+    abrEwmaDefaultEstimate: 8_000_000,
+
     // Reduce console noise
     verbose: process.env.NODE_ENV === 'development',
 

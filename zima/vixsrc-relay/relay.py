@@ -3,8 +3,10 @@ import json
 import os
 import re
 import ssl
+import time
 from base64 import b64encode
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import BoundedSemaphore, Lock
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, parse_qsl, quote, urljoin, urlparse, urlencode, urlunparse
 from urllib.request import Request, urlopen
@@ -23,6 +25,13 @@ BROWSER_UA = (
 )
 PART_PREFIX = "__PART__"
 SSL_CTX = ssl.create_default_context()
+RESOLVE_LIMIT = max(1, int(os.environ.get("RESOLVE_LIMIT", "6")))
+CACHE_TTL = max(1, int(os.environ.get("RESOLVE_CACHE_TTL", "120")))
+RESOLVE_SEM = BoundedSemaphore(RESOLVE_LIMIT)
+CACHE_LOCK = Lock()
+INFLIGHT_LOCK = Lock()
+CACHE: dict[tuple, tuple[float, dict]] = {}
+INFLIGHT = 0
 
 
 def host_allowed(raw: str) -> bool:
@@ -174,6 +183,35 @@ def assemble(master_url: str, video_id: int | None) -> dict:
 
 
 def resolve_title(tmdb_id: int, kind: str, season: int | None, episode: int | None, lang: str) -> dict:
+    cache_key = (tmdb_id, kind, season, episode, lang)
+    now = time.time()
+    with CACHE_LOCK:
+        hit = CACHE.get(cache_key)
+        if hit and hit[0] > now:
+            return hit[1]
+    if not RESOLVE_SEM.acquire(timeout=40):
+        raise RuntimeError("relay occupato")
+    global INFLIGHT
+    try:
+        with CACHE_LOCK:
+            hit = CACHE.get(cache_key)
+            if hit and hit[0] > time.time():
+                return hit[1]
+        with INFLIGHT_LOCK:
+            INFLIGHT += 1
+        try:
+            data = fetch_title(tmdb_id, kind, season, episode, lang)
+        finally:
+            with INFLIGHT_LOCK:
+                INFLIGHT -= 1
+        with CACHE_LOCK:
+            CACHE[cache_key] = (time.time() + CACHE_TTL, data)
+        return data
+    finally:
+        RESOLVE_SEM.release()
+
+
+def fetch_title(tmdb_id: int, kind: str, season: int | None, episode: int | None, lang: str) -> dict:
     api = (
         f"https://vixsrc.to/api/movie/{tmdb_id}?lang={quote(lang)}"
         if kind == "movie"
@@ -209,7 +247,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/health":
-            self._send(200, b'{"ok":true}', "application/json")
+            with INFLIGHT_LOCK:
+                inflight = INFLIGHT
+            with CACHE_LOCK:
+                cached = len(CACHE)
+            payload = json.dumps(
+                {"ok": True, "inflight": inflight, "cache": cached, "limit": RESOLVE_LIMIT}
+            ).encode()
+            self._send(200, payload, "application/json")
             return
         if parsed.path == "/resolve":
             if not self._allowed_resolve():

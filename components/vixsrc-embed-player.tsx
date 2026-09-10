@@ -7,6 +7,7 @@ import { Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import { ContentType } from '@/lib/content-navigation'
+import { pickHighestHlsLevel } from '@/lib/hls-quality'
 import { HLS_CONFIG } from '@/utils/hls-config'
 import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
@@ -143,8 +144,15 @@ export function VixsrcEmbedPlayer({
                         enableWorker: HLS_CONFIG.enableWorker,
                         maxBufferLength: HLS_CONFIG.maxBufferLength,
                         backBufferLength: HLS_CONFIG.backBufferLength,
+                        testBandwidth: HLS_CONFIG.testBandwidth,
+                        capLevelToPlayerSize: HLS_CONFIG.capLevelToPlayerSize,
+                        abrEwmaDefaultEstimate: HLS_CONFIG.abrEwmaDefaultEstimate,
                     })
                     hlsRef.current = hls
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        const best = pickHighestHlsLevel(hls.levels)
+                        hls.startLevel = best
+                    })
                     hls.loadSource(playlist)
                     hls.attachMedia(video)
                     hls.on(Hls.Events.ERROR, (_event, data) => {
