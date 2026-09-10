@@ -111,7 +111,7 @@ export default function MovieGridIntegrated({
                 {Array.from({ length: 6 }).map((_, i) => (
                     <div
                         key={i}
-                        className="flex-shrink-0 w-[140px] aspect-[2/3] rounded-lg shimmer"
+                        className="poster-tile flex-shrink-0 aspect-[2/3] rounded-lg shimmer"
                     />
                 ))}
             </div>

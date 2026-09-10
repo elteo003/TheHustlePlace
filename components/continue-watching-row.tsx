@@ -49,7 +49,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 })
                             )
                         }
-                        className="flex-shrink-0 w-[200px] sm:w-[220px] text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
+                        className="flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
                         aria-label={`Continua ${entry.title}`}
                     >
                         <div className="relative aspect-video rounded-lg overflow-hidden bg-zinc-900 mb-2">
@@ -58,7 +58,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 alt={entry.title}
                                 fill
                                 className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                sizes="220px"
+                                sizes="(max-width: 1536px) 220px, 352px"
                             />
                             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
                             <span className="absolute bottom-3 left-2 z-10 inline-flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/20 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">

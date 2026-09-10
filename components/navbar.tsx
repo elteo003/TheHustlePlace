@@ -40,11 +40,11 @@ export function Navbar({ immersive = false }: NavbarProps) {
                 'bg-black/70 backdrop-blur-xl',
                 isPhoneLandscape
                     ? 'py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]'
-                    : 'px-4 py-3',
+                    : 'content-gutter py-3',
                 !shouldShow && 'pointer-events-none'
             )}
         >
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
                 <Link
                     href="/home"
                     className="flex items-center gap-2.5 group flex-shrink-0"

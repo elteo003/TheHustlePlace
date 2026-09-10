@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { ApiKeyError } from '@/components/api-key-error'
@@ -9,6 +9,15 @@ import { ContinueWatchingRow } from '@/components/continue-watching-row'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { Movie, TVShow, Top10Content } from '@/types'
+
+function HomeRail({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <section className="content-gutter py-8">
+            <h2 className="section-title">{title}</h2>
+            {children}
+        </section>
+    )
+}
 
 interface HomePageClientProps {
     top10: Top10Content[]
@@ -59,78 +68,60 @@ export function HomePageClient({
 
                 <div className="relative z-10">
                     {watchHistory.length > 0 && (
-                        <section className="py-8">
-                            <div className="container mx-auto px-4">
-                                <h2 className="section-title">Continua a guardare</h2>
-                                <ContinueWatchingRow entries={watchHistory} />
-                            </div>
-                        </section>
+                        <HomeRail title="Continua a guardare">
+                            <ContinueWatchingRow entries={watchHistory} />
+                        </HomeRail>
                     )}
 
-                    <section className="py-8">
-                        <div className="container mx-auto px-4">
-                            <h2 className="section-title">Top 10 Titoli Oggi</h2>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="trending"
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={top10}
-                            />
-                        </div>
-                    </section>
+                    <HomeRail title="Top 10 Titoli Oggi">
+                        <MovieGridIntegrated
+                            type="movie"
+                            section="trending"
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={top10}
+                        />
+                    </HomeRail>
 
-                    <section className="py-8">
-                        <div className="container mx-auto px-4">
-                            <h2 className="section-title">Film Popolari</h2>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="popular"
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={popularMovies}
-                            />
-                        </div>
-                    </section>
+                    <HomeRail title="Film Popolari">
+                        <MovieGridIntegrated
+                            type="movie"
+                            section="popular"
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={popularMovies}
+                        />
+                    </HomeRail>
 
-                    <section className="py-8">
-                        <div className="container mx-auto px-4">
-                            <h2 className="section-title">Film Recenti</h2>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="recent"
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={recentMovies}
-                            />
-                        </div>
-                    </section>
+                    <HomeRail title="Film Recenti">
+                        <MovieGridIntegrated
+                            type="movie"
+                            section="recent"
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={recentMovies}
+                        />
+                    </HomeRail>
 
-                    <section className="py-8">
-                        <div className="container mx-auto px-4">
-                            <h2 className="section-title">Serie TV Popolari</h2>
-                            <MovieGridIntegrated
-                                type="tv"
-                                section="popular"
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={popularTV}
-                            />
-                        </div>
-                    </section>
+                    <HomeRail title="Serie TV Popolari">
+                        <MovieGridIntegrated
+                            type="tv"
+                            section="popular"
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={popularTV}
+                        />
+                    </HomeRail>
 
-                    <section className="py-8">
-                        <div className="container mx-auto px-4">
-                            <h2 className="section-title">Serie TV Recenti</h2>
-                            <MovieGridIntegrated
-                                type="tv"
-                                section="recent"
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={recentTV}
-                            />
-                        </div>
-                    </section>
+                    <HomeRail title="Serie TV Recenti">
+                        <MovieGridIntegrated
+                            type="tv"
+                            section="recent"
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={recentTV}
+                        />
+                    </HomeRail>
                 </div>
             </main>
         </MovieProvider>

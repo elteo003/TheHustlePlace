@@ -314,9 +314,9 @@ export function ContentHoverCard({
             <div
                 className={`group relative flex-shrink-0 hover:z-20 ${
                     variant === 'top10'
-                        ? 'z-[1] w-[120px] sm:w-[140px] md:w-[160px] aspect-[2/3]'
+                        ? 'z-[1] w-[clamp(7.5rem,8vw,12.5rem)] aspect-[2/3]'
                         : variant === 'carousel'
-                          ? 'w-[200px] h-[300px]'
+                          ? 'poster-tile aspect-[2/3]'
                           : 'w-full aspect-[2/3]'
                 }`}
                 onMouseEnter={handleMouseEnter}
@@ -344,7 +344,7 @@ export function ContentHoverCard({
                             alt={title}
                             fill
                             className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 200px"
+                            sizes="(max-width: 768px) 40vw, (max-width: 1536px) 200px, 280px"
                         />
                     </PosterTransition>
 

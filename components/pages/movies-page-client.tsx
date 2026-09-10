@@ -16,7 +16,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
     return (
         <div className="min-h-screen bg-black">
             <main className="pt-8 pb-16">
-                <div className="max-w-7xl mx-auto px-4">
+                <div className="content-gutter">
                     <h1 className="text-3xl font-bold text-white mb-8">Film</h1>
 
                     <div className="mb-12">

@@ -508,8 +508,8 @@ html {
     }
 }
 
-/* Player: sul telefono la chrome sta SOPRA l'iframe (riga vera),
-   così i tap non finiscono nel player cross-origin. Sul desktop resta overlay. */
+/* Player: sul telefono la chrome sta SOPRA il video (riga vera).
+   Sul desktop resta overlay. */
 .player-stage {
     display: grid;
     grid-template-areas: 'chrome' 'video';
@@ -709,6 +709,15 @@ html {
     @apply text-xl sm:text-2xl font-semibold text-white tracking-tight mb-5;
 }
 
+/* Full-bleed rails: same inset on 13" and ultrawide, no 1400px cap. */
+.content-gutter {
+    @apply px-4 sm:px-6 lg:px-8 xl:px-10;
+}
+
+.poster-tile {
+    width: clamp(12.5rem, calc(5vw + 8.5rem), 17.5rem);
+}
+
 .tab-pill-group {
     @apply flex gap-1 bg-white/5 rounded-lg p-1;
 }
@@ -779,4 +788,33 @@ html {
     *:not(.keep-fade)::after {
         animation-duration: 0.01ms !important;
     }
+}
+
+.tv-app,
+.tv-app body {
+    cursor: none;
+}
+
+.tv-app * {
+    scrollbar-width: none;
+}
+
+.tv-app *::-webkit-scrollbar {
+    display: none;
+}
+
+.tv-focusable {
+    outline: none;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.tv-focusable:focus {
+    outline: 6px solid #ffffff;
+    outline-offset: 4px;
+    transform: scale(1.06);
+    z-index: 2;
+}
+
+.tv-focusable:disabled {
+    pointer-events: none;
 }
