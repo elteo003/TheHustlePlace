@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { resolveVixsrcHls } from '@/services/vixsrc-hls.service'
+
+export async function GET(request: NextRequest) {
+    const tmdbId = Number(request.nextUrl.searchParams.get('tmdbId'))
+    const type = request.nextUrl.searchParams.get('type') === 'tv' ? 'tv' : 'movie'
+    const season = Number(request.nextUrl.searchParams.get('season'))
+    const episode = Number(request.nextUrl.searchParams.get('episode'))
+
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0) {
+        return NextResponse.json({ success: false, error: 'TMDB ID non valido' }, { status: 400 })
+    }
+    if (type === 'tv' && (!Number.isInteger(season) || !Number.isInteger(episode) || season <= 0 || episode <= 0)) {
+        return NextResponse.json({ success: false, error: 'Stagione o episodio mancanti' }, { status: 400 })
+    }
+
+    try {
+        const resolved = await resolveVixsrcHls({
+            tmdbId,
+            type,
+            season: type === 'tv' ? season : undefined,
+            episode: type === 'tv' ? episode : undefined,
+        })
+
+        return NextResponse.json({
+            success: true,
+            data: {
+                playlist: `/api/player/hls?u=${encodeURIComponent(resolved.playlistUrl)}`,
+                videoId: resolved.videoId,
+            },
+        })
+    } catch (error) {
+        return NextResponse.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : 'Impossibile risolvere lo stream',
+            },
+            { status: 502 }
+        )
+    }
+}

@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Hls from 'hls.js'
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
-import { VideoPlayerService } from '@/services/video-player.service'
 import { ContentType } from '@/lib/content-navigation'
-import { parseVixsrcPlayerMessage, VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
+import { HLS_CONFIG } from '@/utils/hls-config'
+import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 30000
 
@@ -38,127 +39,174 @@ export function VixsrcEmbedPlayer({
     unavailableTitle = 'Contenuto non disponibile',
     unavailableDescription = 'Questo titolo non è attualmente disponibile su vixsrc.to',
 }: VixsrcEmbedPlayerProps) {
-    const playerService = useMemo(() => new VideoPlayerService(), [])
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const [iframeError, setIframeError] = useState(false)
-    const [iframeLoaded, setIframeLoaded] = useState(false)
+    const videoRef = useRef<HTMLVideoElement | null>(null)
+    const hlsRef = useRef<Hls | null>(null)
+    const startAtRef = useRef(startAt)
+    const onPlaybackRef = useRef(onPlayback)
+    const onEndedRef = useRef(onEnded)
+    startAtRef.current = startAt
+    onPlaybackRef.current = onPlayback
+    onEndedRef.current = onEnded
+    const [error, setError] = useState(false)
+    const [ready, setReady] = useState(false)
+    const [reloadKey, setReloadKey] = useState(0)
 
-    const playerUrl = playerService.getPlayerUrl(tmdbId, type, season, episode, startAt)
+    const emit = useCallback((event: VixsrcPlayerEvent['event'], video: HTMLVideoElement, videoId?: number) => {
+        const playback: VixsrcPlayerEvent = {
+            event,
+            currentTime: video.currentTime,
+            duration: Number.isFinite(video.duration) ? video.duration : 0,
+            video_id: videoId,
+        }
+        onPlaybackRef.current?.(playback)
+        if (event === 'ended') onEndedRef.current?.()
+    }, [])
 
     useEffect(() => {
-        setIframeError(false)
-        setIframeLoaded(false)
+        const video = videoRef.current
+        if (!video) return
 
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current)
-        }
-
-        timeoutRef.current = setTimeout(() => {
-            setIframeError(true)
-            toast.error('Il player non si è caricato in tempo')
+        let cancelled = false
+        const timeout = window.setTimeout(() => {
+            if (!cancelled) {
+                setError(true)
+                toast.error('Il player non si è caricato in tempo')
+            }
         }, LOAD_TIMEOUT_MS)
 
+        const query = new URLSearchParams({ tmdbId: String(tmdbId), type })
+        if (type === 'tv' && season && episode) {
+            query.set('season', String(season))
+            query.set('episode', String(episode))
+        }
+
+        setError(false)
+        setReady(false)
+
+        const start = async () => {
+            try {
+                const response = await fetch(`/api/player/resolve?${query.toString()}`)
+                const payload = (await response.json()) as {
+                    success?: boolean
+                    data?: { playlist?: string; videoId?: number }
+                }
+                if (!response.ok || !payload.success || !payload.data?.playlist) {
+                    throw new Error('Stream non disponibile')
+                }
+                if (cancelled) return
+
+                const playlist = payload.data.playlist
+                const videoId = payload.data.videoId
+                const onReady = () => {
+                    if (cancelled) return
+                    window.clearTimeout(timeout)
+                    setReady(true)
+                    const resumeAt = startAtRef.current
+                    if (resumeAt && resumeAt > 0) {
+                        video.currentTime = resumeAt
+                    }
+                    void video.play().catch(() => undefined)
+                }
+
+                video.onplay = () => emit('play', video, videoId)
+                video.onpause = () => emit('pause', video, videoId)
+                video.onseeked = () => emit('seeked', video, videoId)
+                video.onended = () => emit('ended', video, videoId)
+                video.ontimeupdate = () => emit('timeupdate', video, videoId)
+                video.onloadedmetadata = onReady
+
+                if (Hls.isSupported()) {
+                    const hls = new Hls({
+                        enableWorker: HLS_CONFIG.enableWorker,
+                        maxBufferLength: HLS_CONFIG.maxBufferLength,
+                        backBufferLength: HLS_CONFIG.backBufferLength,
+                    })
+                    hlsRef.current = hls
+                    hls.loadSource(playlist)
+                    hls.attachMedia(video)
+                    hls.on(Hls.Events.ERROR, (_event, data) => {
+                        if (!data.fatal || cancelled) return
+                        window.clearTimeout(timeout)
+                        setError(true)
+                        toast.error('Impossibile caricare il player')
+                    })
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = playlist
+                } else {
+                    throw new Error('HLS non supportato')
+                }
+            } catch {
+                if (cancelled) return
+                window.clearTimeout(timeout)
+                setError(true)
+                toast.error('Impossibile caricare il player')
+            }
+        }
+
+        void start()
+
         return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current)
-            }
+            cancelled = true
+            window.clearTimeout(timeout)
+            video.onplay = null
+            video.onpause = null
+            video.onseeked = null
+            video.onended = null
+            video.ontimeupdate = null
+            video.onloadedmetadata = null
+            hlsRef.current?.destroy()
+            hlsRef.current = null
+            video.removeAttribute('src')
+            video.load()
         }
-    }, [playerUrl])
-
-    useEffect(() => {
-        if (!onPlayback && !onEnded) return
-
-        const handleMessage = (event: MessageEvent) => {
-            const playback = parseVixsrcPlayerMessage(event.origin, event.data)
-            if (!playback) return
-            onPlayback?.(playback)
-            if (playback.event === 'ended') {
-                onEnded?.()
-            }
-        }
-
-        window.addEventListener('message', handleMessage)
-        return () => window.removeEventListener('message', handleMessage)
-    }, [onEnded, onPlayback])
-
-    const clearLoadTimeout = () => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current)
-            timeoutRef.current = null
-        }
-    }
-
-    const handleLoad = () => {
-        clearLoadTimeout()
-        setIframeLoaded(true)
-        setIframeError(false)
-    }
-
-    const handleError = () => {
-        clearLoadTimeout()
-        setIframeError(true)
-        toast.error('Impossibile caricare il player')
-    }
-
-    if (iframeError) {
-        return (
-            <div className="relative z-10 flex items-center justify-center h-full">
-                <div className="text-center max-w-2xl mx-auto px-8">
-                    <h1 className="text-4xl font-bold mb-4 text-white">{title}</h1>
-                    <p className="text-xl text-gray-300 mb-2">{unavailableTitle}</p>
-                    <p className="text-lg text-gray-400 mb-8">{unavailableDescription}</p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button
-                            size="lg"
-                            onClick={() =>
-                                window.open(
-                                    playerUrl.split('?')[0],
-                                    '_blank',
-                                    'noopener,noreferrer'
-                                )
-                            }
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            <Play className="w-5 h-5 mr-2" />
-                            Prova su vixsrc.to
-                        </Button>
-                        {onBack && (
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                onClick={onBack}
-                                className="border-white/30 text-white hover:bg-white/10"
-                            >
-                                Torna indietro
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    }, [emit, episode, reloadKey, season, tmdbId, type])
 
     return (
-        <div className="relative z-10 w-full h-full">
-            {!iframeLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+        <div className="relative z-10 h-full w-full bg-black">
+            {error && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
+                    <div className="text-center max-w-2xl mx-auto px-8">
+                        <h1 className="text-4xl font-bold mb-4 text-white">{title}</h1>
+                        <p className="text-xl text-gray-300 mb-2">{unavailableTitle}</p>
+                        <p className="text-lg text-gray-400 mb-8">{unavailableDescription}</p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Button
+                                size="lg"
+                                onClick={() => {
+                                    setError(false)
+                                    setReloadKey((value) => value + 1)
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                <Play className="w-5 h-5 mr-2" />
+                                Riprova
+                            </Button>
+                            {onBack && (
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    onClick={onBack}
+                                    className="border-white/30 text-white hover:bg-white/10"
+                                >
+                                    Torna indietro
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {!ready && !error && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                     <Spinner size="md" />
                 </div>
             )}
-            <iframe
-                src={playerUrl}
-                className="w-full h-full border-0"
+            <video
+                ref={videoRef}
+                className="h-full w-full bg-black object-contain"
+                controls
+                playsInline
+                autoPlay
                 title={title}
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; web-share"
-                allowFullScreen
-                referrerPolicy="no-referrer"
-                loading="eager"
-                onLoad={handleLoad}
-                onError={handleError}
-                {...{
-                    webkitallowfullscreen: 'true',
-                    mozallowfullscreen: 'true',
-                }}
             />
         </div>
     )

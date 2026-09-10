@@ -1,0 +1,78 @@
+export interface VixsrcMasterPlaylist {
+    url: string
+    token: string
+    expires: string
+    canPlayFHD: boolean
+    videoId?: number
+}
+
+const ALLOWED_HOST = /^(?:[a-z0-9-]+\.)*(?:vixsrc\.to|vix-content\.net)$/i
+
+export function isAllowedHlsUrl(raw: string): boolean {
+    try {
+        const url = new URL(raw)
+        return url.protocol === 'https:' && ALLOWED_HOST.test(url.hostname)
+    } catch {
+        return false
+    }
+}
+
+export function parseVixsrcEmbedHtml(html: string): VixsrcMasterPlaylist | null {
+    const token = html.match(/['"]token['"]\s*:\s*['"]([^'"]+)['"]/)?.[1]
+    const expires = html.match(/['"]expires['"]\s*:\s*['"]([^'"]+)['"]/)?.[1]
+    const url =
+        html.match(/masterPlaylist[\s\S]*?url:\s*['"]([^'"]+)['"]/)?.[1] ??
+        html.match(/url:\s*['"](https?:\/\/[^'"]*playlist[^'"]*)['"]/)?.[1]
+    if (!token || !expires || !url) return null
+
+    const videoIdRaw = html.match(/window\.video\s*=\s*\{[\s\S]*?id:\s*['"](\d+)['"]/)?.[1]
+    return {
+        url,
+        token,
+        expires,
+        canPlayFHD: /canPlayFHD\s*=\s*true/.test(html),
+        videoId: videoIdRaw ? Number(videoIdRaw) : undefined,
+    }
+}
+
+export function buildVixsrcPlaylistUrl(parsed: VixsrcMasterPlaylist, lang = 'it'): string {
+    const playlist = new URL(parsed.url)
+    playlist.searchParams.set('token', parsed.token)
+    playlist.searchParams.set('expires', parsed.expires)
+    playlist.searchParams.set('h', '1')
+    playlist.searchParams.set('lang', lang)
+    return playlist.toString()
+}
+
+export function resolvePlaylistRef(ref: string, sourceUrl: string): string | null {
+    try {
+        const absolute = new URL(ref, sourceUrl).toString()
+        return isAllowedHlsUrl(absolute) ? absolute : null
+    } catch {
+        return null
+    }
+}
+
+export function rewriteM3u8(body: string, sourceUrl: string, proxyPrefix: string): string {
+    return body
+        .split(/\r?\n/)
+        .map((line) => {
+            const trimmed = line.trim()
+            if (!trimmed) return line
+            if (trimmed.startsWith('#')) {
+                return line.replace(/URI="([^"]+)"/gi, (_match, uri: string) => {
+                    const absolute = resolvePlaylistRef(uri, sourceUrl)
+                    return absolute ? `URI="${proxyPrefix}${encodeURIComponent(absolute)}"` : 'URI=""'
+                })
+            }
+            const absolute = resolvePlaylistRef(trimmed, sourceUrl)
+            return absolute ? `${proxyPrefix}${encodeURIComponent(absolute)}` : ''
+        })
+        .join('\n')
+}
+
+export function isM3u8Playlist(contentType: string, body: string): boolean {
+    const type = contentType.toLowerCase()
+    if (type.includes('mpegurl') || type.includes('m3u8')) return true
+    return body.trimStart().startsWith('#EXTM3U')
+}
