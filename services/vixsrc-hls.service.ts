@@ -1,3 +1,4 @@
+import { getHomeRelayConfig } from '@/lib/db/vixsrc-relay'
 import { cache } from '@/utils/cache'
 import { logger } from '@/utils/logger'
 import {
@@ -139,6 +140,18 @@ export async function resolveVixsrcHls(input: {
     const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
     if (cached?.master) return cached
 
+    const home = await resolveViaHomeRelay(input, lang)
+    if (home) {
+        await cache.set(cacheKey, home, { ttl: CACHE_TTL_SECONDS })
+        logger.info('Playlist VixSrc risolta', {
+            tmdbId: input.tmdbId,
+            type: input.type,
+            videoId: home.videoId,
+            mode: 'home',
+        })
+        return home
+    }
+
     const apiPath =
         input.type === 'movie'
             ? `/api/movie/${input.tmdbId}?lang=${encodeURIComponent(lang)}`
@@ -167,6 +180,30 @@ export async function resolveVixsrcHls(input: {
     }
 
     throw new Error(lastError)
+}
+
+async function resolveViaHomeRelay(
+    input: { tmdbId: number; type: 'movie' | 'tv'; season?: number; episode?: number },
+    lang: string
+): Promise<ResolvedVixsrcHls | null> {
+    const relay = await getHomeRelayConfig()
+    if (!relay) return null
+    const query = new URLSearchParams({ tmdbId: String(input.tmdbId), type: input.type, lang })
+    if (input.type === 'tv' && input.season && input.episode) {
+        query.set('season', String(input.season))
+        query.set('episode', String(input.episode))
+    }
+    const response = await fetch(`${relay.url}/resolve?${query.toString()}`, {
+        headers: { 'x-relay-token': relay.token },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(35000),
+    })
+    const payload = (await response.json()) as {
+        success?: boolean
+        data?: ResolvedVixsrcHls
+    }
+    if (!response.ok || !payload.success || !payload.data?.master) return null
+    return payload.data
 }
 
 async function resolveWithSession(session: VixsrcSession, apiUrl: string, lang: string): Promise<ResolvedVixsrcHls> {

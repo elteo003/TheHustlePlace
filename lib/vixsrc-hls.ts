@@ -17,6 +17,17 @@ export function isAllowedHlsUrl(raw: string): boolean {
     }
 }
 
+const RELAY_PUBLIC_HOST = /^(?:[a-z0-9-]+\.)+(?:trycloudflare\.com|cfargotunnel\.com)$/i
+
+export function isAllowedRelayPublicUrl(raw: string): boolean {
+    try {
+        const url = new URL(raw)
+        return url.protocol === 'https:' && RELAY_PUBLIC_HOST.test(url.hostname)
+    } catch {
+        return false
+    }
+}
+
 export function buildHomeRelayFetchUrl(relayBase: string, target: string): string | null {
     if (!isAllowedHlsUrl(target)) return null
     try {

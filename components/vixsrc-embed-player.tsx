@@ -12,8 +12,6 @@ import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 55000
-const HOME_RELAY_URL =
-    process.env.NEXT_PUBLIC_VIXSRC_RELAY_URL || 'https://strength-estimates-calculations-said.trycloudflare.com'
 
 type PlaybackPayload = {
     master?: string
@@ -22,27 +20,17 @@ type PlaybackPayload = {
     error?: string
 }
 
-async function readResolve(response: Response): Promise<PlaybackPayload> {
+async function resolvePlayback(query: URLSearchParams): Promise<PlaybackPayload> {
+    const response = await fetch(`/api/player/resolve?${query.toString()}`)
     const json = (await response.json()) as {
         success?: boolean
         error?: string
         data?: { master?: string; parts?: Record<string, string>; videoId?: number }
     }
     if (!response.ok || !json.success || !json.data?.master) {
-        return { error: json.error || `HTTP ${response.status}` }
+        return { error: json.error || 'Stream non disponibile' }
     }
     return json.data
-}
-
-async function resolvePlayback(query: URLSearchParams): Promise<PlaybackPayload> {
-    try {
-        const home = await fetch(`${HOME_RELAY_URL}/resolve?${query.toString()}`)
-        const payload = await readResolve(home)
-        if (payload.master) return payload
-    } catch {
-        // Il resolve su Vercel resta il fallback se la ZimaBoard non risponde.
-    }
-    return readResolve(await fetch(`/api/player/resolve?${query.toString()}`))
 }
 
 interface VixsrcEmbedPlayerProps {

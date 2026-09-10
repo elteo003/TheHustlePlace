@@ -5,6 +5,7 @@ import {
     buildVixsrcPlaylistUrl,
     classifyHlsRef,
     isAllowedHlsUrl,
+    isAllowedRelayPublicUrl,
     isM3u8Playlist,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
@@ -82,6 +83,14 @@ describe('buildHomeRelayFetchUrl', () => {
             'https://relay.example/fetch?u=' + encodeURIComponent('https://vixsrc.to/api/movie/1')
         )
         expect(buildHomeRelayFetchUrl('https://relay.example', 'https://spbgc.com/x')).toBeNull()
+    })
+})
+
+describe('isAllowedRelayPublicUrl', () => {
+    it('accetta solo hostname Cloudflare del tunnel di casa', () => {
+        expect(isAllowedRelayPublicUrl('https://abc.trycloudflare.com')).toBe(true)
+        expect(isAllowedRelayPublicUrl('http://abc.trycloudflare.com')).toBe(false)
+        expect(isAllowedRelayPublicUrl('https://evil.example')).toBe(false)
     })
 })
 
