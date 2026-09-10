@@ -49,7 +49,11 @@ function mergeCookies(existing: string, setCookies: string[]): string {
         const eq = nv.indexOf('=')
         if (eq > 0) map.set(nv.slice(0, eq).trim(), nv.slice(eq + 1).trim())
     }
-    return [...map.entries()].map(([key, value]) => `${key}=${value}`).join('; ')
+    const cookies: string[] = []
+    map.forEach((value, key) => {
+        cookies.push(`${key}=${value}`)
+    })
+    return cookies.join('; ')
 }
 
 class VixsrcSession {
@@ -181,19 +185,21 @@ async function assembleBrowserStream(
     if (!master) throw new Error('Manifest principale VixSrc vuoto')
 
     const parts: Record<string, string> = {}
-    for (const [url, id] of partIds) {
+    partIds.forEach((id, url) => {
         const text = fetched.get(url)
         if (text) parts[id] = text
-    }
+    })
 
     return { master, parts, videoId }
 }
 
 function findKeyUrl(body: string, sourceUrl: string): string | null {
-    const matches = body.matchAll(/URI="([^"]+)"/gi)
-    for (const match of matches) {
+    const re = /URI="([^"]+)"/gi
+    let match: RegExpExecArray | null = re.exec(body)
+    while (match) {
         const absolute = new URL(match[1], sourceUrl).toString()
         if (classifyHlsRef(absolute) === 'key') return absolute
+        match = re.exec(body)
     }
     return null
 }
