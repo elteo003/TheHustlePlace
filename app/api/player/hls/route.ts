@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isAllowedHlsUrl, isM3u8Playlist, rewriteM3u8 } from '@/lib/vixsrc-hls'
 import { vixsrcRequestHeaders } from '@/services/vixsrc-hls.service'
 
-export const preferredRegion = ['mxp1', 'fra1', 'cdg1']
+export const preferredRegion = ['fra1', 'cdg1']
 export const maxDuration = 60
 
 const PASS_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges'] as const
