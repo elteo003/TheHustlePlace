@@ -202,12 +202,8 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="device-code-title"
-                    className={
-                        isPhone
-                            ? 'fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(90dvh,640px)] flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.55)]'
-                            : 'fixed left-1/2 top-[22%] z-[61] w-[min(92vw,360px)] -translate-x-1/2 rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)]'
-                    }
-                    style={isPhone ? { maxHeight: 'min(90dvh, 640px)' } : undefined}
+                    className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(90dvh,640px)] flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[min(92vw,360px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:p-6"
+                    style={{ maxHeight: 'min(90dvh, 640px)' }}
                     initial={
                         isPhone
                             ? reduceMotion

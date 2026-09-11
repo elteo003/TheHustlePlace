@@ -18,19 +18,25 @@ test.describe('Telefono: codice e sottocinema', () => {
         await expect(dialog).toBeVisible()
         await expect(dialog).toBeInViewport()
 
-        const viewport = page.viewportSize()
-        const box = await dialog.boundingBox()
-        expect(viewport).toBeTruthy()
-        expect(box).toBeTruthy()
-        if (!viewport || !box) {
-            return
-        }
-
-        expect(box.width).toBeGreaterThan(viewport.width * 0.9)
-        expect(box.width).toBeLessThanOrEqual(viewport.width + 1)
-        expect(box.x).toBeGreaterThanOrEqual(-1)
-        expect(box.y).toBeGreaterThanOrEqual(-1)
-        expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 2)
+        await expect
+            .poll(async () => {
+                const viewport = page.viewportSize()
+                const box = await dialog.boundingBox()
+                if (!viewport || !box) {
+                    return 'missing'
+                }
+                if (box.width <= viewport.width * 0.9 || box.width > viewport.width + 1) {
+                    return `width ${box.width}`
+                }
+                if (box.x < -1 || box.y < -1) {
+                    return `origin ${box.x},${box.y}`
+                }
+                if (box.y + box.height > viewport.height + 2) {
+                    return `bottom ${box.y + box.height} > ${viewport.height + 2}`
+                }
+                return 'ok'
+            })
+            .toBe('ok')
     })
 
     test('tap su una locandina apre il trailer a schermo intero', async ({ page }) => {

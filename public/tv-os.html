@@ -635,6 +635,8 @@
   }
 
   function onKey(event) {
+    if (event._tvos) return true;
+    event._tvos = 1;
     var c = codeOf(event);
     var key = event.key || '';
     var isBack = c === 461 || c === 27 || key === 'Escape' || key === 'GoBack';
@@ -657,6 +659,9 @@
   }
 
   document.onkeydown = onKey;
+  if (window.addEventListener) {
+    window.addEventListener('keydown', onKey, true);
+  }
 
   function el(tag, className, text) {
     var node = document.createElement(tag);
