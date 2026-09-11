@@ -1,7 +1,7 @@
 'use client'
 
+import { Suspense, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { Navbar } from './navbar'
 import { PageTransition } from './page-transition'
 import { TrailerPeekProvider } from '@/contexts/trailer-peek-context'
@@ -33,13 +33,15 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     const showNavbar = !isPlayerPage && !isSplash && !isLiving
     const needsTopPadding = showNavbar && !isHome
 
-    if (!isClient) {
+    if (!isClient && !isLiving) {
         return <div className="min-h-screen bg-black text-white">{children}</div>
     }
 
     return (
         <TrailerPeekProvider>
-            <TvEntryRedirect />
+            <Suspense fallback={null}>
+                <TvEntryRedirect />
+            </Suspense>
             {showNavbar && <Navbar immersive={false} />}
             <div className={needsTopPadding ? 'pt-16' : ''}>
                 <PageTransition>{children}</PageTransition>

@@ -89,12 +89,10 @@ export function ProfileGate() {
     return (
         <div className="flex w-full flex-col items-center">
             <h1 className="text-5xl font-semibold text-white">Chi guarda?</h1>
-            {loading && <p className="mt-8 text-2xl text-white/50">Caricamento profili…</p>}
-            {!loading && !configured && (
+            {!configured && error ? (
                 <p className="mt-4 text-lg text-white/45">Senza database i profili restano solo su questa TV.</p>
-            )}
-            {!loading && (
-                <div className="mt-14 flex flex-wrap justify-center gap-8">
+            ) : null}
+            <div className="mt-14 flex flex-wrap justify-center gap-8">
                     {profiles.map((profile, index) => (
                         <div key={profile.id} className="flex flex-col items-center gap-3">
                             <TvFocus
@@ -130,9 +128,8 @@ export function ProfileGate() {
                             <p className="text-2xl text-white/70">Aggiungi</p>
                         </div>
                     )}
-                </div>
-            )}
-            {configured && !loading && (
+            </div>
+            {configured && (
                 <TvFocus
                     onClick={() => setView('adopt')}
                     className="mt-12 h-14 rounded-lg bg-white/10 px-8 text-lg text-white"

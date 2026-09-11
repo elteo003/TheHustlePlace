@@ -803,7 +803,7 @@ html {
 
 .tv-app,
 .tv-app body {
-    cursor: none;
+    cursor: default;
 }
 
 .tv-app * {
@@ -820,7 +820,8 @@ html {
 }
 
 .tv-focusable:focus,
-.tv-focusable:focus-visible {
+.tv-focusable:focus-visible,
+.tv-focusable.is-tv-focused {
     outline: 6px solid #ffffff;
     outline-offset: 4px;
     transform: scale(1.06);

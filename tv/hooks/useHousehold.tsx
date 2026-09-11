@@ -33,12 +33,16 @@ function applySnapshot(data: Partial<TvHouseholdState> & { profiles?: TvProfile[
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<TvHouseholdState>(emptyState)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const refresh = useCallback(async () => {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+        const timer = window.setTimeout(function () {
+            if (controller) controller.abort()
+        }, 8000)
         try {
-            const response = await fetch('/api/household')
+            const response = await fetch('/api/household', controller ? { signal: controller.signal } : undefined)
             const data = (await response.json()) as TvHouseholdState & { error?: string }
             if (!response.ok) {
                 setError('Impossibile caricare i profili')
@@ -49,6 +53,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         } catch {
             setError('Impossibile caricare i profili')
         } finally {
+            window.clearTimeout(timer)
             setLoading(false)
         }
     }, [])

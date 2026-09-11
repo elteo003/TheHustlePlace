@@ -90,8 +90,12 @@ export function keyToSpatialDir(key: string, keyCode?: number): SpatialDir | nul
     return null
 }
 
+export function eventKeyCode(event: { keyCode?: number; which?: number }): number {
+    return event.keyCode || event.which || 0
+}
+
 export function isActivateKey(key: string, keyCode?: number): boolean {
-    return key === 'Enter' || key === 'Select' || keyCode === 13
+    return key === 'Enter' || key === 'Select' || keyCode === 13 || keyCode === 23
 }
 
 export const WEBOS_BACK_KEY = 'GoBack'

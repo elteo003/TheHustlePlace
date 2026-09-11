@@ -32,6 +32,7 @@ describe('spatial nav', () => {
         expect(isActivateKey('Enter')).toBe(true)
         expect(isActivateKey('Unidentified', 13)).toBe(true)
         expect(isActivateKey('Select')).toBe(true)
+        expect(isActivateKey('Unidentified', 23)).toBe(true)
         expect(isActivateKey('ArrowRight')).toBe(false)
     })
 })

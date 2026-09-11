@@ -16,13 +16,13 @@ test.describe('Smoke test piattaforma', () => {
         await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
         const tiles = page.locator('[data-tv-focus]')
         await expect(tiles.first()).toBeVisible()
-        await expect(tiles.first()).toBeFocused({ timeout: 10_000 })
+        await expect(tiles.first()).toHaveClass(/is-tv-focused/, { timeout: 10_000 })
 
         const firstLabel = ((await tiles.first().innerText()) || '').trim()
         await page.keyboard.press('ArrowRight')
-        await expect.poll(async () => ((await page.locator('[data-tv-focus]:focus').innerText()) || '').trim()).not.toBe(
-            firstLabel
-        )
+        await expect
+            .poll(async () => ((await page.locator('[data-tv-focus].is-tv-focused').innerText()) || '').trim())
+            .not.toBe(firstLabel)
 
         await page.evaluate(() => {
             window.dispatchEvent(

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import {
+    eventKeyCode,
     isActivateKey,
     keyToSpatialDir,
     pickSpatialTarget,
@@ -9,37 +10,80 @@ import {
     SpatialRect,
 } from '@/tv/lib/spatial'
 
+const FOCUSED_CLASS = 'is-tv-focused'
+
 function rectOf(el: Element): SpatialRect {
     const box = el.getBoundingClientRect()
     return { x: box.left, y: box.top, w: box.width, h: box.height }
 }
 
 function isShown(el: HTMLElement) {
-    return !el.hasAttribute('data-tv-disabled') && el.getClientRects().length > 0
+    if (el.hasAttribute('data-tv-disabled') || el.getAttribute('aria-disabled') === 'true') {
+        return false
+    }
+    const rects = el.getClientRects()
+    return rects.length > 0
 }
 
 function focusables(): HTMLElement[] {
     return Array.from(document.querySelectorAll<HTMLElement>('[data-tv-focus]')).filter(isShown)
 }
 
-function focusedTvNode(): HTMLElement | null {
-    const active = document.activeElement
-    if (active instanceof HTMLElement && active.hasAttribute('data-tv-focus') && isShown(active)) {
-        return active
+let painted: HTMLElement | null = null
+
+function paintFocus(el: HTMLElement | null) {
+    if (painted === el) {
+        if (el && el.classList.contains(FOCUSED_CLASS) === false) {
+            el.classList.add(FOCUSED_CLASS)
+        }
+        return
     }
-    return null
+    if (painted) {
+        painted.classList.remove(FOCUSED_CLASS)
+    }
+    painted = el
+    if (!el) return
+    el.classList.add(FOCUSED_CLASS)
+    try {
+        el.focus()
+    } catch {
+        /* webOS 4 a volte rifiuta focus() */
+    }
+    try {
+        el.scrollIntoView(true)
+    } catch {
+        /* ignore */
+    }
 }
 
-function focusNode(el: HTMLElement | null) {
-    if (!el) return
-    el.focus()
-    el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+export function markTvFocused(el: HTMLElement) {
+    paintFocus(el)
 }
 
 export function focusFirstTvNode() {
     const nodes = focusables()
-    const preferred = nodes.find((el) => el.hasAttribute('data-tv-autofocus')) ?? nodes[0]
-    focusNode(preferred ?? null)
+    let preferred: HTMLElement | undefined
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].hasAttribute('data-tv-autofocus')) {
+            preferred = nodes[i]
+            break
+        }
+    }
+    paintFocus(preferred || nodes[0] || null)
+}
+
+function currentNode(nodes: HTMLElement[]) {
+    if (painted) {
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i] === painted) return painted
+        }
+    }
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active.hasAttribute('data-tv-focus')) {
+        return active
+    }
+    const marked = document.querySelector<HTMLElement>('.' + FOCUSED_CLASS)
+    return marked || nodes[0] || null
 }
 
 export function useSpatialNavigation(enabled: boolean) {
@@ -47,62 +91,69 @@ export function useSpatialNavigation(enabled: boolean) {
         if (!enabled) return
 
         const takeFocus = () => {
-            window.focus()
-            if (!focusedTvNode()) focusFirstTvNode()
+            try {
+                window.focus()
+            } catch {
+                /* ignore */
+            }
+            const nodes = focusables()
+            const current = currentNode(nodes)
+            if (current) paintFocus(current)
+            else focusFirstTvNode()
         }
 
-        const frame = window.requestAnimationFrame(takeFocus)
+        const start = window.setTimeout(takeFocus, 50)
+        const retry = window.setTimeout(takeFocus, 400)
 
-        const observer = new MutationObserver(() => {
-            if (!focusedTvNode()) focusFirstTvNode()
-        })
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['hidden', 'data-tv-focus', 'data-tv-disabled'],
-        })
-
+        let lastStroke = ''
         const onKey = (event: KeyboardEvent) => {
             if (event.altKey || event.ctrlKey || event.metaKey) return
+            const stroke = String(event.timeStamp) + ':' + eventKeyCode(event) + ':' + (event.key || '')
+            if (stroke === lastStroke) return
+            lastStroke = stroke
 
-            const dir = keyToSpatialDir(event.key, event.keyCode)
+            const code = eventKeyCode(event)
+            const dir = keyToSpatialDir(event.key || '', code)
             if (dir) {
-                event.preventDefault()
-                event.stopPropagation()
                 const nodes = focusables()
-                const current = focusedTvNode() ?? nodes[0]
+                const current = currentNode(nodes)
                 if (!current) return
+                event.preventDefault()
 
-                const mapped = nodes.filter((node) => node !== current)
-                const candidates: SpatialCandidate[] = mapped.map((node, index) => ({
-                    id: String(index),
-                    rect: rectOf(node),
-                }))
+                const mapped: HTMLElement[] = []
+                for (let i = 0; i < nodes.length; i++) {
+                    if (nodes[i] !== current) mapped.push(nodes[i])
+                }
+                const candidates: SpatialCandidate[] = []
+                for (let i = 0; i < mapped.length; i++) {
+                    candidates.push({ id: String(i), rect: rectOf(mapped[i]) })
+                }
                 const nextId = pickSpatialTarget(rectOf(current), candidates, dir)
                 if (nextId == null) {
-                    focusNode(current)
+                    paintFocus(current)
                     return
                 }
-                focusNode(mapped[Number(nextId)] ?? null)
+                paintFocus(mapped[Number(nextId)] || current)
                 return
             }
 
-            if (isActivateKey(event.key, event.keyCode)) {
-                const active = focusedTvNode() ?? focusables()[0]
+            if (isActivateKey(event.key || '', code)) {
+                const nodes = focusables()
+                const active = currentNode(nodes)
                 if (!active) return
                 event.preventDefault()
-                event.stopPropagation()
-                if (document.activeElement !== active) focusNode(active)
+                paintFocus(active)
                 active.click()
             }
         }
 
-        window.addEventListener('keydown', onKey, true)
+        document.addEventListener('keydown', onKey)
+        window.addEventListener('keydown', onKey)
         return () => {
-            window.cancelAnimationFrame(frame)
-            observer.disconnect()
-            window.removeEventListener('keydown', onKey, true)
+            window.clearTimeout(start)
+            window.clearTimeout(retry)
+            document.removeEventListener('keydown', onKey)
+            window.removeEventListener('keydown', onKey)
         }
     }, [enabled])
 }
