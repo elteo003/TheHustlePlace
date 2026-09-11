@@ -234,7 +234,7 @@ export function SearchPageClient() {
     if (error && isFreshSearch) {
         return (
             <main className="min-h-screen bg-black">
-                <div className="content-gutter py-8">
+                <div className="content-gutter pt-12 pb-8">
                     <div className="text-center">
                         <h1 className="mb-4 text-2xl font-semibold text-white">Errore nella ricerca</h1>
                         <p className="mb-6 text-white/50">{error}</p>
@@ -266,10 +266,10 @@ export function SearchPageClient() {
 
     return (
         <main className="min-h-screen bg-black">
-            <div className="content-gutter py-8">
+            <div className="content-gutter pt-12 pb-8">
                 {trimmedQuery && (
                     <>
-                        <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                        <div className="mb-10 grid grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                             <div className="min-w-0">
                                 <h1 className="flex items-baseline gap-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
                                     <span className="truncate">Risultati per &ldquo;{query}&rdquo;</span>
@@ -285,7 +285,7 @@ export function SearchPageClient() {
                             </div>
 
                             <TabPillGroup
-                                className="shrink-0"
+                                className="justify-self-start md:justify-self-center"
                                 layoutId="search-filter-pill"
                                 value={activeTab}
                                 onChange={setActiveTab}
@@ -296,7 +296,7 @@ export function SearchPageClient() {
                                 ]}
                             />
 
-                            <div className="ml-auto flex items-center gap-1">
+                            <div className="flex items-center gap-1 justify-self-start md:justify-self-end">
                                 <button
                                     type="button"
                                     onClick={() => handleViewModeChange('grid')}

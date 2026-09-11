@@ -19,7 +19,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <Suspense
             fallback={
                 <main className="min-h-screen bg-black">
-                    <div className="content-gutter py-8">
+                    <div className="content-gutter pt-12 pb-8">
                         <div className="flex h-64 items-center justify-center">
                             <Spinner />
                         </div>
