@@ -820,10 +820,66 @@
     });
   }
 
+  function loadScript(src, done) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function () { done(true); };
+    s.onerror = function () { done(false); };
+    document.body.appendChild(s);
+  }
+
+  function makePlaylistUrl(master, parts) {
+    var text = master || '';
+    var created = [];
+    var id, blob, url;
+    if (parts) {
+      for (id in parts) {
+        if (!Object.prototype.hasOwnProperty.call(parts, id)) continue;
+        blob = new Blob([parts[id]], { type: 'application/vnd.apple.mpegurl' });
+        url = URL.createObjectURL(blob);
+        created.push(url);
+        text = text.split('__PART__' + id + '.m3u8').join(url);
+      }
+    }
+    blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
+    url = URL.createObjectURL(blob);
+    created.push(url);
+    return { url: url, created: created };
+  }
+
+  function playWhenReady(video) {
+    var p = video.play && video.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+
+  function attachStream(video, playlist, onFail) {
+    if (window.Hls && Hls.isSupported()) {
+      var hls = new Hls({ enableWorker: false, maxBufferLength: 20 });
+      video._tvHls = hls;
+      hls.loadSource(playlist);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        playWhenReady(video);
+      });
+      hls.on(Hls.Events.ERROR, function (_evt, data) {
+        if (data && data.fatal && onFail) onFail();
+      });
+      return;
+    }
+    if (video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = playlist;
+      playWhenReady(video);
+      return;
+    }
+    video.src = playlist;
+    playWhenReady(video);
+  }
+
   function renderPlayer(type, id) {
     var season = parseInt(qs('season'), 10) || 1;
     var episode = parseInt(qs('episode'), 10) || 1;
     backHandler = function () {
+      if (video && video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
       go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
     };
     root.innerHTML = '';
@@ -831,26 +887,70 @@
     video.setAttribute('autoplay', 'autoplay');
     video.setAttribute('controls', 'controls');
     video.setAttribute('playsinline', 'playsinline');
+    video.setAttribute('webkit-playsinline', 'true');
     root.appendChild(video);
     var hud = el('div', 'hud');
     hud.appendChild(focusBtn('action', 'Indietro', 'player-back', backHandler, true));
+    var status = el('p', 'hint', 'Prepariamo lo stream…');
+    status.id = 'play-status';
+    hud.appendChild(status);
     root.appendChild(hud);
     collect('player-back');
 
     var url = '/api/player/resolve?tmdbId=' + id + '&type=' + type;
     if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
+
+    function showFail(msg) {
+      status.innerHTML = '';
+      status.appendChild(document.createTextNode(msg || 'Il film non parte.'));
+      collect('player-back');
+    }
+
+    function startWith(master, parts) {
+      var source;
+      if (master.indexOf('#EXTM3U') === 0 || (parts && typeof parts === 'object')) {
+        source = makePlaylistUrl(master, parts);
+      } else {
+        source = { url: master, created: [] };
+      }
+      var failed = false;
+      function fallbackNative() {
+        if (failed) return;
+        failed = true;
+        if (video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
+        video.src = source.url;
+        playWhenReady(video);
+      }
+      attachStream(video, source.url, fallbackNative);
+      function hideStatus() {
+        if (status && status.parentNode) status.parentNode.removeChild(status);
+      }
+      video.addEventListener('loadeddata', hideStatus);
+      video.addEventListener('playing', hideStatus);
+      video.addEventListener('error', function () {
+        showFail('Il film non parte. Torna indietro e riprova.');
+      });
+    }
+
     getJson(url, function (json) {
       var master = json && json.data && json.data.master;
+      var parts = json && json.data && json.data.parts;
       if (!master) {
-        hud.appendChild(el('p', 'hint', 'Stream non disponibile'));
-        collect('player-back');
+        showFail((json && json.error) || 'Stream non disponibile');
         return;
       }
-      video.src = master;
-      if (video.play) {
-        var playPromise = video.play();
-        if (playPromise && playPromise.catch) playPromise.catch(function () {});
+      function begin() { startWith(master, parts); }
+      if (window.Hls) {
+        begin();
+        return;
       }
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/hls.js/0.14.17/hls.min.js', function (ok) {
+        if (!ok) {
+          loadScript('https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js', function () { begin(); });
+          return;
+        }
+        begin();
+      });
     });
   }
 
