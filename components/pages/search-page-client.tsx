@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, Grid, List } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
@@ -12,9 +12,11 @@ import { ContentHoverCard } from '@/components/content-hover-card'
 import { TrailerDock } from '@/components/trailer-dock'
 import { useRowPeek } from '@/contexts/trailer-peek-context'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
-import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import { useIsCoarsePointer, useReducedMotion } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
+import { TabPillGroup } from '@/components/ui/tab-pill-group'
+import { motion } from 'framer-motion'
 
 const EMPTY_RESULTS = {
     movies: [] as Movie[],
@@ -59,6 +61,25 @@ function SearchListRow({
                 </button>
             </div>
         </div>
+    )
+}
+
+function SearchResultsFade({
+    children,
+}: {
+    children: ReactNode
+}) {
+    const reduceMotion = useReducedMotion()
+
+    return (
+        <motion.div
+            className="space-y-8"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        >
+            {children}
+        </motion.div>
     )
 }
 
@@ -246,49 +267,36 @@ export function SearchPageClient() {
     return (
         <main className="min-h-screen bg-black">
             <div className="content-gutter py-8">
-                <div className="mb-8">
-                    <h1 className="mb-2 flex items-center gap-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                        {trimmedQuery ? (
-                            <>Risultati per &ldquo;{query}&rdquo;</>
-                        ) : (
-                            'Cerca film e serie TV'
-                        )}
-                        {loading && <Spinner size="sm" />}
-                    </h1>
-                    <p className="text-sm text-white/50">
-                        {trimmedQuery
-                            ? loading && isFreshSearch
-                                ? 'Cerco i titoli…'
-                                : totalResults > 0
-                                  ? `${totalResults} risultati trovati`
-                                  : 'Nessun risultato trovato'
-                            : 'Scrivi nella barra in alto: i risultati arrivano a ogni lettera'}
-                    </p>
-                </div>
-
                 {trimmedQuery && (
                     <>
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                            <div className="tab-pill-group">
-                                {(
-                                    [
-                                        ['all', `Tutto (${totalResults})`],
-                                        ['movies', `Film (${results.totalMovies})`],
-                                        ['tv', `Serie TV (${results.totalTVShows})`],
-                                    ] as const
-                                ).map(([tab, label]) => (
-                                    <button
-                                        key={tab}
-                                        type="button"
-                                        onClick={() => setActiveTab(tab)}
-                                        className={cn('tab-pill', activeTab === tab && 'tab-pill-active')}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
+                        <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                            <div className="min-w-0">
+                                <h1 className="flex items-baseline gap-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                                    <span className="truncate">Risultati per &ldquo;{query}&rdquo;</span>
+                                    {loading && <Spinner size="sm" />}
+                                    <span className="text-sm font-normal text-white/50">
+                                        {loading && isFreshSearch
+                                            ? 'Cerco i titoli…'
+                                            : totalResults > 0
+                                              ? `${totalResults} risultati`
+                                              : 'Nessun risultato'}
+                                    </span>
+                                </h1>
                             </div>
 
-                            <div className="flex items-center gap-1">
+                            <TabPillGroup
+                                className="shrink-0"
+                                layoutId="search-filter-pill"
+                                value={activeTab}
+                                onChange={setActiveTab}
+                                items={[
+                                    { id: 'all', label: `Tutto (${totalResults})` },
+                                    { id: 'movies', label: `Film (${results.totalMovies})` },
+                                    { id: 'tv', label: `Serie TV (${results.totalTVShows})` },
+                                ]}
+                            />
+
+                            <div className="ml-auto flex items-center gap-1">
                                 <button
                                     type="button"
                                     onClick={() => handleViewModeChange('grid')}
@@ -338,7 +346,7 @@ export function SearchPageClient() {
                                 </Link>
                             </div>
                         ) : (
-                            <div className="space-y-8">
+                            <SearchResultsFade key={activeTab}>
                                 {filteredResults.movies.length > 0 && (
                                     <section>
                                         <h2 className="section-title !mb-4">
@@ -406,7 +414,7 @@ export function SearchPageClient() {
                                         )}
                                     </section>
                                 )}
-                            </div>
+                            </SearchResultsFade>
                         )}
                     </>
                 )}

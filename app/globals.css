@@ -719,16 +719,27 @@ html {
 }
 
 .tab-pill-group {
-    @apply flex gap-1 bg-white/5 rounded-lg p-1;
+    @apply relative flex gap-1 overflow-hidden rounded-lg bg-white/5 p-1;
 }
 
 .tab-pill {
-    @apply px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200
-        text-white/60 hover:text-white;
+    @apply relative isolate px-4 py-2 rounded-md text-sm font-medium
+        text-white/60 transition-[color,transform] duration-150
+        active:scale-[0.97];
 }
 
 .tab-pill-active {
-    @apply bg-white text-black hover:text-black;
+    @apply text-black;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tab-pill:hover {
+        color: rgb(255 255 255);
+    }
+
+    .tab-pill-active:hover {
+        color: rgb(0 0 0);
+    }
 }
 
 .icon-btn {

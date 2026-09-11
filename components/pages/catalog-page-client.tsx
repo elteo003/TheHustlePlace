@@ -5,6 +5,7 @@ import { MovieCard } from '@/components/movie-card'
 import { PaginationBar } from '@/components/ui/pagination-bar'
 import { Movie, TVShow } from '@/types'
 import { cn } from '@/lib/utils'
+import { TabPillGroup } from '@/components/ui/tab-pill-group'
 
 interface CatalogPageClientProps {
     initialMovies: Movie[]
@@ -75,22 +76,16 @@ export function CatalogPageClient({
                 <div className="max-w-7xl mx-auto px-4">
                     <h1 className="text-3xl font-bold text-white tracking-tight mb-8">Catalogo</h1>
 
-                    <div className="tab-pill-group mb-8 w-fit">
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('movies')}
-                            className={cn('tab-pill', activeTab === 'movies' && 'tab-pill-active')}
-                        >
-                            Film
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('tv')}
-                            className={cn('tab-pill', activeTab === 'tv' && 'tab-pill-active')}
-                        >
-                            Serie TV
-                        </button>
-                    </div>
+                    <TabPillGroup
+                        className="mb-8 w-fit"
+                        layoutId="catalog-filter-pill"
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        items={[
+                            { id: 'movies', label: 'Film' },
+                            { id: 'tv', label: 'Serie TV' },
+                        ]}
+                    />
 
                     <div
                         className={cn(
