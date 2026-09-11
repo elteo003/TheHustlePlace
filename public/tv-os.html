@@ -533,6 +533,7 @@
     for (i = 0; i < nodes.length; i++) {
       if (i === idx) continue;
       next = nodes[i].getBoundingClientRect();
+      if (next.width < 2 || next.height < 2) continue;
       dx = (next.left + next.width / 2) - (cur.left + cur.width / 2);
       dy = (next.top + next.height / 2) - (cur.top + cur.height / 2);
       if (dir === 'right') { if (dx <= 2) continue; primary = dx; side = dy < 0 ? -dy : dy; }
@@ -1764,6 +1765,8 @@
 
     var cueTimer = null;
     var barTimer = null;
+    var zone = 'hud';
+    var userHud = false;
     function fmtTime(sec) {
       sec = Math.max(0, Math.floor(sec || 0));
       var h = Math.floor(sec / 3600);
@@ -1820,31 +1823,65 @@
       showCue((delta > 0 ? '+' : '') + delta + ' s');
       showBar();
     }
+    function hudOnButtons() {
+      return zone === 'hud';
+    }
+    function pokeHud() {
+      if (hudTimer) window.clearTimeout(hudTimer);
+      hudTimer = window.setTimeout(function () {
+        userHud = false;
+        zone = 'watch';
+        hideHud();
+      }, 3500);
+    }
     function hideHud() {
       hud.className = 'hud hud-hide';
       if (playerHud) playerHud.hidden = true;
     }
     function showHud() {
+      zone = 'hud';
+      userHud = true;
       hud.className = 'hud';
       if (playerHud) playerHud.hidden = false;
-      collect(qualityBtn.style.display === 'none' ? 'player-back' : 'player-quality');
-      if (hudTimer) window.clearTimeout(hudTimer);
-      hudTimer = window.setTimeout(hideHud, 3500);
+      var fid = currentFid();
+      if (fid !== 'player-back' && fid !== 'player-quality') fid = 'player-back';
+      if (qualityBtn.style.display === 'none' && fid === 'player-quality') fid = 'player-back';
+      collect(fid);
+      pokeHud();
+    }
+    function enterBar() {
+      userHud = false;
+      zone = 'bar';
+      hideHud();
+      showBar();
     }
     function handlePlayerKey(c, key, isBack) {
       if (isBack) return false;
-      var left = c === 37 || c === 412 || key === 'ArrowLeft' || key === 'Left';
-      var right = c === 39 || c === 417 || key === 'ArrowRight' || key === 'Right';
-      var ok = c === 13 || c === 23 || c === 179 || c === 10252 || key === 'Enter' || key === 'Select' || key === ' ' || key === 'MediaPlayPause';
+      var left = c === 37 || key === 'ArrowLeft' || key === 'Left';
+      var right = c === 39 || key === 'ArrowRight' || key === 'Right';
+      var skipBack = c === 412;
+      var skipFwd = c === 417;
+      var ok = c === 13 || c === 23 || key === 'Enter' || key === 'Select';
+      var pauseKey = c === 179 || c === 10252 || key === ' ' || key === 'MediaPlayPause';
       var up = c === 38 || key === 'ArrowUp' || key === 'Up';
       var down = c === 40 || key === 'ArrowDown' || key === 'Down';
       if (c === 19 || key === 'MediaPause') { if (!video.paused) togglePause(); else showBar(); return true; }
       if (c === 415 || key === 'MediaPlay') { if (video.paused) togglePause(); else showBar(); return true; }
-      if (left) { seekBy(-10); return true; }
-      if (right) { seekBy(10); return true; }
+      if (skipBack) { seekBy(-10); return true; }
+      if (skipFwd) { seekBy(10); return true; }
+      if (hudOnButtons()) {
+        if (up) { showHud(); return true; }
+        if (down) { enterBar(); return true; }
+        if (left || right) { pokeHud(); return false; }
+        if (ok) { pokeHud(); return false; }
+        if (pauseKey) { togglePause(); return true; }
+        return false;
+      }
+      if (left) { zone = 'bar'; seekBy(-10); return true; }
+      if (right) { zone = 'bar'; seekBy(10); return true; }
       if (up) { showHud(); return true; }
-      if (down) { hideHud(); showBar(); return true; }
-      if (ok) { togglePause(); return true; }
+      if (down) { enterBar(); return true; }
+      if (ok || pauseKey) { togglePause(); return true; }
       return false;
     }
     video.addEventListener('timeupdate', syncBar);
@@ -1955,6 +1992,8 @@
       });
       function hideStatus() {
         if (status && status.parentNode) status.parentNode.removeChild(status);
+        if (userHud) return;
+        zone = 'watch';
         hideHud();
         showBar();
       }
