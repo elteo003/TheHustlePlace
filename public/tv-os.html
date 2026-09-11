@@ -39,9 +39,12 @@
       background: rgba(255,255,255,.08); font-size: 18px;
     }
     .who i {
-      display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; text-align: center;
       border-radius: 50%; margin-right: 10px; font-style: normal; font-weight: 700;
+      overflow: hidden;
     }
+    .who i.has-art { align-items: flex-end; }
     .hero {
       position: relative; height: 380px; margin: 0 0 32px; border-radius: 22px; overflow: hidden;
       background: #111 center/cover no-repeat; animation: tvIn .4s ease-out;
@@ -99,23 +102,68 @@
     }
     .gate { text-align: center; padding-top: 7vh; }
     .gate h1 { font-size: 52px; margin: 0 0 40px; font-weight: 700; }
+    .gate-profile { padding-top: 3vh; }
+    .gate-profile h1 { margin: 0 0 8px; font-size: 44px; }
+    .gate-profile .typed { margin: 0 0 28px; }
+    .edit-split {
+      display: -webkit-box; display: flex;
+      -webkit-box-pack: center; justify-content: center;
+      -webkit-box-align: start; align-items: flex-start;
+      max-width: 1680px; margin: 0 auto;
+    }
+    .edit-side { width: 560px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-right: 56px; box-sizing: border-box; text-align: center; }
+    .edit-keys { width: 760px; text-align: left; }
+    .edit-keys .kb { max-width: none; margin: 0; }
+    .gate-profile .swatch-label { font-size: 16px; margin: 18px 0 12px; }
+    .gate-profile .avatar-preview { width: 200px; height: 200px; margin: 0 auto 8px; border-radius: 28px; font-size: 72px; }
+    .gate-profile .swatch { width: 64px; height: 64px; margin: 0 10px 10px 0; border-radius: 16px; }
+    .gate-profile .art-swatch { width: 88px; height: 88px; margin: 0 12px 12px 0; border-radius: 20px; }
+    .gate-profile .kb-row { margin: 0 0 16px; }
+    .gate-profile .key, .gate-profile .key-wide {
+      height: 66px; line-height: 66px; margin: 0 14px 0 0; border-radius: 14px;
+    }
+    .gate-profile .key { width: 76px; font-size: 26px; }
+    .gate-profile .key-wide { min-width: 168px; font-size: 20px; }
     .pcol { display: inline-block; width: 188px; margin: 0 14px 20px; vertical-align: top; text-align: center; }
     .avatar, .plus {
       width: 168px; height: 168px; border-radius: 22px; font-size: 64px; font-weight: 700;
       margin: 0 auto 12px; display: -webkit-box; display: flex;
       -webkit-box-align: center; align-items: center; -webkit-box-pack: center; justify-content: center;
       text-align: center; line-height: 1;
+      overflow: hidden;
       transition: transform .22s cubic-bezier(0.19, 1, 0.22, 1), box-shadow .22s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .avatar.has-art { -webkit-box-align: end; align-items: flex-end; }
+    .avatar img, .who i img, .art-swatch img, .avatar-preview img {
+      width: 92%; height: 94%; object-fit: contain; object-position: center bottom; pointer-events: none;
+      filter: drop-shadow(0 0 2px rgba(0,0,0,.9)) drop-shadow(0 8px 8px rgba(0,0,0,.7));
     }
     .plus { border: 3px dashed rgba(255,255,255,.28); color: rgba(255,255,255,.7); background: #141414; }
     .pname { display: block; width: 100%; text-align: center; font-size: 22px; margin: 0 0 10px; white-space: nowrap; overflow: hidden; }
     .pcol .action { display: block; width: 100%; margin: 0 0 8px; padding: 0; height: 44px; line-height: 44px; font-size: 16px; box-sizing: border-box; }
-    .swatches { margin: 0 0 18px; }
+    .swatches { margin: 0 0 14px; }
+    .swatch-label {
+      display: block; width: 100%; clear: both; text-align: left;
+      margin: 0 0 8px; font-size: 14px; letter-spacing: .08em;
+      text-transform: uppercase; color: rgba(255,255,255,.45);
+    }
+    .swatches { display: block; width: 100%; text-align: left; }
     .swatch {
       display: inline-block; width: 56px; height: 56px; margin: 0 8px 8px 0; border-radius: 14px;
       vertical-align: top; box-sizing: border-box;
     }
+    .art-swatch {
+      overflow: hidden; padding: 0;
+      display: inline-flex; align-items: flex-end; justify-content: center;
+    }
+    .art-swatch.letter { align-items: center; font-size: 22px; font-weight: 700; color: #fff; }
     .swatch.on { box-shadow: 0 0 0 4px #fff; }
+    .avatar-preview {
+      width: 140px; height: 140px; border-radius: 22px; margin: 0 auto 18px;
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+      font-size: 56px; font-weight: 700;
+    }
+    .avatar-preview.has-art { align-items: flex-end; }
     .kb { margin: 8px auto 0; max-width: 480px; text-align: left; }
     .search-keys .kb { margin: 0; }
     .kb-row { white-space: nowrap; margin: 0 0 8px; }
@@ -291,6 +339,14 @@
   <script>
 (function () {
   var AVATARS = ['#2563eb', '#db2777', '#16a34a', '#ca8a04', '#7c3aed', '#ea580c', '#0d9488', '#e11d48'];
+  var AVATAR_ART = [
+    { file: 'avatar-howard.png', name: 'Howard Ratner' },
+    { file: 'avatar-vader.png', name: 'Darth Vader' },
+    { file: 'avatar-strange.png', name: 'Doctor Strange' },
+    { file: 'avatar-paul-chani.png', name: 'Paul e Chani' },
+    { file: 'avatar-fremen.png', name: 'Fremen' },
+    { file: 'avatar-paul-walk.png', name: "Muad'Dib" }
+  ];
   var KEYS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   var root = document.getElementById('root');
@@ -674,8 +730,8 @@
     add('Cerca', '/living/search', 'search');
     var who = activeProfile();
     var whoBtn = focusBtn('who', '', 'nav-profile', function () { go('/living'); });
-    var av = el('i', '', (who.name || 'P').charAt(0).toUpperCase());
-    av.style.background = AVATARS[who.avatar || 0] || AVATARS[0];
+    var av = el('i', '', '');
+    paintAvatarNode(av, who.avatar || 0, who.name || 'P');
     whoBtn.appendChild(av);
     whoBtn.appendChild(document.createTextNode(who.name || 'Profilo'));
     nav.appendChild(whoBtn);
@@ -860,17 +916,57 @@
     node.innerHTML = '';
     node.appendChild(document.createTextNode(value || placeholder || ''));
     node.className = value ? 'typed' : 'typed empty';
+    if (document.getElementById('avatar-preview')) paintSwatches();
+  }
+
+  function avatarColorIndex(packed) {
+    return ((packed % 8) + 8) % 8;
+  }
+
+  function avatarArtIndex(packed) {
+    var art = Math.max(0, Math.floor(packed / 8));
+    return art > AVATAR_ART.length ? AVATAR_ART.length : art;
+  }
+
+  function packAvatar(color, art) {
+    color = Math.max(0, Math.min(7, color || 0));
+    art = Math.max(0, Math.min(AVATAR_ART.length, art || 0));
+    return color + art * 8;
+  }
+
+  function paintAvatarNode(node, packed, name) {
+    var art = avatarArtIndex(packed);
+    var item = art > 0 ? AVATAR_ART[art - 1] : null;
+    node.style.background = AVATARS[avatarColorIndex(packed)] || AVATARS[0];
+    node.innerHTML = '';
+    if (item) {
+      node.classList.add('has-art');
+      var img = document.createElement('img');
+      img.src = '/avatars/' + item.file;
+      img.alt = '';
+      node.appendChild(img);
+    } else {
+      node.classList.remove('has-art');
+      node.appendChild(document.createTextNode((name || '?').charAt(0).toUpperCase()));
+    }
   }
 
   function paintSwatches() {
-    var i, node, cls;
+    var i, node;
+    var color = avatarColorIndex(createAvatar);
+    var art = avatarArtIndex(createAvatar);
     for (i = 0; i < AVATARS.length; i++) {
       node = root.querySelector('[data-fid="avatar-' + i + '"]');
-      if (!node) continue;
-      cls = (' ' + node.className + ' ').replace(' on ', ' ');
-      if (i === createAvatar) cls += 'on';
-      node.className = cls.replace(/^\s+|\s+$/g, '');
+      if (node) node.classList.toggle('on', i === color);
     }
+    for (i = 0; i <= AVATAR_ART.length; i++) {
+      node = root.querySelector('[data-fid="art-' + i + '"]');
+      if (!node) continue;
+      node.classList.toggle('on', i === art);
+      paintAvatarNode(node, packAvatar(color, i), createName || 'N');
+    }
+    node = document.getElementById('avatar-preview');
+    if (node) paintAvatarNode(node, createAvatar, createName || 'N');
   }
 
   function renderKeyboard(host, letters, onChar, firstDefault) {
@@ -902,20 +998,37 @@
   }
 
   function addSwatches(host) {
-    var box = el('div', 'swatches');
+    var preview = el('div', 'avatar-preview');
+    preview.id = 'avatar-preview';
+    host.appendChild(preview);
+
+    host.appendChild(el('div', 'swatch-label', 'Colore'));
+    var colors = el('div', 'swatches');
     var i, swatch;
     for (i = 0; i < AVATARS.length; i++) {
       swatch = focusBtn('swatch', '', 'avatar-' + i, (function (n) {
         return function () {
-          createAvatar = n;
+          createAvatar = packAvatar(n, avatarArtIndex(createAvatar));
           paintSwatches();
         };
       })(i));
       swatch.style.background = AVATARS[i];
-      box.appendChild(swatch);
+      colors.appendChild(swatch);
     }
-    host.appendChild(box);
-    paintSwatches();
+    host.appendChild(colors);
+
+    host.appendChild(el('div', 'swatch-label', 'Personaggio'));
+    var arts = el('div', 'swatches');
+    for (i = 0; i <= AVATAR_ART.length; i++) {
+      swatch = focusBtn('swatch art-swatch' + (i === 0 ? ' letter' : ''), '', 'art-' + i, (function (n) {
+        return function () {
+          createAvatar = packAvatar(avatarColorIndex(createAvatar), n);
+          paintSwatches();
+        };
+      })(i));
+      arts.appendChild(swatch);
+    }
+    host.appendChild(arts);
   }
 
   function skeletonBrowse(page) {
@@ -958,10 +1071,10 @@
     for (i = 0; i < household.profiles.length; i++) {
       profile = household.profiles[i];
       wrap = el('div', 'pcol');
-      avatar = focusBtn('avatar', (profile.name || '?').charAt(0).toUpperCase(), 'profile-' + profile.id, (function (p) {
+      avatar = focusBtn('avatar', '', 'profile-' + profile.id, (function (p) {
         return function () { enterProfile(p); };
       })(profile), i === 0);
-      avatar.style.background = AVATARS[profile.avatar || 0] || AVATARS[0];
+      paintAvatarNode(avatar, profile.avatar || 0, profile.name || '?');
       wrap.appendChild(avatar);
       wrap.appendChild(el('span', 'pname', profile.name || 'Profilo'));
       wrap.appendChild(focusBtn('action', 'Modifica', 'edit-' + profile.id, (function (p) {
@@ -970,7 +1083,7 @@
           createName = p.name || '';
           createAvatar = p.avatar || 0;
           gateView = 'edit';
-          wantFid = 'key-A';
+          wantFid = 'art-1';
           renderGate();
         };
       })(profile)));
@@ -987,7 +1100,7 @@
         createName = '';
         createAvatar = 0;
         gateView = 'create';
-        wantFid = 'key-A';
+        wantFid = 'art-1';
         renderGate();
       }));
       wrap.appendChild(el('span', 'pname', 'Aggiungi'));
@@ -1039,13 +1152,20 @@
     });
   }
 
-  function renderCreate(page) {
-    page.appendChild(el('h1', '', 'Nuovo profilo'));
+  function renderProfileForm(page, title, submitLabel, isNew) {
+    page.className = 'shell gate gate-profile';
+    page.appendChild(el('h1', '', title));
     var typed = el('div', createName ? 'typed' : 'typed empty', createName || 'Nome');
     typed.id = 'create-typed';
     page.appendChild(typed);
-    addSwatches(page);
-    var kb = renderKeyboard(page, LETTERS, function (ch) {
+
+    var split = el('div', 'edit-split');
+    var side = el('div', 'edit-side');
+    addSwatches(side);
+    split.appendChild(side);
+
+    var keys = el('div', 'edit-keys');
+    var kb = renderKeyboard(keys, LETTERS, function (ch) {
       if (createName.length < 16) createName += ch;
       setTyped('create-typed', createName, 'Nome');
     }, true);
@@ -1054,31 +1174,25 @@
       { label: 'Cancella', fid: 'key-del', fn: function () { createName = createName.slice(0, -1); setTyped('create-typed', createName, 'Nome'); } }
     ]);
     renderKeyRow(kb, [
-      { label: 'Crea', fid: 'key-ok', main: true, fn: function () { saveProfile(true); } },
-      { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'profile-add'; renderGate(); } }
+      { label: submitLabel, fid: 'key-ok', main: true, fn: function () { saveProfile(isNew); } },
+      { label: 'Indietro', fid: 'key-back', fn: function () {
+        gateView = 'pick';
+        wantFid = isNew ? 'profile-add' : ('edit-' + editProfileId);
+        renderGate();
+      } }
     ]);
-    collect(wantFid || 'key-A');
+    split.appendChild(keys);
+    page.appendChild(split);
+    paintSwatches();
+    collect(wantFid || 'art-1');
+  }
+
+  function renderCreate(page) {
+    renderProfileForm(page, 'Nuovo profilo', 'Crea', true);
   }
 
   function renderEdit(page) {
-    page.appendChild(el('h1', '', 'Modifica profilo'));
-    var typed = el('div', createName ? 'typed' : 'typed empty', createName || 'Nome');
-    typed.id = 'create-typed';
-    page.appendChild(typed);
-    addSwatches(page);
-    var kb = renderKeyboard(page, LETTERS, function (ch) {
-      if (createName.length < 16) createName += ch;
-      setTyped('create-typed', createName, 'Nome');
-    }, true);
-    renderKeyRow(kb, [
-      { label: 'Spazio', fid: 'key-space', fn: function () { createName += ' '; setTyped('create-typed', createName, 'Nome'); } },
-      { label: 'Cancella', fid: 'key-del', fn: function () { createName = createName.slice(0, -1); setTyped('create-typed', createName, 'Nome'); } }
-    ]);
-    renderKeyRow(kb, [
-      { label: 'Salva', fid: 'key-ok', main: true, fn: function () { saveProfile(false); } },
-      { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'edit-' + editProfileId; renderGate(); } }
-    ]);
-    collect(wantFid || 'key-A');
+    renderProfileForm(page, 'Modifica profilo', 'Salva', false);
   }
 
   function renderAdopt(page) {

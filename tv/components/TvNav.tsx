@@ -2,8 +2,8 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { LIVING_ROOT, livingHomePath, livingMoviesPath, livingSearchPath, livingSeriesPath } from '@/tv/lib/paths'
-import { avatarColor, avatarInitial } from '@/tv/lib/avatars'
 import { useHousehold } from '@/tv/hooks/useHousehold'
+import { ProfileAvatar } from '@/tv/components/ProfileAvatar'
 import { TvFocus } from '@/tv/components/TvFocus'
 import { cn } from '@/lib/utils'
 
@@ -43,12 +43,12 @@ export function TvNav() {
                 onClick={() => router.push(LIVING_ROOT)}
                 className="flex items-center gap-3 rounded-full py-2 pl-2 pr-4"
             >
-                <span
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white"
-                    style={{ background: avatarColor(activeProfile?.avatar ?? 0) }}
-                >
-                    {avatarInitial(activeProfile?.name ?? 'P')}
-                </span>
+                <ProfileAvatar
+                    avatar={activeProfile?.avatar ?? 0}
+                    name={activeProfile?.name ?? 'P'}
+                    className="h-12 w-12 rounded-full"
+                    initialClassName="text-lg"
+                />
                 <span className="text-xl text-white">{activeProfile?.name ?? 'Profilo'}</span>
             </TvFocus>
         </header>

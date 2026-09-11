@@ -3,21 +3,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { canAddHouseholdProfile } from '@/tv/lib/household-rules'
-import { avatarColor, avatarInitial } from '@/tv/lib/avatars'
 import { livingHomePath } from '@/tv/lib/paths'
 import { useHousehold } from '@/tv/hooks/useHousehold'
 import { focusFirstTvNode } from '@/tv/hooks/useSpatialNavigation'
 import { CreateProfile } from '@/tv/components/CreateProfile'
+import { ProfileAvatar } from '@/tv/components/ProfileAvatar'
 import { PairCodePad } from '@/tv/components/PairCodePad'
 import { TvFocus } from '@/tv/components/TvFocus'
 import { formatPairCode } from '@/lib/pair-code'
 import { TvProfile } from '@/tv/lib/types'
 
-type GateView = 'pick' | 'create' | 'adopt' | 'code'
+type GateView = 'pick' | 'create' | 'edit' | 'adopt' | 'code'
 
 export function ProfileGate() {
     const router = useRouter()
-    const { profiles, loading, error, configured, createProfile, switchProfile, adoptCode } = useHousehold()
+    const { profiles, loading, error, configured, createProfile, updateProfile, switchProfile, adoptCode } = useHousehold()
     const [view, setView] = useState<GateView>('pick')
     const [selected, setSelected] = useState<TvProfile | null>(null)
 
@@ -43,6 +43,30 @@ export function ProfileGate() {
                 onSubmit={async (name, avatar) => {
                     const ok = await createProfile(name, avatar)
                     if (ok) setView('pick')
+                    return ok
+                }}
+            />
+        )
+    }
+
+    if (view === 'edit' && selected) {
+        return (
+            <CreateProfile
+                title="Modifica profilo"
+                submitLabel="Salva"
+                initialName={selected.name}
+                initialAvatar={selected.avatar}
+                error={error}
+                onCancel={() => {
+                    setSelected(null)
+                    setView('pick')
+                }}
+                onSubmit={async (name, avatar) => {
+                    const ok = await updateProfile(selected.id, name, avatar)
+                    if (ok) {
+                        setSelected(null)
+                        setView('pick')
+                    }
                     return ok
                 }}
             />
@@ -98,12 +122,25 @@ export function ProfileGate() {
                             <TvFocus
                                 autoFocusItem={index === 0}
                                 onClick={() => void enter(profile)}
-                                className="flex h-40 w-40 flex-col items-center justify-center rounded-2xl"
-                                style={{ background: avatarColor(profile.avatar) }}
+                                className="flex h-40 w-40 overflow-hidden rounded-2xl p-0"
                             >
-                                <span className="text-6xl font-semibold text-white">{avatarInitial(profile.name)}</span>
+                                <ProfileAvatar
+                                    avatar={profile.avatar}
+                                    name={profile.name}
+                                    className="h-full w-full"
+                                    initialClassName="text-6xl"
+                                />
                             </TvFocus>
                             <p className="text-2xl text-white">{profile.name}</p>
+                            <TvFocus
+                                onClick={() => {
+                                    setSelected(profile)
+                                    setView('edit')
+                                }}
+                                className="rounded-md px-3 py-2 text-base text-white/55"
+                            >
+                                Modifica
+                            </TvFocus>
                             {configured && profile.pairCode && (
                                 <TvFocus
                                     onClick={() => {

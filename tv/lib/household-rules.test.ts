@@ -5,6 +5,7 @@ import {
     isPlaceholderProfile,
     sanitizeProfileName,
 } from '@/tv/lib/household-rules'
+import { MAX_PACKED_AVATAR, packAvatar, unpackAvatar } from '@/tv/lib/avatars'
 
 describe('household-rules', () => {
     it('limita a 5 profili', () => {
@@ -23,9 +24,11 @@ describe('household-rules', () => {
         expect(sanitizeProfileName('x'.repeat(30))).toHaveLength(16)
     })
 
-    it('blocca l’avatar tra 0 e 7', () => {
+    it('blocca l’avatar nel range colore + personaggio', () => {
         expect(clampAvatar(3)).toBe(3)
         expect(clampAvatar(-1)).toBe(0)
-        expect(clampAvatar(99)).toBe(7)
+        expect(clampAvatar(99)).toBe(MAX_PACKED_AVATAR)
+        expect(unpackAvatar(packAvatar(2, 1))).toEqual({ color: 2, art: 1 })
+        expect(packAvatar(3, 0)).toBe(3)
     })
 })

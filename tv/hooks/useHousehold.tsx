@@ -16,6 +16,7 @@ interface HouseholdContextValue extends TvHouseholdState {
     activeProfile: TvProfile | undefined
     refresh: () => Promise<void>
     createProfile: (name: string, avatar: number) => Promise<boolean>
+    updateProfile: (profileId: string, name: string, avatar: number) => Promise<boolean>
     switchProfile: (profileId: string) => Promise<boolean>
     adoptCode: (code: string) => Promise<boolean>
 }
@@ -78,6 +79,31 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         return true
     }, [])
 
+    const updateProfile = useCallback(async (profileId: string, name: string, avatar: number) => {
+        setError(null)
+        if (profileId === 'local') {
+            setState((current) => ({
+                ...current,
+                profiles: current.profiles.map((profile) =>
+                    profile.id === 'local' ? { ...profile, name, avatar } : profile
+                ),
+            }))
+            return true
+        }
+        const response = await fetch('/api/household/profiles', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profileId, name, avatar }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+            setError('Non siamo riusciti a modificare il profilo.')
+            return false
+        }
+        setState(applySnapshot(data))
+        return true
+    }, [])
+
     const switchProfile = useCallback(async (profileId: string) => {
         const response = await fetch('/api/household/switch', {
             method: 'POST',
@@ -117,10 +143,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
             activeProfile,
             refresh,
             createProfile,
+            updateProfile,
             switchProfile,
             adoptCode,
         }),
-        [state, loading, error, activeProfile, refresh, createProfile, switchProfile, adoptCode]
+        [state, loading, error, activeProfile, refresh, createProfile, updateProfile, switchProfile, adoptCode]
     )
 
     return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>

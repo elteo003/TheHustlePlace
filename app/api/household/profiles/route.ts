@@ -4,18 +4,19 @@ import { isDatabaseConfigured } from '@/lib/db'
 import { createHouseholdProfile, updateHouseholdProfile, type HouseholdSnapshot } from '@/lib/db/household'
 import { formatPairCode } from '@/lib/pair-code'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
+import { MAX_PACKED_AVATAR } from '@/tv/lib/avatars'
 
 export const dynamic = 'force-dynamic'
 
 const createSchema = z.object({
     name: z.string().min(1).max(32),
-    avatar: z.number().int().min(0).max(7).optional(),
+    avatar: z.number().int().min(0).max(MAX_PACKED_AVATAR).optional(),
 })
 
 const updateSchema = z.object({
     profileId: z.string().uuid(),
     name: z.string().min(1).max(32),
-    avatar: z.number().int().min(0).max(7).optional(),
+    avatar: z.number().int().min(0).max(MAX_PACKED_AVATAR).optional(),
 })
 
 function snapshotBody(result: HouseholdSnapshot) {
