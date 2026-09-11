@@ -1,230 +1,110 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
-import Image from 'next/image'
-import { Movie, TVShow } from '@/types'
-import { getTMDBImageUrl } from '@/lib/tmdb'
-import { getContentId, getPlayerPath } from '@/lib/content-navigation'
-import { useRouter } from 'next/navigation'
-import { Spinner } from '@/components/ui/spinner'
-
-interface SearchResult {
-    id: number
-    tmdb_id?: number
-    title: string
-    type: 'movie' | 'tv'
-    poster_path: string
-    release_date?: string
-    first_air_date?: string
-}
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 interface SearchBarProps {
     onFocusChange?: (focused: boolean) => void
 }
 
-export function SearchBar({ onFocusChange }: SearchBarProps) {
-    const router = useRouter()
-    const [query, setQuery] = useState('')
-    const [results, setResults] = useState<SearchResult[]>([])
-    const [isOpen, setIsOpen] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
-    const [isFocused, setIsFocused] = useState(false)
-    const searchRef = useRef<HTMLDivElement>(null)
+function SearchBarInput({
+    query,
+    onQueryChange,
+    onFocusChange,
+}: {
+    query: string
+    onQueryChange: (value: string) => void
+    onFocusChange?: (focused: boolean) => void
+}) {
     const inputRef = useRef<HTMLInputElement>(null)
+    const [isFocused, setIsFocused] = useState(false)
 
-    // Gestisce il focus e comunica alla navbar
     useEffect(() => {
         onFocusChange?.(isFocused)
     }, [isFocused, onFocusChange])
 
-    // Chiudi dropdown quando clicchi fuori
+    return (
+        <div className="relative w-full max-w-2xl mx-auto">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                <Search className="h-5 w-5 text-gray-300" />
+            </div>
+            <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(event) => onQueryChange(event.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder="Cerca film e serie TV..."
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full rounded-xl border border-white/20 bg-white/10 py-3 pl-12 pr-12 text-white placeholder-gray-300 backdrop-blur-md transition-colors duration-200 focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
+            />
+            {query && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        onQueryChange('')
+                        inputRef.current?.focus()
+                    }}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4"
+                    aria-label="Cancella ricerca"
+                >
+                    <X className="h-5 w-5 text-gray-300 transition-colors hover:text-white" />
+                </button>
+            )}
+        </div>
+    )
+}
+
+function SearchBarConnected({ onFocusChange }: SearchBarProps) {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const urlQuery = searchParams.get('q') ?? ''
+    const [query, setQuery] = useState(urlQuery)
+    const focusedRef = useRef(false)
+
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
-                setIsFocused(false)
-            }
+        if (!focusedRef.current && urlQuery !== query) {
+            setQuery(urlQuery)
         }
+    }, [query, urlQuery])
 
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
-    // Ricerca con debounce
-    useEffect(() => {
-        if (query.length < 2) {
-            setResults([])
-            setIsOpen(false)
+    const pushQuery = (value: string) => {
+        setQuery(value)
+        const trimmed = value.trim()
+        if (trimmed) {
+            router.replace(`/search?q=${encodeURIComponent(value)}`, { scroll: false })
             return
         }
-
-        const timeoutId = setTimeout(async () => {
-            await searchContent(query)
-        }, 300)
-
-        return () => clearTimeout(timeoutId)
-    }, [query])
-
-    const searchContent = async (searchQuery: string) => {
-        setIsLoading(true)
-        try {
-            // Cerca sia film che serie TV
-            const [moviesRes, tvRes] = await Promise.all([
-                fetch(`/api/catalog/search/movies?query=${encodeURIComponent(searchQuery)}`),
-                fetch(`/api/catalog/search/tv?query=${encodeURIComponent(searchQuery)}`)
-            ])
-
-            const moviesData = await moviesRes.json()
-            const tvData = await tvRes.json()
-
-            const searchResults: SearchResult[] = []
-
-            // Aggiungi film
-            if (moviesData.success && moviesData.data?.results) {
-                moviesData.data.results.slice(0, 5).forEach((movie: Movie) => {
-                    searchResults.push({
-                        id: movie.id,
-                        tmdb_id: movie.tmdb_id,
-                        title: movie.title,
-                        type: 'movie',
-                        poster_path: movie.poster_path || '/placeholder-movie.svg',
-                        release_date: movie.release_date
-                    })
-                })
-            }
-
-            // Aggiungi serie TV
-            if (tvData.success && tvData.data?.results) {
-                tvData.data.results.slice(0, 5).forEach((tv: TVShow) => {
-                    searchResults.push({
-                        id: tv.id,
-                        tmdb_id: tv.tmdb_id,
-                        title: tv.name,
-                        type: 'tv',
-                        poster_path: tv.poster_path || '/placeholder-movie.svg',
-                        first_air_date: tv.first_air_date
-                    })
-                })
-            }
-
-            setResults(searchResults)
-            setIsOpen(searchResults.length > 0)
-        } catch (error) {
-            console.error('Errore nella ricerca:', error)
-            setResults([])
-            setIsOpen(false)
-        } finally {
-            setIsLoading(false)
+        if (pathname === '/search') {
+            router.replace('/home', { scroll: false })
         }
-    }
-
-    const handleResultClick = (result: SearchResult) => {
-        const itemId = getContentId(result)
-        router.push(getPlayerPath(itemId, result.type))
-        setIsOpen(false)
-        setQuery('')
-    }
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && query.trim()) {
-            router.push(`/search?q=${encodeURIComponent(query.trim())}`)
-            setIsOpen(false)
-        }
-    }
-
-    const clearSearch = () => {
-        setQuery('')
-        setResults([])
-        setIsOpen(false)
-        setIsFocused(false)
-        inputRef.current?.focus()
     }
 
     return (
-        <div ref={searchRef} className="relative w-full max-w-2xl mx-auto">
-            {/* Barra di ricerca */}
-            <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-300" />
-                </div>
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => {
-                        setIsFocused(true)
-                        if (query.length >= 2 && results.length > 0) {
-                            setIsOpen(true)
-                        }
-                    }}
-                    onBlur={() => {
-                        // Ritarda il blur per permettere click sui risultati
-                        setTimeout(() => setIsFocused(false), 150)
-                    }}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Cerca film e serie TV..."
-                    className="w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-colors duration-200"
-                />
-                {query && (
-                    <button
-                        onClick={clearSearch}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                    >
-                        <X className="h-5 w-5 text-gray-300 hover:text-white transition-colors" />
-                    </button>
-                )}
-            </div>
+        <SearchBarInput
+            query={query}
+            onQueryChange={pushQuery}
+            onFocusChange={(focused) => {
+                focusedRef.current = focused
+                onFocusChange?.(focused)
+            }}
+        />
+    )
+}
 
-            {/* Dropdown risultati */}
-            {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto">
-                    {isLoading ? (
-                        <div className="p-6 flex justify-center">
-                            <Spinner size="sm" />
-                        </div>
-                    ) : results.length > 0 ? (
-                        <div className="py-2">
-                            {results.map((result) => (
-                                <button
-                                    key={`${result.type}-${result.id}`}
-                                    onClick={() => handleResultClick(result)}
-                                    className="w-full px-4 py-3 flex items-center space-x-3 hover:bg-white/10 transition-colors"
-                                >
-                                    <div className="relative flex-shrink-0 w-12 h-16 bg-gray-700 rounded overflow-hidden">
-                                        {result.poster_path && result.poster_path !== '/placeholder-movie.svg' ? (
-                                            <Image
-                                                src={getTMDBImageUrl(result.poster_path, 'w500')}
-                                                alt={result.title}
-                                                fill
-                                                className="object-cover"
-                                                sizes="48px"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                                No Image
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 text-left">
-                                        <div className="text-white font-medium">{result.title}</div>
-                                        <div className="text-sm text-gray-300">
-                                            {result.type === 'movie' ? 'Film' : 'Serie TV'}
-                                            {result.release_date && ` • ${new Date(result.release_date).getFullYear()}`}
-                                            {result.first_air_date && ` • ${new Date(result.first_air_date).getFullYear()}`}
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    ) : query.length >= 2 ? (
-                        <div className="p-4 text-center text-gray-300">
-                            Nessun risultato trovato per "{query}"
-                        </div>
-                    ) : null}
-                </div>
-            )}
-        </div>
+export function SearchBar({ onFocusChange }: SearchBarProps) {
+    return (
+        <Suspense
+            fallback={
+                <SearchBarInput query="" onQueryChange={() => undefined} onFocusChange={onFocusChange} />
+            }
+        >
+            <SearchBarConnected onFocusChange={onFocusChange} />
+        </Suspense>
     )
 }

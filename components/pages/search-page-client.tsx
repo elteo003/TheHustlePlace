@@ -1,108 +1,185 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Search, Grid, List, Star, Calendar, Film, Tv } from 'lucide-react'
-import { MovieCard } from '@/components/movie-card'
+import { Search, Grid, List } from 'lucide-react'
 import { Movie, TVShow } from '@/types'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getContentId, getPlayerPath } from '@/lib/content-navigation'
-import { getContentPosterUrl } from '@/lib/content-display'
+import { ContentType, getContentId, getPlayerPath } from '@/lib/content-navigation'
+import { ContentItem, getContentPosterUrl } from '@/lib/content-display'
+import { ContentHoverCard } from '@/components/content-hover-card'
+import { TrailerDock } from '@/components/trailer-dock'
+import { useRowPeek } from '@/contexts/trailer-peek-context'
+import { useContentNavigation } from '@/hooks/useContentNavigation'
+import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
 
-interface SearchPageClientProps {
-    query: string
-    initialMovies: Movie[]
-    initialTVShows: TVShow[]
-    initialTotalMovies: number
-    initialTotalTVShows: number
+const EMPTY_RESULTS = {
+    movies: [] as Movie[],
+    tvShows: [] as TVShow[],
+    totalMovies: 0,
+    totalTVShows: 0,
 }
 
-export function SearchPageClient({
-    query: serverQuery,
-    initialMovies,
-    initialTVShows,
-    initialTotalMovies,
-    initialTotalTVShows,
-}: SearchPageClientProps) {
+function matchesQuery(title: string, query: string) {
+    return title.toLowerCase().includes(query.toLowerCase())
+}
+
+function SearchListRow({
+    title,
+    overview,
+    posterPath,
+    onPlay,
+}: {
+    title: string
+    overview: string
+    posterPath: string | null | undefined
+    onPlay: () => void
+}) {
+    return (
+        <div className="flex items-start gap-4 py-5">
+            <div className="relative aspect-[2/3] w-[5.5rem] shrink-0 overflow-hidden rounded-md bg-zinc-900 sm:w-24">
+                <Image
+                    src={getContentPosterUrl(posterPath, 'w500')}
+                    alt={title}
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                />
+            </div>
+            <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold leading-snug text-white">{title}</h3>
+                <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-white/60">
+                    {overview || 'Nessuna descrizione disponibile'}
+                </p>
+                <button type="button" onClick={onPlay} className="btn-play mt-3 h-9 px-4 text-sm">
+                    Guarda
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function SearchPosterGrid({
+    items,
+    type,
+    className,
+}: {
+    items: ContentItem[]
+    type: ContentType
+    className?: string
+}) {
+    const isTouch = useIsCoarsePointer()
+    const { play, openDetails } = useContentNavigation()
+    const [expandedId, setExpandedId] = useState<number | null>(null)
+    const { peekId, isPosterHidden, onPeek, onClose, onExited } = useRowPeek()
+    const peekItem = items.find((item) => getContentId(item) === peekId) ?? null
+
+    return (
+        <div>
+            <div className={className}>
+                {items.map((item) => {
+                    const id = getContentId(item)
+                    return (
+                        <ContentHoverCard
+                            key={`${type}-${id}`}
+                            item={item}
+                            type={type}
+                            variant="grid"
+                            isExpanded={!isTouch && expandedId === id}
+                            onExpand={() => setExpandedId(id)}
+                            onCollapse={() => setExpandedId(null)}
+                            onPeek={() => onPeek(id)}
+                            isPeeking={isPosterHidden(id)}
+                            onPlay={play}
+                            onDetails={openDetails}
+                        />
+                    )
+                })}
+            </div>
+            <TrailerDock
+                item={isTouch ? peekItem : null}
+                type={type}
+                onClose={onClose}
+                onExited={onExited}
+                onPlay={play}
+                onDetails={openDetails}
+            />
+        </div>
+    )
+}
+
+export function SearchPageClient() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const urlQuery = searchParams.get('q')?.trim() || ''
+    const query = searchParams.get('q') ?? ''
+    const trimmedQuery = query.trim()
 
-    const [results, setResults] = useState({
-        movies: initialMovies,
-        tvShows: initialTVShows,
-        totalMovies: initialTotalMovies,
-        totalTVShows: initialTotalTVShows,
-    })
+    const [results, setResults] = useState(EMPTY_RESULTS)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv'>('all')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
     const [isTransitioning, setIsTransitioning] = useState(false)
+    const requestId = useRef(0)
 
-    const query = urlQuery || serverQuery
+    const searchContent = useCallback(async (searchQuery: string, signal: AbortSignal) => {
+        const [moviesRes, tvRes] = await Promise.all([
+            fetch(`/api/catalog/search/movies?query=${encodeURIComponent(searchQuery)}`, { signal }),
+            fetch(`/api/catalog/search/tv?query=${encodeURIComponent(searchQuery)}`, { signal }),
+        ])
 
-    const searchContent = useCallback(async (searchQuery: string) => {
-        if (!searchQuery.trim()) {
-            setResults({ movies: [], tvShows: [], totalMovies: 0, totalTVShows: 0 })
-            return
-        }
+        const moviesData = await moviesRes.json()
+        const tvData = await tvRes.json()
 
-        setLoading(true)
-        setError(null)
-
-        try {
-            const [moviesRes, tvRes] = await Promise.all([
-                fetch(`/api/catalog/search/movies?query=${encodeURIComponent(searchQuery)}`),
-                fetch(`/api/catalog/search/tv?query=${encodeURIComponent(searchQuery)}`),
-            ])
-
-            const moviesData = await moviesRes.json()
-            const tvData = await tvRes.json()
-
-            setResults({
-                movies: moviesData.success ? (moviesData.data?.results ?? []) : [],
-                tvShows: tvData.success ? (tvData.data?.results ?? []) : [],
-                totalMovies: moviesData.success ? (moviesData.data?.total_results ?? 0) : 0,
-                totalTVShows: tvData.success ? (tvData.data?.total_results ?? 0) : 0,
-            })
-        } catch {
-            setError('Errore nel caricamento dei risultati')
-        } finally {
-            setLoading(false)
+        return {
+            movies: moviesData.success ? (moviesData.data?.results ?? []) : [],
+            tvShows: tvData.success ? (tvData.data?.results ?? []) : [],
+            totalMovies: moviesData.success ? (moviesData.data?.total_results ?? 0) : 0,
+            totalTVShows: tvData.success ? (tvData.data?.total_results ?? 0) : 0,
         }
     }, [])
 
-    // Dati SSR quando la query coincide con il server
     useEffect(() => {
-        if (urlQuery === serverQuery) {
-            setResults({
-                movies: initialMovies,
-                tvShows: initialTVShows,
-                totalMovies: initialTotalMovies,
-                totalTVShows: initialTotalTVShows,
-            })
+        if (!trimmedQuery) {
+            requestId.current += 1
+            setResults(EMPTY_RESULTS)
             setLoading(false)
             setError(null)
+            router.replace('/home')
+            return
         }
-    }, [
-        urlQuery,
-        serverQuery,
-        initialMovies,
-        initialTVShows,
-        initialTotalMovies,
-        initialTotalTVShows,
-    ])
 
-    // Navigazione client-side tra query diverse
-    useEffect(() => {
-        if (urlQuery && urlQuery !== serverQuery) {
-            searchContent(urlQuery)
+        setResults((current) => ({
+            movies: current.movies.filter((movie) => matchesQuery(movie.title, trimmedQuery)),
+            tvShows: current.tvShows.filter((show) => matchesQuery(show.name, trimmedQuery)),
+            totalMovies: current.totalMovies,
+            totalTVShows: current.totalTVShows,
+        }))
+
+        const controller = new AbortController()
+        const currentRequest = ++requestId.current
+        setLoading(true)
+        setError(null)
+
+        searchContent(trimmedQuery, controller.signal)
+            .then((next) => {
+                if (currentRequest !== requestId.current) return
+                setResults(next)
+                setLoading(false)
+            })
+            .catch((err: unknown) => {
+                if (controller.signal.aborted || currentRequest !== requestId.current) return
+                setError(err instanceof Error ? err.message : 'Errore nel caricamento dei risultati')
+                setLoading(false)
+            })
+
+        return () => {
+            controller.abort()
         }
-    }, [urlQuery, serverQuery, searchContent])
+    }, [router, searchContent, trimmedQuery])
 
     const getFilteredResults = () => {
         switch (activeTab) {
@@ -127,26 +204,37 @@ export function SearchPageClient({
         }, 300)
     }
 
-    if (loading) {
-        return (
-            <main className="min-h-screen bg-black">
-                <div className="container mx-auto px-4 py-8">
-                    <div className="flex items-center justify-center h-64">
-                        <Spinner />
-                    </div>
-                </div>
-            </main>
-        )
+    if (!trimmedQuery) {
+        return <main className="min-h-screen bg-black" />
     }
 
-    if (error) {
+    const isFreshSearch = loading && results.movies.length === 0 && results.tvShows.length === 0
+
+    if (error && isFreshSearch) {
         return (
             <main className="min-h-screen bg-black">
-                <div className="container mx-auto px-4 py-8">
+                <div className="content-gutter py-8">
                     <div className="text-center">
-                        <h1 className="text-2xl font-semibold text-white mb-4">Errore nella ricerca</h1>
-                        <p className="text-white/50 mb-6">{error}</p>
-                        <button type="button" onClick={() => searchContent(query)} className="btn-play">
+                        <h1 className="mb-4 text-2xl font-semibold text-white">Errore nella ricerca</h1>
+                        <p className="mb-6 text-white/50">{error}</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const controller = new AbortController()
+                                setLoading(true)
+                                setError(null)
+                                searchContent(trimmedQuery, controller.signal)
+                                    .then((next) => {
+                                        setResults(next)
+                                        setLoading(false)
+                                    })
+                                    .catch(() => {
+                                        setError('Errore nel caricamento dei risultati')
+                                        setLoading(false)
+                                    })
+                            }}
+                            className="btn-play"
+                        >
                             Riprova
                         </button>
                     </div>
@@ -157,25 +245,28 @@ export function SearchPageClient({
 
     return (
         <main className="min-h-screen bg-black">
-            <div className="container mx-auto px-4 py-8">
+            <div className="content-gutter py-8">
                 <div className="mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight mb-2">
-                        {query ? (
+                    <h1 className="mb-2 flex items-center gap-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                        {trimmedQuery ? (
                             <>Risultati per &ldquo;{query}&rdquo;</>
                         ) : (
                             'Cerca film e serie TV'
                         )}
+                        {loading && <Spinner size="sm" />}
                     </h1>
-                    <p className="text-white/50 text-sm">
-                        {query
-                            ? totalResults > 0
-                                ? `${totalResults} risultati trovati`
-                                : 'Nessun risultato trovato'
-                            : 'Inserisci un termine nella barra di ricerca'}
+                    <p className="text-sm text-white/50">
+                        {trimmedQuery
+                            ? loading && isFreshSearch
+                                ? 'Cerco i titoli…'
+                                : totalResults > 0
+                                  ? `${totalResults} risultati trovati`
+                                  : 'Nessun risultato trovato'
+                            : 'Scrivi nella barra in alto: i risultati arrivano a ogni lettera'}
                     </p>
                 </div>
 
-                {query && (
+                {trimmedQuery && (
                     <>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                             <div className="tab-pill-group">
@@ -227,7 +318,13 @@ export function SearchPageClient({
                             </div>
                         </div>
 
-                        {totalResults === 0 ? (
+                        {isFreshSearch ? (
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                                {Array.from({ length: 12 }).map((_, index) => (
+                                    <div key={index} className="poster-tile aspect-[2/3] rounded-lg shimmer" />
+                                ))}
+                            </div>
+                        ) : totalResults === 0 ? (
                             <div className="text-center py-16">
                                 <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
                                 <h2 className="text-xl font-semibold text-white mb-2">
@@ -247,88 +344,32 @@ export function SearchPageClient({
                                         <h2 className="section-title !mb-4">
                                             Film ({filteredResults.movies.length})
                                         </h2>
-                                        <div
-                                            className={cn(
-                                                'transition-opacity duration-300',
-                                                isTransitioning && 'opacity-0',
-                                                viewMode === 'grid'
-                                                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
-                                                    : 'space-y-3'
-                                            )}
-                                        >
+                                        {viewMode === 'grid' ? (
+                                            <SearchPosterGrid
+                                                items={filteredResults.movies}
+                                                type="movie"
+                                                className={cn(
+                                                    'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
+                                                    isTransitioning && 'opacity-0'
+                                                )}
+                                            />
+                                        ) : (
+                                        <div className="divide-y divide-white/15">
                                             {filteredResults.movies.map((movie) => (
-                                                <div
+                                                <SearchListRow
                                                     key={movie.id}
-                                                    className={
-                                                        viewMode === 'list' ? 'animate-fade-in-up' : ''
-                                                    }
-                                                >
-                                                    {viewMode === 'list' ? (
-                                                        <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
-                                                            <div className="relative flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
-                                                                <Image
-                                                                    src={getContentPosterUrl(
-                                                                        movie.poster_path,
-                                                                        'w500'
-                                                                    )}
-                                                                    alt={movie.title}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                    sizes="56px"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="text-white font-medium truncate">
-                                                                    {movie.title}
-                                                                </h3>
-                                                                <p className="text-white/50 text-sm line-clamp-2 mt-1">
-                                                                    {movie.overview}
-                                                                </p>
-                                                                <div className="flex items-center gap-3 text-xs text-white/40 mt-2">
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Star className="w-3 h-3" />
-                                                                        {movie.vote_average.toFixed(1)}
-                                                                    </span>
-                                                                    {movie.release_date && (
-                                                                        <span className="flex items-center gap-1">
-                                                                            <Calendar className="w-3 h-3" />
-                                                                            {new Date(
-                                                                                movie.release_date
-                                                                            ).getFullYear()}
-                                                                        </span>
-                                                                    )}
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Film className="w-3 h-3" />
-                                                                        Film
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const itemId = getContentId(
-                                                                        movie as Movie
-                                                                    )
-                                                                    router.push(getPlayerPath(
-                                                                        itemId,
-                                                                        'movie'
-                                                                    ))
-                                                                }}
-                                                                className="btn-play text-sm py-2 flex-shrink-0"
-                                                            >
-                                                                Guarda
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <MovieCard
-                                                            movie={movie}
-                                                            showReleaseDate={true}
-                                                            type="movie"
-                                                        />
-                                                    )}
-                                                </div>
+                                                    title={movie.title}
+                                                    overview={movie.overview}
+                                                    posterPath={movie.poster_path}
+                                                    onPlay={() => {
+                                                        router.push(
+                                                            getPlayerPath(getContentId(movie), 'movie')
+                                                        )
+                                                    }}
+                                                />
                                             ))}
                                         </div>
+                                        )}
                                     </section>
                                 )}
 
@@ -337,104 +378,32 @@ export function SearchPageClient({
                                         <h2 className="section-title !mb-4">
                                             Serie TV ({filteredResults.tvShows.length})
                                         </h2>
-                                        <div
-                                            className={cn(
-                                                'transition-opacity duration-300',
-                                                isTransitioning && 'opacity-0',
-                                                viewMode === 'grid'
-                                                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
-                                                    : 'space-y-3'
-                                            )}
-                                        >
+                                        {viewMode === 'grid' ? (
+                                            <SearchPosterGrid
+                                                items={filteredResults.tvShows}
+                                                type="tv"
+                                                className={cn(
+                                                    'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
+                                                    isTransitioning && 'opacity-0'
+                                                )}
+                                            />
+                                        ) : (
+                                        <div className="divide-y divide-white/15">
                                             {filteredResults.tvShows.map((tvShow) => (
-                                                <div
+                                                <SearchListRow
                                                     key={tvShow.id}
-                                                    className={
-                                                        viewMode === 'list' ? 'animate-fade-in-up' : ''
-                                                    }
-                                                >
-                                                    {viewMode === 'list' ? (
-                                                        <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
-                                                            <div className="relative flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-zinc-800">
-                                                                <Image
-                                                                    src={getContentPosterUrl(
-                                                                        tvShow.poster_path,
-                                                                        'w500'
-                                                                    )}
-                                                                    alt={tvShow.name}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                    sizes="56px"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="text-white font-medium truncate">
-                                                                    {tvShow.name}
-                                                                </h3>
-                                                                <p className="text-white/50 text-sm line-clamp-2 mt-1">
-                                                                    {tvShow.overview}
-                                                                </p>
-                                                                <div className="flex items-center gap-3 text-xs text-white/40 mt-2">
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Star className="w-3 h-3" />
-                                                                        {tvShow.vote_average.toFixed(1)}
-                                                                    </span>
-                                                                    {tvShow.first_air_date && (
-                                                                        <span className="flex items-center gap-1">
-                                                                            <Calendar className="w-3 h-3" />
-                                                                            {new Date(
-                                                                                tvShow.first_air_date
-                                                                            ).getFullYear()}
-                                                                        </span>
-                                                                    )}
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Tv className="w-3 h-3" />
-                                                                        Serie TV
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const itemId = getContentId(
-                                                                        tvShow as TVShow
-                                                                    )
-                                                                    router.push(getPlayerPath(
-                                                                        itemId,
-                                                                        'tv'
-                                                                    ))
-                                                                }}
-                                                                className="btn-play text-sm py-2 flex-shrink-0"
-                                                            >
-                                                                Guarda
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <MovieCard
-                                                            movie={{
-                                                                id: tvShow.id,
-                                                                title: tvShow.name,
-                                                                overview: tvShow.overview,
-                                                                poster_path: tvShow.poster_path,
-                                                                backdrop_path: tvShow.backdrop_path,
-                                                                release_date: tvShow.first_air_date,
-                                                                vote_average: tvShow.vote_average,
-                                                                popularity: tvShow.popularity,
-                                                                adult: tvShow.adult,
-                                                                video: false,
-                                                                genre_ids: tvShow.genre_ids,
-                                                                original_language:
-                                                                    tvShow.original_language,
-                                                                original_title: tvShow.original_name,
-                                                                vote_count: tvShow.vote_count,
-                                                            }}
-                                                            showReleaseDate={true}
-                                                            type="tv"
-                                                        />
-                                                    )}
-                                                </div>
+                                                    title={tvShow.name}
+                                                    overview={tvShow.overview}
+                                                    posterPath={tvShow.poster_path}
+                                                    onPlay={() => {
+                                                        router.push(
+                                                            getPlayerPath(getContentId(tvShow), 'tv')
+                                                        )
+                                                    }}
+                                                />
                                             ))}
                                         </div>
+                                        )}
                                     </section>
                                 )}
                             </div>

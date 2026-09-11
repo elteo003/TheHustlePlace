@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { fetchSearchResults } from '@/lib/server/catalog'
+import { redirect } from 'next/navigation'
 import { SearchPageClient } from '@/components/pages/search-page-client'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -11,31 +11,23 @@ interface SearchPageProps {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
     const { q = '' } = await searchParams
-    const query = q.trim()
-
-    const results = query
-        ? await fetchSearchResults(query)
-        : { movies: [], tvShows: [], totalMovies: 0, totalTVShows: 0 }
+    if (!q.trim()) {
+        redirect('/home')
+    }
 
     return (
         <Suspense
             fallback={
                 <main className="min-h-screen bg-black">
-                    <div className="container mx-auto px-4 py-8">
-                        <div className="flex items-center justify-center h-64">
+                    <div className="content-gutter py-8">
+                        <div className="flex h-64 items-center justify-center">
                             <Spinner />
                         </div>
                     </div>
                 </main>
             }
         >
-            <SearchPageClient
-                query={query}
-                initialMovies={results.movies}
-                initialTVShows={results.tvShows}
-                initialTotalMovies={results.totalMovies}
-                initialTotalTVShows={results.totalTVShows}
-            />
+            <SearchPageClient />
         </Suspense>
     )
 }

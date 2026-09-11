@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import { SearchBar } from '@/components/search-bar'
@@ -19,9 +20,15 @@ interface NavbarProps {
 
 export function Navbar({ immersive = false }: NavbarProps) {
     const { isVisible: contextVisible } = useNavbarContext()
+    const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
     const isPhoneLandscape = useIsPhoneLandscape()
+    const onSearchPage = pathname === '/search'
+
+    useEffect(() => {
+        if (onSearchPage) setIsMenuOpen(false)
+    }, [onSearchPage])
 
     const shouldShow = !immersive || contextVisible || searchFocused || isMenuOpen
 
@@ -84,7 +91,12 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     </div>
                 </LayoutGroup>
 
-                <div className={cn('flex-1 max-w-sm mx-4', isPhoneLandscape ? 'hidden' : 'hidden lg:block')}>
+                <div
+                    className={cn(
+                        'mx-4 min-w-0 flex-1 max-w-sm',
+                        isPhoneLandscape ? 'hidden' : onSearchPage ? 'block' : 'hidden lg:block'
+                    )}
+                >
                     <SearchBar onFocusChange={setSearchFocused} />
                 </div>
 
