@@ -15,7 +15,7 @@ export const TvFocus = forwardRef<HTMLButtonElement, TvFocusProps>(function TvFo
         <button
             ref={ref}
             type={type}
-            tabIndex={-1}
+            tabIndex={0}
             data-tv-focus=""
             data-tv-autofocus={autoFocusItem ? '' : undefined}
             data-tv-disabled={props.disabled ? '' : undefined}

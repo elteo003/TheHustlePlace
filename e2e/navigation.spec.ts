@@ -11,6 +11,32 @@ test.describe('Smoke test piattaforma', () => {
         await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
     })
 
+    test('telecomando sposta il focus tra i profili', async ({ page }) => {
+        await page.goto('/living', { waitUntil: 'domcontentloaded' })
+        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
+        const tiles = page.locator('[data-tv-focus]')
+        await expect(tiles.first()).toBeVisible()
+        await expect(tiles.first()).toBeFocused({ timeout: 10_000 })
+
+        const firstLabel = ((await tiles.first().innerText()) || '').trim()
+        await page.keyboard.press('ArrowRight')
+        await expect.poll(async () => ((await page.locator('[data-tv-focus]:focus').innerText()) || '').trim()).not.toBe(
+            firstLabel
+        )
+
+        await page.evaluate(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Unidentified',
+                    keyCode: 37,
+                    bubbles: true,
+                    cancelable: true,
+                })
+            )
+        })
+        await expect(tiles.first()).toBeFocused()
+    })
+
     test('pagina ricerca statica', async ({ page }) => {
         await page.goto('/search', { waitUntil: 'domcontentloaded' })
         await expect(page.locator('body')).toBeVisible()

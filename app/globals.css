@@ -819,7 +819,8 @@ html {
     transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
-.tv-focusable:focus {
+.tv-focusable:focus,
+.tv-focusable:focus-visible {
     outline: 6px solid #ffffff;
     outline-offset: 4px;
     transform: scale(1.06);

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { canAddHouseholdProfile } from '@/tv/lib/household-rules'
 import { avatarColor, avatarInitial } from '@/tv/lib/avatars'
 import { livingHomePath } from '@/tv/lib/paths'
 import { useHousehold } from '@/tv/hooks/useHousehold'
+import { focusFirstTvNode } from '@/tv/hooks/useSpatialNavigation'
 import { CreateProfile } from '@/tv/components/CreateProfile'
 import { PairCodePad } from '@/tv/components/PairCodePad'
 import { TvFocus } from '@/tv/components/TvFocus'
@@ -19,6 +20,12 @@ export function ProfileGate() {
     const { profiles, loading, error, configured, createProfile, switchProfile, adoptCode } = useHousehold()
     const [view, setView] = useState<GateView>('pick')
     const [selected, setSelected] = useState<TvProfile | null>(null)
+
+    useEffect(() => {
+        if (loading || view !== 'pick') return
+        const frame = window.requestAnimationFrame(() => focusFirstTvNode())
+        return () => window.cancelAnimationFrame(frame)
+    }, [loading, view, profiles.length])
 
     async function enter(profile: TvProfile) {
         if (profile.id !== 'local') {
@@ -86,44 +93,46 @@ export function ProfileGate() {
             {!loading && !configured && (
                 <p className="mt-4 text-lg text-white/45">Senza database i profili restano solo su questa TV.</p>
             )}
-            <div className="mt-14 flex flex-wrap justify-center gap-8" hidden={loading}>
-                {profiles.map((profile, index) => (
-                    <div key={profile.id} className="flex flex-col items-center gap-3">
-                        <TvFocus
-                            autoFocusItem={index === 0}
-                            onClick={() => void enter(profile)}
-                            className="flex h-40 w-40 flex-col items-center justify-center rounded-2xl"
-                            style={{ background: avatarColor(profile.avatar) }}
-                        >
-                            <span className="text-6xl font-semibold text-white">{avatarInitial(profile.name)}</span>
-                        </TvFocus>
-                        <p className="text-2xl text-white">{profile.name}</p>
-                        {configured && profile.pairCode && (
+            {!loading && (
+                <div className="mt-14 flex flex-wrap justify-center gap-8">
+                    {profiles.map((profile, index) => (
+                        <div key={profile.id} className="flex flex-col items-center gap-3">
                             <TvFocus
-                                onClick={() => {
-                                    setSelected(profile)
-                                    setView('code')
-                                }}
-                                className="rounded-md px-3 py-2 text-base text-white/55"
+                                autoFocusItem={index === 0}
+                                onClick={() => void enter(profile)}
+                                className="flex h-40 w-40 flex-col items-center justify-center rounded-2xl"
+                                style={{ background: avatarColor(profile.avatar) }}
                             >
-                                Collega telefono
+                                <span className="text-6xl font-semibold text-white">{avatarInitial(profile.name)}</span>
                             </TvFocus>
-                        )}
-                    </div>
-                ))}
-                {canAddHouseholdProfile(profiles.length) && (
-                    <div className="flex flex-col items-center gap-3">
-                        <TvFocus
-                            onClick={() => setView('create')}
-                            className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
-                        >
-                            +
-                        </TvFocus>
-                        <p className="text-2xl text-white/70">Aggiungi</p>
-                    </div>
-                )}
-            </div>
-            {configured && (
+                            <p className="text-2xl text-white">{profile.name}</p>
+                            {configured && profile.pairCode && (
+                                <TvFocus
+                                    onClick={() => {
+                                        setSelected(profile)
+                                        setView('code')
+                                    }}
+                                    className="rounded-md px-3 py-2 text-base text-white/55"
+                                >
+                                    Collega telefono
+                                </TvFocus>
+                            )}
+                        </div>
+                    ))}
+                    {canAddHouseholdProfile(profiles.length) && (
+                        <div className="flex flex-col items-center gap-3">
+                            <TvFocus
+                                onClick={() => setView('create')}
+                                className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
+                            >
+                                +
+                            </TvFocus>
+                            <p className="text-2xl text-white/70">Aggiungi</p>
+                        </div>
+                    )}
+                </div>
+            )}
+            {configured && !loading && (
                 <TvFocus
                     onClick={() => setView('adopt')}
                     className="mt-12 h-14 rounded-lg bg-white/10 px-8 text-lg text-white"

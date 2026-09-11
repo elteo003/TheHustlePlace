@@ -74,12 +74,24 @@ export function pickSpatialTarget<T extends string>(
     return best?.id ?? null
 }
 
-export function keyToSpatialDir(key: string): SpatialDir | null {
-    if (key === 'ArrowUp') return 'up'
-    if (key === 'ArrowDown') return 'down'
-    if (key === 'ArrowLeft') return 'left'
-    if (key === 'ArrowRight') return 'right'
+const KEY_CODE_DIR: Record<number, SpatialDir> = {
+    37: 'left',
+    38: 'up',
+    39: 'right',
+    40: 'down',
+}
+
+export function keyToSpatialDir(key: string, keyCode?: number): SpatialDir | null {
+    if (key === 'ArrowUp' || key === 'Up') return 'up'
+    if (key === 'ArrowDown' || key === 'Down') return 'down'
+    if (key === 'ArrowLeft' || key === 'Left') return 'left'
+    if (key === 'ArrowRight' || key === 'Right') return 'right'
+    if (keyCode != null && KEY_CODE_DIR[keyCode]) return KEY_CODE_DIR[keyCode]
     return null
+}
+
+export function isActivateKey(key: string, keyCode?: number): boolean {
+    return key === 'Enter' || key === 'Select' || keyCode === 13
 }
 
 export const WEBOS_BACK_KEY = 'GoBack'

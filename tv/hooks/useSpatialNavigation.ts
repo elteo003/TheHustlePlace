@@ -1,17 +1,33 @@
 'use client'
 
 import { useEffect } from 'react'
-import { keyToSpatialDir, pickSpatialTarget, SpatialCandidate, SpatialRect } from '@/tv/lib/spatial'
+import {
+    isActivateKey,
+    keyToSpatialDir,
+    pickSpatialTarget,
+    SpatialCandidate,
+    SpatialRect,
+} from '@/tv/lib/spatial'
 
 function rectOf(el: Element): SpatialRect {
     const box = el.getBoundingClientRect()
     return { x: box.left, y: box.top, w: box.width, h: box.height }
 }
 
+function isShown(el: HTMLElement) {
+    return !el.hasAttribute('data-tv-disabled') && el.getClientRects().length > 0
+}
+
 function focusables(): HTMLElement[] {
-    return Array.from(document.querySelectorAll<HTMLElement>('[data-tv-focus]')).filter(
-        (el) => !el.hasAttribute('data-tv-disabled') && el.offsetParent !== null
-    )
+    return Array.from(document.querySelectorAll<HTMLElement>('[data-tv-focus]')).filter(isShown)
+}
+
+function focusedTvNode(): HTMLElement | null {
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active.hasAttribute('data-tv-focus') && isShown(active)) {
+        return active
+    }
+    return null
 }
 
 function focusNode(el: HTMLElement | null) {
@@ -30,48 +46,63 @@ export function useSpatialNavigation(enabled: boolean) {
     useEffect(() => {
         if (!enabled) return
 
-        const frame = window.requestAnimationFrame(() => focusFirstTvNode())
+        const takeFocus = () => {
+            window.focus()
+            if (!focusedTvNode()) focusFirstTvNode()
+        }
+
+        const frame = window.requestAnimationFrame(takeFocus)
+
+        const observer = new MutationObserver(() => {
+            if (!focusedTvNode()) focusFirstTvNode()
+        })
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['hidden', 'data-tv-focus', 'data-tv-disabled'],
+        })
 
         const onKey = (event: KeyboardEvent) => {
             if (event.altKey || event.ctrlKey || event.metaKey) return
 
-            const dir = keyToSpatialDir(event.key)
+            const dir = keyToSpatialDir(event.key, event.keyCode)
             if (dir) {
                 event.preventDefault()
+                event.stopPropagation()
                 const nodes = focusables()
-                const current =
-                    document.activeElement instanceof HTMLElement &&
-                    document.activeElement.hasAttribute('data-tv-focus')
-                        ? document.activeElement
-                        : nodes[0]
+                const current = focusedTvNode() ?? nodes[0]
                 if (!current) return
 
-                const candidates: SpatialCandidate[] = nodes
-                    .filter((node) => node !== current)
-                    .map((node, index) => ({
-                        id: String(index),
-                        rect: rectOf(node),
-                    }))
                 const mapped = nodes.filter((node) => node !== current)
+                const candidates: SpatialCandidate[] = mapped.map((node, index) => ({
+                    id: String(index),
+                    rect: rectOf(node),
+                }))
                 const nextId = pickSpatialTarget(rectOf(current), candidates, dir)
-                if (nextId == null) return
+                if (nextId == null) {
+                    focusNode(current)
+                    return
+                }
                 focusNode(mapped[Number(nextId)] ?? null)
                 return
             }
 
-            if (event.key === 'Enter') {
-                const active = document.activeElement
-                if (active instanceof HTMLElement && active.hasAttribute('data-tv-focus')) {
-                    event.preventDefault()
-                    active.click()
-                }
+            if (isActivateKey(event.key, event.keyCode)) {
+                const active = focusedTvNode() ?? focusables()[0]
+                if (!active) return
+                event.preventDefault()
+                event.stopPropagation()
+                if (document.activeElement !== active) focusNode(active)
+                active.click()
             }
         }
 
-        window.addEventListener('keydown', onKey)
+        window.addEventListener('keydown', onKey, true)
         return () => {
             window.cancelAnimationFrame(frame)
-            window.removeEventListener('keydown', onKey)
+            observer.disconnect()
+            window.removeEventListener('keydown', onKey, true)
         }
     }, [enabled])
 }

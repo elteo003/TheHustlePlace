@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { keyToSpatialDir, pickSpatialTarget } from '@/tv/lib/spatial'
+import { isActivateKey, keyToSpatialDir, pickSpatialTarget } from '@/tv/lib/spatial'
 
 describe('spatial nav', () => {
     const origin = { x: 100, y: 100, w: 80, h: 80 }
@@ -19,5 +19,19 @@ describe('spatial nav', () => {
     it('mappa i tasti freccia', () => {
         expect(keyToSpatialDir('ArrowRight')).toBe('right')
         expect(keyToSpatialDir('Enter')).toBeNull()
+    })
+
+    it('mappa i tasti webOS (nomi vecchi e keyCode)', () => {
+        expect(keyToSpatialDir('Right')).toBe('right')
+        expect(keyToSpatialDir('Left')).toBe('left')
+        expect(keyToSpatialDir('Up')).toBe('up')
+        expect(keyToSpatialDir('Down')).toBe('down')
+        expect(keyToSpatialDir('Unidentified', 39)).toBe('right')
+        expect(keyToSpatialDir('', 37)).toBe('left')
+        expect(keyToSpatialDir('', 13)).toBeNull()
+        expect(isActivateKey('Enter')).toBe(true)
+        expect(isActivateKey('Unidentified', 13)).toBe(true)
+        expect(isActivateKey('Select')).toBe(true)
+        expect(isActivateKey('ArrowRight')).toBe(false)
     })
 })
