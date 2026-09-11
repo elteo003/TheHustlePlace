@@ -77,7 +77,8 @@
       margin: 0 8px 10px 0; border-radius: 10px; background: rgba(255,255,255,.12); font-size: 20px; text-align: center;
     }
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
-    .hud { position: fixed; left: 40px; top: 32px; z-index: 5; }
+    .hud { position: fixed; left: 40px; top: 32px; z-index: 5; transition: opacity .35s ease; }
+    .hud-hide { opacity: 0; visibility: hidden; }
     .is-tv-focused {
       outline: 5px solid #fff !important; outline-offset: 5px;
       transform: scale(1.08); z-index: 3;
@@ -108,6 +109,7 @@
   var backHandler = null;
   var cache = { home: null, movies: null, series: null, history: [] };
   var heroItem = null;
+  var playerHud = null;
 
   function storeGet(key) {
     try { return window.sessionStorage.getItem(key) || ''; } catch (e) { return ''; }
@@ -258,6 +260,13 @@
   function onKey(event) {
     var c = codeOf(event);
     var key = event.key || '';
+    var isBack = c === 461 || c === 27 || key === 'Escape' || key === 'GoBack';
+    if (playerHud && playerHud.hidden && !isBack) {
+      if (event.preventDefault) event.preventDefault();
+      playerHud.show();
+      return false;
+    }
+    if (playerHud && !isBack) playerHud.touch();
     if (c === 37 || key === 'ArrowLeft' || key === 'Left') { if (event.preventDefault) event.preventDefault(); move('left'); return false; }
     if (c === 39 || key === 'ArrowRight' || key === 'Right') { if (event.preventDefault) event.preventDefault(); move('right'); return false; }
     if (c === 38 || key === 'ArrowUp' || key === 'Up') { if (event.preventDefault) event.preventDefault(); move('up'); return false; }
@@ -879,13 +888,60 @@
     if (p && p.catch) p.catch(function () {});
   }
 
-  function attachStream(video, playlist, onFail) {
+  function bestLevel(levels) {
+    var best = 0;
+    var i, height, bestHeight, bitrate, bestBitrate;
+    for (i = 1; i < levels.length; i++) {
+      height = levels[i].height || 0;
+      bestHeight = levels[best].height || 0;
+      bitrate = levels[i].bitrate || 0;
+      bestBitrate = levels[best].bitrate || 0;
+      if (height > bestHeight || (height === bestHeight && bitrate > bestBitrate)) best = i;
+    }
+    return best;
+  }
+
+  function levelLabel(level) {
+    if (!level) return 'Auto';
+    if (level.height) return level.height + 'p';
+    if (level.bitrate) return Math.round(level.bitrate / 1000) + 'k';
+    return 'HQ';
+  }
+
+  function attachStream(video, playlist, onFail, onLevels) {
     if (window.Hls && Hls.isSupported()) {
-      var hls = new Hls({ enableWorker: false, maxBufferLength: 20 });
+      var hls = new Hls({
+        enableWorker: false,
+        maxBufferLength: 30,
+        testBandwidth: false,
+        capLevelToPlayerSize: false,
+        abrEwmaDefaultEstimate: 8000000
+      });
       video._tvHls = hls;
       hls.loadSource(playlist);
       hls.attachMedia(video);
+      var locked = -1;
+      function lockLevel(index) {
+        if (!hls.levels || !hls.levels.length) return;
+        if (index < 0 || index >= hls.levels.length) return;
+        locked = index;
+        hls.startLevel = index;
+        hls.currentLevel = index;
+        hls.nextLevel = index;
+        hls.nextLoadLevel = index;
+      }
+      if (Hls.Events.LEVEL_SWITCHED) {
+        hls.on(Hls.Events.LEVEL_SWITCHED, function (_evt, data) {
+          if (locked >= 0 && data && data.level !== locked) lockLevel(locked);
+        });
+      }
       hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        var levels = hls.levels || [];
+        var best = bestLevel(levels);
+        lockLevel(best);
+        window.setTimeout(function () { lockLevel(best); }, 0);
+        window.setTimeout(function () { lockLevel(best); }, 250);
+        if (onLevels) onLevels(hls, levels, best, lockLevel);
         playWhenReady(video);
       });
       hls.on(Hls.Events.ERROR, function (_evt, data) {
@@ -905,7 +961,14 @@
   function renderPlayer(type, id) {
     var season = parseInt(qs('season'), 10) || 1;
     var episode = parseInt(qs('episode'), 10) || 1;
+    var hudTimer = null;
+    function clearHud() {
+      if (hudTimer) window.clearTimeout(hudTimer);
+      hudTimer = null;
+      playerHud = null;
+    }
     backHandler = function () {
+      clearHud();
       if (video && video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
       go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
     };
@@ -918,11 +981,29 @@
     root.appendChild(video);
     var hud = el('div', 'hud');
     hud.appendChild(focusBtn('action', 'Indietro', 'player-back', backHandler, true));
+    var qualityCycle = function () {};
+    var qualityBtn = focusBtn('action', 'Qualità', 'player-quality', function () { qualityCycle(); });
+    qualityBtn.style.display = 'none';
+    hud.appendChild(qualityBtn);
     var status = el('p', 'hint', 'Prepariamo lo stream…');
     status.id = 'play-status';
     hud.appendChild(status);
     root.appendChild(hud);
     collect('player-back');
+
+    function hideHud() {
+      if (status && status.parentNode) return;
+      hud.className = 'hud hud-hide';
+      if (playerHud) playerHud.hidden = true;
+    }
+    function showHud() {
+      hud.className = 'hud';
+      if (playerHud) playerHud.hidden = false;
+      collect(currentFid() || 'player-back');
+      if (hudTimer) window.clearTimeout(hudTimer);
+      hudTimer = window.setTimeout(hideHud, 3500);
+    }
+    playerHud = { hidden: false, show: showHud, touch: showHud, dispose: clearHud };
 
     var url = '/api/player/resolve?tmdbId=' + id + '&type=' + type;
     if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
@@ -948,9 +1029,37 @@
         video.src = source.url;
         playWhenReady(video);
       }
-      attachStream(video, source.url, fallbackNative);
+      attachStream(video, source.url, fallbackNative, function (hls, levels, best, lockLevel) {
+        if (!levels || !levels.length) return;
+        var order = [];
+        var i;
+        for (i = 0; i < levels.length; i++) order.push(i);
+        order.sort(function (a, b) {
+          var dh = (levels[b].height || 0) - (levels[a].height || 0);
+          if (dh) return dh;
+          return (levels[b].bitrate || 0) - (levels[a].bitrate || 0);
+        });
+        var qPos = 0;
+        for (i = 0; i < order.length; i++) {
+          if (order[i] === best) qPos = i;
+        }
+        function setQualityLabel(index) {
+          qualityBtn.innerHTML = '';
+          qualityBtn.appendChild(document.createTextNode(levelLabel(levels[index])));
+        }
+        qualityBtn.style.display = 'inline-block';
+        setQualityLabel(best);
+        qualityCycle = function () {
+          qPos = (qPos + 1) % order.length;
+          lockLevel(order[qPos]);
+          setQualityLabel(order[qPos]);
+          if (playerHud) playerHud.show();
+        };
+        collect(currentFid() || 'player-back');
+      });
       function hideStatus() {
         if (status && status.parentNode) status.parentNode.removeChild(status);
+        if (playerHud) playerHud.touch();
       }
       video.addEventListener('loadeddata', hideStatus);
       video.addEventListener('playing', hideStatus);
@@ -982,6 +1091,7 @@
   }
 
   function route() {
+    if (playerHud && playerHud.dispose) playerHud.dispose();
     var parts = (window.location.pathname || '').split('/');
     var section = parts[2] || '';
     var third = parts[3] || '';
