@@ -382,7 +382,9 @@
     copy.appendChild(plot);
     if (item && item.id) {
       copy.appendChild(focusBtn('action main', 'Riproduci', 'hero-play', function () {
-        if (heroItem && heroItem.id) openPlay(heroItem.type, heroItem.id);
+        if (!heroItem || !heroItem.id) return;
+        if (heroItem.type === 'tv') openDetail('tv', heroItem.id);
+        else openPlay('movie', heroItem.id);
       }, true));
       copy.appendChild(focusBtn('action', 'Scheda', 'hero-info', function () {
         if (heroItem && heroItem.id) openDetail(heroItem.type, heroItem.id);
@@ -395,9 +397,28 @@
     go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
   }
 
+  function firstEpisode(seasons) {
+    var s, e, season, ep;
+    for (s = 0; s < (seasons || []).length; s++) {
+      season = seasons[s];
+      if (!season || !season.episodes || !season.episodes.length) continue;
+      if (Number(season.season_number) === 0) continue;
+      ep = season.episodes[0];
+      return {
+        season: Number(season.season_number) || 1,
+        episode: Number(ep.episode_number) || 1
+      };
+    }
+    return null;
+  }
+
   function openPlay(type, id, season, episode) {
     if (type === 'tv') {
-      go('/living/player/tv/' + id + '?season=' + (season || 1) + '&episode=' + (episode || 1));
+      if (!season || !episode) {
+        openDetail('tv', id);
+        return;
+      }
+      go('/living/player/tv/' + id + '?season=' + season + '&episode=' + episode);
     } else {
       go('/living/player/movie/' + id);
     }
@@ -790,8 +811,13 @@
       var copy = el('div', 'detail-copy');
       copy.appendChild(el('h1', '', itemTitle(item)));
       copy.appendChild(el('p', 'overview', item.overview || ''));
-      copy.appendChild(focusBtn('action main', 'Riproduci', 'detail-play', function () {
-        openPlay(type, id);
+      var startAt = null;
+      copy.appendChild(focusBtn('action main', type === 'tv' ? 'Riproduci' : 'Riproduci', 'detail-play', function () {
+        if (type === 'tv') {
+          if (startAt) openPlay('tv', id, startAt.season, startAt.episode);
+          return;
+        }
+        openPlay('movie', id);
       }, true));
       copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }));
       stage.appendChild(copy);
@@ -802,16 +828,17 @@
       getJson('/api/tmdb/tv/' + id + '/seasons', function (seasonJson) {
         var seasons = listOf(seasonJson);
         var s, e, season, episode, btn, keep;
+        startAt = firstEpisode(seasons);
         keep = currentFid() || 'detail-play';
         for (s = 0; s < seasons.length && s < 8; s++) {
           season = seasons[s];
-          if (!season || !season.episodes) continue;
+          if (!season || !season.episodes || Number(season.season_number) === 0) continue;
           copy.appendChild(el('p', 'muted', 'Stagione ' + (season.season_number || s + 1)));
           for (e = 0; e < season.episodes.length && e < 16; e++) {
             episode = season.episodes[e];
             btn = focusBtn('chip', String(episode.episode_number || e + 1), 'ep-' + s + '-' + e, (function (sn, en) {
               return function () { openPlay('tv', id, sn, en); };
-            })(season.season_number || s + 1, episode.episode_number || e + 1));
+            })(season.season_number, episode.episode_number || e + 1));
             copy.appendChild(btn);
           }
         }
@@ -968,14 +995,14 @@
       return;
     }
     if (section === 'home') return renderBrowse('home');
+    if (section === 'movie' && third) return renderDetail('movie', third);
     if (section === 'movies') return renderBrowse('movies');
+    if (section === 'series' && third) return renderDetail('tv', third);
     if (section === 'series') return renderBrowse('series');
     if (section === 'search') {
       if (!searchQ) searchQ = storeGet('tv.search');
       return renderSearch();
     }
-    if (section === 'movie' && third) return renderDetail('movie', third);
-    if (section === 'series' && third) return renderDetail('tv', third);
     if (section === 'player' && third && fourth) return renderPlayer(third === 'tv' ? 'tv' : 'movie', fourth);
     renderGate();
   }
