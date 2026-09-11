@@ -7,6 +7,8 @@
   <style>
     html, body { margin: 0; background: #000; color: #fff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100%; }
     body { overflow: hidden; }
+    html, body, #root, .shell, .scroller { -ms-overflow-style: none; scrollbar-width: none; }
+    ::-webkit-scrollbar { width: 0; height: 0; display: none; }
     button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; padding: 0; }
     #root { height: 100%; box-sizing: border-box; }
     @keyframes tvIn { from { opacity: .45; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -69,7 +71,26 @@
     .tile b {
       position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.2);
     }
-    .tile b i { display: block; height: 100%; background: #e50914; }
+    .tile b i { display: block; height: 100%; background: #fff; }
+    .hist-scroller { height: 236px; }
+    .hist-card {
+      display: inline-block; width: 280px; margin: 0 14px 0 0; vertical-align: top; white-space: normal;
+    }
+    .tile.hist-tile {
+      width: 280px; height: 158px; margin: 0;
+      background-position: center; background-size: cover;
+    }
+    .play-badge {
+      position: absolute; left: 10px; bottom: 14px; z-index: 2;
+      height: 32px; line-height: 32px; padding: 0 12px;
+      border-radius: 8px; border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.2); font-size: 14px; font-weight: 700;
+    }
+    .hist-title {
+      display: block; margin: 10px 0 2px; font-size: 16px; font-weight: 600;
+      white-space: nowrap; overflow: hidden;
+    }
+    .hist-sub { display: block; font-size: 14px; color: rgba(255,255,255,.5); }
     .skel-title { width: 220px; height: 22px; border-radius: 8px; margin: 0 0 14px; }
     .shimmer {
       background-image: linear-gradient(90deg, #141414 0%, #2a2a2a 45%, #141414 90%);
@@ -127,6 +148,7 @@
     .empty { padding: 48px 8px 0; }
     .empty h2 { font-size: 28px; margin: 0 0 10px; }
     .detail { position: relative; min-height: calc(100vh - 72px); border-radius: 22px; overflow: hidden; background: #111 center/cover no-repeat; animation: tvIn .32s ease-out; }
+    .detail-series { min-height: 0; height: 56vh; }
     .detail:after {
       content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(90deg, #000 12%, rgba(0,0,0,.7) 48%, transparent);
@@ -138,15 +160,102 @@
       display: inline-block; min-width: 52px; height: 48px; line-height: 48px; padding: 0 14px;
       margin: 0 8px 10px 0; border-radius: 10px; background: rgba(255,255,255,.12); font-size: 20px; text-align: center;
     }
+    .detail-head { display: -webkit-box; display: flex; -webkit-box-align: end; align-items: flex-end; }
+    .detail-poster {
+      width: 160px; height: 240px; border-radius: 12px; margin-right: 28px;
+      background: #181818 center/cover no-repeat; -webkit-flex-shrink: 0; flex-shrink: 0;
+    }
+    .detail-meta { font-size: 18px; color: rgba(255,255,255,.55); margin: 0 0 16px; }
+    .detail-meta span { margin-right: 14px; }
+    .ep-section { padding: 8px 8px 40px; }
+    .ep-head { margin: 0 0 18px; }
+    .ep-head h2 { display: inline-block; font-size: 26px; margin: 0 16px 0 0; vertical-align: middle; }
+    .season-wrap { position: relative; display: inline-block; vertical-align: middle; }
+    .season-toggle {
+      display: inline-block; height: 44px; line-height: 44px; padding: 0 16px;
+      border: 1px solid rgba(255,255,255,.25); border-radius: 10px; background: transparent;
+      font-size: 18px;
+    }
+    .season-menu {
+      position: absolute; left: 0; top: 100%; margin-top: 8px; min-width: 240px; z-index: 8;
+      background: #09090b; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; overflow: hidden;
+    }
+    .season-opt {
+      display: block; width: 100%; text-align: left; padding: 14px 18px; box-sizing: border-box;
+      color: rgba(255,255,255,.72); font-size: 18px; background: transparent;
+    }
+    .season-opt.on { background: rgba(255,255,255,.1); color: #fff; }
+    .season-opt span { display: block; font-size: 14px; color: rgba(255,255,255,.4); margin-top: 4px; }
+    .ep-list { border-top: 1px solid rgba(255,255,255,.1); }
+    .ep-row {
+      display: -webkit-box; display: flex; -webkit-box-align: start; align-items: flex-start;
+      width: 100%; padding: 20px 8px; box-sizing: border-box; text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .ep-num { width: 36px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-top: 28px; font-size: 20px; color: rgba(255,255,255,.35); }
+    .episode-watched .ep-num { color: #fff; }
+    .ep-still {
+      position: relative; width: 196px; height: 110px; -webkit-flex-shrink: 0; flex-shrink: 0;
+      border-radius: 8px; overflow: hidden; background: #181818 center/cover no-repeat;
+    }
+    .episode-watched .ep-still { box-shadow: 0 0 0 1px rgba(255,255,255,.7); }
+    .ep-still:after {
+      content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -10px 0 0 -6px;
+      border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 16px solid #fff;
+    }
+    .ep-still b {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.2);
+    }
+    .ep-still b i { display: block; height: 100%; background: #fff; }
+    .ep-body { -webkit-box-flex: 1; flex: 1; min-width: 0; padding: 0 0 0 18px; }
+    .ep-title { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+    .ep-runtime { float: right; font-size: 16px; color: rgba(255,255,255,.4); font-weight: 400; }
+    .ep-last { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); margin: 0 0 6px; }
+    .ep-plot { font-size: 18px; line-height: 1.4; color: rgba(255,255,255,.55); max-height: 4.2em; overflow: hidden; margin: 0; }
+    @keyframes episode-light-sweep {
+      from { -webkit-transform: translateX(-80%); transform: translateX(-80%); opacity: .85; }
+      to { -webkit-transform: translateX(180%); transform: translateX(180%); opacity: 0; }
+    }
+    .ep-row > * { position: relative; z-index: 1; }
+    .episode-watched { position: relative; overflow: hidden; }
+    .episode-watched:before {
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.09) 36%, rgba(255,255,255,.03) 58%, transparent 82%);
+    }
+    .episode-watched:after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 42%; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+      -webkit-transform: translateX(-100%); transform: translateX(-100%);
+      -webkit-animation: episode-light-sweep 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+      animation: episode-light-sweep 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+    }
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
     .hud { position: fixed; left: 40px; top: 32px; z-index: 5; transition: opacity .35s ease; }
     .hud-hide { opacity: 0; visibility: hidden; }
+    .cue {
+      position: fixed; left: 50%; top: 40%; z-index: 6; width: 280px; margin-left: -140px;
+      text-align: center; font-size: 48px; font-weight: 700; pointer-events: none;
+      text-shadow: 0 8px 28px rgba(0,0,0,.8); transition: opacity .25s ease;
+    }
+    .cue-hide { opacity: 0; }
+    .transport {
+      position: fixed; left: 64px; right: 64px; bottom: 48px; z-index: 6;
+      transition: opacity .3s ease;
+    }
+    .transport-hide { opacity: 0; visibility: hidden; }
+    .tbar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
+    .tbar i { display: block; height: 100%; width: 0; background: #fff; border-radius: 99px; }
+    .ttime { margin-top: 12px; font-size: 22px; color: rgba(255,255,255,.82); }
     [data-tv-focus] { transition: transform .12s ease, box-shadow .12s ease; }
     .is-tv-focused {
       outline: 4px solid #fff !important; outline-offset: 4px;
       transform: scale(1.06); z-index: 3;
       box-shadow: 0 16px 40px rgba(0,0,0,.45);
     }
+    .ep-row.is-tv-focused, .season-toggle.is-tv-focused, .season-opt.is-tv-focused {
+      transform: none; box-shadow: none; outline-offset: 2px;
+    }
+    .ep-row.is-tv-focused { background: rgba(255,255,255,.06); }
     .hint { color: rgba(255,255,255,.5); font-size: 20px; }
     .muted { color: rgba(255,255,255,.5); font-size: 18px; }
     .spinner {
@@ -190,6 +299,106 @@
   }
   function storeSet(key, value) {
     try { window.sessionStorage.setItem(key, value || ''); } catch (e) {}
+  }
+
+  function readLocalWatch() {
+    try {
+      var raw = window.localStorage.getItem('thp_watch_history');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function writeLocalWatch(entry) {
+    var list = readLocalWatch();
+    var i, found = -1;
+    for (i = 0; i < list.length; i++) {
+      if (Number(list[i].id) === Number(entry.id) && list[i].type === entry.type) found = i;
+    }
+    if (found >= 0) list.splice(found, 1);
+    list.unshift(entry);
+    if (list.length > 12) list = list.slice(0, 12);
+    try { window.localStorage.setItem('thp_watch_history', JSON.stringify(list)); } catch (e) {}
+  }
+
+  function historyFrom(entries) {
+    var out = [];
+    var i, e;
+    if (!entries) return out;
+    for (i = 0; i < entries.length && i < 12; i++) {
+      e = entries[i];
+      if (!e) continue;
+      out.push({
+        id: e.id,
+        tmdb_id: e.id,
+        title: e.title,
+        name: e.title,
+        overview: e.overview || '',
+        poster_path: e.poster_path,
+        backdrop_path: e.backdrop_path,
+        type: e.type || 'movie',
+        contentType: e.type || 'movie',
+        progress: e.progress || 0,
+        season: e.season,
+        episode: e.episode,
+        currentTime: e.currentTime || e.position_seconds || 0,
+        duration: e.duration,
+        watchedAt: e.watchedAt || 0
+      });
+    }
+    return out;
+  }
+
+  function mergeHistory(json) {
+    var remote = historyFrom((json && json.entries) || []);
+    var local = historyFrom(readLocalWatch());
+    var map = {};
+    var i, key, out;
+    for (i = 0; i < remote.length; i++) {
+      key = remote[i].type + '-' + remote[i].id;
+      map[key] = remote[i];
+    }
+    for (i = 0; i < local.length; i++) {
+      key = local[i].type + '-' + local[i].id;
+      if (!map[key] || (local[i].watchedAt || 0) >= (map[key].watchedAt || 0)) map[key] = local[i];
+    }
+    out = [];
+    for (key in map) {
+      if (Object.prototype.hasOwnProperty.call(map, key)) out.push(map[key]);
+    }
+    out.sort(function (a, b) { return (b.watchedAt || 0) - (a.watchedAt || 0); });
+    return out.slice(0, 12);
+  }
+
+  function rememberPlay(item, type, id) {
+    storeSet('tv.play', JSON.stringify({
+      id: Number(id),
+      type: type,
+      title: itemTitle(item) || 'Titolo',
+      poster_path: item && item.poster_path,
+      backdrop_path: item && item.backdrop_path
+    }));
+  }
+
+  function playMeta() {
+    try { return JSON.parse(storeGet('tv.play') || '{}'); } catch (e) { return {}; }
+  }
+
+  function trackWatch(body) {
+    writeLocalWatch({
+      id: body.id,
+      type: body.type,
+      title: body.title,
+      poster_path: body.poster_path,
+      backdrop_path: body.backdrop_path,
+      season: body.season,
+      episode: body.episode,
+      progress: body.progress || 0,
+      currentTime: body.position_seconds,
+      watchedAt: new Date().getTime()
+    });
+    cache.home = null;
+    cache.series = null;
+    postJson('/api/watch-history', body, function () {});
   }
   try {
     var savedHouse = storeGet('tv.house');
@@ -350,18 +559,16 @@
     var c = codeOf(event);
     var key = event.key || '';
     var isBack = c === 461 || c === 27 || key === 'Escape' || key === 'GoBack';
-    if (playerHud && playerHud.hidden && !isBack) {
+    if (playerHud && playerHud.handleKey && playerHud.handleKey(c, key, isBack)) {
       if (event.preventDefault) event.preventDefault();
-      playerHud.show();
       return false;
     }
-    if (playerHud && !isBack) playerHud.touch();
     if (c === 37 || key === 'ArrowLeft' || key === 'Left') { if (event.preventDefault) event.preventDefault(); move('left'); return false; }
     if (c === 39 || key === 'ArrowRight' || key === 'Right') { if (event.preventDefault) event.preventDefault(); move('right'); return false; }
     if (c === 38 || key === 'ArrowUp' || key === 'Up') { if (event.preventDefault) event.preventDefault(); move('up'); return false; }
     if (c === 40 || key === 'ArrowDown' || key === 'Down') { if (event.preventDefault) event.preventDefault(); move('down'); return false; }
     if (c === 13 || c === 23 || key === 'Enter' || key === 'Select') { if (event.preventDefault) event.preventDefault(); activate(); return false; }
-    if (c === 461 || c === 27 || key === 'Escape' || key === 'GoBack') {
+    if (isBack) {
       if (event.preventDefault) event.preventDefault();
       if (backHandler) backHandler();
       else if (window.history) history.back();
@@ -488,10 +695,17 @@
     copy.appendChild(title);
     copy.appendChild(plot);
     if (item && item.id) {
-      copy.appendChild(focusBtn('action main', 'Riproduci', 'hero-play', function () {
+      copy.appendChild(focusBtn('action main', (item.season || item.currentTime) ? 'Continua' : 'Riproduci', 'hero-play', function () {
         if (!heroItem || !heroItem.id) return;
-        if (heroItem.type === 'tv') openDetail('tv', heroItem.id);
-        else openPlay('movie', heroItem.id);
+        if (heroItem.type === 'tv') {
+          if (heroItem.season && heroItem.episode) {
+            rememberPlay(heroItem, 'tv', heroItem.id);
+            openPlay('tv', heroItem.id, heroItem.season, heroItem.episode, heroItem.currentTime);
+          } else openDetail('tv', heroItem.id);
+        } else {
+          rememberPlay(heroItem, 'movie', heroItem.id);
+          openPlay('movie', heroItem.id, null, null, heroItem.currentTime);
+        }
       }, true));
       copy.appendChild(focusBtn('action', 'Scheda', 'hero-info', function () {
         if (heroItem && heroItem.id) openDetail(heroItem.type, heroItem.id);
@@ -519,21 +733,22 @@
     return null;
   }
 
-  function openPlay(type, id, season, episode) {
+  function openPlay(type, id, season, episode, startAt) {
     if (type === 'tv') {
       if (!season || !episode) {
         openDetail('tv', id);
         return;
       }
-      go('/living/player/tv/' + id + '?season=' + season + '&episode=' + episode);
+      go('/living/player/tv/' + id + '?season=' + season + '&episode=' + episode + (startAt ? '&startAt=' + Math.floor(startAt) : ''));
     } else {
-      go('/living/player/movie/' + id);
+      go('/living/player/movie/' + id + (startAt ? '?startAt=' + Math.floor(startAt) : ''));
     }
   }
 
-  function decorateTile(tile, item, fallbackType, fid) {
+  function decorateTile(tile, item, fallbackType, fid, useBack) {
     var type = itemType(item, fallbackType);
     var id = itemId(item);
+    var src = useBack ? img(item, 'w780', 'back') : img(item, 'w342', 'poster');
     tile.setAttribute('data-kind', 'tile');
     tile.setAttribute('data-id', String(id || ''));
     tile.setAttribute('data-type', type);
@@ -542,7 +757,7 @@
     tile.setAttribute('data-poster', img(item, 'w342', 'poster'));
     tile.setAttribute('data-back', img(item, 'w1280', 'back'));
     tile.setAttribute('data-fid', fid);
-    if (img(item, 'w342', 'poster')) tile.style.backgroundImage = 'url(' + img(item, 'w342', 'poster') + ')';
+    if (src) tile.style.backgroundImage = 'url(' + src + ')';
     if (item.progress) {
       var bar = el('b');
       var fill = el('i');
@@ -556,17 +771,44 @@
     if (!items || !items.length) return null;
     var box = el('div', 'rail');
     box.appendChild(el('h2', '', title));
-    var scroller = el('div', 'scroller');
-    var i, item, tile, fid, limit;
+    var scroller = el('div', railId === 'hist' ? 'scroller hist-scroller' : 'scroller');
+    var i, item, tile, fid, limit, card, sub, kind;
     limit = items.length > 14 ? 14 : items.length;
     for (i = 0; i < limit; i++) {
       item = items[i];
       fid = (i === 0 && railId === 'top') ? 'tile-0' : ('tile-' + railId + '-' + i);
-      tile = focusBtn('tile', '', fid, (function (it, kind) {
-        return function () { openDetail(itemType(it, kind), itemId(it)); };
-      })(item, fallbackType), i === 0 && railId === 'top');
-      decorateTile(tile, item, fallbackType, fid);
-      scroller.appendChild(tile);
+      tile = focusBtn(railId === 'hist' ? 'tile hist-tile' : 'tile', '', fid, (function (it, fb, rail) {
+        return function () {
+          if (rail === 'hist') {
+            if (itemType(it, fb) === 'tv' && it.season && it.episode) {
+              rememberPlay(it, 'tv', itemId(it));
+              openPlay('tv', itemId(it), it.season, it.episode, it.currentTime);
+              return;
+            }
+            if (itemType(it, fb) === 'movie') {
+              rememberPlay(it, 'movie', itemId(it));
+              openPlay('movie', itemId(it), null, null, it.currentTime);
+              return;
+            }
+          }
+          openDetail(itemType(it, fb), itemId(it));
+        };
+      })(item, fallbackType, railId), i === 0 && railId === 'top');
+      decorateTile(tile, item, fallbackType, fid, railId === 'hist');
+      if (railId === 'hist') {
+        tile.appendChild(el('span', 'play-badge', 'Play'));
+        card = el('div', 'hist-card');
+        card.appendChild(tile);
+        card.appendChild(el('span', 'hist-title', itemTitle(item)));
+        kind = itemType(item, fallbackType);
+        if (kind === 'tv' && item.season && item.episode) sub = 'S' + item.season + ' E' + item.episode;
+        else if (kind === 'tv') sub = 'Serie TV';
+        else sub = 'Film';
+        card.appendChild(el('span', 'hist-sub', sub));
+        scroller.appendChild(card);
+      } else {
+        scroller.appendChild(tile);
+      }
     }
     box.appendChild(scroller);
     return box;
@@ -580,7 +822,12 @@
       title: itemTitle(item),
       overview: item.overview || '',
       backdrop: img(item, 'w1280', 'back'),
-      poster: img(item, 'w342', 'poster')
+      poster: img(item, 'w342', 'poster'),
+      season: item.season,
+      episode: item.episode,
+      currentTime: item.currentTime,
+      poster_path: item.poster_path,
+      backdrop_path: item.backdrop_path
     };
   }
 
@@ -866,6 +1113,10 @@
       rail = renderRail('Continua a guardare', data.history, 'movie', 'hist');
       if (rail) page.appendChild(rail);
     }
+    if (kind === 'series' && data.history && data.history.length) {
+      rail = renderRail('Continua a guardare', data.history, 'tv', 'hist');
+      if (rail) page.appendChild(rail);
+    }
     if (kind === 'home' || kind === 'movies') {
       if (kind === 'home') {
         rail = renderRail('Top 10', data.top, 'movie', 'top');
@@ -891,30 +1142,31 @@
   }
 
   function historyItems(json) {
-    var entries = (json && json.entries) || [];
+    return mergeHistory(json);
+  }
+
+  function tvHistory(items) {
     var out = [];
-    var i, e;
-    for (i = 0; i < entries.length && i < 12; i++) {
-      e = entries[i];
-      out.push({
-        id: e.id,
-        tmdb_id: e.id,
-        title: e.title,
-        name: e.title,
-        overview: '',
-        poster_path: e.poster_path,
-        backdrop_path: e.backdrop_path,
-        type: e.type,
-        contentType: e.type,
-        progress: e.progress
-      });
+    var i;
+    for (i = 0; i < (items || []).length; i++) {
+      if (itemType(items[i], 'movie') === 'tv') out.push(items[i]);
     }
     return out;
   }
 
   function renderBrowse(kind) {
-    if (cache[kind]) {
+    if (cache[kind] && kind !== 'home' && kind !== 'series') {
       paintBrowse(kind, cache[kind]);
+      return;
+    }
+    if (cache[kind] && (kind === 'home' || kind === 'series')) {
+      paintBrowse(kind, cache[kind]);
+      getJson('/api/watch-history', function (json) {
+        var hist = historyItems(json);
+        if (kind === 'series') hist = tvHistory(hist);
+        cache[kind].history = hist;
+        if (pathNow().indexOf('/living/' + (kind === 'home' ? 'home' : 'series')) === 0) paintBrowse(kind, cache[kind]);
+      });
       return;
     }
     root.innerHTML = '';
@@ -936,8 +1188,10 @@
     if (kind === 'series') {
       getJson('/api/catalog/popular/tv', function (a) {
         getJson('/api/catalog/latest/tv', function (b) {
-          cache.series = { top: [], movies: [], recent: [], tv: listOf(a), tvRecent: listOf(b), history: [] };
-          paintBrowse('series', cache.series);
+          getJson('/api/watch-history', function (h) {
+            cache.series = { top: [], movies: [], recent: [], tv: listOf(a), tvRecent: listOf(b), history: tvHistory(historyItems(h)) };
+            paintBrowse('series', cache.series);
+          });
         });
       });
       return;
@@ -1102,6 +1356,36 @@
     if (searchQ) scheduleSearch();
   }
 
+  function usableSeasons(seasons) {
+    var out = [];
+    var i, season;
+    for (i = 0; i < (seasons || []).length; i++) {
+      season = seasons[i];
+      if (!season || !season.episodes || !season.episodes.length) continue;
+      if (Number(season.season_number) === 0) continue;
+      out.push(season);
+    }
+    return out;
+  }
+
+  function findLastWatched(history, id) {
+    var i, e;
+    id = Number(id);
+    for (i = 0; i < (history || []).length; i++) {
+      e = history[i];
+      if (itemType(e, 'movie') === 'tv' && Number(itemId(e)) === id && e.season && e.episode) {
+        return { season: Number(e.season), episode: Number(e.episode), progress: e.progress || 0, currentTime: e.currentTime };
+      }
+    }
+    return null;
+  }
+
+  function episodeProgressOf(history, id, season, episode) {
+    var last = findLastWatched(history, id);
+    if (last && last.season === season && last.episode === episode) return last.progress || 0;
+    return 0;
+  }
+
   function renderDetail(type, id) {
     backHandler = function () { go('/living/home'); };
     root.innerHTML = '';
@@ -1113,27 +1397,35 @@
     var path = type === 'tv' ? '/api/tmdb/tv/' + id : '/api/tmdb/movies/' + id;
     getJson(path, function (json) {
       var item = json && json.data ? json.data : json;
-      root.innerHTML = '';
-      page = el('div', 'shell');
-      page.appendChild(renderNav(type === 'tv' ? 'series' : 'movies'));
       if (!item) {
+        root.innerHTML = '';
+        page = el('div', 'shell');
+        page.appendChild(renderNav(type === 'tv' ? 'series' : 'movies'));
         page.appendChild(el('h1', '', 'Non trovato'));
         page.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }, true));
         root.appendChild(page);
         collect('detail-back');
         return;
       }
+      if (type === 'tv') {
+        getJson('/api/tmdb/tv/' + id + '/seasons', function (seasonJson) {
+          getJson('/api/watch-history', function (histJson) {
+            paintSeriesDetail(item, id, usableSeasons(listOf(seasonJson)), mergeHistory(histJson));
+          });
+        });
+        return;
+      }
+      rememberPlay(item, 'movie', id);
+      root.innerHTML = '';
+      page = el('div', 'shell');
+      page.appendChild(renderNav('movies'));
       var stage = el('div', 'detail');
       if (img(item, 'original', 'back')) stage.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
       var copy = el('div', 'detail-copy');
       copy.appendChild(el('h1', '', itemTitle(item)));
       copy.appendChild(el('p', 'overview', item.overview || ''));
-      var startAt = null;
-      copy.appendChild(focusBtn('action main', type === 'tv' ? 'Riproduci' : 'Riproduci', 'detail-play', function () {
-        if (type === 'tv') {
-          if (startAt) openPlay('tv', id, startAt.season, startAt.episode);
-          return;
-        }
+      copy.appendChild(focusBtn('action main', 'Riproduci', 'detail-play', function () {
+        rememberPlay(item, 'movie', id);
         openPlay('movie', id);
       }, true));
       copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }));
@@ -1141,27 +1433,183 @@
       page.appendChild(stage);
       root.appendChild(page);
       collect('detail-play');
-      if (type !== 'tv') return;
-      getJson('/api/tmdb/tv/' + id + '/seasons', function (seasonJson) {
-        var seasons = listOf(seasonJson);
-        var s, e, season, episode, btn, keep;
-        startAt = firstEpisode(seasons);
-        keep = currentFid() || 'detail-play';
-        for (s = 0; s < seasons.length && s < 8; s++) {
-          season = seasons[s];
-          if (!season || !season.episodes || Number(season.season_number) === 0) continue;
-          copy.appendChild(el('p', 'muted', 'Stagione ' + (season.season_number || s + 1)));
-          for (e = 0; e < season.episodes.length && e < 16; e++) {
-            episode = season.episodes[e];
-            btn = focusBtn('chip', String(episode.episode_number || e + 1), 'ep-' + s + '-' + e, (function (sn, en) {
-              return function () { openPlay('tv', id, sn, en); };
-            })(season.season_number, episode.episode_number || e + 1));
-            copy.appendChild(btn);
-          }
-        }
-        collect(keep);
-      });
     });
+  }
+
+  function paintSeriesDetail(item, id, seasons, history, keepSeason) {
+    var last = findLastWatched(history, id);
+    var first = firstEpisode(seasons);
+    var selectedSeason;
+    var selectedEpisode;
+    var menuOpen = false;
+    var s, season, found = false;
+    if (keepSeason != null) {
+      selectedSeason = Number(keepSeason);
+      selectedEpisode = (last && Number(last.season) === selectedSeason) ? Number(last.episode) : 1;
+    } else {
+      selectedSeason = (last && last.season) || (first && first.season) || 1;
+      selectedEpisode = (last && last.episode) || (first && first.episode) || 1;
+    }
+    for (s = 0; s < seasons.length; s++) {
+      if (Number(seasons[s].season_number) === Number(selectedSeason)) found = true;
+    }
+    if (!found && seasons[0]) {
+      selectedSeason = Number(seasons[0].season_number);
+      selectedEpisode = Number((seasons[0].episodes[0] && seasons[0].episodes[0].episode_number) || 1);
+    }
+
+    function currentSeason() {
+      var i;
+      for (i = 0; i < seasons.length; i++) {
+        if (Number(seasons[i].season_number) === Number(selectedSeason)) return seasons[i];
+      }
+      return seasons[0];
+    }
+
+    function playSelected() {
+      var lw = findLastWatched(history, id);
+      var start = (lw && lw.season === selectedSeason && lw.episode === selectedEpisode) ? lw.currentTime : 0;
+      rememberPlay(item, 'tv', id);
+      openPlay('tv', id, selectedSeason, selectedEpisode, start);
+    }
+
+    function closeMenu() {
+      menuOpen = false;
+      var tog = root.querySelector('[data-fid="season-toggle"]');
+      if (tog) {
+        tog.innerHTML = '';
+        tog.appendChild(document.createTextNode(toggleLabel(false)));
+      }
+      var menu = document.getElementById('season-menu');
+      if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+      collect('season-toggle');
+    }
+
+    backHandler = function () {
+      if (menuOpen) { closeMenu(); return; }
+      go('/living/home');
+    };
+
+    root.innerHTML = '';
+    var page = el('div', 'shell');
+    page.appendChild(renderNav('series'));
+    var stage = el('div', 'detail detail-series');
+    if (img(item, 'original', 'back')) stage.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
+    var copy = el('div', 'detail-copy');
+    var head = el('div', 'detail-head');
+    var poster = el('div', 'detail-poster');
+    if (img(item, 'w342', 'poster')) poster.style.backgroundImage = 'url(' + img(item, 'w342', 'poster') + ')';
+    head.appendChild(poster);
+    var info = el('div', '');
+    info.appendChild(el('h1', '', itemTitle(item)));
+    var meta = el('div', 'detail-meta');
+    if (item.vote_average) meta.appendChild(el('span', '', (Math.round(item.vote_average * 10) / 10) + ''));
+    if (item.first_air_date) meta.appendChild(el('span', '', String(item.first_air_date).slice(0, 4)));
+    meta.appendChild(el('span', '', seasons.length + (seasons.length === 1 ? ' stagione' : ' stagioni')));
+    info.appendChild(meta);
+    info.appendChild(el('p', 'overview', item.overview || ''));
+    var playLabel = (last && last.season === selectedSeason && last.episode === selectedEpisode)
+      ? ('Continua S' + selectedSeason + 'E' + selectedEpisode)
+      : ('Guarda S' + selectedSeason + 'E' + selectedEpisode);
+    info.appendChild(focusBtn('action main', playLabel, 'detail-play', playSelected, true));
+    info.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }));
+    head.appendChild(info);
+    copy.appendChild(head);
+    stage.appendChild(copy);
+    page.appendChild(stage);
+
+    var section = el('div', 'ep-section');
+    var epHead = el('div', 'ep-head');
+    epHead.appendChild(el('h2', '', 'Episodi'));
+    var wrap = el('div', 'season-wrap');
+    wrap.id = 'season-wrap';
+    function toggleLabel(open) { return 'Stagione ' + selectedSeason + (open ? '  ▴' : '  ▾'); }
+    wrap.appendChild(focusBtn('season-toggle', toggleLabel(false), 'season-toggle', function () {
+      if (menuOpen) { closeMenu(); return; }
+      menuOpen = true;
+      var tog = root.querySelector('[data-fid="season-toggle"]');
+      if (tog) {
+        tog.innerHTML = '';
+        tog.appendChild(document.createTextNode(toggleLabel(true)));
+      }
+      var menu = el('div', 'season-menu');
+      menu.id = 'season-menu';
+      var i, opt, sn, count;
+      for (i = 0; i < seasons.length; i++) {
+        season = seasons[i];
+        sn = Number(season.season_number);
+        count = (season.episodes && season.episodes.length) || season.episode_count || 0;
+        opt = focusBtn('season-opt' + (sn === Number(selectedSeason) ? ' on' : ''), '', 'season-' + sn, (function (num) {
+          return function () {
+            wantFid = 'season-toggle';
+            paintSeriesDetail(item, id, seasons, history, num);
+          };
+        })(sn));
+        opt.appendChild(document.createTextNode('Stagione ' + sn));
+        opt.appendChild(el('span', '', count + ' episodi'));
+        menu.appendChild(opt);
+      }
+      wrap.appendChild(menu);
+      collect('season-' + selectedSeason);
+    }));
+    epHead.appendChild(wrap);
+    section.appendChild(epHead);
+
+    var list = el('div', 'ep-list');
+    season = currentSeason();
+    var episodes = (season && season.episodes) || [];
+    var e, ep, row, still, body, num, title, plot, progress, watched, stillUrl, bar, fill, lastTag;
+    var prefer = 'detail-play';
+    for (e = 0; e < episodes.length; e++) {
+      ep = episodes[e];
+      watched = last && Number(last.season) === Number(selectedSeason) && Number(last.episode) === Number(ep.episode_number);
+      progress = episodeProgressOf(history, id, selectedSeason, ep.episode_number);
+      row = focusBtn('ep-row' + (watched ? ' episode-watched' : ''), '', 'ep-' + selectedSeason + '-' + ep.episode_number, (function (en) {
+        return function () {
+          selectedEpisode = en;
+          var lw = findLastWatched(history, id);
+          var start = (lw && lw.season === selectedSeason && lw.episode === en) ? lw.currentTime : 0;
+          rememberPlay(item, 'tv', id);
+          openPlay('tv', id, selectedSeason, en, start);
+        };
+      })(ep.episode_number));
+      num = el('div', 'ep-num', String(ep.episode_number || e + 1));
+      still = el('div', 'ep-still');
+      stillUrl = ep.still_path ? ('https://image.tmdb.org/t/p/w300' + ep.still_path) : '';
+      if (stillUrl) still.style.backgroundImage = 'url(' + stillUrl + ')';
+      if (progress > 0) {
+        bar = el('b');
+        fill = el('i');
+        fill.style.width = Math.min(100, progress) + '%';
+        bar.appendChild(fill);
+        still.appendChild(bar);
+      }
+      body = el('div', 'ep-body');
+      title = el('div', 'ep-title', ep.name || ('Puntata ' + ep.episode_number));
+      if (ep.runtime) title.appendChild(el('span', 'ep-runtime', ep.runtime + ' min'));
+      body.appendChild(title);
+      if (watched) {
+        lastTag = el('p', 'ep-last', 'Ultima vista');
+        body.appendChild(lastTag);
+      }
+      plot = el('p', 'ep-plot', (ep.overview && String(ep.overview).replace(/^\s+|\s+$/g, '')) || 'Nessuna trama disponibile per questo episodio.');
+      body.appendChild(plot);
+      row.appendChild(num);
+      row.appendChild(still);
+      row.appendChild(body);
+      list.appendChild(row);
+      if (watched) prefer = 'ep-' + selectedSeason + '-' + ep.episode_number;
+    }
+    section.appendChild(list);
+    page.appendChild(section);
+    root.appendChild(page);
+    collect(wantFid || prefer);
+    if (prefer.indexOf('ep-') === 0) {
+      var watchedRow = root.querySelector('[data-fid="' + prefer + '"]');
+      if (watchedRow && watchedRow.scrollIntoView) {
+        try { watchedRow.scrollIntoView(true); } catch (err) {}
+      }
+    }
   }
 
   function loadScript(src, done) {
@@ -1269,6 +1717,9 @@
   function renderPlayer(type, id) {
     var season = parseInt(qs('season'), 10) || 1;
     var episode = parseInt(qs('episode'), 10) || 1;
+    var resumeAt = parseInt(qs('startAt'), 10) || 0;
+    var lastTrack = 0;
+    var meta = playMeta();
     var hudTimer = null;
     function clearHud() {
       if (hudTimer) window.clearTimeout(hudTimer);
@@ -1283,7 +1734,6 @@
     root.innerHTML = '';
     var video = document.createElement('video');
     video.setAttribute('autoplay', 'autoplay');
-    video.setAttribute('controls', 'controls');
     video.setAttribute('playsinline', 'playsinline');
     video.setAttribute('webkit-playsinline', 'true');
     root.appendChild(video);
@@ -1297,21 +1747,158 @@
     status.id = 'play-status';
     hud.appendChild(status);
     root.appendChild(hud);
+    var cue = el('div', 'cue cue-hide');
+    cue.id = 'play-cue';
+    root.appendChild(cue);
+    var transport = el('div', 'transport transport-hide');
+    var tbar = el('div', 'tbar');
+    var fill = el('i');
+    fill.id = 'play-fill';
+    tbar.appendChild(fill);
+    transport.appendChild(tbar);
+    var ttime = el('div', 'ttime', '00:00');
+    ttime.id = 'play-time';
+    transport.appendChild(ttime);
+    root.appendChild(transport);
     collect('player-back');
 
+    var cueTimer = null;
+    var barTimer = null;
+    function fmtTime(sec) {
+      sec = Math.max(0, Math.floor(sec || 0));
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var s = sec % 60;
+      function z(n) { return (n < 10 ? '0' : '') + n; }
+      if (h) return h + ':' + z(m) + ':' + z(s);
+      return z(m) + ':' + z(s);
+    }
+    function syncBar() {
+      var d = video.duration;
+      var t = video.currentTime || 0;
+      if (d && isFinite(d) && d > 0) fill.style.width = Math.min(100, (t / d) * 100) + '%';
+      ttime.innerHTML = '';
+      ttime.appendChild(document.createTextNode(fmtTime(t) + (d && isFinite(d) ? ' / ' + fmtTime(d) : '')));
+    }
+    function showCue(text) {
+      cue.innerHTML = '';
+      cue.appendChild(document.createTextNode(text));
+      cue.className = 'cue';
+      if (cueTimer) window.clearTimeout(cueTimer);
+      cueTimer = window.setTimeout(function () {
+        if (!video.paused) cue.className = 'cue cue-hide';
+      }, 900);
+    }
+    function showBar() {
+      transport.className = 'transport';
+      syncBar();
+      if (barTimer) window.clearTimeout(barTimer);
+      if (!video.paused) {
+        barTimer = window.setTimeout(function () {
+          if (!video.paused) transport.className = 'transport transport-hide';
+        }, 2800);
+      }
+    }
+    function togglePause() {
+      if (video.paused) {
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+        showCue('Play');
+      } else {
+        video.pause();
+        showCue('Pausa');
+      }
+      showBar();
+    }
+    function seekBy(delta) {
+      var d = video.duration;
+      var t = video.currentTime || 0;
+      var next = t + delta;
+      if (next < 0) next = 0;
+      if (d && isFinite(d) && next > d - 0.5) next = Math.max(0, d - 0.5);
+      try { video.currentTime = next; } catch (err) {}
+      showCue((delta > 0 ? '+' : '') + delta + ' s');
+      showBar();
+    }
     function hideHud() {
-      if (status && status.parentNode) return;
       hud.className = 'hud hud-hide';
       if (playerHud) playerHud.hidden = true;
     }
     function showHud() {
       hud.className = 'hud';
       if (playerHud) playerHud.hidden = false;
-      collect(currentFid() || 'player-back');
+      collect(qualityBtn.style.display === 'none' ? 'player-back' : 'player-quality');
       if (hudTimer) window.clearTimeout(hudTimer);
       hudTimer = window.setTimeout(hideHud, 3500);
     }
-    playerHud = { hidden: false, show: showHud, touch: showHud, dispose: clearHud };
+    function handlePlayerKey(c, key, isBack) {
+      if (isBack) return false;
+      var left = c === 37 || c === 412 || key === 'ArrowLeft' || key === 'Left';
+      var right = c === 39 || c === 417 || key === 'ArrowRight' || key === 'Right';
+      var ok = c === 13 || c === 23 || c === 179 || c === 10252 || key === 'Enter' || key === 'Select' || key === ' ' || key === 'MediaPlayPause';
+      var up = c === 38 || key === 'ArrowUp' || key === 'Up';
+      var down = c === 40 || key === 'ArrowDown' || key === 'Down';
+      if (c === 19 || key === 'MediaPause') { if (!video.paused) togglePause(); else showBar(); return true; }
+      if (c === 415 || key === 'MediaPlay') { if (video.paused) togglePause(); else showBar(); return true; }
+      if (left) { seekBy(-10); return true; }
+      if (right) { seekBy(10); return true; }
+      if (up) { showHud(); return true; }
+      if (down) { hideHud(); showBar(); return true; }
+      if (ok) { togglePause(); return true; }
+      return false;
+    }
+    video.addEventListener('timeupdate', syncBar);
+    video.addEventListener('seeked', syncBar);
+    video.addEventListener('pause', function () {
+      showCue('Pausa');
+      showBar();
+      sendProgress(false);
+    });
+    video.addEventListener('play', function () {
+      if (cue.textContent === 'Pausa') cue.className = 'cue cue-hide';
+      showBar();
+    });
+    video.addEventListener('ended', function () { sendProgress(true); });
+    video.addEventListener('timeupdate', function () {
+      var now = new Date().getTime();
+      if (now - lastTrack < 8000) return;
+      lastTrack = now;
+      sendProgress(false);
+    });
+    function applyResume() {
+      if (resumeAt > 5) {
+        try { video.currentTime = resumeAt; } catch (err) {}
+        resumeAt = 0;
+      }
+    }
+    video.addEventListener('loadeddata', applyResume);
+    function sendProgress(ended) {
+      var d = video.duration;
+      var t = video.currentTime || 0;
+      var progress;
+      if (ended) {
+        t = (d && d > 0) ? d : t;
+        progress = 100;
+      } else {
+        if (t < 5) return;
+        progress = (d && isFinite(d) && d > 0) ? Math.min(100, Math.round((t / d) * 100)) : 0;
+      }
+      var body = {
+        id: Number(id),
+        type: type === 'tv' ? 'tv' : 'movie',
+        title: (meta && meta.title) || 'Titolo',
+        poster_path: (meta && meta.poster_path) || null,
+        backdrop_path: (meta && meta.backdrop_path) || null,
+        position_seconds: Math.floor(t),
+        progress: progress
+      };
+      if (type === 'tv') {
+        body.season = season;
+        body.episode = episode;
+      }
+      trackWatch(body);
+    }
+    playerHud = { hidden: false, show: showHud, touch: showHud, dispose: clearHud, handleKey: handlePlayerKey };
 
     var url = '/api/player/resolve?tmdbId=' + id + '&type=' + type;
     if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
@@ -1368,7 +1955,8 @@
       });
       function hideStatus() {
         if (status && status.parentNode) status.parentNode.removeChild(status);
-        if (playerHud) playerHud.touch();
+        hideHud();
+        showBar();
       }
       video.addEventListener('loadeddata', hideStatus);
       video.addEventListener('playing', hideStatus);
