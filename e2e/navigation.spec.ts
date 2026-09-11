@@ -34,7 +34,7 @@ test.describe('Smoke test piattaforma', () => {
                 })
             )
         })
-        await expect(tiles.first()).toBeFocused()
+        await expect(tiles.first()).toHaveClass(/is-tv-focused/)
     })
 
     test('pagina ricerca statica', async ({ page }) => {

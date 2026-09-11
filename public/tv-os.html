@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TheHustlePlace</title>
+  <style>
+    html, body { margin: 0; background: #000; color: #fff; font-family: Arial, sans-serif; height: 100%; }
+    body { overflow: hidden; }
+    #root { min-height: 100%; padding: 56px 80px 80px; box-sizing: border-box; }
+    h1 { font-size: 52px; margin: 0 0 28px; font-weight: 600; }
+    p { font-size: 22px; color: rgba(255,255,255,.55); }
+    .row { display: block; }
+    .row:after { content: ""; display: table; clear: both; }
+    button { font: inherit; color: inherit; border: 0; background: transparent; }
+    .avatar, .plus, .navbtn, .tile, .key, .action, .chip {
+      outline: none;
+    }
+    .avatar, .plus {
+      width: 160px; height: 160px; border-radius: 20px; font-size: 64px; font-weight: 700;
+      margin: 0 16px 8px; vertical-align: top; display: inline-block;
+    }
+    .plus { border: 3px dashed rgba(255,255,255,.28); color: rgba(255,255,255,.7); background: #141414; }
+    .name { display: inline-block; width: 160px; text-align: center; font-size: 24px; margin: 0 16px 24px; }
+    .navbtn, .action, .chip {
+      display: inline-block; height: 56px; line-height: 56px; padding: 0 28px;
+      margin: 0 10px 12px 0; border-radius: 10px; background: rgba(255,255,255,.12); font-size: 20px;
+    }
+    .action.main { background: #fff; color: #000; font-weight: 700; }
+    .tile {
+      width: 148px; height: 222px; margin: 0 12px 12px 0; border-radius: 10px;
+      background: #1a1a1a center/cover no-repeat; display: inline-block; vertical-align: top;
+    }
+    .key {
+      width: 64px; height: 64px; margin: 4px; border-radius: 10px;
+      background: rgba(255,255,255,.12); font-size: 24px; font-weight: 700;
+    }
+    .poster { float: left; width: 240px; height: 360px; border-radius: 12px; background: #1a1a1a center/cover; margin-right: 40px; }
+    .overview { font-size: 22px; line-height: 1.45; max-width: 900px; color: rgba(255,255,255,.7); }
+    video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+    .hud { position: fixed; left: 40px; top: 36px; z-index: 5; }
+    .is-tv-focused {
+      outline: 6px solid #fff !important; outline-offset: 4px;
+      transform: scale(1.06);
+    }
+    .hint { margin-top: 18px; font-size: 20px; }
+    .code { font-size: 72px; letter-spacing: .18em; margin: 36px 0; }
+    .typed { font-size: 48px; letter-spacing: .12em; min-height: 64px; margin: 12px 0 28px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <h1>Chi guarda?</h1>
+    <div>
+      <button type="button" data-tv-focus class="avatar is-tv-focused" style="background:#2563eb">O</button>
+      <button type="button" data-tv-focus class="plus">+</button>
+    </div>
+  </div>
+  <script>
+(function () {
+  var AVATARS = ['#2563eb', '#db2777', '#16a34a', '#ca8a04', '#7c3aed', '#ea580c', '#0d9488', '#e11d48'];
+  var KEYS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var root = document.getElementById('root');
+  var nodes = [];
+  var idx = 0;
+  var gateView = 'pick';
+  var selectedProfile = null;
+  var household = {
+    configured: false,
+    profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }]
+  };
+  var createName = '';
+  var createAvatar = 0;
+  var adoptCode = '';
+  var searchQ = '';
+  var backHandler = null;
+
+  function go(path) {
+    window.location.href = path;
+  }
+
+  function codeOf(event) {
+    return event.keyCode || event.which || 0;
+  }
+
+  function qs(name) {
+    var raw = window.location.search.replace(/^\?/, '').split('&');
+    var i, pair;
+    for (i = 0; i < raw.length; i++) {
+      pair = raw[i].split('=');
+      if (decodeURIComponent(pair[0] || '') === name) {
+        return decodeURIComponent(pair[1] || '');
+      }
+    }
+    return '';
+  }
+
+  function listOf(payload) {
+    if (!payload) return [];
+    var data = payload.data !== undefined ? payload.data : payload;
+    if (data && data.results) return data.results;
+    if (Object.prototype.toString.call(data) === '[object Array]') return data;
+    return [];
+  }
+
+  function itemId(item) {
+    return item.tmdb_id || item.id;
+  }
+
+  function itemTitle(item) {
+    return item.title || item.name || 'Titolo';
+  }
+
+  function itemType(item, fallback) {
+    return item.contentType || item.type || fallback || 'movie';
+  }
+
+  function poster(item, size) {
+    var path = item.poster_path || item.backdrop_path;
+    if (!path) return '';
+    return 'https://image.tmdb.org/t/p/' + (size || 'w300') + path;
+  }
+
+  function getJson(url, done) {
+    if (!window.fetch) {
+      done(null);
+      return;
+    }
+    fetch(url, { credentials: 'same-origin' }).then(function (res) {
+      return res.json();
+    }).then(done).catch(function () {
+      done(null);
+    });
+  }
+
+  function postJson(url, body, done) {
+    if (!window.fetch) {
+      done(null);
+      return;
+    }
+    fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      return res.json();
+    }).then(done).catch(function () {
+      done(null);
+    });
+  }
+
+  function paint() {
+    var i, el, cls;
+    for (i = 0; i < nodes.length; i++) {
+      el = nodes[i];
+      cls = el.className.replace(/\s*is-tv-focused/g, '');
+      if (i === idx) cls += ' is-tv-focused';
+      el.className = cls.replace(/^\s+/, '');
+    }
+    if (nodes[idx] && nodes[idx].focus) {
+      try { nodes[idx].focus(); } catch (err) {}
+    }
+  }
+
+  function collect() {
+    var found = root.querySelectorAll('[data-tv-focus]');
+    nodes = [];
+    var i;
+    for (i = 0; i < found.length; i++) nodes.push(found[i]);
+    if (idx >= nodes.length) idx = 0;
+    paint();
+  }
+
+  function move(dir) {
+    if (!nodes.length) return;
+    var cur = nodes[idx].getBoundingClientRect();
+    var best = -1;
+    var bestScore = 1000000;
+    var i, next, dx, dy, primary, side, score;
+    for (i = 0; i < nodes.length; i++) {
+      if (i === idx) continue;
+      next = nodes[i].getBoundingClientRect();
+      dx = (next.left + next.width / 2) - (cur.left + cur.width / 2);
+      dy = (next.top + next.height / 2) - (cur.top + cur.height / 2);
+      primary = 0;
+      side = 0;
+      if (dir === 'right') {
+        if (dx <= 2) continue;
+        primary = dx;
+        side = dy < 0 ? -dy : dy;
+      } else if (dir === 'left') {
+        if (dx >= -2) continue;
+        primary = -dx;
+        side = dy < 0 ? -dy : dy;
+      } else if (dir === 'down') {
+        if (dy <= 2) continue;
+        primary = dy;
+        side = dx < 0 ? -dx : dx;
+      } else {
+        if (dy >= -2) continue;
+        primary = -dy;
+        side = dx < 0 ? -dx : dx;
+      }
+      score = primary + side * 2.4;
+      if (score < bestScore) {
+        bestScore = score;
+        best = i;
+      }
+    }
+    if (best >= 0) {
+      idx = best;
+      paint();
+    }
+  }
+
+  function activate() {
+    if (!nodes[idx]) return;
+    if (nodes[idx].click) nodes[idx].click();
+  }
+
+  function onKey(event) {
+    var c = codeOf(event);
+    var key = event.key || '';
+    if (c === 37 || key === 'ArrowLeft' || key === 'Left') {
+      if (event.preventDefault) event.preventDefault();
+      move('left');
+      return false;
+    }
+    if (c === 39 || key === 'ArrowRight' || key === 'Right') {
+      if (event.preventDefault) event.preventDefault();
+      move('right');
+      return false;
+    }
+    if (c === 38 || key === 'ArrowUp' || key === 'Up') {
+      if (event.preventDefault) event.preventDefault();
+      move('up');
+      return false;
+    }
+    if (c === 40 || key === 'ArrowDown' || key === 'Down') {
+      if (event.preventDefault) event.preventDefault();
+      move('down');
+      return false;
+    }
+    if (c === 13 || c === 23 || key === 'Enter' || key === 'Select') {
+      if (event.preventDefault) event.preventDefault();
+      activate();
+      return false;
+    }
+    if (c === 461 || c === 27 || key === 'Escape' || key === 'GoBack') {
+      if (event.preventDefault) event.preventDefault();
+      if (backHandler) backHandler();
+      else history.back();
+      return false;
+    }
+    return true;
+  }
+
+  document.onkeydown = onKey;
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.appendChild(document.createTextNode(text));
+    return node;
+  }
+
+  function focusBtn(className, text, onClick) {
+    var node = el('button', className, text);
+    node.type = 'button';
+    node.setAttribute('data-tv-focus', '');
+    node.onclick = function (event) {
+      if (event && event.preventDefault) event.preventDefault();
+      onClick();
+    };
+    return node;
+  }
+
+  function applyHousehold(data) {
+    if (!data || !data.profiles || !data.profiles.length) return;
+    household = data;
+  }
+
+  function enterProfile(profile) {
+    if (!profile) return;
+    if (profile.id === 'local') {
+      go('/living/home');
+      return;
+    }
+    postJson('/api/household/switch', { profileId: profile.id }, function () {
+      go('/living/home');
+    });
+  }
+
+  function renderNav(active) {
+    var nav = el('div', 'row');
+    function add(label, path, id) {
+      var btn = focusBtn('navbtn', label, function () { go(path); });
+      if (id === active) btn.style.background = '#fff';
+      if (id === active) btn.style.color = '#000';
+      nav.appendChild(btn);
+    }
+    add('Home', '/living/home', 'home');
+    add('Film', '/living/movies', 'movies');
+    add('Serie', '/living/series', 'series');
+    add('Cerca', '/living/search', 'search');
+    add('Profili', '/living', 'profiles');
+    return nav;
+  }
+
+  function renderGate() {
+    backHandler = function () {};
+    root.innerHTML = '';
+    idx = 0;
+
+    if (gateView === 'create') {
+      renderCreate();
+      return;
+    }
+    if (gateView === 'adopt') {
+      renderAdopt();
+      return;
+    }
+    if (gateView === 'code' && selectedProfile) {
+      var h = el('h1', '', 'Collega ' + selectedProfile.name);
+      root.innerHTML = '';
+      root.appendChild(h);
+      root.appendChild(el('p', '', 'Sul telefono apri Codice e inserisci questo valore.'));
+      root.appendChild(el('div', 'code', selectedProfile.pairCode || '—'));
+      root.appendChild(focusBtn('action main', 'Fatto', function () {
+        gateView = 'pick';
+        renderGate();
+      }));
+      collect();
+      return;
+    }
+
+    root.appendChild(el('h1', '', 'Chi guarda?'));
+    var row = el('div', 'row');
+    var i, profile, wrap, avatar, label, link;
+    for (i = 0; i < household.profiles.length; i++) {
+      profile = household.profiles[i];
+      wrap = el('div', '');
+      wrap.style.display = 'inline-block';
+      wrap.style.verticalAlign = 'top';
+      wrap.style.textAlign = 'center';
+      avatar = focusBtn('avatar', (profile.name || '?').charAt(0).toUpperCase(), (function (p) {
+        return function () { enterProfile(p); };
+      })(profile));
+      avatar.style.background = AVATARS[profile.avatar || 0] || AVATARS[0];
+      wrap.appendChild(avatar);
+      wrap.appendChild(document.createElement('br'));
+      label = el('span', 'name', profile.name || 'Profilo');
+      wrap.appendChild(label);
+      if (household.configured && profile.pairCode) {
+        wrap.appendChild(document.createElement('br'));
+        link = focusBtn('navbtn', 'Collega telefono', (function (p) {
+          return function () {
+            selectedProfile = p;
+            gateView = 'code';
+            renderGate();
+          };
+        })(profile));
+        wrap.appendChild(link);
+      }
+      row.appendChild(wrap);
+    }
+    if (household.profiles.length < 5) {
+      wrap = el('div', '');
+      wrap.style.display = 'inline-block';
+      wrap.style.verticalAlign = 'top';
+      wrap.style.textAlign = 'center';
+      wrap.appendChild(focusBtn('plus', '+', function () {
+        createName = '';
+        createAvatar = 0;
+        gateView = 'create';
+        renderGate();
+      }));
+      wrap.appendChild(document.createElement('br'));
+      wrap.appendChild(el('span', 'name', 'Aggiungi'));
+      row.appendChild(wrap);
+    }
+    root.appendChild(row);
+    if (household.configured) {
+      root.appendChild(focusBtn('action', 'Ho un codice', function () {
+        adoptCode = '';
+        gateView = 'adopt';
+        renderGate();
+      }));
+    }
+    collect();
+  }
+
+  function keyboard(letters, onChar, extra) {
+    var box = el('div', 'row');
+    var i, ch, btn;
+    for (i = 0; i < letters.length; i++) {
+      ch = letters.charAt(i);
+      btn = focusBtn('key', ch, (function (value) {
+        return function () { onChar(value); };
+      })(ch));
+      box.appendChild(btn);
+    }
+    if (extra) box.appendChild(extra);
+    return box;
+  }
+
+  function renderCreate() {
+    root.appendChild(el('h1', '', 'Nuovo profilo'));
+    root.appendChild(el('div', 'typed', createName || 'Nome'));
+    var colors = el('div', 'row');
+    var i, swatch;
+    for (i = 0; i < AVATARS.length; i++) {
+      swatch = focusBtn('avatar', '', (function (n) {
+        return function () { createAvatar = n; };
+      })(i));
+      swatch.style.background = AVATARS[i];
+      swatch.style.width = '72px';
+      swatch.style.height = '72px';
+      swatch.style.fontSize = '1px';
+      colors.appendChild(swatch);
+    }
+    root.appendChild(colors);
+    root.appendChild(keyboard(LETTERS, function (ch) {
+      if (createName.length < 16) createName += ch;
+      renderGate();
+    }, focusBtn('action', 'Spazio', function () {
+      createName += ' ';
+      renderGate();
+    })));
+    root.appendChild(focusBtn('action', 'Cancella', function () {
+      createName = createName.slice(0, -1);
+      renderGate();
+    }));
+    root.appendChild(focusBtn('action main', 'Crea', function () {
+      var name = createName.replace(/^\s+|\s+$/g, '');
+      if (!name) return;
+      postJson('/api/household/profiles', { name: name, avatar: createAvatar }, function (data) {
+        if (data && data.profiles) applyHousehold(data);
+        gateView = 'pick';
+        renderGate();
+      });
+    }));
+    root.appendChild(focusBtn('action', 'Indietro', function () {
+      gateView = 'pick';
+      renderGate();
+    }));
+    collect();
+  }
+
+  function renderAdopt() {
+    root.appendChild(el('h1', '', 'Ho un codice'));
+    root.appendChild(el('p', '', 'Inserisci il codice che vedi sul telefono o sul computer.'));
+    root.appendChild(el('div', 'code', (adoptCode + '········').slice(0, 8)));
+    root.appendChild(keyboard(KEYS, function (ch) {
+      if (adoptCode.length < 8) adoptCode += ch;
+      renderGate();
+    }));
+    root.appendChild(focusBtn('action', 'Cancella', function () {
+      adoptCode = adoptCode.slice(0, -1);
+      renderGate();
+    }));
+    root.appendChild(focusBtn('action main', 'Unisci', function () {
+      if (adoptCode.length !== 8) return;
+      postJson('/api/device', { code: adoptCode, mode: 'adopt' }, function () {
+        getJson('/api/household', function (data) {
+          applyHousehold(data);
+          gateView = 'pick';
+          renderGate();
+        });
+      });
+    }));
+    root.appendChild(focusBtn('action', 'Indietro', function () {
+      gateView = 'pick';
+      renderGate();
+    }));
+    collect();
+  }
+
+  function renderRow(title, items, fallbackType) {
+    if (!items || !items.length) return;
+    root.appendChild(el('h1', '', title));
+    var row = el('div', 'row');
+    var i, item, type, id, tile;
+    var limit = items.length > 12 ? 12 : items.length;
+    for (i = 0; i < limit; i++) {
+      item = items[i];
+      type = itemType(item, fallbackType);
+      id = itemId(item);
+      tile = focusBtn('tile', '', (function (nextId, nextType) {
+        return function () { go('/living/' + (nextType === 'tv' ? 'series/' : 'movie/') + nextId); };
+      })(id, type));
+      if (poster(item)) tile.style.backgroundImage = 'url(' + poster(item) + ')';
+      row.appendChild(tile);
+    }
+    root.appendChild(row);
+  }
+
+  function renderBrowse(kind) {
+    backHandler = function () { go('/living'); };
+    root.innerHTML = '';
+    idx = 0;
+    root.appendChild(renderNav(kind));
+    root.appendChild(el('p', 'hint', 'Caricamento catalogo…'));
+    collect();
+
+    var done = 0;
+
+    if (kind === 'movies') {
+      getJson('/api/catalog/popular/movies', function (json) {
+        root.innerHTML = '';
+        root.appendChild(renderNav('movies'));
+        renderRow('Film popolari', listOf(json), 'movie');
+        collect();
+      });
+      return;
+    }
+    if (kind === 'series') {
+      getJson('/api/catalog/popular/tv', function (json) {
+        root.innerHTML = '';
+        root.appendChild(renderNav('series'));
+        renderRow('Serie popolari', listOf(json), 'tv');
+        collect();
+      });
+      return;
+    }
+
+    var collected = { top: [], movies: [], recent: [], tv: [], tvRecent: [] };
+    function maybePaint() {
+      if (done < 5) return;
+      root.innerHTML = '';
+      root.appendChild(renderNav('home'));
+      renderRow('Top 10', collected.top, 'movie');
+      renderRow('Film popolari', collected.movies, 'movie');
+      renderRow('Film recenti', collected.recent, 'movie');
+      renderRow('Serie popolari', collected.tv, 'tv');
+      renderRow('Serie recenti', collected.tvRecent, 'tv');
+      collect();
+    }
+    getJson('/api/catalog/top-10', function (json) { collected.top = listOf(json); done += 1; maybePaint(); });
+    getJson('/api/catalog/popular/movies', function (json) { collected.movies = listOf(json); done += 1; maybePaint(); });
+    getJson('/api/catalog/latest/movies', function (json) { collected.recent = listOf(json); done += 1; maybePaint(); });
+    getJson('/api/catalog/popular/tv', function (json) { collected.tv = listOf(json); done += 1; maybePaint(); });
+    getJson('/api/catalog/latest/tv', function (json) { collected.tvRecent = listOf(json); done += 1; maybePaint(); });
+  }
+
+  function renderSearch() {
+    backHandler = function () { go('/living/home'); };
+    root.innerHTML = '';
+    idx = 0;
+    root.appendChild(renderNav('search'));
+    root.appendChild(el('h1', '', 'Cerca'));
+    root.appendChild(el('div', 'typed', searchQ || 'Scrivi un titolo'));
+    root.appendChild(keyboard(LETTERS, function (ch) {
+      searchQ += ch;
+      renderSearch();
+    }, focusBtn('action', 'Spazio', function () {
+      searchQ += ' ';
+      renderSearch();
+    })));
+    root.appendChild(focusBtn('action', 'Cancella', function () {
+      searchQ = searchQ.slice(0, -1);
+      renderSearch();
+    }));
+    if (searchQ) {
+      getJson('/api/catalog/search/movies?query=' + encodeURIComponent(searchQ), function (movies) {
+        getJson('/api/catalog/search/tv?query=' + encodeURIComponent(searchQ), function (shows) {
+          renderRow('Film', listOf(movies), 'movie');
+          renderRow('Serie', listOf(shows), 'tv');
+          collect();
+        });
+      });
+    }
+    collect();
+  }
+
+  function renderDetail(type, id) {
+    backHandler = function () { go('/living/home'); };
+    root.innerHTML = '';
+    idx = 0;
+    root.appendChild(el('p', '', 'Caricamento…'));
+    collect();
+    var path = type === 'tv' ? '/api/tmdb/tv/' + id : '/api/tmdb/movies/' + id;
+    getJson(path, function (json) {
+      var item = json && json.data ? json.data : json;
+      root.innerHTML = '';
+      if (!item) {
+        root.appendChild(el('h1', '', 'Non trovato'));
+        root.appendChild(focusBtn('action', 'Indietro', function () { go('/living/home'); }));
+        collect();
+        return;
+      }
+      var posterBox = el('div', 'poster');
+      if (poster(item, 'w500')) posterBox.style.backgroundImage = 'url(' + poster(item, 'w500') + ')';
+      root.appendChild(posterBox);
+      root.appendChild(el('h1', '', itemTitle(item)));
+      root.appendChild(el('p', 'overview', item.overview || ''));
+      root.appendChild(focusBtn('action main', 'Guarda', function () {
+        if (type === 'tv') go('/living/player/tv/' + id + '?season=1&episode=1');
+        else go('/living/player/movie/' + id);
+      }));
+      root.appendChild(focusBtn('action', 'Indietro', function () { go('/living/home'); }));
+      if (type === 'tv') {
+        getJson('/api/tmdb/tv/' + id + '/seasons', function (seasonJson) {
+          var seasons = listOf(seasonJson);
+          var s, e, season, episode, btn;
+          for (s = 0; s < seasons.length && s < 8; s++) {
+            season = seasons[s];
+            if (!season || !season.episodes) continue;
+            root.appendChild(el('p', '', 'Stagione ' + (season.season_number || s + 1)));
+            for (e = 0; e < season.episodes.length && e < 20; e++) {
+              episode = season.episodes[e];
+              btn = focusBtn('chip', String(episode.episode_number || e + 1), (function (sn, en) {
+                return function () {
+                  go('/living/player/tv/' + id + '?season=' + sn + '&episode=' + en);
+                };
+              })(season.season_number || s + 1, episode.episode_number || e + 1));
+              root.appendChild(btn);
+            }
+          }
+          collect();
+        });
+      }
+      collect();
+    });
+  }
+
+  function renderPlayer(type, id) {
+    var season = parseInt(qs('season'), 10) || 1;
+    var episode = parseInt(qs('episode'), 10) || 1;
+    backHandler = function () {
+      go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
+    };
+    root.innerHTML = '';
+    var video = document.createElement('video');
+    video.setAttribute('autoplay', 'autoplay');
+    video.setAttribute('controls', 'controls');
+    video.setAttribute('playsinline', 'playsinline');
+    root.appendChild(video);
+    var hud = el('div', 'hud');
+    hud.appendChild(focusBtn('action', 'Indietro', backHandler));
+    root.appendChild(hud);
+    idx = 0;
+    collect();
+
+    var url = '/api/player/resolve?tmdbId=' + id + '&type=' + type;
+    if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
+    getJson(url, function (json) {
+      var master = json && json.data && json.data.master;
+      if (!master) {
+        hud.appendChild(el('p', '', 'Stream non disponibile'));
+        collect();
+        return;
+      }
+      video.src = master;
+      if (video.play) {
+        var playPromise = video.play();
+        if (playPromise && playPromise.catch) playPromise.catch(function () {});
+      }
+    });
+  }
+
+  function start() {
+    var parts = (window.location.pathname || '').split('/');
+    var section = parts[2] || '';
+    var third = parts[3] || '';
+    var fourth = parts[4] || '';
+
+    if (!section) {
+      renderGate();
+      getJson('/api/household', function (data) {
+        applyHousehold(data);
+        if (gateView === 'pick') renderGate();
+      });
+      return;
+    }
+    if (section === 'home') return renderBrowse('home');
+    if (section === 'movies') return renderBrowse('movies');
+    if (section === 'series') return renderBrowse('series');
+    if (section === 'search') return renderSearch();
+    if (section === 'movie' && third) return renderDetail('movie', third);
+    if (section === 'series' && third) return renderDetail('tv', third);
+    if (section === 'player' && third && fourth) {
+      return renderPlayer(third === 'tv' ? 'tv' : 'movie', fourth);
+    }
+    renderGate();
+  }
+
+  start();
+})();
+  </script>
+</body>
+</html>
