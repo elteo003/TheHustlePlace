@@ -337,6 +337,33 @@ export async function createHouseholdProfile(
     }
 }
 
+export async function updateHouseholdProfile(
+    deviceId: string,
+    input: { profileId: string; name: string; avatar?: number }
+): Promise<HouseholdSnapshot | { error: 'invalid' | 'db' }> {
+    const db = getDb()
+    const household = await ensureHousehold(deviceId)
+    if (!db || !household) return { error: 'db' }
+
+    const name = sanitizeProfileName(input.name)
+    if (!name) return { error: 'invalid' }
+
+    const existing = household.profiles.find((profile) => profile.id === input.profileId)
+    if (!existing) return { error: 'invalid' }
+
+    const avatar = input.avatar === undefined ? existing.avatar : clampAvatar(input.avatar)
+
+    await db.update(watchProfiles).set({ name, avatar }).where(eq(watchProfiles.id, existing.id))
+
+    return {
+        householdId: household.householdId,
+        activeProfileId: household.activeProfileId,
+        profiles: household.profiles.map((profile) =>
+            profile.id === existing.id ? { ...profile, name, avatar } : profile
+        ),
+    }
+}
+
 export async function adoptProfileByCode(
     deviceId: string,
     pairCode: string

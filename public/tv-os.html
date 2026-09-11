@@ -5,72 +5,134 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TheHustlePlace</title>
   <style>
-    html, body { margin: 0; background: #050505; color: #fff; font-family: Arial, Helvetica, sans-serif; height: 100%; }
+    html, body { margin: 0; background: #000; color: #fff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100%; }
     body { overflow: hidden; }
-    button { font: inherit; color: inherit; border: 0; background: transparent; }
+    button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; padding: 0; }
     #root { height: 100%; box-sizing: border-box; }
-    .shell { height: 100%; display: block; overflow: auto; padding: 36px 72px 80px; box-sizing: border-box; }
-    .topnav { height: 72px; margin-bottom: 18px; }
-    .brand { float: left; font-size: 28px; font-weight: 700; letter-spacing: .04em; line-height: 56px; margin-right: 28px; }
+    @keyframes tvIn { from { opacity: .45; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .shell { height: 100%; display: block; overflow: auto; padding: 32px 64px 80px; box-sizing: border-box; animation: tvIn .2s ease-out; }
+    .topnav {
+      display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;
+      height: 64px; margin-bottom: 22px;
+    }
+    .brand {
+      display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;
+      font-size: 22px; font-weight: 600; letter-spacing: -.02em; margin-right: 28px; white-space: nowrap;
+    }
+    .brand i {
+      display: inline-block; width: 36px; height: 36px; line-height: 36px; text-align: center;
+      border-radius: 8px; background: #fff; color: #111; font-style: normal; font-weight: 700; margin-right: 10px;
+    }
     .navbtn {
-      display: inline-block; height: 48px; line-height: 48px; padding: 0 22px; margin: 4px 8px 0 0;
+      display: inline-block; height: 44px; line-height: 44px; padding: 0 20px; margin: 0 6px 0 0;
       border-radius: 999px; font-size: 20px; color: rgba(255,255,255,.62);
+      transition: background .16s ease, color .16s ease, transform .12s ease;
     }
     .navbtn.cur { background: #fff; color: #111; font-weight: 700; }
-    .who { float: right; height: 48px; padding: 0 16px 0 6px; border-radius: 999px; background: rgba(255,255,255,.08); }
+    .who {
+      display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;
+      margin-left: auto; height: 44px; padding: 0 16px 0 6px; border-radius: 999px;
+      background: rgba(255,255,255,.08); font-size: 18px;
+    }
     .who i {
-      display: inline-block; width: 36px; height: 36px; line-height: 36px; text-align: center;
-      border-radius: 50%; margin: 6px 8px 0 0; font-style: normal; font-weight: 700;
+      display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center;
+      border-radius: 50%; margin-right: 10px; font-style: normal; font-weight: 700;
     }
     .hero {
-      position: relative; height: 380px; margin: 0 0 36px; border-radius: 22px; overflow: hidden;
-      background: #111 center/cover no-repeat;
+      position: relative; height: 380px; margin: 0 0 32px; border-radius: 22px; overflow: hidden;
+      background: #111 center/cover no-repeat; animation: tvIn .4s ease-out;
     }
     .hero:after {
-      content: ""; position: absolute; inset: 0;
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(90deg, #000 8%, rgba(0,0,0,.72) 42%, transparent 78%),
-                  linear-gradient(0deg, #050505 0%, transparent 38%);
+                  linear-gradient(0deg, #000 0%, transparent 38%);
     }
     .hero-copy { position: absolute; left: 48px; bottom: 36px; right: 36%; z-index: 1; }
-    .hero-copy h1 { font-size: 56px; line-height: 1.05; margin: 0 0 14px; font-weight: 700; }
-    .hero-copy p { font-size: 22px; line-height: 1.4; color: rgba(255,255,255,.72); max-height: 6em; overflow: hidden; margin: 0 0 22px; }
+    .hero-copy h1 { font-size: 52px; line-height: 1.05; margin: 0 0 14px; font-weight: 700; }
+    .hero-copy p { font-size: 20px; line-height: 1.4; color: rgba(255,255,255,.72); max-height: 4.2em; overflow: hidden; margin: 0 0 22px; }
     .action {
-      display: inline-block; height: 56px; line-height: 56px; padding: 0 28px; margin: 0 12px 0 0;
-      border-radius: 12px; background: rgba(255,255,255,.14); font-size: 22px;
+      display: inline-block; height: 52px; line-height: 52px; padding: 0 26px; margin: 0 12px 0 0;
+      border-radius: 10px; background: rgba(255,255,255,.14); font-size: 20px;
+      transition: transform .12s ease, background .16s ease;
     }
     .action.main { background: #fff; color: #111; font-weight: 700; }
-    .rail { margin: 0 0 28px; }
-    .rail h2 { font-size: 26px; font-weight: 600; margin: 0 0 14px; color: rgba(255,255,255,.9); }
-    .scroller { white-space: nowrap; overflow: hidden; height: 292px; }
+    .rail { margin: 0 0 24px; animation: tvIn .32s ease-out; }
+    .rail h2 { font-size: 24px; font-weight: 600; margin: 0 0 12px; color: rgba(255,255,255,.9); }
+    .scroller { white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 300px; padding: 12px 8px 8px 4px; }
     .tile {
-      display: inline-block; width: 176px; height: 264px; margin: 10px 14px 0 0; border-radius: 12px;
+      display: inline-block; width: 168px; height: 252px; margin: 0 14px 0 0; border-radius: 12px;
       background: #1a1a1a center/cover no-repeat; vertical-align: top; position: relative;
+      transition: transform .12s ease, box-shadow .12s ease;
     }
     .tile b {
       position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.2);
     }
     .tile b i { display: block; height: 100%; background: #e50914; }
-    .gate { text-align: center; padding-top: 8vh; }
-    .gate h1 { font-size: 58px; margin: 0 0 48px; }
+    .skel-title { width: 220px; height: 22px; border-radius: 8px; margin: 0 0 14px; }
+    .shimmer {
+      background-image: linear-gradient(90deg, #141414 0%, #2a2a2a 45%, #141414 90%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s linear infinite;
+    }
+    .gate { text-align: center; padding-top: 7vh; }
+    .gate h1 { font-size: 52px; margin: 0 0 40px; font-weight: 700; }
+    .pcol { display: inline-block; width: 188px; margin: 0 14px 20px; vertical-align: top; text-align: center; }
     .avatar, .plus {
-      width: 176px; height: 176px; border-radius: 22px; font-size: 70px; font-weight: 700;
-      margin: 0 18px 10px; display: inline-block; vertical-align: top;
+      width: 168px; height: 168px; border-radius: 22px; font-size: 64px; font-weight: 700;
+      margin: 0 auto 12px; display: -webkit-box; display: flex;
+      -webkit-box-align: center; align-items: center; -webkit-box-pack: center; justify-content: center;
+      text-align: center; line-height: 1;
+      transition: transform .12s ease, box-shadow .12s ease;
     }
     .plus { border: 3px dashed rgba(255,255,255,.28); color: rgba(255,255,255,.7); background: #141414; }
-    .pname { display: inline-block; width: 176px; text-align: center; font-size: 24px; margin: 0 18px 28px; }
-    .key {
-      width: 62px; height: 62px; margin: 5px; border-radius: 10px;
-      background: rgba(255,255,255,.1); font-size: 24px; font-weight: 700;
+    .pname { display: block; width: 100%; text-align: center; font-size: 22px; margin: 0 0 10px; white-space: nowrap; overflow: hidden; }
+    .pcol .action { display: block; width: 100%; margin: 0 0 8px; padding: 0; height: 44px; line-height: 44px; font-size: 16px; box-sizing: border-box; }
+    .swatches { margin: 0 0 18px; }
+    .swatch {
+      display: inline-block; width: 56px; height: 56px; margin: 0 8px 8px 0; border-radius: 14px;
+      vertical-align: top; box-sizing: border-box;
     }
-    .typed { font-size: 44px; letter-spacing: .08em; min-height: 58px; margin: 8px 0 24px; }
-    .code { font-size: 70px; letter-spacing: .16em; margin: 28px 0; }
-    .detail { position: relative; min-height: calc(100vh - 72px); border-radius: 22px; overflow: hidden; background: #111 center/cover no-repeat; }
+    .swatch.on { box-shadow: 0 0 0 4px #fff; }
+    .kb { margin: 8px auto 0; max-width: 480px; text-align: left; }
+    .search-keys .kb { margin: 0; }
+    .kb-row { white-space: nowrap; margin: 0 0 8px; }
+    .key, .key-wide {
+      display: inline-block; height: 52px; line-height: 52px; margin: 0 6px 0 0; border-radius: 10px;
+      background: rgba(255,255,255,.1); font-size: 22px; font-weight: 700; text-align: center; vertical-align: top;
+      transition: transform .12s ease, background .16s ease; box-sizing: border-box;
+    }
+    .key { width: 62px; }
+    .key-wide { min-width: 118px; padding: 0 14px; font-size: 18px; font-weight: 600; }
+    .key-wide.main { background: #fff; color: #111; font-weight: 700; }
+    .typed { font-size: 40px; letter-spacing: .04em; min-height: 52px; margin: 4px 0 20px; }
+    .search-keys .typed { font-size: 30px; letter-spacing: .02em; min-height: 40px; }
+    .typed.empty { color: rgba(255,255,255,.28); }
+    .code { font-size: 64px; letter-spacing: .16em; margin: 20px 0 28px; }
+    .gate-foot { margin-top: 18px; }
+    .search-split { display: -webkit-box; display: flex; -webkit-box-align: start; align-items: flex-start; }
+    .search-keys { width: 480px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-right: 36px; box-sizing: border-box; }
+    .search-pane { -webkit-box-flex: 1; flex: 1; min-width: 0; }
+    .search-head { font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+    .search-count { font-size: 18px; color: rgba(255,255,255,.5); margin: 0 0 16px; }
+    .tab {
+      display: inline-block; height: 42px; line-height: 42px; padding: 0 18px; margin: 0 8px 16px 0;
+      border-radius: 999px; background: rgba(255,255,255,.08); font-size: 18px;
+      transition: background .16s ease, color .16s ease;
+    }
+    .tab.on { background: #fff; color: #111; font-weight: 700; }
+    .poster-grid { padding-top: 6px; }
+    .poster-grid .tile { width: 148px; height: 222px; margin: 0 12px 16px 0; }
+    .empty { padding: 48px 8px 0; }
+    .empty h2 { font-size: 28px; margin: 0 0 10px; }
+    .detail { position: relative; min-height: calc(100vh - 72px); border-radius: 22px; overflow: hidden; background: #111 center/cover no-repeat; animation: tvIn .32s ease-out; }
     .detail:after {
-      content: ""; position: absolute; inset: 0;
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(90deg, #000 12%, rgba(0,0,0,.7) 48%, transparent);
     }
     .detail-copy { position: relative; z-index: 1; max-width: 820px; padding: 72px 56px; }
-    .detail-copy h1 { font-size: 58px; margin: 0 0 18px; }
+    .detail-copy h1 { font-size: 54px; margin: 0 0 18px; }
     .overview { font-size: 22px; line-height: 1.45; color: rgba(255,255,255,.72); }
     .chip {
       display: inline-block; min-width: 52px; height: 48px; line-height: 48px; padding: 0 14px;
@@ -79,13 +141,18 @@
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
     .hud { position: fixed; left: 40px; top: 32px; z-index: 5; transition: opacity .35s ease; }
     .hud-hide { opacity: 0; visibility: hidden; }
+    [data-tv-focus] { transition: transform .12s ease, box-shadow .12s ease; }
     .is-tv-focused {
-      outline: 5px solid #fff !important; outline-offset: 5px;
-      transform: scale(1.08); z-index: 3;
+      outline: 4px solid #fff !important; outline-offset: 4px;
+      transform: scale(1.06); z-index: 3;
       box-shadow: 0 16px 40px rgba(0,0,0,.45);
     }
-    .hint { color: rgba(255,255,255,.5); font-size: 22px; }
-    .muted { color: rgba(255,255,255,.5); font-size: 20px; }
+    .hint { color: rgba(255,255,255,.5); font-size: 20px; }
+    .muted { color: rgba(255,255,255,.5); font-size: 18px; }
+    .spinner {
+      width: 42px; height: 42px; border: 4px solid rgba(255,255,255,.16); border-top-color: #fff;
+      border-radius: 50%; animation: spin .75s linear infinite; margin: 8px 0;
+    }
   </style>
 </head>
 <body>
@@ -104,8 +171,15 @@
   var household = { configured: false, profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }] };
   var createName = '';
   var createAvatar = 0;
+  var editProfileId = '';
   var adoptCode = '';
   var searchQ = '';
+  var searchTab = 'all';
+  var searchTimer = null;
+  var searchGen = 0;
+  var searchMovies = [];
+  var searchShows = [];
+  var searchLoading = false;
   var backHandler = null;
   var cache = { home: null, movies: null, series: null, history: [] };
   var heroItem = null;
@@ -117,6 +191,13 @@
   function storeSet(key, value) {
     try { window.sessionStorage.setItem(key, value || ''); } catch (e) {}
   }
+  try {
+    var savedHouse = storeGet('tv.house');
+    if (savedHouse) {
+      var parsedHouse = JSON.parse(savedHouse);
+      if (parsedHouse && parsedHouse.profiles && parsedHouse.profiles.length) household = parsedHouse;
+    }
+  } catch (houseErr) {}
 
   function pathNow() {
     return (window.location.pathname || '') + (window.location.search || '');
@@ -171,14 +252,22 @@
     }).then(done).catch(function () { done(null); });
   }
 
-  function postJson(url, body, done) {
+  function sendJson(method, url, body, done) {
     if (!window.fetch) { done(null); return; }
     fetch(url, {
-      method: 'POST',
+      method: method,
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).then(function (res) { return res.json(); }).then(done).catch(function () { done(null); });
+  }
+
+  function postJson(url, body, done) {
+    sendJson('POST', url, body, done);
+  }
+
+  function patchJson(url, body, done) {
+    sendJson('PATCH', url, body, done);
   }
 
   function currentFid() {
@@ -307,6 +396,12 @@
   function applyHousehold(data) {
     if (!data || !data.profiles || !data.profiles.length) return;
     household = data;
+    storeSet('tv.house', JSON.stringify({
+      configured: data.configured,
+      householdId: data.householdId,
+      activeProfileId: data.activeProfileId,
+      profiles: data.profiles
+    }));
   }
 
   function activeProfile() {
@@ -330,7 +425,10 @@
 
   function renderNav(active) {
     var nav = el('div', 'topnav');
-    nav.appendChild(el('div', 'brand', 'THP'));
+    var brand = el('div', 'brand');
+    brand.appendChild(el('i', '', 'H'));
+    brand.appendChild(document.createTextNode('TheHustlePlace'));
+    nav.appendChild(brand);
     function add(label, path, id) {
       var btn = focusBtn('navbtn' + (id === active ? ' cur' : ''), label, 'nav-' + id, function () {
         if (path === pathNow()) return;
@@ -486,11 +584,90 @@
     };
   }
 
+  function setTyped(id, value, placeholder) {
+    var node = document.getElementById(id);
+    if (!node) return;
+    node.innerHTML = '';
+    node.appendChild(document.createTextNode(value || placeholder || ''));
+    node.className = value ? 'typed' : 'typed empty';
+  }
+
+  function paintSwatches() {
+    var i, node, cls;
+    for (i = 0; i < AVATARS.length; i++) {
+      node = root.querySelector('[data-fid="avatar-' + i + '"]');
+      if (!node) continue;
+      cls = (' ' + node.className + ' ').replace(' on ', ' ');
+      if (i === createAvatar) cls += 'on';
+      node.className = cls.replace(/^\s+|\s+$/g, '');
+    }
+  }
+
+  function renderKeyboard(host, letters, onChar, firstDefault) {
+    var wrap = el('div', 'kb');
+    var r, c, ch, row, btn;
+    for (r = 0; r < letters.length; r += 6) {
+      row = el('div', 'kb-row');
+      for (c = 0; c < 6 && r + c < letters.length; c++) {
+        ch = letters.charAt(r + c);
+        btn = focusBtn('key', ch, 'key-' + ch, (function (value) {
+          return function () { onChar(value); };
+        })(ch), firstDefault && r === 0 && c === 0);
+        row.appendChild(btn);
+      }
+      wrap.appendChild(row);
+    }
+    host.appendChild(wrap);
+    return wrap;
+  }
+
+  function renderKeyRow(host, actions) {
+    var row = el('div', 'kb-row');
+    var i, a;
+    for (i = 0; i < actions.length; i++) {
+      a = actions[i];
+      row.appendChild(focusBtn(a.main ? 'key-wide main' : 'key-wide', a.label, a.fid, a.fn));
+    }
+    host.appendChild(row);
+  }
+
+  function addSwatches(host) {
+    var box = el('div', 'swatches');
+    var i, swatch;
+    for (i = 0; i < AVATARS.length; i++) {
+      swatch = focusBtn('swatch', '', 'avatar-' + i, (function (n) {
+        return function () {
+          createAvatar = n;
+          paintSwatches();
+        };
+      })(i));
+      swatch.style.background = AVATARS[i];
+      box.appendChild(swatch);
+    }
+    host.appendChild(box);
+    paintSwatches();
+  }
+
+  function skeletonBrowse(page) {
+    var hero = el('div', 'hero shimmer');
+    page.appendChild(hero);
+    var i, j, rail, scroller;
+    for (i = 0; i < 2; i++) {
+      rail = el('div', 'rail');
+      rail.appendChild(el('div', 'skel-title shimmer'));
+      scroller = el('div', 'scroller');
+      for (j = 0; j < 6; j++) scroller.appendChild(el('div', 'tile shimmer'));
+      rail.appendChild(scroller);
+      page.appendChild(rail);
+    }
+  }
+
   function renderGate() {
     backHandler = function () {};
     root.innerHTML = '';
     var page = el('div', 'shell gate');
     if (gateView === 'create') { root.appendChild(page); renderCreate(page); return; }
+    if (gateView === 'edit') { root.appendChild(page); renderEdit(page); return; }
     if (gateView === 'adopt') { root.appendChild(page); renderAdopt(page); return; }
     if (gateView === 'code' && selectedProfile) {
       page.appendChild(el('h1', '', 'Collega ' + selectedProfile.name));
@@ -510,26 +687,32 @@
     var i, profile, wrap, avatar;
     for (i = 0; i < household.profiles.length; i++) {
       profile = household.profiles[i];
-      wrap = el('div', '');
-      wrap.style.display = 'inline-block';
+      wrap = el('div', 'pcol');
       avatar = focusBtn('avatar', (profile.name || '?').charAt(0).toUpperCase(), 'profile-' + profile.id, (function (p) {
         return function () { enterProfile(p); };
       })(profile), i === 0);
       avatar.style.background = AVATARS[profile.avatar || 0] || AVATARS[0];
       wrap.appendChild(avatar);
-      wrap.appendChild(document.createElement('br'));
       wrap.appendChild(el('span', 'pname', profile.name || 'Profilo'));
-      if (household.configured && profile.pairCode) {
-        wrap.appendChild(document.createElement('br'));
-        wrap.appendChild(focusBtn('action', 'Collega telefono', 'link-' + profile.id, (function (p) {
+      wrap.appendChild(focusBtn('action', 'Modifica', 'edit-' + profile.id, (function (p) {
+        return function () {
+          editProfileId = p.id;
+          createName = p.name || '';
+          createAvatar = p.avatar || 0;
+          gateView = 'edit';
+          wantFid = 'key-A';
+          renderGate();
+        };
+      })(profile)));
+      if (household.configured && profile.pairCode && profile.id !== 'local') {
+        wrap.appendChild(focusBtn('action', 'Collega', 'link-' + profile.id, (function (p) {
           return function () { selectedProfile = p; gateView = 'code'; renderGate(); };
         })(profile)));
       }
       page.appendChild(wrap);
     }
     if (household.profiles.length < 5) {
-      wrap = el('div', '');
-      wrap.style.display = 'inline-block';
+      wrap = el('div', 'pcol');
       wrap.appendChild(focusBtn('plus', '+', 'profile-add', function () {
         createName = '';
         createAvatar = 0;
@@ -537,112 +720,133 @@
         wantFid = 'key-A';
         renderGate();
       }));
-      wrap.appendChild(document.createElement('br'));
       wrap.appendChild(el('span', 'pname', 'Aggiungi'));
       page.appendChild(wrap);
     }
     if (household.configured) {
-      page.appendChild(document.createElement('br'));
-      page.appendChild(focusBtn('action', 'Ho un codice', 'profile-adopt', function () {
+      var foot = el('div', 'gate-foot');
+      foot.appendChild(focusBtn('action', 'Ho un codice', 'profile-adopt', function () {
         adoptCode = '';
         gateView = 'adopt';
         wantFid = 'key-A';
         renderGate();
       }));
+      page.appendChild(foot);
     }
     root.appendChild(page);
     collect(wantFid || 'profile-' + household.profiles[0].id);
   }
 
-  function keyboard(host, letters, onChar, extraFid, extraLabel, extraFn) {
-    var i, ch, btn;
-    for (i = 0; i < letters.length; i++) {
-      ch = letters.charAt(i);
-      btn = focusBtn('key', ch, 'key-' + ch, (function (value) {
-        return function () { onChar(value); };
-      })(ch), i === 0);
-      host.appendChild(btn);
+  function saveProfile(isNew) {
+    var name = createName.replace(/^\s+|\s+$/g, '');
+    if (!name) return;
+    if (!isNew && editProfileId === 'local') {
+      household.profiles[0].name = name;
+      household.profiles[0].avatar = createAvatar;
+      gateView = 'pick';
+      wantFid = 'profile-local';
+      renderGate();
+      return;
     }
-    if (extraFn) host.appendChild(focusBtn('action', extraLabel, extraFid, extraFn));
+    var body = isNew
+      ? { name: name, avatar: createAvatar }
+      : { profileId: editProfileId, name: name, avatar: createAvatar };
+    var send = isNew ? postJson : patchJson;
+    send('/api/household/profiles', body, function (data) {
+      if (data && data.profiles) applyHousehold(data);
+      else if (!isNew) {
+        var i;
+        for (i = 0; i < household.profiles.length; i++) {
+          if (household.profiles[i].id === editProfileId) {
+            household.profiles[i].name = name;
+            household.profiles[i].avatar = createAvatar;
+          }
+        }
+      }
+      gateView = 'pick';
+      wantFid = isNew ? '' : ('profile-' + editProfileId);
+      renderGate();
+    });
   }
 
   function renderCreate(page) {
     page.appendChild(el('h1', '', 'Nuovo profilo'));
-    page.appendChild(el('div', 'typed', createName || 'Nome'));
-    var i, swatch;
-    for (i = 0; i < AVATARS.length; i++) {
-      swatch = focusBtn('avatar', '', 'avatar-' + i, (function (n) {
-        return function () { createAvatar = n; wantFid = 'avatar-' + n; };
-      })(i));
-      swatch.style.background = AVATARS[i];
-      swatch.style.width = '72px';
-      swatch.style.height = '72px';
-      swatch.style.fontSize = '1px';
-      page.appendChild(swatch);
-    }
-    page.appendChild(document.createElement('br'));
-    keyboard(page, LETTERS, function (ch) {
+    var typed = el('div', createName ? 'typed' : 'typed empty', createName || 'Nome');
+    typed.id = 'create-typed';
+    page.appendChild(typed);
+    addSwatches(page);
+    var kb = renderKeyboard(page, LETTERS, function (ch) {
       if (createName.length < 16) createName += ch;
-      wantFid = 'key-' + ch;
-      renderGate();
-    }, 'key-space', 'Spazio', function () {
-      createName += ' ';
-      wantFid = 'key-space';
-      renderGate();
-    });
-    page.appendChild(focusBtn('action', 'Cancella', 'key-del', function () {
-      createName = createName.slice(0, -1);
-      wantFid = 'key-del';
-      renderGate();
-    }));
-    page.appendChild(focusBtn('action main', 'Crea', 'key-ok', function () {
-      var name = createName.replace(/^\s+|\s+$/g, '');
-      if (!name) return;
-      postJson('/api/household/profiles', { name: name, avatar: createAvatar }, function (data) {
-        if (data && data.profiles) applyHousehold(data);
-        gateView = 'pick';
-        wantFid = '';
-        renderGate();
-      });
-    }));
-    page.appendChild(focusBtn('action', 'Indietro', 'key-back', function () {
-      gateView = 'pick';
-      wantFid = 'profile-add';
-      renderGate();
-    }));
+      setTyped('create-typed', createName, 'Nome');
+    }, true);
+    renderKeyRow(kb, [
+      { label: 'Spazio', fid: 'key-space', fn: function () { createName += ' '; setTyped('create-typed', createName, 'Nome'); } },
+      { label: 'Cancella', fid: 'key-del', fn: function () { createName = createName.slice(0, -1); setTyped('create-typed', createName, 'Nome'); } }
+    ]);
+    renderKeyRow(kb, [
+      { label: 'Crea', fid: 'key-ok', main: true, fn: function () { saveProfile(true); } },
+      { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'profile-add'; renderGate(); } }
+    ]);
+    collect(wantFid || 'key-A');
+  }
+
+  function renderEdit(page) {
+    page.appendChild(el('h1', '', 'Modifica profilo'));
+    var typed = el('div', createName ? 'typed' : 'typed empty', createName || 'Nome');
+    typed.id = 'create-typed';
+    page.appendChild(typed);
+    addSwatches(page);
+    var kb = renderKeyboard(page, LETTERS, function (ch) {
+      if (createName.length < 16) createName += ch;
+      setTyped('create-typed', createName, 'Nome');
+    }, true);
+    renderKeyRow(kb, [
+      { label: 'Spazio', fid: 'key-space', fn: function () { createName += ' '; setTyped('create-typed', createName, 'Nome'); } },
+      { label: 'Cancella', fid: 'key-del', fn: function () { createName = createName.slice(0, -1); setTyped('create-typed', createName, 'Nome'); } }
+    ]);
+    renderKeyRow(kb, [
+      { label: 'Salva', fid: 'key-ok', main: true, fn: function () { saveProfile(false); } },
+      { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'edit-' + editProfileId; renderGate(); } }
+    ]);
     collect(wantFid || 'key-A');
   }
 
   function renderAdopt(page) {
     page.appendChild(el('h1', '', 'Ho un codice'));
     page.appendChild(el('p', 'muted', 'Inserisci il codice che vedi sul telefono o sul computer.'));
-    page.appendChild(el('div', 'code', (adoptCode + '········').slice(0, 8)));
-    keyboard(page, KEYS, function (ch) {
+    var code = el('div', 'code', (adoptCode + '········').slice(0, 8));
+    code.id = 'adopt-code';
+    page.appendChild(code);
+    var kb = renderKeyboard(page, KEYS, function (ch) {
       if (adoptCode.length < 8) adoptCode += ch;
-      wantFid = 'key-' + ch;
-      renderGate();
-    });
-    page.appendChild(focusBtn('action', 'Cancella', 'key-del', function () {
-      adoptCode = adoptCode.slice(0, -1);
-      wantFid = 'key-del';
-      renderGate();
-    }));
-    page.appendChild(focusBtn('action main', 'Unisci', 'key-ok', function () {
-      if (adoptCode.length !== 8) return;
-      postJson('/api/device', { code: adoptCode, mode: 'adopt' }, function () {
-        getJson('/api/household', function (data) {
-          applyHousehold(data);
-          gateView = 'pick';
-          wantFid = '';
-          renderGate();
+      var node = document.getElementById('adopt-code');
+      if (node) {
+        node.innerHTML = '';
+        node.appendChild(document.createTextNode((adoptCode + '········').slice(0, 8)));
+      }
+    }, true);
+    renderKeyRow(kb, [
+      { label: 'Cancella', fid: 'key-del', fn: function () {
+        adoptCode = adoptCode.slice(0, -1);
+        var node = document.getElementById('adopt-code');
+        if (node) {
+          node.innerHTML = '';
+          node.appendChild(document.createTextNode((adoptCode + '········').slice(0, 8)));
+        }
+      } },
+      { label: 'Unisci', fid: 'key-ok', main: true, fn: function () {
+        if (adoptCode.length !== 8) return;
+        postJson('/api/device', { code: adoptCode, mode: 'adopt' }, function () {
+          getJson('/api/household', function (data) {
+            applyHousehold(data);
+            gateView = 'pick';
+            wantFid = '';
+            renderGate();
+          });
         });
-      });
-    }));
-    page.appendChild(focusBtn('action', 'Indietro', 'key-back', function () {
-      gateView = 'pick';
-      wantFid = 'profile-adopt';
-      renderGate();
-    }));
+      } },
+      { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'profile-adopt'; renderGate(); } }
+    ]);
     collect(wantFid || 'key-A');
   }
 
@@ -716,7 +920,7 @@
     root.innerHTML = '';
     var page = el('div', 'shell');
     page.appendChild(renderNav(kind));
-    page.appendChild(el('p', 'hint', 'Prepariamo il salotto…'));
+    skeletonBrowse(page);
     root.appendChild(page);
     collect('nav-' + kind);
 
@@ -755,43 +959,147 @@
     getJson('/api/catalog/latest/tv', function (json) { bag.tvRecent = listOf(json); step(); });
   }
 
+  function renderPosterGrid(host, title, items, fallbackType, railId) {
+    if (!items || !items.length) return;
+    var box = el('div', 'rail');
+    box.appendChild(el('h2', '', title));
+    var grid = el('div', 'poster-grid');
+    var i, item, tile, fid, limit;
+    limit = items.length > 18 ? 18 : items.length;
+    for (i = 0; i < limit; i++) {
+      item = items[i];
+      fid = 'tile-' + railId + '-' + i;
+      tile = focusBtn('tile', '', fid, (function (it, kind) {
+        return function () { openDetail(itemType(it, kind), itemId(it)); };
+      })(item, fallbackType));
+      decorateTile(tile, item, fallbackType, fid);
+      grid.appendChild(tile);
+    }
+    box.appendChild(grid);
+    host.appendChild(box);
+  }
+
+  function fillSearchPane() {
+    var pane = document.getElementById('search-pane');
+    if (!pane) return;
+    pane.innerHTML = '';
+    var q = searchQ.replace(/^\s+|\s+$/g, '');
+    var keep = currentFid() || wantFid || 'key-A';
+    var movies = searchMovies;
+    var shows = searchShows;
+    var total = movies.length + shows.length;
+    var i, tab, grid;
+    if (!q) {
+      pane.appendChild(el('p', 'hint', 'Cerca film e serie TV'));
+      collect(keep);
+      return;
+    }
+    pane.appendChild(el('div', 'search-head', 'Risultati per «' + q + '»'));
+    if (searchLoading) {
+      grid = el('div', 'poster-grid');
+      for (i = 0; i < 12; i++) grid.appendChild(el('div', 'tile shimmer'));
+      pane.appendChild(grid);
+      collect(keep);
+      return;
+    }
+    pane.appendChild(el('p', 'search-count', total ? (total + ' risultati') : 'Nessun risultato'));
+    function addTab(id, text) {
+      tab = focusBtn('tab' + (searchTab === id ? ' on' : ''), text, 'tab-' + id, (function (next) {
+        return function () {
+          searchTab = next;
+          wantFid = 'tab-' + next;
+          fillSearchPane();
+        };
+      })(id));
+      pane.appendChild(tab);
+    }
+    addTab('all', 'Tutto (' + total + ')');
+    addTab('movies', 'Film (' + movies.length + ')');
+    addTab('tv', 'Serie TV (' + shows.length + ')');
+    if (!total) {
+      var empty = el('div', 'empty');
+      empty.appendChild(el('h2', '', 'Nessun risultato trovato'));
+      empty.appendChild(el('p', 'muted', 'Prova con altri termini o esplora il catalogo'));
+      empty.appendChild(focusBtn('action main', 'Torna alla Home', 'search-home', function () { go('/living/home'); }));
+      pane.appendChild(empty);
+      collect(keep);
+      return;
+    }
+    if (searchTab !== 'tv') renderPosterGrid(pane, 'Film (' + movies.length + ')', movies, 'movie', 's-m');
+    if (searchTab !== 'movies') renderPosterGrid(pane, 'Serie TV (' + shows.length + ')', shows, 'tv', 's-t');
+    collect(keep);
+  }
+
+  function runSearch() {
+    var q = searchQ.replace(/^\s+|\s+$/g, '');
+    searchGen += 1;
+    var gen = searchGen;
+    if (!q) {
+      searchMovies = [];
+      searchShows = [];
+      searchLoading = false;
+      fillSearchPane();
+      return;
+    }
+    searchLoading = true;
+    fillSearchPane();
+    getJson('/api/catalog/search/movies?query=' + encodeURIComponent(q), function (movies) {
+      getJson('/api/catalog/search/tv?query=' + encodeURIComponent(q), function (shows) {
+        if (gen !== searchGen) return;
+        if (pathNow().indexOf('/living/search') !== 0) return;
+        searchMovies = listOf(movies);
+        searchShows = listOf(shows);
+        searchLoading = false;
+        fillSearchPane();
+      });
+    });
+  }
+
+  function scheduleSearch() {
+    if (searchTimer) window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(runSearch, 280);
+  }
+
   function renderSearch() {
     backHandler = function () { go('/living/home'); };
     root.innerHTML = '';
     var page = el('div', 'shell');
     page.appendChild(renderNav('search'));
-    page.appendChild(el('h1', '', 'Cerca'));
-    page.appendChild(el('div', 'typed', searchQ || 'Scrivi un titolo'));
-    keyboard(page, LETTERS, function (ch) {
-      searchQ += ch;
-      wantFid = 'key-' + ch;
+    var split = el('div', 'search-split');
+    var keys = el('div', 'search-keys');
+    keys.appendChild(el('h1', 'search-head', 'Cerca'));
+    var typed = el('div', searchQ ? 'typed' : 'typed empty', searchQ || 'Cerca…');
+    typed.id = 'search-typed';
+    keys.appendChild(typed);
+    var kb = renderKeyboard(keys, LETTERS, function (ch) {
+      if (searchQ.length < 40) searchQ += ch;
       storeSet('tv.search', searchQ);
-      renderSearch();
-    }, 'key-space', 'Spazio', function () {
-      searchQ += ' ';
-      wantFid = 'key-space';
-      renderSearch();
-    });
-    page.appendChild(focusBtn('action', 'Cancella', 'key-del', function () {
-      searchQ = searchQ.slice(0, -1);
-      wantFid = 'key-del';
-      storeSet('tv.search', searchQ);
-      renderSearch();
-    }));
+      setTyped('search-typed', searchQ, 'Cerca…');
+      scheduleSearch();
+    }, true);
+    renderKeyRow(kb, [
+      { label: 'Spazio', fid: 'key-space', fn: function () {
+        searchQ += ' ';
+        storeSet('tv.search', searchQ);
+        setTyped('search-typed', searchQ, 'Cerca…');
+        scheduleSearch();
+      } },
+      { label: 'Cancella', fid: 'key-del', fn: function () {
+        searchQ = searchQ.slice(0, -1);
+        storeSet('tv.search', searchQ);
+        setTyped('search-typed', searchQ, 'Cerca…');
+        scheduleSearch();
+      } }
+    ]);
+    split.appendChild(keys);
+    var pane = el('div', 'search-pane');
+    pane.id = 'search-pane';
+    split.appendChild(pane);
+    page.appendChild(split);
     root.appendChild(page);
     collect(wantFid || 'key-A');
-    if (!searchQ) return;
-    var keep = wantFid || currentFid() || 'key-A';
-    getJson('/api/catalog/search/movies?query=' + encodeURIComponent(searchQ), function (movies) {
-      getJson('/api/catalog/search/tv?query=' + encodeURIComponent(searchQ), function (shows) {
-        if (pathNow().indexOf('/living/search') !== 0) return;
-        var rail = renderRail('Film', listOf(movies), 'movie', 's-m');
-        if (rail) page.appendChild(rail);
-        rail = renderRail('Serie', listOf(shows), 'tv', 's-t');
-        if (rail) page.appendChild(rail);
-        collect(keep);
-      });
-    });
+    fillSearchPane();
+    if (searchQ) scheduleSearch();
   }
 
   function renderDetail(type, id) {
@@ -799,7 +1107,7 @@
     root.innerHTML = '';
     var page = el('div', 'shell');
     page.appendChild(renderNav(type === 'tv' ? 'series' : 'movies'));
-    page.appendChild(el('p', 'hint', 'Apriamo la scheda…'));
+    page.appendChild(el('div', 'hero shimmer'));
     root.appendChild(page);
     collect('nav-' + (type === 'tv' ? 'series' : 'movies'));
     var path = type === 'tv' ? '/api/tmdb/tv/' + id : '/api/tmdb/movies/' + id;
@@ -985,7 +1293,7 @@
     var qualityBtn = focusBtn('action', 'Qualità', 'player-quality', function () { qualityCycle(); });
     qualityBtn.style.display = 'none';
     hud.appendChild(qualityBtn);
-    var status = el('p', 'hint', 'Prepariamo lo stream…');
+    var status = el('div', 'spinner');
     status.id = 'play-status';
     hud.appendChild(status);
     root.appendChild(hud);
@@ -1009,6 +1317,7 @@
     if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
 
     function showFail(msg) {
+      status.className = 'hint';
       status.innerHTML = '';
       status.appendChild(document.createTextNode(msg || 'Il film non parte.'));
       collect('player-back');
