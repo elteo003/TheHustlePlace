@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { adoptProfileByCode } from '@/lib/db/household'
 import { ensureProfile, pairDeviceToCode } from '@/lib/db/profiles'
 import { isDatabaseConfigured } from '@/lib/db'
 import { formatPairCode, isValidPairCode, normalizePairCode } from '@/lib/pair-code'
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 const pairSchema = z.object({
     code: z.string().min(4).max(20),
+    mode: z.enum(['merge', 'adopt']).optional(),
 })
 
 export async function GET() {
@@ -55,7 +57,28 @@ export async function POST(request: Request) {
         return withDeviceCookie(NextResponse.json({ configured: false }), deviceId, isNew)
     }
 
-    const result = await pairDeviceToCode(deviceId, normalizePairCode(parsed.data.code))
+    const code = normalizePairCode(parsed.data.code)
+
+    if (parsed.data.mode === 'adopt') {
+        const adopted = await adoptProfileByCode(deviceId, code)
+        if (!adopted.ok) {
+            const status = adopted.error === 'db' ? 500 : 400
+            return withDeviceCookie(NextResponse.json({ error: adopted.error }, { status }), deviceId, isNew)
+        }
+        const active = adopted.snapshot.profiles.find((item) => item.id === adopted.snapshot.activeProfileId)
+        return withDeviceCookie(
+            NextResponse.json({
+                ok: true,
+                mode: 'adopt',
+                code: active ? formatPairCode(active.pairCode) : formatPairCode(code),
+                activeProfileId: adopted.snapshot.activeProfileId,
+            }),
+            deviceId,
+            isNew
+        )
+    }
+
+    const result = await pairDeviceToCode(deviceId, code)
 
     if (!result.ok) {
         const status = result.error === 'db' ? 500 : 400
@@ -63,7 +86,7 @@ export async function POST(request: Request) {
     }
 
     return withDeviceCookie(
-        NextResponse.json({ ok: true, code: formatPairCode(result.pairCode) }),
+        NextResponse.json({ ok: true, mode: 'merge', code: formatPairCode(result.pairCode) }),
         deviceId,
         isNew
     )

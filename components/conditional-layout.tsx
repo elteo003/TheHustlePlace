@@ -6,6 +6,8 @@ import { Navbar } from './navbar'
 import { PageTransition } from './page-transition'
 import { TrailerPeekProvider } from '@/contexts/trailer-peek-context'
 import { rememberBrowsePath } from '@/lib/player-exit'
+import { TvEntryRedirect } from '@/tv/components/TvEntryRedirect'
+import { isLivingPath } from '@/tv/lib/paths'
 
 interface ConditionalLayoutProps {
     children: React.ReactNode
@@ -27,7 +29,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     const isPlayerPage = pathname?.startsWith('/player/')
     const isSplash = pathname === '/'
     const isHome = pathname === '/home'
-    const showNavbar = !isPlayerPage && !isSplash
+    const isLiving = isLivingPath(pathname)
+    const showNavbar = !isPlayerPage && !isSplash && !isLiving
     const needsTopPadding = showNavbar && !isHome
 
     if (!isClient) {
@@ -36,6 +39,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     return (
         <TrailerPeekProvider>
+            <TvEntryRedirect />
             {showNavbar && <Navbar immersive={false} />}
             <div className={needsTopPadding ? 'pt-16' : ''}>
                 <PageTransition>{children}</PageTransition>

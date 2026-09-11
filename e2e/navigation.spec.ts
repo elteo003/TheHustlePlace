@@ -6,6 +6,11 @@ test.describe('Smoke test piattaforma', () => {
         expect(response.ok()).toBeTruthy()
     })
 
+    test('app TV mostra la scelta profilo', async ({ page }) => {
+        await page.goto('/living', { waitUntil: 'domcontentloaded' })
+        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
+    })
+
     test('pagina ricerca statica', async ({ page }) => {
         await page.goto('/search', { waitUntil: 'domcontentloaded' })
         await expect(page.locator('body')).toBeVisible()

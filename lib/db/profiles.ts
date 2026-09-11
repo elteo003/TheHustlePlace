@@ -80,7 +80,10 @@ export async function pairDeviceToCode(
     }
 
     const [target] = await db
-        .select()
+        .select({
+            id: watchProfiles.id,
+            pairCode: watchProfiles.pairCode,
+        })
         .from(watchProfiles)
         .where(eq(watchProfiles.pairCode, pairCode))
         .limit(1)

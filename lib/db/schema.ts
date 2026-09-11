@@ -1,8 +1,16 @@
 import { bigint, index, integer, pgTable, smallint, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
+export const households = pgTable('households', {
+    id: uuid().defaultRandom().primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+})
+
 export const watchProfiles = pgTable('watch_profiles', {
     id: uuid().defaultRandom().primaryKey(),
     pairCode: text('pair_code').notNull().unique(),
+    householdId: uuid('household_id').references(() => households.id),
+    name: text(),
+    avatar: smallint(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 })
 
@@ -13,6 +21,9 @@ export const watchDevices = pgTable(
         profileId: uuid('profile_id')
             .notNull()
             .references(() => watchProfiles.id, { onDelete: 'cascade' }),
+        householdId: uuid('household_id').references(() => households.id),
+        activeProfileId: uuid('active_profile_id').references(() => watchProfiles.id),
+        kind: text().$type<'tv' | 'web'>(),
         pairedAt: timestamp('paired_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     },
     (table) => [index('watch_devices_profile_id_idx').on(table.profileId)]
