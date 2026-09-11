@@ -37,6 +37,16 @@ test.describe('Smoke test piattaforma', () => {
         await expect(tiles.first()).toHaveClass(/is-tv-focused/)
     })
 
+    test('OK in cerca non riporta il focus su Home', async ({ page }) => {
+        await page.goto('/living/search', { waitUntil: 'domcontentloaded' })
+        await expect(page.getByRole('heading', { name: 'Cerca' })).toBeVisible()
+        const letterA = page.locator('[data-fid="key-A"]')
+        await expect(letterA).toHaveClass(/is-tv-focused/, { timeout: 10_000 })
+        await page.keyboard.press('Enter')
+        await expect(letterA).toHaveClass(/is-tv-focused/)
+        await expect(page.locator('[data-fid="nav-home"]')).not.toHaveClass(/is-tv-focused/)
+    })
+
     test('pagina ricerca statica', async ({ page }) => {
         await page.goto('/search', { waitUntil: 'domcontentloaded' })
         await expect(page.locator('body')).toBeVisible()
