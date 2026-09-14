@@ -65,11 +65,19 @@
     .action.main { background: #fff; color: #111; font-weight: 700; }
     .rail { margin: 0 0 24px; animation: tvIn .32s ease-out; }
     .rail h2 { font-size: 24px; font-weight: 600; margin: 0 0 12px; color: rgba(255,255,255,.9); }
-    .scroller { white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 320px; padding: 22px 16px 20px 10px; }
+    .scroller { white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 488px; padding: 28px 20px 28px 12px; }
+    .poster-card {
+      display: inline-block; width: 248px; margin: 0 22px 0 0; vertical-align: top; white-space: normal;
+    }
     .tile {
-      display: inline-block; width: 168px; height: 252px; margin: 0 14px 0 0; border-radius: 12px;
+      display: inline-block; width: 248px; height: 372px; margin: 0 14px 0 0; border-radius: 14px;
       background: #1a1a1a center/cover no-repeat; vertical-align: top; position: relative;
       transition: transform .22s cubic-bezier(0.19, 1, 0.22, 1), box-shadow .22s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .poster-card .tile { margin: 0; }
+    .tile-title {
+      display: block; margin: 12px 2px 0; font-size: 22px; font-weight: 600; line-height: 1.25;
+      max-height: 2.5em; overflow: hidden;
     }
     .tile b {
       position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.2);
@@ -191,8 +199,11 @@
       transition: background .22s cubic-bezier(0.19, 1, 0.22, 1), color .22s cubic-bezier(0.19, 1, 0.22, 1), transform .22s cubic-bezier(0.19, 1, 0.22, 1), box-shadow .22s cubic-bezier(0.19, 1, 0.22, 1);
     }
     .tab.on { background: #fff; color: #111; font-weight: 700; }
-    .poster-grid { padding-top: 6px; }
-    .poster-grid .tile { width: 148px; height: 222px; margin: 0 12px 16px 0; }
+    .poster-grid { padding-top: 10px; }
+    .poster-grid .poster-card { margin: 0 22px 28px 0; }
+    .poster-grid .tile { width: 248px; height: 372px; margin: 0; }
+    .pane-center { min-height: 56vh; text-align: center; padding-top: 18vh; }
+    .pane-center .spinner { display: inline-block; }
     .empty { padding: 48px 8px 0; }
     .empty h2 { font-size: 28px; margin: 0 0 10px; }
     .detail { position: relative; min-height: calc(100vh - 72px); border-radius: 22px; overflow: hidden; background: #111 center/cover no-repeat; animation: tvIn .32s ease-out; }
@@ -278,7 +289,12 @@
       animation: episode-light-sweep 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
     }
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
-    .hud { position: fixed; left: 40px; top: 32px; z-index: 5; transition: opacity .35s ease; }
+    .hud {
+      position: fixed; left: 40px; right: 40px; top: 32px; z-index: 5;
+      transition: opacity .35s ease;
+    }
+    .hud-side { display: inline-block; vertical-align: top; white-space: nowrap; }
+    .hud-side-right { float: right; }
     .hud-hide { opacity: 0; visibility: hidden; }
     .cue {
       position: fixed; left: 50%; top: 40%; z-index: 6; width: 280px; margin-left: -140px;
@@ -329,8 +345,18 @@
     .hint { color: rgba(255,255,255,.5); font-size: 20px; }
     .muted { color: rgba(255,255,255,.5); font-size: 18px; }
     .spinner {
-      width: 42px; height: 42px; border: 4px solid rgba(255,255,255,.16); border-top-color: #fff;
-      border-radius: 50%; animation: spin .75s linear infinite; margin: 8px 0;
+      width: 56px; height: 56px; border: 4px solid rgba(255,255,255,.16); border-top-color: #fff;
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    .spin-screen {
+      position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 8; pointer-events: none;
+    }
+    .spin-screen .spinner {
+      position: absolute; left: 50%; top: 50%; margin: -28px 0 0 -28px;
+    }
+    .play-fail {
+      position: absolute; left: 12%; right: 12%; top: 46%;
+      text-align: center; font-size: 28px; color: rgba(255,255,255,.78);
     }
   </style>
 </head>
@@ -817,6 +843,33 @@
     return null;
   }
 
+  function nextEpisodeOf(seasons, seasonNum, episodeNum) {
+    var list = usableSeasons(seasons);
+    var s, season, e, ep, nextSeason, nextEp;
+    seasonNum = Number(seasonNum);
+    episodeNum = Number(episodeNum);
+    for (s = 0; s < list.length; s++) {
+      season = list[s];
+      if (Number(season.season_number) !== seasonNum) continue;
+      for (e = 0; e < season.episodes.length; e++) {
+        ep = season.episodes[e];
+        if (Number(ep.episode_number) === episodeNum + 1) {
+          return { season: seasonNum, episode: Number(ep.episode_number) };
+        }
+      }
+      nextSeason = list[s + 1];
+      if (nextSeason && nextSeason.episodes && nextSeason.episodes[0]) {
+        nextEp = nextSeason.episodes[0];
+        return {
+          season: Number(nextSeason.season_number),
+          episode: Number(nextEp.episode_number) || 1
+        };
+      }
+      return null;
+    }
+    return null;
+  }
+
   function openPlay(type, id, season, episode, startAt) {
     if (type === 'tv') {
       if (!season || !episode) {
@@ -832,13 +885,13 @@
   function decorateTile(tile, item, fallbackType, fid, useBack) {
     var type = itemType(item, fallbackType);
     var id = itemId(item);
-    var src = useBack ? img(item, 'w780', 'back') : img(item, 'w342', 'poster');
+    var src = useBack ? img(item, 'w780', 'back') : img(item, 'w500', 'poster');
     tile.setAttribute('data-kind', 'tile');
     tile.setAttribute('data-id', String(id || ''));
     tile.setAttribute('data-type', type);
     tile.setAttribute('data-title', itemTitle(item));
     tile.setAttribute('data-overview', item.overview || '');
-    tile.setAttribute('data-poster', img(item, 'w342', 'poster'));
+    tile.setAttribute('data-poster', img(item, 'w500', 'poster'));
     tile.setAttribute('data-back', img(item, 'w1280', 'back'));
     tile.setAttribute('data-fid', fid);
     if (src) tile.style.backgroundImage = 'url(' + src + ')';
@@ -891,7 +944,10 @@
         card.appendChild(el('span', 'hist-sub', sub));
         scroller.appendChild(card);
       } else {
-        scroller.appendChild(tile);
+        card = el('div', 'poster-card');
+        card.appendChild(tile);
+        card.appendChild(el('span', 'tile-title', itemTitle(item)));
+        scroller.appendChild(card);
       }
     }
     box.appendChild(scroller);
@@ -1369,7 +1425,10 @@
         return function () { openDetail(itemType(it, kind), itemId(it)); };
       })(item, fallbackType));
       decorateTile(tile, item, fallbackType, fid);
-      grid.appendChild(tile);
+      var card = el('div', 'poster-card');
+      card.appendChild(tile);
+      card.appendChild(el('span', 'tile-title', itemTitle(item)));
+      grid.appendChild(card);
     }
     box.appendChild(grid);
     host.appendChild(box);
@@ -1384,7 +1443,7 @@
     var movies = searchMovies;
     var shows = searchShows;
     var total = movies.length + shows.length;
-    var i, tab, grid;
+    var i, tab;
     if (!q) {
       pane.appendChild(el('p', 'hint', 'Cerca film e serie TV'));
       collect(keep);
@@ -1392,9 +1451,9 @@
     }
     pane.appendChild(el('div', 'search-head', 'Risultati per «' + q + '»'));
     if (searchLoading) {
-      grid = el('div', 'poster-grid');
-      for (i = 0; i < 12; i++) grid.appendChild(el('div', 'tile shimmer'));
-      pane.appendChild(grid);
+      var wait = el('div', 'pane-center');
+      wait.appendChild(el('div', 'spinner'));
+      pane.appendChild(wait);
       collect(keep);
       return;
     }
@@ -1880,15 +1939,22 @@
     video.setAttribute('webkit-playsinline', 'true');
     root.appendChild(video);
     var hud = el('div', 'hud');
-    hud.appendChild(focusBtn('action', 'Indietro', 'player-back', backHandler, true));
+    var hudLeft = el('div', 'hud-side');
+    hudLeft.appendChild(focusBtn('action', 'Indietro', 'player-back', backHandler, true));
     var qualityCycle = function () {};
     var qualityBtn = focusBtn('action', 'Qualità', 'player-quality', function () { qualityCycle(); });
     qualityBtn.style.display = 'none';
-    hud.appendChild(qualityBtn);
+    hudLeft.appendChild(qualityBtn);
+    var hudRight = el('div', 'hud-side hud-side-right');
+    hud.appendChild(hudLeft);
+    hud.appendChild(hudRight);
+    root.appendChild(hud);
+    var statusWrap = el('div', 'spin-screen');
+    statusWrap.id = 'play-status-wrap';
     var status = el('div', 'spinner');
     status.id = 'play-status';
-    hud.appendChild(status);
-    root.appendChild(hud);
+    statusWrap.appendChild(status);
+    root.appendChild(statusWrap);
     var cue = el('div', 'cue cue-hide');
     cue.id = 'play-cue';
     root.appendChild(cue);
@@ -1903,6 +1969,18 @@
     transport.appendChild(ttime);
     root.appendChild(transport);
     collect('player-back');
+    if (type === 'tv') {
+      getJson('/api/tmdb/tv/' + id + '/seasons', function (seasonJson) {
+        var next = nextEpisodeOf(listOf(seasonJson), season, episode);
+        if (!next) return;
+        hudRight.appendChild(focusBtn('action', 'Prossimo episodio', 'player-next', function () {
+          clearHud();
+          if (video && video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
+          openPlay('tv', id, next.season, next.episode);
+        }));
+        collect(currentFid() || 'player-back');
+      });
+    }
 
     var cueTimer = null;
     var barTimer = null;
@@ -1985,8 +2063,9 @@
       hud.className = 'hud';
       if (playerHud) playerHud.hidden = false;
       var fid = currentFid();
-      if (fid !== 'player-back' && fid !== 'player-quality') fid = 'player-back';
+      if (fid !== 'player-back' && fid !== 'player-quality' && fid !== 'player-next') fid = 'player-back';
       if (qualityBtn.style.display === 'none' && fid === 'player-quality') fid = 'player-back';
+      if (!document.querySelector('[data-fid="player-next"]') && fid === 'player-next') fid = 'player-back';
       collect(fid);
       pokeHud();
     }
@@ -2036,7 +2115,10 @@
       if (cue.textContent === 'Pausa') cue.className = 'cue cue-hide';
       showBar();
     });
-    video.addEventListener('ended', function () { sendProgress(true); });
+    video.addEventListener('ended', function () {
+      sendProgress(true);
+      if (type === 'tv' && document.querySelector('[data-fid="player-next"]')) showHud();
+    });
     video.addEventListener('timeupdate', function () {
       var now = new Date().getTime();
       if (now - lastTrack < 8000) return;
@@ -2082,7 +2164,7 @@
     if (type === 'tv') url += '&season=' + season + '&episode=' + episode;
 
     function showFail(msg) {
-      status.className = 'hint';
+      status.className = 'play-fail';
       status.innerHTML = '';
       status.appendChild(document.createTextNode(msg || 'Il film non parte.'));
       collect('player-back');
@@ -2132,7 +2214,7 @@
         collect(currentFid() || 'player-back');
       });
       function hideStatus() {
-        if (status && status.parentNode) status.parentNode.removeChild(status);
+        if (statusWrap && statusWrap.parentNode) statusWrap.parentNode.removeChild(statusWrap);
         if (userHud) return;
         zone = 'watch';
         hideHud();
