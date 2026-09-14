@@ -355,6 +355,7 @@ function TrailerStage({
 
     return (
         <section
+            role="region"
             aria-modal="true"
             aria-label={`Anteprima trailer ${title}`}
             className="fixed inset-0 z-[92] h-dvh w-screen overflow-hidden overscroll-none"

@@ -17,15 +17,32 @@ export function useMediaQuery(query: string): boolean {
     return matches
 }
 
-export function resolveIsCoarsePointer(coarse: boolean, noHover: boolean): boolean {
-    return coarse || noHover
+export function resolveIsCoarsePointer(
+    coarse: boolean,
+    noHover: boolean,
+    touchPoints = 0,
+    phoneWidth = false
+): boolean {
+    return coarse || noHover || (touchPoints > 0 && phoneWidth)
+}
+
+function useTouchPoints(): number {
+    const [points, setPoints] = useState(0)
+
+    useEffect(() => {
+        setPoints(navigator.maxTouchPoints || 0)
+    }, [])
+
+    return points
 }
 
 /** Telefono/dito. Non usare la presenza di un mouse per spegnere il dock. */
 export function useIsCoarsePointer(): boolean {
     return resolveIsCoarsePointer(
         useMediaQuery('(pointer: coarse)'),
-        useMediaQuery('(hover: none)')
+        useMediaQuery('(hover: none)'),
+        useTouchPoints(),
+        useMediaQuery('(max-width: 767px)')
     )
 }
 

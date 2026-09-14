@@ -13,6 +13,14 @@ describe('resolveIsCoarsePointer', () => {
     it('e desktop solo con hover fine e pointer fine', () => {
         expect(resolveIsCoarsePointer(false, false)).toBe(false)
     })
+
+    it('e telefono se ha touch e la finestra e stretta', () => {
+        expect(resolveIsCoarsePointer(false, false, 5, true)).toBe(true)
+    })
+
+    it('resta desktop se ha touch ma la finestra e larga', () => {
+        expect(resolveIsCoarsePointer(false, false, 5, false)).toBe(false)
+    })
 })
 
 describe('resolveIsPhoneLandscape', () => {

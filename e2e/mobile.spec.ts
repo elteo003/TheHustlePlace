@@ -4,6 +4,29 @@ const { defaultBrowserType: _browser, ...iphone } = devices['iPhone 12']
 
 test.use(iphone)
 
+test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+        const original = window.matchMedia.bind(window)
+        window.matchMedia = (query: string) => {
+            if (query === '(pointer: coarse)' || query === '(hover: none)') {
+                return {
+                    matches: true,
+                    media: query,
+                    onchange: null,
+                    addListener() {},
+                    removeListener() {},
+                    addEventListener() {},
+                    removeEventListener() {},
+                    dispatchEvent() {
+                        return false
+                    },
+                } as MediaQueryList
+            }
+            return original(query)
+        }
+    })
+})
+
 test.describe('Telefono: codice e sottocinema', () => {
 
     test('il codice dispositivo sta nel viewport come sheet', async ({ page }) => {
@@ -47,7 +70,10 @@ test.describe('Telefono: codice e sottocinema', () => {
         })
 
         const row = page.locator('section').filter({ hasText: 'Top 10 Titoli Oggi' })
-        await row.getByRole('button').first().click()
+        const poster = row.locator('[data-trailer-origin]').first()
+        await expect(poster).toBeVisible()
+        await expect(poster.getByRole('button', { name: /^Guarda / })).toBeVisible()
+        await poster.click({ position: { x: 16, y: 16 } })
 
         const dock = page.getByRole('region', { name: /Anteprima trailer/ })
         await expect(dock).toBeVisible({ timeout: 15_000 })
