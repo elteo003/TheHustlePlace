@@ -48,8 +48,20 @@ export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
     return headers
 }
 
+function requestSignal(timeoutMs: number, extra?: AbortSignal): AbortSignal {
+    const timeout = AbortSignal.timeout(timeoutMs)
+    return extra ? AbortSignal.any([timeout, extra]) : timeout
+}
+
+function isAbortError(error: unknown): boolean {
+    return error instanceof Error && (error.name === 'AbortError' || error.message.toLowerCase().includes('aborted'))
+}
+
 class VixsrcSession {
-    constructor(private readonly mode: FetchMode) {}
+    constructor(
+        private readonly mode: FetchMode,
+        private readonly signal?: AbortSignal
+    ) {}
 
     async fetch(url: string, extra?: HeadersInit): Promise<Response> {
         return this.fetchMode(url, extra)
@@ -84,7 +96,7 @@ class VixsrcSession {
                 headers: { 'x-relay-token': token },
                 cache: 'no-store',
                 redirect: 'follow',
-                signal: AbortSignal.timeout(25000),
+                signal: requestSignal(25000, this.signal),
             })
         }
         if (this.mode === 'direct') {
@@ -92,7 +104,7 @@ class VixsrcSession {
                 headers: vixsrcRequestHeaders(extra),
                 cache: 'no-store',
                 redirect: 'follow',
-                signal: AbortSignal.timeout(12000),
+                signal: requestSignal(12000, this.signal),
             })
         }
         if (this.mode === 'allorigins') {
@@ -100,7 +112,7 @@ class VixsrcSession {
             const response = await fetch(proxy, {
                 cache: 'no-store',
                 redirect: 'follow',
-                signal: AbortSignal.timeout(10000),
+                signal: requestSignal(10000, this.signal),
             })
             if (!response.ok) return response
             const buffer = await response.arrayBuffer()
@@ -112,7 +124,7 @@ class VixsrcSession {
         const jina = await fetch(`https://r.jina.ai/${url}`, {
             headers: { 'X-Return-Format': 'html', Accept: 'text/html' },
             cache: 'no-store',
-            signal: AbortSignal.timeout(10000),
+            signal: requestSignal(10000, this.signal),
         })
         const raw = await jina.text()
         if (!jina.ok) {
@@ -142,18 +154,59 @@ export async function resolveVixsrcHls(input: {
     const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
     if (cached?.master) return cached
 
-    const home = await resolveViaHomeRelay(input, lang)
-    if (home) {
-        await cache.set(cacheKey, home, { ttl: CACHE_TTL_SECONDS })
+    const persist = async (stream: ResolvedVixsrcHls, mode: string) => {
+        const value: ResolvedVixsrcHls = {
+            master: stream.master,
+            parts: stream.parts,
+            videoId: stream.videoId,
+        }
+        await cache.set(cacheKey, value, { ttl: CACHE_TTL_SECONDS })
         logger.info('Playlist VixSrc risolta', {
             tmdbId: input.tmdbId,
             type: input.type,
-            videoId: home.videoId,
-            mode: 'home',
+            videoId: value.videoId,
+            mode,
         })
-        return home
+        return value
     }
 
+    const homeAbort = new AbortController()
+    const publicAbort = new AbortController()
+    let lastError = 'API VixSrc non disponibile (403)'
+
+    const homeTask = (async () => {
+        const home = await resolveViaHomeRelay(input, lang, homeAbort.signal)
+        if (!home) throw new Error('Relay di casa senza playlist')
+        return persist(home, 'home')
+    })()
+
+    const publicTask = (async () => {
+        const stream = await resolveViaPublicTransports(input, lang, publicAbort.signal, (mode, error) => {
+            lastError = error
+            logger.warn('Transport VixSrc fallito', { mode, error, tmdbId: input.tmdbId })
+        })
+        return persist(stream, stream.mode)
+    })()
+
+    void homeTask.catch(() => undefined)
+    void publicTask.catch(() => undefined)
+
+    try {
+        const stream = await Promise.any([homeTask, publicTask])
+        homeAbort.abort()
+        publicAbort.abort()
+        return stream
+    } catch {
+        throw new Error(lastError)
+    }
+}
+
+async function resolveViaPublicTransports(
+    input: { tmdbId: number; type: 'movie' | 'tv'; season?: number; episode?: number; lang?: string },
+    lang: string,
+    signal: AbortSignal,
+    onError: (mode: string, error: string) => void
+): Promise<ResolvedVixsrcHls & { mode: string }> {
     const apiPath =
         input.type === 'movie'
             ? `/api/movie/${input.tmdbId}?lang=${encodeURIComponent(lang)}`
@@ -161,23 +214,16 @@ export async function resolveVixsrcHls(input: {
     const apiUrl = `${VIXSRC_BASE_URL}${apiPath}`
 
     let lastError = 'API VixSrc non disponibile (403)'
-    const modes = fetchModes()
-    for (let i = 0; i < modes.length; i++) {
-        const mode = modes[i]
-        const session = new VixsrcSession(mode)
+    for (const mode of fetchModes()) {
+        if (signal.aborted) throw new Error(lastError)
+        const session = new VixsrcSession(mode, signal)
         try {
             const stream = await resolveWithSession(session, apiUrl, lang)
-            await cache.set(cacheKey, stream, { ttl: CACHE_TTL_SECONDS })
-            logger.info('Playlist VixSrc risolta', {
-                tmdbId: input.tmdbId,
-                type: input.type,
-                videoId: stream.videoId,
-                mode,
-            })
-            return stream
+            return { ...stream, mode }
         } catch (error) {
+            if (isAbortError(error)) throw error
             lastError = error instanceof Error ? error.message : lastError
-            logger.warn('Transport VixSrc fallito', { mode, error: lastError, tmdbId: input.tmdbId })
+            onError(mode, lastError)
         }
     }
 
@@ -186,7 +232,8 @@ export async function resolveVixsrcHls(input: {
 
 async function resolveViaHomeRelay(
     input: { tmdbId: number; type: 'movie' | 'tv'; season?: number; episode?: number },
-    lang: string
+    lang: string,
+    signal?: AbortSignal
 ): Promise<ResolvedVixsrcHls | null> {
     if (!homeRelayCircuit.allow()) {
         logger.warn('Relay di casa in cooldown, uso i fallback', { tmdbId: input.tmdbId })
@@ -204,7 +251,7 @@ async function resolveViaHomeRelay(
         const response = await fetch(`${relay.url}/resolve?${query.toString()}`, {
             headers: { 'x-relay-token': relay.token },
             cache: 'no-store',
-            signal: AbortSignal.timeout(HOME_RELAY_TIMEOUT_MS),
+            signal: requestSignal(HOME_RELAY_TIMEOUT_MS, signal),
         })
         const outcome = interpretHomeRelayResponse(response.status, await response.text())
         if (outcome.ok) {
@@ -225,6 +272,9 @@ async function resolveViaHomeRelay(
         }
         return null
     } catch (error) {
+        if (isAbortError(error) || signal?.aborted) {
+            return null
+        }
         homeRelayCircuit.fail()
         logger.warn('Relay di casa non raggiungibile, uso i fallback', {
             tmdbId: input.tmdbId,

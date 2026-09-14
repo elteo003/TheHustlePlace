@@ -10,29 +10,10 @@ import { ContentType } from '@/lib/content-navigation'
 import { pickHighestHlsLevel } from '@/lib/hls-quality'
 import { HLS_CONFIG } from '@/utils/hls-config'
 import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
+import { fetchResolvedPlayback } from '@/lib/player-resolve'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
 
 const LOAD_TIMEOUT_MS = 55000
-
-type PlaybackPayload = {
-    master?: string
-    parts?: Record<string, string>
-    videoId?: number
-    error?: string
-}
-
-async function resolvePlayback(query: URLSearchParams): Promise<PlaybackPayload> {
-    const response = await fetch(`/api/player/resolve?${query.toString()}`)
-    const json = (await response.json()) as {
-        success?: boolean
-        error?: string
-        data?: { master?: string; parts?: Record<string, string>; videoId?: number }
-    }
-    if (!response.ok || !json.success || !json.data?.master) {
-        return { error: json.error || 'Stream non disponibile' }
-    }
-    return json.data
-}
 
 interface VixsrcEmbedPlayerProps {
     tmdbId: number
@@ -70,6 +51,7 @@ export function VixsrcEmbedPlayer({
     onPlaybackRef.current = onPlayback
     onEndedRef.current = onEnded
     const [error, setError] = useState(false)
+    const [streamMissing, setStreamMissing] = useState(false)
     const [ready, setReady] = useState(false)
     const [reloadKey, setReloadKey] = useState(0)
 
@@ -90,11 +72,17 @@ export function VixsrcEmbedPlayer({
 
         let cancelled = false
         let revokeSource: (() => void) | undefined
-        const timeout = window.setTimeout(() => {
-            if (!cancelled) {
-                setError(true)
-                toast.error('Il player non si è caricato in tempo')
-            }
+        let timeout = 0
+        const fail = (missing: boolean, message: string) => {
+            if (cancelled) return
+            window.clearTimeout(timeout)
+            setStreamMissing(missing)
+            setError(true)
+            toast.error(message)
+        }
+
+        timeout = window.setTimeout(() => {
+            fail(false, 'Il player non si è caricato in tempo')
         }, LOAD_TIMEOUT_MS)
 
         const query = new URLSearchParams({ tmdbId: String(tmdbId), type })
@@ -104,23 +92,25 @@ export function VixsrcEmbedPlayer({
         }
 
         setError(false)
+        setStreamMissing(false)
         setReady(false)
 
         const start = async () => {
             try {
-                const payload = await resolvePlayback(query)
-                if (!payload.master) {
-                    throw new Error(payload.error || 'Stream non disponibile')
+                const payload = await fetchResolvedPlayback(query)
+                if (!payload.data?.master) {
+                    fail(payload.missing, payload.error || 'Stream non disponibile')
+                    return
                 }
                 if (cancelled) return
 
                 const source = createVixsrcBrowserSource({
-                    master: payload.master,
-                    parts: payload.parts ?? {},
+                    master: payload.data.master,
+                    parts: payload.data.parts ?? {},
                 })
                 revokeSource = source.revoke
                 const playlist = source.url
-                const videoId = payload.videoId
+                const videoId = payload.data.videoId
                 const onReady = () => {
                     if (cancelled) return
                     window.clearTimeout(timeout)
@@ -155,22 +145,28 @@ export function VixsrcEmbedPlayer({
                     })
                     hls.loadSource(playlist)
                     hls.attachMedia(video)
+                    let recoveries = 0
                     hls.on(Hls.Events.ERROR, (_event, data) => {
                         if (!data.fatal || cancelled) return
-                        window.clearTimeout(timeout)
-                        setError(true)
-                        toast.error('Impossibile caricare il player')
+                        if (recoveries < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                            recoveries += 1
+                            hls.startLoad()
+                            return
+                        }
+                        if (recoveries < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                            recoveries += 1
+                            hls.recoverMediaError()
+                            return
+                        }
+                        fail(false, 'Impossibile caricare il player')
                     })
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                     video.src = playlist
                 } else {
-                    throw new Error('HLS non supportato')
+                    fail(false, 'HLS non supportato')
                 }
             } catch (error) {
-                if (cancelled) return
-                window.clearTimeout(timeout)
-                setError(true)
-                toast.error(error instanceof Error ? error.message : 'Impossibile caricare il player')
+                fail(false, error instanceof Error ? error.message : 'Impossibile caricare il player')
             }
         }
 
@@ -199,8 +195,14 @@ export function VixsrcEmbedPlayer({
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
                     <div className="text-center max-w-2xl mx-auto px-8">
                         <h1 className="text-4xl font-bold mb-4 text-white">{title}</h1>
-                        <p className="text-xl text-gray-300 mb-2">{unavailableTitle}</p>
-                        <p className="text-lg text-gray-400 mb-8">{unavailableDescription}</p>
+                        <p className="text-xl text-gray-300 mb-2">
+                            {streamMissing ? unavailableTitle : 'Impossibile caricare lo stream'}
+                        </p>
+                        <p className="text-lg text-gray-400 mb-8">
+                            {streamMissing
+                                ? unavailableDescription
+                                : 'Lo stream risulta presente su VixSrc, ma il player non è riuscito a ottenerlo. Riprova.'}
+                        </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button
                                 size="lg"
