@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAllowedHlsUrl, isM3u8Playlist, rewriteM3u8 } from '@/lib/vixsrc-hls'
+import { isAllowedHlsUrl, isHlsManifestBuffer, rewriteM3u8 } from '@/lib/vixsrc-hls'
 import { vixsrcRequestHeaders } from '@/services/vixsrc-hls.service'
 
 export const preferredRegion = ['fra1', 'cdg1']
@@ -47,39 +47,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Redirect non consentito' }, { status: 400 })
     }
 
-    const contentType = upstream.headers.get('content-type') || ''
-    const isTextManifest =
-        contentType.includes('mpegurl') ||
-        contentType.includes('m3u8') ||
-        contentType.startsWith('text/')
-
-    if (isTextManifest) {
-        const body = await upstream.text()
-        if (isM3u8Playlist(contentType, body)) {
-            return playlistResponse(body, upstream.url)
-        }
-        return new NextResponse(body, {
-            status: upstream.status,
-            headers: {
-                'Content-Type': contentType || 'text/plain',
-                'Cache-Control': 'private, no-store',
-            },
-        })
+    const buffer = Buffer.from(await upstream.arrayBuffer())
+    if (isHlsManifestBuffer(buffer)) {
+        return playlistResponse(buffer.toString('utf8'), upstream.url)
     }
 
-    if (!contentType) {
-        const buffer = Buffer.from(await upstream.arrayBuffer())
-        const head = buffer.subarray(0, 8).toString('utf8')
-        if (head.startsWith('#EXTM3U')) {
-            return playlistResponse(buffer.toString('utf8'), upstream.url)
-        }
-        return new NextResponse(buffer, {
-            status: upstream.status,
-            headers: passthroughHeaders(upstream, 'application/octet-stream'),
-        })
-    }
-
-    return new NextResponse(upstream.body, {
+    return new NextResponse(buffer, {
         status: upstream.status,
         headers: passthroughHeaders(upstream, 'application/octet-stream'),
     })

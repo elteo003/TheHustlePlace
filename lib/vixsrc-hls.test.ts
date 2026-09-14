@@ -6,11 +6,14 @@ import {
     classifyHlsRef,
     isAllowedHlsUrl,
     isAllowedRelayPublicUrl,
+    isHlsManifestBuffer,
     isM3u8Playlist,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
+    rewriteEdgeCdnThroughProxy,
     rewriteM3u8,
     rewriteM3u8Browser,
+    shouldProxyVixsrcCdn,
 } from './vixsrc-hls'
 
 const embedHtml = `
@@ -98,6 +101,9 @@ describe('isAllowedHlsUrl', () => {
     it('accetta solo host VixSrc / CDN film', () => {
         expect(isAllowedHlsUrl('https://vixsrc.to/playlist/1')).toBe(true)
         expect(isAllowedHlsUrl('https://sc-u11-01.vix-content.net/hls/a.ts')).toBe(true)
+        expect(isAllowedHlsUrl('https://sc-u2-01.swiftsalmon96.fun/hls/a.html')).toBe(true)
+        expect(isAllowedHlsUrl('https://sc-u17-01.redzebra93.fun/hls/a.m4s')).toBe(true)
+        expect(isAllowedHlsUrl('https://swiftsalmon96.fun/hls/a.html')).toBe(false)
         expect(isAllowedHlsUrl('https://spbgc.com/tag.min.js')).toBe(false)
         expect(isAllowedHlsUrl('https://evil.example/playlist')).toBe(false)
         expect(isAllowedHlsUrl('http://vixsrc.to/playlist/1')).toBe(false)
@@ -129,6 +135,7 @@ describe('rewriteM3u8', () => {
 describe('classifyHlsRef', () => {
     it('separa CDN, playlist, chiave e host esterni', () => {
         expect(classifyHlsRef('https://sc-u10-01.vix-content.net/hls/a.ts')).toBe('cdn')
+        expect(classifyHlsRef('https://sc-u2-01.swiftsalmon96.fun/hls/a.html')).toBe('cdn')
         expect(classifyHlsRef('https://vixsrc.to/playlist/1?type=video')).toBe('playlist')
         expect(classifyHlsRef('https://vixsrc.to/storage/enc.key')).toBe('key')
         expect(classifyHlsRef('https://spbgc.com/ad.ts')).toBe('drop')
@@ -157,6 +164,39 @@ describe('rewriteM3u8Browser', () => {
         expect(rewritten).not.toContain('spbgc.com')
         expect(rewritten).not.toContain('/api/player/hls')
     })
+
+    it('tiene i segmenti sugli edge .fun di VixSrc', () => {
+        const source = 'https://vixsrc.to/playlist/629782?type=video'
+        const body = [
+            '#EXTM3U',
+            '#EXTINF:8,',
+            'https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc',
+        ].join('\n')
+
+        const rewritten = rewriteM3u8Browser(body, source, (absolute, kind) => {
+            if (kind === 'cdn') return absolute
+            return `${VIXSRC_PART_PREFIX}p0`
+        })
+
+        expect(rewritten).toContain('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc')
+    })
+})
+
+describe('rewriteEdgeCdnThroughProxy', () => {
+    it('manda solo gli edge .fun al proxy, lascia vix-content.net', () => {
+        const body = [
+            'https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc',
+            'https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc',
+        ].join('\n')
+
+        const rewritten = rewriteEdgeCdnThroughProxy(body, 'https://the-hustle-place.vercel.app')
+        expect(shouldProxyVixsrcCdn('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html')).toBe(true)
+        expect(shouldProxyVixsrcCdn('https://sc-b2-28.vix-content.net/hls/0000.ts')).toBe(false)
+        expect(rewritten).toContain(
+            `/api/player/hls?u=${encodeURIComponent('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc')}`
+        )
+        expect(rewritten).toContain('https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc')
+    })
 })
 
 describe('isM3u8Playlist', () => {
@@ -164,5 +204,8 @@ describe('isM3u8Playlist', () => {
         expect(isM3u8Playlist('application/vnd.apple.mpegurl', 'nope')).toBe(true)
         expect(isM3u8Playlist('application/octet-stream', '#EXTM3U\n#EXT-X-VERSION:3')).toBe(true)
         expect(isM3u8Playlist('video/MP2T', 'binary')).toBe(false)
+        expect(isM3u8Playlist('text/html', '<!doctype html>')).toBe(false)
+        expect(isHlsManifestBuffer(new Uint8Array([0x23, 0x45, 0x58, 0x54, 0x4d, 0x33, 0x55]))).toBe(true)
+        expect(isHlsManifestBuffer(new Uint8Array([0x00, 0x01, 0x02, 0x03]))).toBe(false)
     })
 })

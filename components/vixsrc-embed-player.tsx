@@ -107,6 +107,7 @@ export function VixsrcEmbedPlayer({
                 const source = createVixsrcBrowserSource({
                     master: payload.data.master,
                     parts: payload.data.parts ?? {},
+                    origin: window.location.origin,
                 })
                 revokeSource = source.revoke
                 const playlist = source.url

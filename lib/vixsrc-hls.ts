@@ -7,14 +7,41 @@ export interface VixsrcMasterPlaylist {
 }
 
 const ALLOWED_HOST = /^(?:[a-z0-9-]+\.)*(?:vixsrc\.to|vix-content\.net)$/i
+const VIXSRC_EDGE_CDN_HOST = /^sc-[a-z0-9]+-\d+\.[a-z0-9-]+\.fun$/i
+
+export function isVixsrcEdgeCdnHost(hostname: string): boolean {
+    return VIXSRC_EDGE_CDN_HOST.test(hostname)
+}
+
+export function isVixsrcCdnHost(hostname: string): boolean {
+    return hostname === 'vix-content.net' || hostname.endsWith('.vix-content.net') || isVixsrcEdgeCdnHost(hostname)
+}
 
 export function isAllowedHlsUrl(raw: string): boolean {
     try {
         const url = new URL(raw)
-        return url.protocol === 'https:' && ALLOWED_HOST.test(url.hostname)
+        return url.protocol === 'https:' && (ALLOWED_HOST.test(url.hostname) || isVixsrcEdgeCdnHost(url.hostname))
     } catch {
         return false
     }
+}
+
+export function shouldProxyVixsrcCdn(raw: string): boolean {
+    try {
+        const url = new URL(raw)
+        return url.protocol === 'https:' && isVixsrcEdgeCdnHost(url.hostname)
+    } catch {
+        return false
+    }
+}
+
+export function rewriteEdgeCdnThroughProxy(body: string, origin: string): string {
+    if (!origin) return body
+    const base = origin.replace(/\/$/, '')
+    return body.replace(/https:\/\/[^\s"']+/g, (match) => {
+        if (!shouldProxyVixsrcCdn(match)) return match
+        return `${base}/api/player/hls?u=${encodeURIComponent(match)}`
+    })
 }
 
 const RELAY_PUBLIC_HOST = /^(?:[a-z0-9-]+\.)+(?:trycloudflare\.com|cfargotunnel\.com)$/i
@@ -135,9 +162,20 @@ export function rewriteM3u8(body: string, sourceUrl: string, proxyPrefix: string
 }
 
 export function isM3u8Playlist(contentType: string, body: string): boolean {
+    if (body.trimStart().startsWith('#EXTM3U')) return true
     const type = contentType.toLowerCase()
-    if (type.includes('mpegurl') || type.includes('m3u8')) return true
-    return body.trimStart().startsWith('#EXTM3U')
+    return type.includes('mpegurl') || type.includes('m3u8')
+}
+
+export function isHlsManifestBuffer(bytes: Uint8Array): boolean {
+    let head = ''
+    const limit = Math.min(bytes.length, 32)
+    for (let i = 0; i < limit; i++) {
+        const code = bytes[i]
+        if (code === 0) break
+        head += String.fromCharCode(code)
+    }
+    return head.trimStart().startsWith('#EXTM3U')
 }
 
 export const VIXSRC_PART_PREFIX = '__PART__'
@@ -147,7 +185,7 @@ export type HlsRefKind = 'cdn' | 'playlist' | 'key' | 'drop'
 export function classifyHlsRef(absolute: string): HlsRefKind {
     if (!isAllowedHlsUrl(absolute)) return 'drop'
     const url = new URL(absolute)
-    if (url.hostname.endsWith('vix-content.net')) return 'cdn'
+    if (isVixsrcCdnHost(url.hostname)) return 'cdn'
     if (url.pathname.includes('/storage/') || url.pathname.endsWith('.key')) return 'key'
     return 'playlist'
 }
@@ -185,11 +223,17 @@ export function bytesToBase64(bytes: Uint8Array): string {
     return btoa(binary)
 }
 
-export function createVixsrcBrowserSource(input: { master: string; parts: Record<string, string> }) {
+export function createVixsrcBrowserSource(input: {
+    master: string
+    parts: Record<string, string>
+    origin?: string
+}) {
+    const origin = input.origin ?? (typeof window !== 'undefined' ? window.location.origin : '')
     const created: string[] = []
-    let master = input.master
+    let master = rewriteEdgeCdnThroughProxy(input.master, origin)
     for (const [id, text] of Object.entries(input.parts)) {
-        const url = URL.createObjectURL(new Blob([text], { type: 'application/vnd.apple.mpegurl' }))
+        const rewritten = rewriteEdgeCdnThroughProxy(text, origin)
+        const url = URL.createObjectURL(new Blob([rewritten], { type: 'application/vnd.apple.mpegurl' }))
         created.push(url)
         master = master.split(`${VIXSRC_PART_PREFIX}${id}.m3u8`).join(url)
     }
