@@ -1,4 +1,5 @@
 import { getHomeRelayConfig } from '@/lib/db/vixsrc-relay'
+import { HOME_RELAY_TIMEOUT_MS, homeRelayCircuit, interpretHomeRelayResponse } from '@/lib/vixsrc-home-relay'
 import { cache } from '@/utils/cache'
 import { logger } from '@/utils/logger'
 import {
@@ -22,7 +23,7 @@ export interface ResolvedVixsrcHls {
 }
 
 const VIXSRC_BASE_URL = process.env.VIXSRC_BASE_URL || 'https://vixsrc.to'
-const CACHE_TTL_SECONDS = 120
+const CACHE_TTL_SECONDS = 300
 const BROWSER_UA =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 
@@ -36,7 +37,7 @@ export const VIXSRC_FETCH_HEADERS = {
 type FetchMode = 'home' | 'direct' | 'allorigins' | 'jina'
 
 function fetchModes(): FetchMode[] {
-    return process.env.VIXSRC_RELAY_URL ? ['home', 'direct', 'allorigins', 'jina'] : ['direct', 'allorigins', 'jina']
+    return ['direct', 'allorigins', 'jina']
 }
 
 export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
@@ -91,6 +92,7 @@ class VixsrcSession {
                 headers: vixsrcRequestHeaders(extra),
                 cache: 'no-store',
                 redirect: 'follow',
+                signal: AbortSignal.timeout(12000),
             })
         }
         if (this.mode === 'allorigins') {
@@ -98,7 +100,7 @@ class VixsrcSession {
             const response = await fetch(proxy, {
                 cache: 'no-store',
                 redirect: 'follow',
-                signal: AbortSignal.timeout(20000),
+                signal: AbortSignal.timeout(10000),
             })
             if (!response.ok) return response
             const buffer = await response.arrayBuffer()
@@ -110,7 +112,7 @@ class VixsrcSession {
         const jina = await fetch(`https://r.jina.ai/${url}`, {
             headers: { 'X-Return-Format': 'html', Accept: 'text/html' },
             cache: 'no-store',
-            signal: AbortSignal.timeout(20000),
+            signal: AbortSignal.timeout(10000),
         })
         const raw = await jina.text()
         if (!jina.ok) {
@@ -186,24 +188,50 @@ async function resolveViaHomeRelay(
     input: { tmdbId: number; type: 'movie' | 'tv'; season?: number; episode?: number },
     lang: string
 ): Promise<ResolvedVixsrcHls | null> {
-    const relay = await getHomeRelayConfig()
-    if (!relay) return null
-    const query = new URLSearchParams({ tmdbId: String(input.tmdbId), type: input.type, lang })
-    if (input.type === 'tv' && input.season && input.episode) {
-        query.set('season', String(input.season))
-        query.set('episode', String(input.episode))
+    if (!homeRelayCircuit.allow()) {
+        logger.warn('Relay di casa in cooldown, uso i fallback', { tmdbId: input.tmdbId })
+        return null
     }
-    const response = await fetch(`${relay.url}/resolve?${query.toString()}`, {
-        headers: { 'x-relay-token': relay.token },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(35000),
-    })
-    const payload = (await response.json()) as {
-        success?: boolean
-        data?: ResolvedVixsrcHls
+
+    try {
+        const relay = await getHomeRelayConfig()
+        if (!relay) return null
+        const query = new URLSearchParams({ tmdbId: String(input.tmdbId), type: input.type, lang })
+        if (input.type === 'tv' && input.season && input.episode) {
+            query.set('season', String(input.season))
+            query.set('episode', String(input.episode))
+        }
+        const response = await fetch(`${relay.url}/resolve?${query.toString()}`, {
+            headers: { 'x-relay-token': relay.token },
+            cache: 'no-store',
+            signal: AbortSignal.timeout(HOME_RELAY_TIMEOUT_MS),
+        })
+        const outcome = interpretHomeRelayResponse(response.status, await response.text())
+        if (outcome.ok) {
+            homeRelayCircuit.succeed()
+            return outcome.data
+        }
+        if (outcome.coolDown) {
+            homeRelayCircuit.fail()
+            logger.warn('Relay di casa non raggiungibile, uso i fallback', {
+                tmdbId: input.tmdbId,
+                status: response.status,
+            })
+        } else {
+            logger.warn('Relay di casa senza playlist, uso i fallback', {
+                tmdbId: input.tmdbId,
+                status: response.status,
+            })
+        }
+        return null
+    } catch (error) {
+        homeRelayCircuit.fail()
+        logger.warn('Relay di casa non raggiungibile, uso i fallback', {
+            tmdbId: input.tmdbId,
+            error: error instanceof Error ? error.message : error,
+        })
+        return null
     }
-    if (!response.ok || !payload.success || !payload.data?.master) return null
-    return payload.data
 }
 
 async function resolveWithSession(session: VixsrcSession, apiUrl: string, lang: string): Promise<ResolvedVixsrcHls> {

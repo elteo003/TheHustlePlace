@@ -26,7 +26,8 @@ BROWSER_UA = (
 PART_PREFIX = "__PART__"
 SSL_CTX = ssl.create_default_context()
 RESOLVE_LIMIT = max(1, int(os.environ.get("RESOLVE_LIMIT", "6")))
-CACHE_TTL = max(1, int(os.environ.get("RESOLVE_CACHE_TTL", "120")))
+CACHE_TTL = max(1, int(os.environ.get("RESOLVE_CACHE_TTL", "300")))
+RESOLVE_WAIT = max(0.0, float(os.environ.get("RESOLVE_WAIT", "1")))
 RESOLVE_SEM = BoundedSemaphore(RESOLVE_LIMIT)
 CACHE_LOCK = Lock()
 INFLIGHT_LOCK = Lock()
@@ -189,7 +190,7 @@ def resolve_title(tmdb_id: int, kind: str, season: int | None, episode: int | No
         hit = CACHE.get(cache_key)
         if hit and hit[0] > now:
             return hit[1]
-    if not RESOLVE_SEM.acquire(timeout=40):
+    if not RESOLVE_SEM.acquire(timeout=RESOLVE_WAIT):
         raise RuntimeError("relay occupato")
     global INFLIGHT
     try:
@@ -271,7 +272,9 @@ class Handler(BaseHTTPRequestHandler):
                 data = resolve_title(tmdb_id, kind, season, episode, "it")
                 self._send(200, json.dumps({"success": True, "data": data}).encode(), "application/json")
             except Exception as error:
-                self._send(502, json.dumps({"success": False, "error": str(error)}).encode(), "application/json")
+                message = str(error)
+                status = 503 if "occupato" in message else 502
+                self._send(status, json.dumps({"success": False, "error": message}).encode(), "application/json")
             return
         if parsed.path != "/fetch":
             self._send(404, b"not found", "text/plain")
