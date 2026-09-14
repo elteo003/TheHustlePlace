@@ -1,3 +1,4 @@
+import { firstFulfilled } from '@/lib/first-fulfilled'
 import { getHomeRelayConfig } from '@/lib/db/vixsrc-relay'
 import { HOME_RELAY_TIMEOUT_MS, homeRelayCircuit, interpretHomeRelayResponse } from '@/lib/vixsrc-home-relay'
 import { cache } from '@/utils/cache'
@@ -49,8 +50,18 @@ export function vixsrcRequestHeaders(extra?: HeadersInit): Headers {
 }
 
 function requestSignal(timeoutMs: number, extra?: AbortSignal): AbortSignal {
-    const timeout = AbortSignal.timeout(timeoutMs)
-    return extra ? AbortSignal.any([timeout, extra]) : timeout
+    if (!extra) return AbortSignal.timeout(timeoutMs)
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+        if (!controller.signal.aborted) controller.abort()
+    }, timeoutMs)
+    const onAbort = () => {
+        clearTimeout(timer)
+        if (!controller.signal.aborted) controller.abort()
+    }
+    extra.addEventListener('abort', onAbort, { once: true })
+    if (extra.aborted) onAbort()
+    return controller.signal
 }
 
 function isAbortError(error: unknown): boolean {
@@ -192,7 +203,7 @@ export async function resolveVixsrcHls(input: {
     void publicTask.catch(() => undefined)
 
     try {
-        const stream = await Promise.any([homeTask, publicTask])
+        const stream = await firstFulfilled([homeTask, publicTask])
         homeAbort.abort()
         publicAbort.abort()
         return stream
