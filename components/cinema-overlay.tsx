@@ -1,0 +1,404 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, Maximize, Minimize2, Pause, Play, SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
+
+const INTRO_MS = 1800
+const SKIP_S = 10
+
+export function formatMediaTime(total: number) {
+    if (!Number.isFinite(total) || total < 0) return '0:00'
+    const s = Math.floor(total)
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    const mm = String(m).padStart(h > 0 ? 2 : 1, '0')
+    const ss = String(sec).padStart(2, '0')
+    return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`
+}
+
+function SkipTen({ dir }: { dir: 'back' | 'fwd' }) {
+    return (
+        <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums">
+            {dir === 'back' ? (
+                <>
+                    <SkipChevrons dir="back" />
+                    <span>10</span>
+                </>
+            ) : (
+                <>
+                    <span>10</span>
+                    <SkipChevrons dir="fwd" />
+                </>
+            )}
+        </span>
+    )
+}
+
+function SkipChevrons({ dir }: { dir: 'back' | 'fwd' }) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+        >
+            {dir === 'back' ? (
+                <>
+                    <path d="M11 6 4 12l7 6" />
+                    <path d="M19 6l-7 6 7 6" />
+                </>
+            ) : (
+                <>
+                    <path d="M13 6l7 6-7 6" />
+                    <path d="M5 6l7 6-7 6" />
+                </>
+            )}
+        </svg>
+    )
+}
+
+function IconHit({
+    label,
+    onClick,
+    children,
+    className,
+}: {
+    label: string
+    onClick?: () => void
+    children: React.ReactNode
+    className?: string
+}) {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            onClick={onClick}
+            className={cn(
+                'player-skin-hit inline-flex h-11 min-w-11 items-center justify-center text-white',
+                className
+            )}
+        >
+            {children}
+        </button>
+    )
+}
+
+interface CinemaOverlayProps {
+    videoRef: React.RefObject<HTMLVideoElement | null>
+    stageRef: React.RefObject<HTMLElement | null>
+    title?: string
+    onBack?: () => void
+    onNext?: () => void
+    nextLabel?: string
+    pinChrome?: boolean
+    chromePaused?: boolean
+    resetKey: string
+}
+
+export function CinemaOverlay({
+    videoRef,
+    stageRef,
+    title,
+    onBack,
+    onNext,
+    nextLabel,
+    pinChrome = false,
+    chromePaused = false,
+    resetKey,
+}: CinemaOverlayProps) {
+    const isTouch = useIsCoarsePointer()
+    const [intro, setIntro] = useState(true)
+    const [hoverTop, setHoverTop] = useState(false)
+    const [hoverBottom, setHoverBottom] = useState(false)
+    const [playing, setPlaying] = useState(false)
+    const [muted, setMuted] = useState(false)
+    const [fullscreen, setFullscreen] = useState(false)
+    const fillRef = useRef<HTMLSpanElement>(null)
+    const timeRef = useRef<HTMLSpanElement>(null)
+    const durationRef = useRef<HTMLSpanElement>(null)
+    const trackRef = useRef<HTMLButtonElement>(null)
+    const dragging = useRef(false)
+
+    useEffect(() => {
+        setIntro(true)
+        setHoverTop(false)
+        setHoverBottom(false)
+        if (isTouch) return
+        const timer = window.setTimeout(() => setIntro(false), INTRO_MS)
+        return () => window.clearTimeout(timer)
+    }, [isTouch, resetKey])
+
+    const open =
+        !chromePaused && (isTouch || pinChrome || intro || hoverTop || hoverBottom)
+
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
+
+        const sync = () => {
+            setPlaying(!video.paused)
+            setMuted(video.muted || video.volume === 0)
+        }
+        sync()
+        video.addEventListener('play', sync)
+        video.addEventListener('pause', sync)
+        video.addEventListener('volumechange', sync)
+        return () => {
+            video.removeEventListener('play', sync)
+            video.removeEventListener('pause', sync)
+            video.removeEventListener('volumechange', sync)
+        }
+    }, [videoRef, resetKey])
+
+    useEffect(() => {
+        const onFull = () => setFullscreen(Boolean(document.fullscreenElement))
+        document.addEventListener('fullscreenchange', onFull)
+        return () => document.removeEventListener('fullscreenchange', onFull)
+    }, [])
+
+    useEffect(() => {
+        let frame = 0
+        const tick = () => {
+            const video = videoRef.current
+            if (video) {
+                const duration = Number.isFinite(video.duration) ? video.duration : 0
+                const ratio = duration > 0 ? video.currentTime / duration : 0
+                if (fillRef.current) fillRef.current.style.width = `${Math.min(100, ratio * 100)}%`
+                if (timeRef.current) timeRef.current.textContent = formatMediaTime(video.currentTime)
+                if (durationRef.current) durationRef.current.textContent = formatMediaTime(duration)
+            }
+            frame = requestAnimationFrame(tick)
+        }
+        frame = requestAnimationFrame(tick)
+        return () => cancelAnimationFrame(frame)
+    }, [videoRef])
+
+    const seekFromClientX = useCallback(
+        (clientX: number) => {
+            const video = videoRef.current
+            const track = trackRef.current
+            if (!video || !track || !Number.isFinite(video.duration)) return
+            const rect = track.getBoundingClientRect()
+            const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+            video.currentTime = ratio * video.duration
+        },
+        [videoRef]
+    )
+
+    const skip = (delta: number) => {
+        const video = videoRef.current
+        if (!video || !Number.isFinite(video.duration)) return
+        video.currentTime = Math.min(video.duration, Math.max(0, video.currentTime + delta))
+    }
+
+    const togglePlay = () => {
+        const video = videoRef.current
+        if (!video) return
+        if (video.paused) void video.play()
+        else video.pause()
+    }
+
+    const toggleMute = () => {
+        const video = videoRef.current
+        if (!video) return
+        video.muted = !video.muted
+    }
+
+    const toggleFullscreen = () => {
+        const stage = stageRef.current
+        if (!stage) return
+        if (document.fullscreenElement) void document.exitFullscreen()
+        else void stage.requestFullscreen()
+    }
+
+    useEffect(() => {
+        if (chromePaused) return
+        const onKey = (event: KeyboardEvent) => {
+            const video = videoRef.current
+            if (!video) return
+            const target = event.target
+            if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
+            if (event.code === 'Space' || event.key === 'k' || event.key === 'K') {
+                event.preventDefault()
+                if (video.paused) void video.play()
+                else video.pause()
+            }
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault()
+                if (Number.isFinite(video.duration)) {
+                    video.currentTime = Math.max(0, video.currentTime - SKIP_S)
+                }
+            }
+            if (event.key === 'ArrowRight') {
+                event.preventDefault()
+                if (Number.isFinite(video.duration)) {
+                    video.currentTime = Math.min(video.duration, video.currentTime + SKIP_S)
+                }
+            }
+            if (event.key === 'm' || event.key === 'M') {
+                video.muted = !video.muted
+            }
+            if (event.key === 'f' || event.key === 'F') {
+                const stage = stageRef.current
+                if (!stage) return
+                if (document.fullscreenElement) void document.exitFullscreen()
+                else void stage.requestFullscreen()
+            }
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [chromePaused, stageRef, videoRef])
+
+    return (
+        <>
+            {!playing && !open && !chromePaused && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                    <Play className="h-14 w-14 fill-white/80 text-white/80" />
+                </div>
+            )}
+
+            <div
+                className="player-chrome-hit absolute inset-x-0 top-0 z-20 h-20"
+                onMouseEnter={() => setHoverTop(true)}
+                onMouseLeave={() => setHoverTop(false)}
+            >
+                <div className="player-skin-chrome player-skin-chrome-top px-4 pb-10 pt-4" data-open={open}>
+                    <div
+                        className="flex items-center gap-2 sm:gap-3"
+                        style={{
+                            background: 'linear-gradient(to bottom, rgb(0 0 0 / 0.72), transparent)',
+                            margin: '-1rem -1rem 0',
+                            padding: '1rem 1rem 2.5rem',
+                        }}
+                    >
+                        {onBack && (
+                            <button
+                                type="button"
+                                onClick={onBack}
+                                className="player-skin-hit inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white"
+                                aria-label="Indietro"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Indietro
+                            </button>
+                        )}
+                        {title && (
+                            <p className="min-w-0 flex-1 truncate text-sm text-white/70">{title}</p>
+                        )}
+                        {onNext && (
+                            <button
+                                type="button"
+                                onClick={onNext}
+                                className="player-skin-hit ml-auto inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white"
+                                aria-label={nextLabel ? `Prossima ${nextLabel}` : 'Puntata successiva'}
+                            >
+                                Prossima
+                                {nextLabel ? ` ${nextLabel}` : ''}
+                                <SkipForward className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div
+                className="player-chrome-hit absolute inset-x-0 bottom-0 z-20 h-36"
+                onMouseEnter={() => setHoverBottom(true)}
+                onMouseLeave={() => setHoverBottom(false)}
+            >
+                <div className="player-skin-chrome player-skin-chrome-bottom absolute inset-x-0 bottom-0" data-open={open}>
+                    <div
+                        className="px-8 pb-5 pt-16"
+                        style={{
+                            background:
+                                'linear-gradient(to top, rgb(0 0 0 / 0.88) 0%, rgb(0 0 0 / 0.42) 48%, transparent 100%)',
+                        }}
+                    >
+                        <button
+                            ref={trackRef}
+                            type="button"
+                            aria-label="Avanzamento"
+                            className="relative h-[3px] w-full rounded-full bg-white/20"
+                            onPointerDown={(event) => {
+                                dragging.current = true
+                                event.currentTarget.setPointerCapture(event.pointerId)
+                                seekFromClientX(event.clientX)
+                            }}
+                            onPointerMove={(event) => {
+                                if (!dragging.current) return
+                                seekFromClientX(event.clientX)
+                            }}
+                            onPointerUp={() => {
+                                dragging.current = false
+                            }}
+                        >
+                            <span
+                                ref={fillRef}
+                                className="absolute inset-y-0 left-0 rounded-full bg-white"
+                                style={{ width: '0%' }}
+                            />
+                        </button>
+                        <div className="mt-2.5 flex items-center gap-0.5">
+                            <IconHit
+                                label="Indietro 10 secondi"
+                                onClick={() => skip(-SKIP_S)}
+                                className="min-w-[3.5rem]"
+                            >
+                                <SkipTen dir="back" />
+                            </IconHit>
+                            <IconHit
+                                label={playing ? 'Pausa' : 'Play'}
+                                onClick={togglePlay}
+                                className="h-12 w-12 rounded-full bg-white text-black"
+                            >
+                                {playing ? (
+                                    <Pause className="h-5 w-5 fill-current" />
+                                ) : (
+                                    <Play className="h-5 w-5 fill-current" />
+                                )}
+                            </IconHit>
+                            <IconHit
+                                label="Avanti 10 secondi"
+                                onClick={() => skip(SKIP_S)}
+                                className="min-w-[3.5rem]"
+                            >
+                                <SkipTen dir="fwd" />
+                            </IconHit>
+                            <span className="ml-2 text-[12px] tabular-nums text-white/70">
+                                <span ref={timeRef}>0:00</span>
+                                {' / '}
+                                <span ref={durationRef}>0:00</span>
+                            </span>
+                            <div className="ml-auto flex items-center">
+                                <IconHit label={muted ? 'Audio' : 'Muto'} onClick={toggleMute}>
+                                    {muted ? (
+                                        <VolumeX className="h-5 w-5" strokeWidth={1.75} />
+                                    ) : (
+                                        <Volume2 className="h-5 w-5" strokeWidth={1.75} />
+                                    )}
+                                </IconHit>
+                                <IconHit
+                                    label={fullscreen ? 'Esci da schermo intero' : 'Schermo intero'}
+                                    onClick={toggleFullscreen}
+                                >
+                                    {fullscreen ? (
+                                        <Minimize2 className="h-5 w-5" strokeWidth={1.75} />
+                                    ) : (
+                                        <Maximize className="h-5 w-5" strokeWidth={1.75} />
+                                    )}
+                                </IconHit>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}

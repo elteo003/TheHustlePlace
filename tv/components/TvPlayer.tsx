@@ -74,6 +74,7 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
                 startAt={startAt}
                 onPlayback={onPlayback}
                 onBack={back}
+                nativeControls
             />
         </div>
     )

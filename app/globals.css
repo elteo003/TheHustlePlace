@@ -597,6 +597,59 @@ html {
     }
 }
 
+/* Player skins: barra + skip sono un solo oggetto. Stessa curva, stessi 180ms. */
+/* Player cinema: hit zone sempre attiva (come hero-meta-hit),
+   così i tasti si possono far ricomparire anche da nascosti. */
+.player-chrome-hit {
+    pointer-events: auto;
+}
+
+.player-skin-chrome {
+    transition-property: opacity, transform;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.player-skin-chrome[data-open='true'] {
+    opacity: 1;
+}
+
+.player-skin-chrome[data-open='false'] {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.player-skin-chrome-top[data-open='false'] {
+    transform: translateY(-8px);
+}
+
+.player-skin-chrome-bottom[data-open='false'] {
+    transform: translateY(12px);
+}
+
+.player-skin-chrome[data-open='true'] {
+    transform: translateY(0);
+}
+
+.player-skin-hit {
+    transition: transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.player-skin-hit:active {
+    transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .player-skin-chrome,
+    .player-skin-chrome[data-open='false'],
+    .player-skin-chrome[data-open='true'],
+    .player-skin-hit,
+    .player-skin-hit:active {
+        transition: opacity 200ms ease;
+        transform: none;
+    }
+}
+
 @keyframes play-breathe {
     0%,
     100% {

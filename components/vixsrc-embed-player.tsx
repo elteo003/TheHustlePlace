@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
+import { CinemaOverlay } from '@/components/cinema-overlay'
+import { usePlayerChrome } from '@/components/player-chrome-context'
 import { ContentType } from '@/lib/content-navigation'
 import { pickHighestHlsLevel } from '@/lib/hls-quality'
 import { HLS_CONFIG } from '@/utils/hls-config'
@@ -27,6 +29,7 @@ interface VixsrcEmbedPlayerProps {
     onBack?: () => void
     unavailableTitle?: string
     unavailableDescription?: string
+    nativeControls?: boolean
 }
 
 export function VixsrcEmbedPlayer({
@@ -41,8 +44,11 @@ export function VixsrcEmbedPlayer({
     onBack,
     unavailableTitle = 'Contenuto non disponibile',
     unavailableDescription = 'Questo titolo non è attualmente disponibile su vixsrc.to',
+    nativeControls = false,
 }: VixsrcEmbedPlayerProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null)
+    const stageRef = useRef<HTMLDivElement | null>(null)
+    const shell = usePlayerChrome()
     const hlsRef = useRef<Hls | null>(null)
     const startAtRef = useRef(startAt)
     const onPlaybackRef = useRef(onPlayback)
@@ -190,8 +196,11 @@ export function VixsrcEmbedPlayer({
         }
     }, [emit, episode, reloadKey, season, tmdbId, type])
 
+    const overlayBack = shell?.onBack ?? onBack
+    const overlayTitle = shell?.title ?? title
+
     return (
-        <div className="relative z-10 h-full w-full bg-black">
+        <div ref={stageRef} className="relative z-10 h-full w-full bg-black">
             {error && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black">
                     <div className="text-center max-w-2xl mx-auto px-8">
@@ -238,11 +247,31 @@ export function VixsrcEmbedPlayer({
             <video
                 ref={videoRef}
                 className="h-full w-full bg-black object-contain"
-                controls
+                controls={nativeControls}
                 playsInline
                 autoPlay
                 title={title}
+                onClick={() => {
+                    if (nativeControls) return
+                    const video = videoRef.current
+                    if (!video) return
+                    if (video.paused) void video.play()
+                    else video.pause()
+                }}
             />
+            {!nativeControls && !error && (
+                <CinemaOverlay
+                    videoRef={videoRef}
+                    stageRef={stageRef}
+                    title={overlayTitle}
+                    onBack={overlayBack}
+                    onNext={shell?.onNext}
+                    nextLabel={shell?.nextLabel}
+                    pinChrome={shell?.pinChrome}
+                    chromePaused={shell?.chromePaused}
+                    resetKey={`${tmdbId}-${season ?? 0}-${episode ?? 0}-${reloadKey}`}
+                />
+            )}
         </div>
     )
 }
