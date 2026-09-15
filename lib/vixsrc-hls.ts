@@ -1,3 +1,5 @@
+import { VIXSRC_EDGE_CDN_HOST, VIXSRC_ORIGIN_HOST } from './vixsrc-cdn-allowlist'
+
 export interface VixsrcMasterPlaylist {
     url: string
     token: string
@@ -5,9 +7,6 @@ export interface VixsrcMasterPlaylist {
     canPlayFHD: boolean
     videoId?: number
 }
-
-const ALLOWED_HOST = /^(?:[a-z0-9-]+\.)*(?:vixsrc\.to|vix-content\.net)$/i
-const VIXSRC_EDGE_CDN_HOST = /^sc-[a-z0-9]+-\d+\.[a-z0-9-]+\.fun$/i
 
 export function isVixsrcEdgeCdnHost(hostname: string): boolean {
     return VIXSRC_EDGE_CDN_HOST.test(hostname)
@@ -20,7 +19,7 @@ export function isVixsrcCdnHost(hostname: string): boolean {
 export function isAllowedHlsUrl(raw: string): boolean {
     try {
         const url = new URL(raw)
-        return url.protocol === 'https:' && (ALLOWED_HOST.test(url.hostname) || isVixsrcEdgeCdnHost(url.hostname))
+        return url.protocol === 'https:' && (VIXSRC_ORIGIN_HOST.test(url.hostname) || isVixsrcEdgeCdnHost(url.hostname))
     } catch {
         return false
     }
@@ -29,7 +28,10 @@ export function isAllowedHlsUrl(raw: string): boolean {
 export function shouldProxyVixsrcCdn(raw: string): boolean {
     try {
         const url = new URL(raw)
-        return url.protocol === 'https:' && isVixsrcEdgeCdnHost(url.hostname)
+        if (url.protocol !== 'https:') return false
+        const host = url.hostname
+        if (host === 'vix-content.net' || host.endsWith('.vix-content.net')) return false
+        return isVixsrcEdgeCdnHost(host)
     } catch {
         return false
     }
@@ -42,6 +44,46 @@ export function rewriteEdgeCdnThroughProxy(body: string, origin: string): string
         if (!shouldProxyVixsrcCdn(match)) return match
         return `${base}/api/player/hls?u=${encodeURIComponent(match)}`
     })
+}
+
+/** True se c'è almeno una media playlist con EXTINF e URL di segmenti. */
+export function hlsStreamLooksPlayable(stream: { parts: Record<string, string> }): boolean {
+    return Object.values(stream.parts).some((text) => {
+        const inf = (text.match(/#EXTINF/g) || []).length
+        if (inf < 8) return false
+        return /https:\/\//.test(text) || text.includes('/api/player/hls?u=')
+    })
+}
+
+export function collectDroppedHlsHosts(body: string, sourceUrl: string): string[] {
+    const hosts = new Set<string>()
+    const consider = (ref: string) => {
+        if (!ref || ref.startsWith('data:')) return
+        try {
+            const absolute = new URL(ref, sourceUrl).toString()
+            if (isAllowedHlsUrl(absolute)) return
+            hosts.add(new URL(absolute).hostname)
+        } catch {
+            return
+        }
+    }
+
+    for (const line of body.split(/\r?\n/)) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        if (trimmed.startsWith('#')) {
+            const re = /URI="([^"]+)"/gi
+            let match: RegExpExecArray | null = re.exec(trimmed)
+            while (match) {
+                consider(match[1])
+                match = re.exec(trimmed)
+            }
+            continue
+        }
+        consider(trimmed)
+    }
+
+    return [...hosts]
 }
 
 const RELAY_PUBLIC_HOST = /^(?:[a-z0-9-]+\.)+(?:trycloudflare\.com|cfargotunnel\.com)$/i

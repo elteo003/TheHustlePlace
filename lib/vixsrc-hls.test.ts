@@ -10,6 +10,7 @@ import {
     isM3u8Playlist,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
+    hlsStreamLooksPlayable,
     rewriteEdgeCdnThroughProxy,
     rewriteM3u8,
     rewriteM3u8Browser,
@@ -103,6 +104,8 @@ describe('isAllowedHlsUrl', () => {
         expect(isAllowedHlsUrl('https://sc-u11-01.vix-content.net/hls/a.ts')).toBe(true)
         expect(isAllowedHlsUrl('https://sc-u2-01.swiftsalmon96.fun/hls/a.html')).toBe(true)
         expect(isAllowedHlsUrl('https://sc-u17-01.redzebra93.fun/hls/a.m4s')).toBe(true)
+        expect(isAllowedHlsUrl('https://sc-u15-01.frozenfox90.fun/hls/a.m4s')).toBe(true)
+        expect(isAllowedHlsUrl('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')).toBe(true)
         expect(isAllowedHlsUrl('https://swiftsalmon96.fun/hls/a.html')).toBe(false)
         expect(isAllowedHlsUrl('https://spbgc.com/tag.min.js')).toBe(false)
         expect(isAllowedHlsUrl('https://evil.example/playlist')).toBe(false)
@@ -130,12 +133,22 @@ describe('rewriteM3u8', () => {
         )
         expect(rewritten).not.toContain('spbgc.com')
     })
+
+    it('riscrive anche gli edge con TLD ruotato', () => {
+        const source = 'https://vixsrc.to/playlist/1'
+        const body = ['#EXTM3U', '#EXTINF:4,', 'https://sc-u15-01.blueorca88.xyz/hls/a.m4s'].join('\n')
+        const rewritten = rewriteM3u8(body, source, '/api/player/hls?u=')
+        expect(rewritten).toContain(
+            `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')}`
+        )
+    })
 })
 
 describe('classifyHlsRef', () => {
     it('separa CDN, playlist, chiave e host esterni', () => {
         expect(classifyHlsRef('https://sc-u10-01.vix-content.net/hls/a.ts')).toBe('cdn')
         expect(classifyHlsRef('https://sc-u2-01.swiftsalmon96.fun/hls/a.html')).toBe('cdn')
+        expect(classifyHlsRef('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')).toBe('cdn')
         expect(classifyHlsRef('https://vixsrc.to/playlist/1?type=video')).toBe('playlist')
         expect(classifyHlsRef('https://vixsrc.to/storage/enc.key')).toBe('key')
         expect(classifyHlsRef('https://spbgc.com/ad.ts')).toBe('drop')
@@ -165,12 +178,12 @@ describe('rewriteM3u8Browser', () => {
         expect(rewritten).not.toContain('/api/player/hls')
     })
 
-    it('tiene i segmenti sugli edge .fun di VixSrc', () => {
+    it('tiene i segmenti sugli edge ruotati di VixSrc, qualunque TLD', () => {
         const source = 'https://vixsrc.to/playlist/629782?type=video'
         const body = [
             '#EXTM3U',
             '#EXTINF:8,',
-            'https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc',
+            'https://sc-u15-01.blueorca88.xyz/hls/0000.html?token=abc',
         ].join('\n')
 
         const rewritten = rewriteM3u8Browser(body, source, (absolute, kind) => {
@@ -178,22 +191,42 @@ describe('rewriteM3u8Browser', () => {
             return `${VIXSRC_PART_PREFIX}p0`
         })
 
-        expect(rewritten).toContain('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc')
+        expect(rewritten).toContain('https://sc-u15-01.blueorca88.xyz/hls/0000.html?token=abc')
+    })
+})
+
+describe('hlsStreamLooksPlayable', () => {
+    it('scarta playlist con EXTINF senza URL di segmenti', () => {
+        const emptyInf = ['#EXTM3U', '#EXTINF:4,', '', '#EXTINF:4,', '', '#EXTINF:4,', ''].join('\n')
+        expect(hlsStreamLooksPlayable({ parts: { p0: emptyInf.repeat(4) } })).toBe(false)
+    })
+
+    it('accetta una media playlist con segmenti https', () => {
+        const lines = ['#EXTM3U']
+        for (let i = 0; i < 8; i++) {
+            lines.push('#EXTINF:4,', 'https://sc-u15-01.frozenfox90.fun/hls/a.m4s')
+        }
+        expect(hlsStreamLooksPlayable({ parts: { p0: lines.join('\n') } })).toBe(true)
     })
 })
 
 describe('rewriteEdgeCdnThroughProxy', () => {
-    it('manda solo gli edge .fun al proxy, lascia vix-content.net', () => {
+    it('manda gli edge ruotati al proxy, lascia vix-content.net in diretto', () => {
         const body = [
             'https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc',
+            'https://sc-u15-01.blueorca88.xyz/hls/0000.m4s?token=abc',
             'https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc',
         ].join('\n')
 
         const rewritten = rewriteEdgeCdnThroughProxy(body, 'https://the-hustle-place.vercel.app')
         expect(shouldProxyVixsrcCdn('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html')).toBe(true)
+        expect(shouldProxyVixsrcCdn('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s')).toBe(true)
         expect(shouldProxyVixsrcCdn('https://sc-b2-28.vix-content.net/hls/0000.ts')).toBe(false)
         expect(rewritten).toContain(
             `/api/player/hls?u=${encodeURIComponent('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc')}`
+        )
+        expect(rewritten).toContain(
+            `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s?token=abc')}`
         )
         expect(rewritten).toContain('https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc')
     })

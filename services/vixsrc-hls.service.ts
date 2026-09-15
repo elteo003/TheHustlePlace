@@ -9,6 +9,8 @@ import {
     buildVixsrcPlaylistUrl,
     bytesToBase64,
     classifyHlsRef,
+    collectDroppedHlsHosts,
+    hlsStreamLooksPlayable,
     isAllowedHlsUrl,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
@@ -159,13 +161,16 @@ export async function resolveVixsrcHls(input: {
     const lang = input.lang ?? 'it'
     const cacheKey =
         input.type === 'movie'
-            ? `vixsrc-hls-movie-${input.tmdbId}-${lang}`
-            : `vixsrc-hls-tv-${input.tmdbId}-${input.season}-${input.episode}-${lang}`
+            ? `vixsrc-hls-v2-movie-${input.tmdbId}-${lang}`
+            : `vixsrc-hls-v2-tv-${input.tmdbId}-${input.season}-${input.episode}-${lang}`
 
     const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
-    if (cached?.master) return cached
+    if (cached?.master && hlsStreamLooksPlayable(cached)) return cached
 
     const persist = async (stream: ResolvedVixsrcHls, mode: string) => {
+        if (!hlsStreamLooksPlayable(stream)) {
+            throw new Error('Playlist VixSrc senza segmenti')
+        }
         const value: ResolvedVixsrcHls = {
             master: stream.master,
             parts: stream.parts,
@@ -187,7 +192,9 @@ export async function resolveVixsrcHls(input: {
 
     const homeTask = (async () => {
         const home = await resolveViaHomeRelay(input, lang, homeAbort.signal)
-        if (!home) throw new Error('Relay di casa senza playlist')
+        if (!home || !hlsStreamLooksPlayable(home)) {
+            throw new Error('Relay di casa senza playlist')
+        }
         return persist(home, 'home')
     })()
 
@@ -328,6 +335,7 @@ async function assembleBrowserStream(
     const partIds = new Map<string, string>()
     const pending = [masterUrl]
     const fetched = new Map<string, string>()
+    const droppedHosts = new Set<string>()
     let keyUri: string | null = null
 
     const partIdFor = (url: string) => {
@@ -350,6 +358,9 @@ async function assembleBrowserStream(
         if (!url || fetched.has(url)) continue
 
         const body = await session.fetchManifest(url)
+        for (const host of collectDroppedHlsHosts(body, url)) {
+            droppedHosts.add(host)
+        }
         if (!keyUri) {
             const keyUrl = findKeyUrl(body, url)
             if (keyUrl) {
@@ -372,7 +383,19 @@ async function assembleBrowserStream(
         if (text) parts[id] = text
     })
 
-    return { master, parts, videoId }
+    const stream = { master, parts, videoId }
+    if (!hlsStreamLooksPlayable(stream)) {
+        const dropped = [...droppedHosts].join(', ')
+        logger.warn('Playlist VixSrc senza segmenti', { droppedHosts: [...droppedHosts], videoId })
+        throw new Error(dropped ? `Playlist VixSrc senza segmenti (${dropped})` : 'Playlist VixSrc senza segmenti')
+    }
+    if (droppedHosts.size) {
+        logger.warn('Host HLS VixSrc scartati ma lo stream resta riproducibile', {
+            droppedHosts: [...droppedHosts],
+            videoId,
+        })
+    }
+    return stream
 }
 
 function findKeyUrl(body: string, sourceUrl: string): string | null {

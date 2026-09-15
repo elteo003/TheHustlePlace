@@ -12,6 +12,8 @@ from urllib.parse import parse_qs, parse_qsl, quote, urljoin, urlparse, urlencod
 from urllib.request import Request, urlopen
 
 ALLOWED_HOST = re.compile(r"^(?:[a-z0-9-]+\.)*(?:vixsrc\.to|vix-content\.net)$", re.I)
+# Keep in sync with lib/vixsrc-cdn-allowlist.ts
+EDGE_CDN_HOST = re.compile(r"^sc-[a-z0-9]+-\d+\.[a-z0-9.-]+$", re.I)
 ALLOWED_ORIGINS = {
     "https://the-hustle-place.vercel.app",
     "http://localhost:3000",
@@ -38,7 +40,10 @@ INFLIGHT = 0
 def host_allowed(raw: str) -> bool:
     try:
         parsed = urlparse(raw)
-        return parsed.scheme == "https" and bool(parsed.hostname) and bool(ALLOWED_HOST.match(parsed.hostname))
+        host = parsed.hostname
+        return parsed.scheme == "https" and bool(host) and bool(
+            ALLOWED_HOST.match(host) or EDGE_CDN_HOST.match(host)
+        )
     except ValueError:
         return False
 
@@ -100,11 +105,21 @@ def classify(absolute: str) -> str:
     if not host_allowed(absolute):
         return "drop"
     parsed = urlparse(absolute)
-    if parsed.hostname and parsed.hostname.endswith("vix-content.net"):
+    host = parsed.hostname or ""
+    if host.endswith("vix-content.net") or EDGE_CDN_HOST.match(host):
         return "cdn"
     if "/storage/" in parsed.path or parsed.path.endswith(".key"):
         return "key"
     return "playlist"
+
+
+def stream_looks_playable(parts: dict[str, str]) -> bool:
+    for text in parts.values():
+        if len(re.findall(r"#EXTINF", text)) < 8:
+            continue
+        if "https://" in text:
+            return True
+    return False
 
 
 def rewrite(body: str, source: str, resolve_ref) -> str:
@@ -180,6 +195,8 @@ def assemble(master_url: str, video_id: int | None) -> dict:
     if not master:
         raise RuntimeError("master vuoto")
     parts = {ident: fetched[url] for url, ident in part_ids.items() if url in fetched}
+    if not stream_looks_playable(parts):
+        raise RuntimeError("playlist senza segmenti")
     return {"master": master, "parts": parts, "videoId": video_id}
 
 
