@@ -345,38 +345,40 @@ export function CinemaOverlay({
                                 style={{ width: '0%' }}
                             />
                         </button>
-                        <div className="mt-2.5 flex items-center gap-0.5">
-                            <IconHit
-                                label="Indietro 10 secondi"
-                                onClick={() => skip(-SKIP_S)}
-                                className="min-w-[3.5rem]"
-                            >
-                                <SkipTen dir="back" />
-                            </IconHit>
-                            <IconHit
-                                label={playing ? 'Pausa' : 'Play'}
-                                onClick={togglePlay}
-                                className="h-12 w-12 rounded-full bg-white text-black"
-                            >
-                                {playing ? (
-                                    <Pause className="h-5 w-5 fill-current" />
-                                ) : (
-                                    <Play className="h-5 w-5 fill-current" />
-                                )}
-                            </IconHit>
-                            <IconHit
-                                label="Avanti 10 secondi"
-                                onClick={() => skip(SKIP_S)}
-                                className="min-w-[3.5rem]"
-                            >
-                                <SkipTen dir="fwd" />
-                            </IconHit>
-                            <span className="ml-2 text-[12px] tabular-nums text-white/70">
+                        <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                            <span className="text-[12px] tabular-nums text-white/70">
                                 <span ref={timeRef}>0:00</span>
                                 {' / '}
                                 <span ref={durationRef}>0:00</span>
                             </span>
-                            <div className="ml-auto flex items-center">
+                            <div className="flex items-center justify-center gap-0.5">
+                                <IconHit
+                                    label="Indietro 10 secondi"
+                                    onClick={() => skip(-SKIP_S)}
+                                    className="min-w-[3.5rem]"
+                                >
+                                    <SkipTen dir="back" />
+                                </IconHit>
+                                <IconHit
+                                    label={playing ? 'Pausa' : 'Play'}
+                                    onClick={togglePlay}
+                                    className="h-12 w-12 rounded-full bg-white text-black"
+                                >
+                                    {playing ? (
+                                        <Pause className="h-5 w-5 fill-current" />
+                                    ) : (
+                                        <Play className="h-5 w-5 fill-current" />
+                                    )}
+                                </IconHit>
+                                <IconHit
+                                    label="Avanti 10 secondi"
+                                    onClick={() => skip(SKIP_S)}
+                                    className="min-w-[3.5rem]"
+                                >
+                                    <SkipTen dir="fwd" />
+                                </IconHit>
+                            </div>
+                            <div className="flex items-center justify-end">
                                 <IconHit label={muted ? 'Audio' : 'Muto'} onClick={toggleMute}>
                                     {muted ? (
                                         <VolumeX className="h-5 w-5" strokeWidth={1.75} />

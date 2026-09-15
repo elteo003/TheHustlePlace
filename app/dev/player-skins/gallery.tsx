@@ -281,32 +281,34 @@ function BottomControls({
             }}
         >
             <Progress current={current} duration={DURATION_S} onSeek={onSeek} height="h-[3px]" />
-            <div className="mt-2.5 flex items-center gap-0.5">
-                <IconHit
-                    label="Indietro 10 secondi"
-                    onClick={() => onSkip(-SKIP_S)}
-                    className="min-w-[3.5rem]"
-                >
-                    <SkipTen dir="back" />
-                </IconHit>
-                <IconHit
-                    label={playing ? 'Pausa' : 'Play'}
-                    onClick={onToggle}
-                    className="h-12 w-12 rounded-full bg-white text-black"
-                >
-                    {playMark}
-                </IconHit>
-                <IconHit
-                    label="Avanti 10 secondi"
-                    onClick={() => onSkip(SKIP_S)}
-                    className="min-w-[3.5rem]"
-                >
-                    <SkipTen dir="fwd" />
-                </IconHit>
-                <span className="ml-2 text-[12px] tabular-nums text-white/70">
+            <div className="mt-2.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <span className="text-[12px] tabular-nums text-white/70">
                     {formatTime(current)} / {formatTime(DURATION_S)}
                 </span>
-                <div className="ml-auto flex items-center">
+                <div className="flex items-center justify-center gap-0.5">
+                    <IconHit
+                        label="Indietro 10 secondi"
+                        onClick={() => onSkip(-SKIP_S)}
+                        className="min-w-[3.5rem]"
+                    >
+                        <SkipTen dir="back" />
+                    </IconHit>
+                    <IconHit
+                        label={playing ? 'Pausa' : 'Play'}
+                        onClick={onToggle}
+                        className="h-12 w-12 rounded-full bg-white text-black"
+                    >
+                        {playMark}
+                    </IconHit>
+                    <IconHit
+                        label="Avanti 10 secondi"
+                        onClick={() => onSkip(SKIP_S)}
+                        className="min-w-[3.5rem]"
+                    >
+                        <SkipTen dir="fwd" />
+                    </IconHit>
+                </div>
+                <div className="flex items-center justify-end">
                     <IconHit label="Volume">
                         <Volume2 className="h-5 w-5" strokeWidth={1.75} />
                     </IconHit>
