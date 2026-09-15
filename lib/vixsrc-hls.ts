@@ -83,7 +83,7 @@ export function collectDroppedHlsHosts(body: string, sourceUrl: string): string[
         consider(trimmed)
     }
 
-    return [...hosts]
+    return Array.from(hosts)
 }
 
 const RELAY_PUBLIC_HOST = /^(?:[a-z0-9-]+\.)+(?:trycloudflare\.com|cfargotunnel\.com)$/i

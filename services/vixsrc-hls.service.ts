@@ -385,13 +385,14 @@ async function assembleBrowserStream(
 
     const stream = { master, parts, videoId }
     if (!hlsStreamLooksPlayable(stream)) {
-        const dropped = [...droppedHosts].join(', ')
-        logger.warn('Playlist VixSrc senza segmenti', { droppedHosts: [...droppedHosts], videoId })
+        const droppedList = Array.from(droppedHosts)
+        const dropped = droppedList.join(', ')
+        logger.warn('Playlist VixSrc senza segmenti', { droppedHosts: droppedList, videoId })
         throw new Error(dropped ? `Playlist VixSrc senza segmenti (${dropped})` : 'Playlist VixSrc senza segmenti')
     }
     if (droppedHosts.size) {
         logger.warn('Host HLS VixSrc scartati ma lo stream resta riproducibile', {
-            droppedHosts: [...droppedHosts],
+            droppedHosts: Array.from(droppedHosts),
             videoId,
         })
     }
