@@ -13,6 +13,7 @@ export async function GET() {
         return withDeviceCookie(
             NextResponse.json({
                 configured: false,
+                deviceId,
                 householdId: null,
                 activeProfileId: 'local',
                 profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }],
@@ -28,6 +29,7 @@ export async function GET() {
             return withDeviceCookie(
                 NextResponse.json({
                     configured: true,
+                    deviceId,
                     householdId: null,
                     activeProfileId: 'local',
                     profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }],
@@ -40,6 +42,7 @@ export async function GET() {
         return withDeviceCookie(
             NextResponse.json({
                 configured: true,
+                deviceId,
                 householdId: snapshot.householdId,
                 activeProfileId: snapshot.activeProfileId,
                 profiles: snapshot.profiles.map((profile) => ({

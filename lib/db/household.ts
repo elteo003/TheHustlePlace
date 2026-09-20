@@ -6,6 +6,7 @@ import {
     isPlaceholderProfile,
     PLACEHOLDER_PROFILE_NAME,
     sanitizeProfileName,
+    shouldJoinCanonicalHousehold,
 } from '@/tv/lib/household-rules'
 import { getDb } from './index'
 import { ensureProfile } from './profiles'
@@ -84,6 +85,94 @@ async function listMembers(householdId: string): Promise<HouseholdMember[]> {
         avatar: row.avatar ?? 0,
         pairCode: row.pairCode,
     }))
+}
+
+function namedProfileCount(profiles: Array<{ name: string }>): number {
+    return profiles.filter((profile) => !isPlaceholderProfile({ name: profile.name })).length
+}
+
+async function findCanonicalHousehold(excludeId?: string | null): Promise<string | null> {
+    const db = getDb()
+    if (!db) return null
+    const rows = await db
+        .select({
+            householdId: watchProfiles.householdId,
+            name: watchProfiles.name,
+        })
+        .from(watchProfiles)
+
+    const scores = new Map<string, { named: number; total: number }>()
+    for (const row of rows) {
+        if (!row.householdId || row.householdId === excludeId) continue
+        const current = scores.get(row.householdId) ?? { named: 0, total: 0 }
+        current.total += 1
+        if (!isPlaceholderProfile({ name: row.name?.trim() || PLACEHOLDER_PROFILE_NAME })) {
+            current.named += 1
+        }
+        scores.set(row.householdId, current)
+    }
+
+    let best: { id: string; named: number; total: number } | null = null
+    for (const [id, score] of scores) {
+        if (score.named === 0) continue
+        if (!best || score.named > best.named || (score.named === best.named && score.total > best.total)) {
+            best = { id, named: score.named, total: score.total }
+        }
+    }
+    return best?.id ?? null
+}
+
+async function attachDeviceToHousehold(
+    deviceId: string,
+    householdId: string
+): Promise<HouseholdSnapshot | null> {
+    const db = getDb()
+    if (!db) return null
+    const profiles = await listMembers(householdId)
+    if (!profiles.length) return null
+    const active = profiles[0]
+    const [already] = await db
+        .select({ deviceId: watchDevices.deviceId })
+        .from(watchDevices)
+        .where(eq(watchDevices.deviceId, deviceId))
+        .limit(1)
+    if (already) {
+        await db
+            .update(watchDevices)
+            .set({
+                profileId: active.id,
+                householdId,
+                activeProfileId: active.id,
+            })
+            .where(eq(watchDevices.deviceId, deviceId))
+    } else {
+        await db.insert(watchDevices).values({
+            deviceId,
+            profileId: active.id,
+            householdId,
+            activeProfileId: active.id,
+            kind: 'web',
+        })
+    }
+    return {
+        householdId,
+        activeProfileId: active.id,
+        profiles,
+    }
+}
+
+async function adoptCanonicalIfNeeded(
+    deviceId: string,
+    currentHouseholdId: string | null | undefined,
+    profiles: HouseholdMember[]
+): Promise<HouseholdSnapshot | null> {
+    const currentNamed = namedProfileCount(profiles)
+    const canonId = await findCanonicalHousehold(currentHouseholdId)
+    if (!canonId) return null
+    const canonProfiles = await listMembers(canonId)
+    const canonNamed = namedProfileCount(canonProfiles)
+    if (!shouldJoinCanonicalHousehold(currentNamed, canonNamed)) return null
+    return attachDeviceToHousehold(deviceId, canonId)
 }
 
 async function deleteHouseholdIfEmpty(householdId: string | null | undefined) {
@@ -165,6 +254,8 @@ export async function ensureHousehold(deviceId: string): Promise<HouseholdSnapsh
             const activeId = row.activeProfileId ?? row.id
             if (row.householdId && row.deviceHouseholdId) {
                 const profiles = await listMembers(row.householdId)
+                const adopted = await adoptCanonicalIfNeeded(deviceId, row.householdId, profiles)
+                if (adopted) return adopted
                 const active = profiles.find((item) => item.id === activeId) ?? profiles[0]
                 if (!active) {
                     return backfillHousehold(deviceId, row)
@@ -181,8 +272,13 @@ export async function ensureHousehold(deviceId: string): Promise<HouseholdSnapsh
                     profiles,
                 }
             }
+            const adopted = await adoptCanonicalIfNeeded(deviceId, row.householdId, [])
+            if (adopted) return adopted
             return backfillHousehold(deviceId, row)
         }
+
+        const joined = await adoptCanonicalIfNeeded(deviceId, null, [])
+        if (joined) return joined
 
         for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt += 1) {
             try {

@@ -20,6 +20,10 @@ export function visibleHouseholdProfiles<T extends { id?: string; name: string; 
     return named.length > 0 ? named : withoutGuest
 }
 
+export function shouldJoinCanonicalHousehold(currentNamed: number, canonicalNamed: number): boolean {
+    return currentNamed === 0 && canonicalNamed > 0
+}
+
 export function canAddHouseholdProfile(count: number): boolean {
     return count < MAX_HOUSEHOLD_PROFILES
 }

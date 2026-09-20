@@ -11,10 +11,18 @@
         -webkit-box-align: center; align-items: center;
         -webkit-box-pack: center; justify-content: center;
       }
+      #splash .brand {
+        display: -webkit-box; display: flex;
+        -webkit-box-align: center; align-items: center;
+      }
       #splash i {
-        display: block; width: 88px; height: 88px; line-height: 88px;
-        border-radius: 22px; background: #fff; color: #111;
-        font-style: normal; font-size: 42px; font-weight: 700; text-align: center;
+        display: block; width: 72px; height: 72px; line-height: 72px;
+        border-radius: 16px; background: #fff; color: #111;
+        font-style: normal; font-size: 34px; font-weight: 700; text-align: center;
+      }
+      #splash b {
+        margin-left: 16px; font-size: 34px; font-weight: 600;
+        letter-spacing: -.02em; color: #fff;
       }
       iframe {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -24,7 +32,9 @@
     </style>
   </head>
   <body>
-    <div id="splash" aria-hidden="true"><i>H</i></div>
+    <div id="splash" aria-hidden="true">
+      <div class="brand"><i>H</i><b>TheHustlePlace</b></div>
+    </div>
     <iframe
       id="thp"
       src="https://the-hustle-place.vercel.app/living"
@@ -34,17 +44,23 @@
     <script>
       var frame = document.getElementById('thp');
       var splash = document.getElementById('splash');
+      var shown = false;
       function ready() {
+        if (shown) return;
+        shown = true;
         if (frame) frame.className = 'is-ready';
         if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
         try { frame.focus(); } catch (e) {}
       }
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'thp-ready') ready();
+      });
       if (frame) {
-        frame.addEventListener('load', ready);
         document.addEventListener('keydown', function () {
           try { frame.focus(); } catch (e) {}
         });
       }
+      setTimeout(ready, 12000);
     </script>
   </body>
 </html>

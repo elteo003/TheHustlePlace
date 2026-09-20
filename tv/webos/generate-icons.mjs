@@ -54,20 +54,41 @@ function png(width, height, paint) {
     ])
 }
 
+function inBox(x, y, left, top, size) {
+    return x >= left && x < left + size && y >= top && y < top + size
+}
+
+function inH(x, y, left, top, size) {
+    const pad = size * 0.22
+    const bar = Math.max(3, Math.round(size * 0.16))
+    const lx = left + pad
+    const rx = left + size - pad - bar
+    const midY = top + size / 2 - bar / 2
+    const inLeft = x >= lx && x < lx + bar && y >= top + pad && y < top + size - pad
+    const inRight = x >= rx && x < rx + bar && y >= top + pad && y < top + size - pad
+    const inCross = x >= lx && x < rx + bar && y >= midY && y < midY + bar
+    return inLeft || inRight || inCross
+}
+
 function markPaint(size) {
-    const inset = Math.floor(size * 0.18)
+    const inset = Math.floor(size * 0.12)
+    const box = size - inset * 2
     return function paint(x, y) {
-        const inside = x >= inset && x < size - inset && y >= inset && y < size - inset
-        return inside ? [255, 255, 255, 255] : [0, 0, 0, 255]
+        if (inBox(x, y, inset, inset, box)) {
+            return inH(x, y, inset, inset, box) ? [17, 17, 17, 255] : [255, 255, 255, 255]
+        }
+        return [0, 0, 0, 255]
     }
 }
 
 function splashPaint(x, y) {
-    const cx = 960
-    const cy = 540
-    const half = 56
-    const inside = x >= cx - half && x < cx + half && y >= cy - half && y < cy + half
-    return inside ? [255, 255, 255, 255] : [0, 0, 0, 255]
+    const box = 120
+    const left = Math.round((1920 - box) / 2)
+    const top = Math.round((1080 - box) / 2) - 36
+    if (inBox(x, y, left, top, box)) {
+        return inH(x, y, left, top, box) ? [17, 17, 17, 255] : [255, 255, 255, 255]
+    }
+    return [0, 0, 0, 255]
 }
 
 writeFileSync(join(dir, 'icon.png'), png(80, 80, markPaint(80)))

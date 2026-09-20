@@ -354,10 +354,17 @@
       -webkit-box-align: center; align-items: center;
       -webkit-box-pack: center; justify-content: center;
     }
+    .boot-brand {
+      display: -webkit-box; display: flex;
+      -webkit-box-align: center; align-items: center;
+    }
     .boot-mark {
-      width: 88px; height: 88px; line-height: 88px;
-      border-radius: 22px; background: #fff; color: #111;
-      font-size: 42px; font-weight: 700; text-align: center;
+      width: 72px; height: 72px; line-height: 72px;
+      border-radius: 16px; background: #fff; color: #111;
+      font-size: 34px; font-weight: 700; text-align: center;
+    }
+    .boot-name {
+      margin-left: 16px; font-size: 34px; font-weight: 600; letter-spacing: -.02em;
     }
     .spin-screen {
       position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 8; pointer-events: none;
@@ -373,7 +380,7 @@
 </head>
 <body>
   <div id="root">
-    <div class="boot"><div class="boot-mark">H</div></div>
+    <div class="boot"><div class="boot-brand"><div class="boot-mark">H</div><div class="boot-name">TheHustlePlace</div></div></div>
   </div>
   <script>
 (function () {
@@ -420,6 +427,39 @@
   }
   function storeSet(key, value) {
     try { window.sessionStorage.setItem(key, value || ''); } catch (e) {}
+  }
+
+  function makeDeviceId() {
+    if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (ch) {
+      var r = (Math.random() * 16) | 0;
+      return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  function deviceId() {
+    var id = '';
+    try { id = window.localStorage.getItem('thp_device_id') || ''; } catch (e) {}
+    if (!id) {
+      id = makeDeviceId();
+      try { window.localStorage.setItem('thp_device_id', id); } catch (e2) {}
+    }
+    return id;
+  }
+
+  function rememberDeviceId(id) {
+    if (!id) return;
+    try { window.localStorage.setItem('thp_device_id', id); } catch (e) {}
+  }
+
+  function deviceHeaders(extra) {
+    var headers = extra || {};
+    headers['x-thp-device-id'] = deviceId();
+    return headers;
+  }
+
+  function signalReady() {
+    try { window.parent.postMessage({ type: 'thp-ready' }, '*'); } catch (e) {}
   }
 
   function watchStorageKey() {
@@ -613,7 +653,7 @@
 
   function getJson(url, done) {
     if (!window.fetch) { done(null); return; }
-    fetch(url, { credentials: 'same-origin' }).then(function (res) {
+    fetch(url, { credentials: 'same-origin', headers: deviceHeaders() }).then(function (res) {
       return res.json();
     }).then(done).catch(function () { done(null); });
   }
@@ -623,7 +663,7 @@
     fetch(url, {
       method: method,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: deviceHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body)
     }).then(function (res) { return res.json(); }).then(done).catch(function () { done(null); });
   }
@@ -766,6 +806,7 @@
   function applyHousehold(data) {
     if (!data || !data.profiles || !data.profiles.length) return;
     household = data;
+    rememberDeviceId(data.deviceId);
     setHistoryProfile(data.activeProfileId);
     storeSet('tv.house', JSON.stringify({
       configured: data.configured,
@@ -804,7 +845,10 @@
   function renderBoot() {
     root.innerHTML = '';
     var page = el('div', 'boot');
-    page.appendChild(el('div', 'boot-mark', 'H'));
+    var brand = el('div', 'boot-brand');
+    brand.appendChild(el('div', 'boot-mark', 'H'));
+    brand.appendChild(el('div', 'boot-name', 'TheHustlePlace'));
+    page.appendChild(brand);
     root.appendChild(page);
   }
 
@@ -1286,6 +1330,7 @@
     }
     root.appendChild(page);
     collect(wantFid || (shown[0] ? 'profile-' + shown[0].id : ''));
+    signalReady();
   }
 
   function saveProfile(isNew) {
@@ -1444,6 +1489,7 @@
     }
     root.appendChild(page);
     collect(wantFid || storeGet('tv.fid') || 'hero-play');
+    signalReady();
   }
 
   function historyItems(json) {
@@ -1474,12 +1520,7 @@
       });
       return;
     }
-    root.innerHTML = '';
-    var page = el('div', 'shell');
-    page.appendChild(renderNav(kind));
-    skeletonBrowse(page);
-    root.appendChild(page);
-    collect('nav-' + kind);
+    renderBoot();
 
     if (kind === 'movies') {
       getJson('/api/catalog/popular/movies', function (a) {

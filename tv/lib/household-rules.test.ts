@@ -4,6 +4,7 @@ import {
     clampAvatar,
     isPlaceholderProfile,
     sanitizeProfileName,
+    shouldJoinCanonicalHousehold,
     visibleHouseholdProfiles,
 } from '@/tv/lib/household-rules'
 import { MAX_PACKED_AVATAR, packAvatar, unpackAvatar } from '@/tv/lib/avatars'
@@ -42,6 +43,12 @@ describe('household-rules', () => {
                 { id: 'a', name: 'Papà' },
             ]).map((item) => item.name)
         ).toEqual(['Papà'])
+    })
+
+    it('attacca un device orfano alla casa con i profili veri', () => {
+        expect(shouldJoinCanonicalHousehold(0, 4)).toBe(true)
+        expect(shouldJoinCanonicalHousehold(4, 4)).toBe(false)
+        expect(shouldJoinCanonicalHousehold(0, 0)).toBe(false)
     })
 
     it('pulisce il nome', () => {
