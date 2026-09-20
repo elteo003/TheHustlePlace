@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { formatMediaTime, shouldHidePlayerCursor } from '@/components/cinema-overlay'
+import {
+    formatMediaTime,
+    shouldHidePlayerCursor,
+    shouldShowPlayerChrome,
+} from '@/components/cinema-overlay'
 
 describe('formatMediaTime', () => {
     it('formatta i secondi sotto l’ora', () => {
@@ -26,5 +30,25 @@ describe('shouldHidePlayerCursor', () => {
         expect(
             shouldHidePlayerCursor({ isTouch: false, playing: false, chromeOpen: false, idle: true })
         ).toBe(false)
+    })
+})
+
+describe('shouldShowPlayerChrome', () => {
+    const hidden = {
+        chromePaused: false,
+        pinChrome: false,
+        intro: false,
+        hoverTop: false,
+        hoverBottom: false,
+        tapped: false,
+    }
+
+    it('sul telefono resta nascosta finché non tocchi', () => {
+        expect(shouldShowPlayerChrome(hidden)).toBe(false)
+        expect(shouldShowPlayerChrome({ ...hidden, tapped: true })).toBe(true)
+    })
+
+    it('si nasconde se c’è l’overlay prossima puntata', () => {
+        expect(shouldShowPlayerChrome({ ...hidden, tapped: true, chromePaused: true })).toBe(false)
     })
 })

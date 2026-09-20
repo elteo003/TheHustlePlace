@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Maximize, Minimize2, Pause, Play, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import {
+    isPlayerFullscreen,
+    subscribePlayerFullscreen,
+    togglePlayerFullscreen,
+} from '@/lib/player-fullscreen'
 import { cn } from '@/lib/utils'
 
 const INTRO_MS = 1800
 const CURSOR_HIDE_MS = 2000
+const TOUCH_HIDE_MS = 2000
 const SKIP_S = 10
 
 export function shouldHidePlayerCursor(opts: {
@@ -16,6 +22,18 @@ export function shouldHidePlayerCursor(opts: {
     idle: boolean
 }) {
     return !opts.isTouch && opts.playing && !opts.chromeOpen && opts.idle
+}
+
+export function shouldShowPlayerChrome(opts: {
+    chromePaused: boolean
+    pinChrome: boolean
+    intro: boolean
+    hoverTop: boolean
+    hoverBottom: boolean
+    tapped: boolean
+}) {
+    if (opts.chromePaused) return false
+    return opts.pinChrome || opts.intro || opts.hoverTop || opts.hoverBottom || opts.tapped
 }
 
 export function formatMediaTime(total: number) {
@@ -129,6 +147,7 @@ export function CinemaOverlay({
     const [hoverBottom, setHoverBottom] = useState(false)
     const [playing, setPlaying] = useState(false)
     const [idle, setIdle] = useState(false)
+    const [tapped, setTapped] = useState(false)
     const [muted, setMuted] = useState(false)
     const [fullscreen, setFullscreen] = useState(false)
     const fillRef = useRef<HTMLSpanElement>(null)
@@ -136,18 +155,45 @@ export function CinemaOverlay({
     const durationRef = useRef<HTMLSpanElement>(null)
     const trackRef = useRef<HTMLButtonElement>(null)
     const dragging = useRef(false)
+    const hideTimerRef = useRef(0)
+
+    const hideChrome = useCallback(() => {
+        window.clearTimeout(hideTimerRef.current)
+        setTapped(false)
+    }, [])
+
+    const revealChrome = useCallback(() => {
+        setTapped(true)
+        window.clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = window.setTimeout(() => {
+            if (dragging.current) return
+            const video = videoRef.current
+            if (video?.paused) return
+            setTapped(false)
+        }, TOUCH_HIDE_MS)
+    }, [videoRef])
 
     useEffect(() => {
-        setIntro(true)
         setHoverTop(false)
         setHoverBottom(false)
-        if (isTouch) return
+        hideChrome()
+        if (isTouch) {
+            setIntro(false)
+            return
+        }
+        setIntro(true)
         const timer = window.setTimeout(() => setIntro(false), INTRO_MS)
         return () => window.clearTimeout(timer)
-    }, [isTouch, resetKey])
+    }, [hideChrome, isTouch, resetKey])
 
-    const open =
-        !chromePaused && (isTouch || pinChrome || intro || hoverTop || hoverBottom)
+    const open = shouldShowPlayerChrome({
+        chromePaused,
+        pinChrome,
+        intro,
+        hoverTop,
+        hoverBottom,
+        tapped,
+    })
     const hideCursor = shouldHidePlayerCursor({
         isTouch,
         playing,
@@ -206,10 +252,19 @@ export function CinemaOverlay({
     }, [videoRef, resetKey])
 
     useEffect(() => {
-        const onFull = () => setFullscreen(Boolean(document.fullscreenElement))
-        document.addEventListener('fullscreenchange', onFull)
-        return () => document.removeEventListener('fullscreenchange', onFull)
+        return () => window.clearTimeout(hideTimerRef.current)
     }, [])
+
+    useEffect(() => {
+        if (chromePaused) hideChrome()
+    }, [chromePaused, hideChrome])
+
+    useEffect(() => {
+        const video = videoRef.current
+        const sync = () => setFullscreen(isPlayerFullscreen(video))
+        sync()
+        return subscribePlayerFullscreen(video, sync)
+    }, [resetKey, videoRef])
 
     useEffect(() => {
         let frame = 0
@@ -260,10 +315,7 @@ export function CinemaOverlay({
     }
 
     const toggleFullscreen = () => {
-        const stage = stageRef.current
-        if (!stage) return
-        if (document.fullscreenElement) void document.exitFullscreen()
-        else void stage.requestFullscreen()
+        void togglePlayerFullscreen(stageRef.current, videoRef.current)
     }
 
     useEffect(() => {
@@ -294,10 +346,7 @@ export function CinemaOverlay({
                 video.muted = !video.muted
             }
             if (event.key === 'f' || event.key === 'F') {
-                const stage = stageRef.current
-                if (!stage) return
-                if (document.fullscreenElement) void document.exitFullscreen()
-                else void stage.requestFullscreen()
+                void togglePlayerFullscreen(stageRef.current, video)
             }
         }
         window.addEventListener('keydown', onKey)
@@ -312,10 +361,28 @@ export function CinemaOverlay({
                 </div>
             )}
 
+            {isTouch && !chromePaused && (
+                <button
+                    type="button"
+                    className="absolute inset-0 z-[15] bg-transparent"
+                    aria-label={open ? 'Nascondi controlli' : 'Mostra controlli'}
+                    onClick={() => {
+                        if (open && !pinChrome) hideChrome()
+                        else revealChrome()
+                    }}
+                />
+            )}
+
             <div
-                className="player-chrome-hit absolute inset-x-0 top-0 z-20 h-20"
+                className={cn(
+                    'player-chrome-hit absolute inset-x-0 top-0 z-20 h-20',
+                    isTouch && !open && 'pointer-events-none'
+                )}
                 onMouseEnter={() => setHoverTop(true)}
                 onMouseLeave={() => setHoverTop(false)}
+                onPointerDown={() => {
+                    if (isTouch) revealChrome()
+                }}
             >
                 <div className="player-skin-chrome player-skin-chrome-top px-4 pb-10 pt-4" data-open={open}>
                     <div
@@ -357,9 +424,15 @@ export function CinemaOverlay({
             </div>
 
             <div
-                className="player-chrome-hit absolute inset-x-0 bottom-0 z-20 h-36"
+                className={cn(
+                    'player-chrome-hit absolute inset-x-0 bottom-0 z-20 h-36',
+                    isTouch && !open && 'pointer-events-none'
+                )}
                 onMouseEnter={() => setHoverBottom(true)}
                 onMouseLeave={() => setHoverBottom(false)}
+                onPointerDown={() => {
+                    if (isTouch) revealChrome()
+                }}
             >
                 <div className="player-skin-chrome player-skin-chrome-bottom absolute inset-x-0 bottom-0" data-open={open}>
                     <div
@@ -385,6 +458,7 @@ export function CinemaOverlay({
                             }}
                             onPointerUp={() => {
                                 dragging.current = false
+                                if (isTouch) revealChrome()
                             }}
                         >
                             <span
