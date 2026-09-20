@@ -113,12 +113,12 @@ async function findCanonicalHousehold(excludeId?: string | null): Promise<string
     }
 
     let best: { id: string; named: number; total: number } | null = null
-    for (const [id, score] of scores) {
-        if (score.named === 0) continue
+    scores.forEach((score, id) => {
+        if (score.named === 0) return
         if (!best || score.named > best.named || (score.named === best.named && score.total > best.total)) {
             best = { id, named: score.named, total: score.total }
         }
-    }
+    })
     return best?.id ?? null
 }
 
