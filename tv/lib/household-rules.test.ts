@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
     canAddHouseholdProfile,
+    canDeleteHouseholdProfile,
     clampAvatar,
     isPlaceholderProfile,
     sanitizeProfileName,
+    decideAdoptStrategy,
     shouldJoinCanonicalHousehold,
     visibleHouseholdProfiles,
 } from '@/tv/lib/household-rules'
@@ -13,6 +15,11 @@ describe('household-rules', () => {
     it('limita a 5 profili', () => {
         expect(canAddHouseholdProfile(4)).toBe(true)
         expect(canAddHouseholdProfile(5)).toBe(false)
+    })
+
+    it('non cancella l’unico profilo rimasto', () => {
+        expect(canDeleteHouseholdProfile(1)).toBe(false)
+        expect(canDeleteHouseholdProfile(2)).toBe(true)
     })
 
     it('riconosce il placeholder vuoto', () => {
@@ -49,6 +56,59 @@ describe('household-rules', () => {
         expect(shouldJoinCanonicalHousehold(0, 4)).toBe(true)
         expect(shouldJoinCanonicalHousehold(4, 4)).toBe(false)
         expect(shouldJoinCanonicalHousehold(0, 0)).toBe(false)
+    })
+
+    it('Unisci entra nella casa più ricca o aggiunge il profilo', () => {
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: false,
+                currentNamed: 0,
+                currentCount: 1,
+                targetNamed: 4,
+                targetIsPlaceholder: false,
+                canReplacePlaceholder: true,
+            })
+        ).toBe('join-target')
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: false,
+                currentNamed: 4,
+                currentCount: 4,
+                targetNamed: 1,
+                targetIsPlaceholder: false,
+                canReplacePlaceholder: false,
+            })
+        ).toBe('add-profile')
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: false,
+                currentNamed: 4,
+                currentCount: 4,
+                targetNamed: 0,
+                targetIsPlaceholder: true,
+                canReplacePlaceholder: false,
+            })
+        ).toBe('pair-device')
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: true,
+                currentNamed: 4,
+                currentCount: 4,
+                targetNamed: 4,
+                targetIsPlaceholder: false,
+                canReplacePlaceholder: false,
+            })
+        ).toBe('switch')
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: false,
+                currentNamed: 5,
+                currentCount: 5,
+                targetNamed: 1,
+                targetIsPlaceholder: false,
+                canReplacePlaceholder: false,
+            })
+        ).toBe('full')
     })
 
     it('pulisce il nome', () => {

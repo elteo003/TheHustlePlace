@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { adoptProfileByCode } from '@/lib/db/household'
-import { ensureProfile, pairDeviceToCode } from '@/lib/db/profiles'
+import { adoptProfileByCode, ensureHousehold, pairDeviceToCode, presentHousehold } from '@/lib/db/household'
 import { isDatabaseConfigured } from '@/lib/db'
 import { formatPairCode, isValidPairCode, normalizePairCode } from '@/lib/pair-code'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
@@ -21,8 +20,8 @@ export async function GET() {
     }
 
     try {
-        const profile = await ensureProfile(deviceId)
-        if (!profile) {
+        const snapshot = await ensureHousehold(deviceId)
+        if (!snapshot) {
             return withDeviceCookie(
                 NextResponse.json({ configured: true, error: 'db_error' }, { status: 500 }),
                 deviceId,
@@ -30,8 +29,13 @@ export async function GET() {
             )
         }
 
+        const presented = presentHousehold(snapshot, deviceId)
+        const active = presented.profiles.find((item) => item.id === snapshot.activeProfileId) ?? presented.profiles[0]
         return withDeviceCookie(
-            NextResponse.json({ configured: true, code: formatPairCode(profile.pairCode) }),
+            NextResponse.json({
+                ...presented,
+                code: active?.pairCode,
+            }),
             deviceId,
             isNew
         )
@@ -58,20 +62,22 @@ export async function POST(request: Request) {
     }
 
     const code = normalizePairCode(parsed.data.code)
+    const mode = parsed.data.mode ?? 'adopt'
 
-    if (parsed.data.mode === 'adopt') {
+    if (mode === 'adopt') {
         const adopted = await adoptProfileByCode(deviceId, code)
         if (!adopted.ok) {
             const status = adopted.error === 'db' ? 500 : 400
             return withDeviceCookie(NextResponse.json({ error: adopted.error }, { status }), deviceId, isNew)
         }
-        const active = adopted.snapshot.profiles.find((item) => item.id === adopted.snapshot.activeProfileId)
+        const presented = presentHousehold(adopted.snapshot, deviceId)
+        const active = presented.profiles.find((item) => item.id === presented.activeProfileId)
         return withDeviceCookie(
             NextResponse.json({
                 ok: true,
                 mode: 'adopt',
-                code: active ? formatPairCode(active.pairCode) : formatPairCode(code),
-                activeProfileId: adopted.snapshot.activeProfileId,
+                ...presented,
+                code: active?.pairCode ?? presented.profiles[0]?.pairCode,
             }),
             deviceId,
             isNew
@@ -85,8 +91,16 @@ export async function POST(request: Request) {
         return withDeviceCookie(NextResponse.json({ error: result.error }, { status }), deviceId, isNew)
     }
 
+    const snapshot = await ensureHousehold(deviceId)
+    const presented = snapshot ? presentHousehold(snapshot, deviceId) : null
+
     return withDeviceCookie(
-        NextResponse.json({ ok: true, mode: 'merge', code: formatPairCode(result.pairCode) }),
+        NextResponse.json({
+            ok: true,
+            mode: 'merge',
+            ...presented,
+            code: formatPairCode(result.pairCode),
+        }),
         deviceId,
         isNew
     )

@@ -1,8 +1,10 @@
 import { and, count, eq } from 'drizzle-orm'
-import { generatePairCode, normalizePairCode } from '@/lib/pair-code'
+import { formatPairCode, generatePairCode, normalizePairCode } from '@/lib/pair-code'
 import {
     canAddHouseholdProfile,
+    canDeleteHouseholdProfile,
     clampAvatar,
+    decideAdoptStrategy,
     isPlaceholderProfile,
     PLACEHOLDER_PROFILE_NAME,
     sanitizeProfileName,
@@ -30,6 +32,21 @@ export interface HouseholdSnapshot {
 export interface WatchProfile {
     id: string
     pairCode: string
+}
+
+export function presentHousehold(snapshot: HouseholdSnapshot, deviceId: string) {
+    return {
+        configured: true as const,
+        deviceId,
+        householdId: snapshot.householdId,
+        activeProfileId: snapshot.activeProfileId,
+        profiles: snapshot.profiles.map((profile) => ({
+            id: profile.id,
+            name: profile.name,
+            avatar: profile.avatar,
+            pairCode: formatPairCode(profile.pairCode),
+        })),
+    }
 }
 
 type PairError = 'invalid' | 'self' | 'db' | 'full'
@@ -437,6 +454,46 @@ export async function createHouseholdProfile(
     }
 }
 
+export async function deleteHouseholdProfile(
+    deviceId: string,
+    profileId: string
+): Promise<HouseholdSnapshot | { error: 'invalid' | 'last' | 'db' }> {
+    const db = getDb()
+    const household = await ensureHousehold(deviceId)
+    if (!db || !household) return { error: 'db' }
+    if (!canDeleteHouseholdProfile(household.profiles.length)) return { error: 'last' }
+
+    const existing = household.profiles.find((profile) => profile.id === profileId)
+    const replacement = household.profiles.find((profile) => profile.id !== profileId)
+    if (!existing || !replacement) return { error: existing ? 'last' : 'invalid' }
+
+    try {
+        await db.transaction(async (tx) => {
+            await tx
+                .update(watchDevices)
+                .set({
+                    profileId: replacement.id,
+                    activeProfileId: replacement.id,
+                })
+                .where(eq(watchDevices.profileId, profileId))
+            await tx
+                .update(watchDevices)
+                .set({ activeProfileId: replacement.id })
+                .where(eq(watchDevices.activeProfileId, profileId))
+            await tx.delete(watchHistory).where(eq(watchHistory.profileId, profileId))
+            await tx.delete(watchProfiles).where(eq(watchProfiles.id, profileId))
+        })
+    } catch {
+        return { error: 'db' }
+    }
+
+    return {
+        householdId: household.householdId,
+        activeProfileId: household.activeProfileId === profileId ? replacement.id : household.activeProfileId,
+        profiles: household.profiles.filter((profile) => profile.id !== profileId),
+    }
+}
+
 export async function updateHouseholdProfile(
     deviceId: string,
     input: { profileId: string; name: string; avatar?: number }
@@ -476,20 +533,63 @@ export async function adoptProfileByCode(
     const [target] = await db.select().from(watchProfiles).where(eq(watchProfiles.pairCode, code)).limit(1)
     if (!target) return { ok: false, error: 'invalid' }
 
-    if (household.profiles.some((item) => item.id === target.id)) {
+    const targetMembers = target.householdId ? await listMembers(target.householdId) : []
+    const placeholder = household.profiles[0]
+    const canReplacePlaceholder = Boolean(
+        household.profiles.length === 1 &&
+            placeholder &&
+            isPlaceholderProfile({ name: placeholder.name, historyCount: await historyCount(placeholder.id) })
+    )
+    const targetIsPlaceholder = isPlaceholderProfile({
+        name: target.name?.trim() || PLACEHOLDER_PROFILE_NAME,
+        historyCount: await historyCount(target.id),
+    })
+    const strategy = decideAdoptStrategy({
+        alreadyInHousehold: household.profiles.some((item) => item.id === target.id),
+        currentNamed: namedProfileCount(household.profiles),
+        currentCount: household.profiles.length,
+        targetNamed: namedProfileCount(targetMembers),
+        targetIsPlaceholder,
+        canReplacePlaceholder,
+    })
+
+    if (strategy === 'switch') {
         const switched = await switchHouseholdProfile(deviceId, target.id)
         if ('error' in switched) return { ok: false, error: switched.error }
         return { ok: true, snapshot: switched }
     }
 
-    const placeholder = household.profiles[0]
-    const canReplacePlaceholder =
-        household.profiles.length === 1 &&
-        placeholder &&
-        isPlaceholderProfile({ name: placeholder.name, historyCount: await historyCount(placeholder.id) })
+    if (strategy === 'join-target') {
+        if (!target.householdId) return { ok: false, error: 'invalid' }
+        const joined = await attachDeviceToHousehold(deviceId, target.householdId)
+        if (!joined) return { ok: false, error: 'db' }
+        const switched = await switchHouseholdProfile(deviceId, target.id)
+        return { ok: true, snapshot: 'error' in switched ? joined : switched }
+    }
 
-    if (!canReplacePlaceholder && !canAddHouseholdProfile(household.profiles.length)) {
-        return { ok: false, error: 'full' }
+    if (strategy === 'full') return { ok: false, error: 'full' }
+
+    if (strategy === 'pair-device') {
+        try {
+            const oldHouseholdId = target.householdId
+            await db
+                .update(watchDevices)
+                .set({
+                    householdId: household.householdId,
+                    profileId: household.activeProfileId,
+                    activeProfileId: household.activeProfileId,
+                    pairedAt: new Date(),
+                })
+                .where(eq(watchDevices.profileId, target.id))
+            await db.delete(watchHistory).where(eq(watchHistory.profileId, target.id))
+            await db.delete(watchProfiles).where(eq(watchProfiles.id, target.id))
+            await deleteHouseholdIfEmpty(oldHouseholdId)
+        } catch {
+            return { ok: false, error: 'db' }
+        }
+        const snapshot = await ensureHousehold(deviceId)
+        if (!snapshot) return { ok: false, error: 'db' }
+        return { ok: true, snapshot }
     }
 
     try {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { canAddHouseholdProfile, visibleHouseholdProfiles } from '@/tv/lib/household-rules'
+import { hideTvProfileId, readHiddenTvProfileIds, TV_HIDDEN_PROFILES_KEY, withoutHiddenTvProfiles } from '@/tv/lib/hidden-profiles'
 import { livingHomePath } from '@/tv/lib/paths'
 import { useHousehold } from '@/tv/hooks/useHousehold'
 import { focusFirstTvNode } from '@/tv/hooks/useSpatialNavigation'
@@ -21,7 +22,24 @@ export function ProfileGate() {
         useHousehold()
     const [view, setView] = useState<GateView>('pick')
     const [selected, setSelected] = useState<TvProfile | null>(null)
-    const shown = visibleHouseholdProfiles(profiles)
+    const [hiddenIds, setHiddenIds] = useState<string[]>(() => {
+        try {
+            return readHiddenTvProfileIds(window.localStorage.getItem(TV_HIDDEN_PROFILES_KEY))
+        } catch {
+            return []
+        }
+    })
+    const shown = withoutHiddenTvProfiles(visibleHouseholdProfiles(profiles), hiddenIds)
+
+    function hideOnTv(profileId: string) {
+        const next = hideTvProfileId(hiddenIds, profileId)
+        setHiddenIds(next)
+        try {
+            window.localStorage.setItem(TV_HIDDEN_PROFILES_KEY, JSON.stringify(next))
+        } catch {
+            // restiamo in memoria
+        }
+    }
 
     useEffect(() => {
         if (loading || view !== 'pick') return
@@ -80,6 +98,11 @@ export function ProfileGate() {
                         setView('pick')
                     }
                     return ok
+                }}
+                onHide={() => {
+                    hideOnTv(selected.id)
+                    setSelected(null)
+                    setView('pick')
                 }}
             />
         )

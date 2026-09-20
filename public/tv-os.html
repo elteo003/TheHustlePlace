@@ -410,6 +410,7 @@
   var createAvatar = 0;
   var editProfileId = '';
   var adoptCode = '';
+  var adoptError = '';
   var searchQ = '';
   var searchTab = 'all';
   var searchTimer = null;
@@ -852,24 +853,56 @@
     root.appendChild(page);
   }
 
+  function hiddenProfileIds() {
+    try {
+      var raw = window.localStorage.getItem('thp_tv_hidden_profiles');
+      var parsed = raw ? JSON.parse(raw) : [];
+      if (Object.prototype.toString.call(parsed) !== '[object Array]') return [];
+      return parsed;
+    } catch (e) { return []; }
+  }
+
+  function isHiddenProfile(id) {
+    var hidden = hiddenProfileIds();
+    var i;
+    for (i = 0; i < hidden.length; i++) {
+      if (hidden[i] === id) return true;
+    }
+    return false;
+  }
+
+  function hideProfileOnTv(id) {
+    if (!id || id === 'local' || isHiddenProfile(id)) return;
+    var hidden = hiddenProfileIds();
+    hidden.push(id);
+    try { window.localStorage.setItem('thp_tv_hidden_profiles', JSON.stringify(hidden)); } catch (e) {}
+    if (household.activeProfileId === id) {
+      var next = gateProfiles();
+      household.activeProfileId = next[0] ? next[0].id : '';
+      setHistoryProfile(household.activeProfileId);
+    }
+  }
+
   function gateProfiles() {
     var list = household.profiles || [];
     var out = [];
     var i;
     for (i = 0; i < list.length; i++) {
       if (list[i].id === 'local' && list.length > 1) continue;
+      if (isHiddenProfile(list[i].id)) continue;
       out.push(list[i]);
     }
-    return out.length ? out : list;
+    return out;
   }
 
   function activeProfile() {
+    var shown = gateProfiles();
     var i, id;
     id = household.activeProfileId;
-    for (i = 0; i < household.profiles.length; i++) {
-      if (household.profiles[i].id === id) return household.profiles[i];
+    for (i = 0; i < shown.length; i++) {
+      if (shown[i].id === id) return shown[i];
     }
-    return household.profiles[0];
+    return shown[0] || household.profiles[0];
   }
 
   function enterProfile(profile) {
@@ -1322,6 +1355,7 @@
       var foot = el('div', 'gate-foot');
       foot.appendChild(focusBtn('action', 'Ho un codice', 'profile-adopt', function () {
         adoptCode = '';
+        adoptError = '';
         gateView = 'adopt';
         wantFid = 'key-A';
         renderGate();
@@ -1394,6 +1428,16 @@
         renderGate();
       } }
     ]);
+    if (!isNew && editProfileId && editProfileId !== 'local') {
+      renderKeyRow(kb, [
+        { label: 'Cancella profilo', fid: 'key-hide', fn: function () {
+          hideProfileOnTv(editProfileId);
+          gateView = 'pick';
+          wantFid = '';
+          renderGate();
+        } }
+      ]);
+    }
     split.appendChild(keys);
     page.appendChild(split);
     paintSwatches();
@@ -1414,8 +1458,10 @@
     var code = el('div', 'code', (adoptCode + '········').slice(0, 8));
     code.id = 'adopt-code';
     page.appendChild(code);
+    if (adoptError) page.appendChild(el('p', 'muted', adoptError));
     var kb = renderKeyboard(page, KEYS, function (ch) {
       if (adoptCode.length < 8) adoptCode += ch;
+      adoptError = '';
       var node = document.getElementById('adopt-code');
       if (node) {
         node.innerHTML = '';
@@ -1425,6 +1471,7 @@
     renderKeyRow(kb, [
       { label: 'Cancella', fid: 'key-del', fn: function () {
         adoptCode = adoptCode.slice(0, -1);
+        adoptError = '';
         var node = document.getElementById('adopt-code');
         if (node) {
           node.innerHTML = '';
@@ -1432,14 +1479,22 @@
         }
       } },
       { label: 'Unisci', fid: 'key-ok', main: true, fn: function () {
-        if (adoptCode.length !== 8) return;
-        postJson('/api/device', { code: adoptCode, mode: 'adopt' }, function () {
-          getJson('/api/household', function (data) {
+        if (adoptCode.length !== 8) {
+          adoptError = 'Inserisci tutte le 8 lettere.';
+          renderGate();
+          return;
+        }
+        postJson('/api/device', { code: adoptCode, mode: 'adopt' }, function (data) {
+          if (data && data.ok && data.profiles && data.profiles.length) {
             applyHousehold(data);
+            adoptError = '';
             gateView = 'pick';
             wantFid = '';
             renderGate();
-          });
+            return;
+          }
+          adoptError = data && data.error === 'full' ? 'Hai già 5 profili.' : 'Codice non valido.';
+          renderGate();
         });
       } },
       { label: 'Indietro', fid: 'key-back', fn: function () { gateView = 'pick'; wantFid = 'profile-adopt'; renderGate(); } }

@@ -84,12 +84,12 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
             const response = await fetch('/api/device', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: paste }),
+                body: JSON.stringify({ code: paste, mode: 'adopt' }),
             })
             const data = (await response.json()) as { ok?: boolean; error?: string; code?: string }
 
-            if (data.ok && data.code) {
-                setCode(data.code)
+            if (data.ok) {
+                if (data.code) setCode(data.code)
                 setPaste('')
                 window.dispatchEvent(new CustomEvent('watch-history-updated'))
                 window.setTimeout(onClose, 400)
@@ -98,6 +98,8 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
 
             if (data.error === 'self') {
                 setError('È già questo dispositivo.')
+            } else if (data.error === 'full') {
+                setError('Hai già 5 profili.')
             } else {
                 setError('Codice non valido.')
             }

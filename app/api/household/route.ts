@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured } from '@/lib/db'
-import { ensureHousehold } from '@/lib/db/household'
-import { formatPairCode } from '@/lib/pair-code'
+import { ensureHousehold, presentHousehold } from '@/lib/db/household'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
 
 export const dynamic = 'force-dynamic'
@@ -39,22 +38,7 @@ export async function GET() {
             )
         }
 
-        return withDeviceCookie(
-            NextResponse.json({
-                configured: true,
-                deviceId,
-                householdId: snapshot.householdId,
-                activeProfileId: snapshot.activeProfileId,
-                profiles: snapshot.profiles.map((profile) => ({
-                    id: profile.id,
-                    name: profile.name,
-                    avatar: profile.avatar,
-                    pairCode: formatPairCode(profile.pairCode),
-                })),
-            }),
-            deviceId,
-            isNew
-        )
+        return withDeviceCookie(NextResponse.json(presentHousehold(snapshot, deviceId)), deviceId, isNew)
     } catch {
         return withDeviceCookie(
             NextResponse.json({ configured: true, error: 'db_error' }, { status: 500 }),

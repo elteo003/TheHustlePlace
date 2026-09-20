@@ -19,6 +19,7 @@ interface HouseholdContextValue extends TvHouseholdState {
     createProfile: (name: string, avatar: number) => Promise<boolean>
     updateProfile: (profileId: string, name: string, avatar: number) => Promise<boolean>
     switchProfile: (profileId: string) => Promise<boolean>
+    deleteProfile: (profileId: string) => Promise<boolean>
     adoptCode: (code: string) => Promise<boolean>
 }
 
@@ -120,6 +121,23 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         return true
     }, [])
 
+    const deleteProfile = useCallback(async (profileId: string) => {
+        setError(null)
+        const response = await fetch('/api/household/profiles', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profileId }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+            setError(data.error === 'last' ? 'Deve restare almeno un profilo.' : 'Non siamo riusciti a eliminare il profilo.')
+            return false
+        }
+        setState(applySnapshot(data))
+        window.dispatchEvent(new CustomEvent('watch-history-updated'))
+        return true
+    }, [])
+
     const adoptCode = useCallback(async (code: string) => {
         setError(null)
         const response = await fetch('/api/device', {
@@ -132,7 +150,8 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
             setError(data.error === 'full' ? 'Hai già 5 profili.' : 'Codice non valido.')
             return false
         }
-        await refresh()
+        if (data.profiles) setState(applySnapshot(data))
+        else await refresh()
         window.dispatchEvent(new CustomEvent('watch-history-updated'))
         return true
     }, [refresh])
@@ -148,9 +167,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
             createProfile,
             updateProfile,
             switchProfile,
+            deleteProfile,
             adoptCode,
         }),
-        [state, loading, error, activeProfile, refresh, createProfile, updateProfile, switchProfile, adoptCode]
+        [state, loading, error, activeProfile, refresh, createProfile, updateProfile, switchProfile, deleteProfile, adoptCode]
     )
 
     return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>

@@ -15,6 +15,7 @@ interface CreateProfileProps {
     initialAvatar?: number
     onSubmit: (name: string, avatar: number) => Promise<boolean>
     onCancel: () => void
+    onHide?: () => void
 }
 
 export function CreateProfile({
@@ -25,6 +26,7 @@ export function CreateProfile({
     initialAvatar = 0,
     onSubmit,
     onCancel,
+    onHide,
 }: CreateProfileProps) {
     const [name, setName] = useState(initialName)
     const [avatar, setAvatar] = useState(initialAvatar)
@@ -113,9 +115,16 @@ export function CreateProfile({
             </div>
             <p className="mt-3 text-base text-white/35">{name.length}/{PROFILE_NAME_MAX}</p>
             {error && <p className="mt-3 text-lg text-white/60">{error}</p>}
-            <TvFocus onClick={onCancel} className="mt-6 h-14 rounded-lg bg-white/10 px-8 text-lg text-white">
-                Indietro
-            </TvFocus>
+            <div className="mt-6 flex gap-3">
+                <TvFocus onClick={onCancel} className="h-14 rounded-lg bg-white/10 px-8 text-lg text-white">
+                    Indietro
+                </TvFocus>
+                {onHide && (
+                    <TvFocus onClick={onHide} className="h-14 rounded-lg bg-white/10 px-8 text-lg text-white">
+                        Cancella profilo
+                    </TvFocus>
+                )}
+            </div>
             {busy && <p className="sr-only">Salvataggio in corso</p>}
         </div>
     )

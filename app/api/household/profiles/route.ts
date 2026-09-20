@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { isDatabaseConfigured } from '@/lib/db'
-import { createHouseholdProfile, updateHouseholdProfile, type HouseholdSnapshot } from '@/lib/db/household'
+import {
+    createHouseholdProfile,
+    deleteHouseholdProfile,
+    presentHousehold,
+    updateHouseholdProfile,
+    type HouseholdSnapshot,
+} from '@/lib/db/household'
 import { formatPairCode } from '@/lib/pair-code'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
 import { MAX_PACKED_AVATAR } from '@/tv/lib/avatars'
@@ -76,4 +82,30 @@ export async function PATCH(request: Request) {
     }
 
     return withDeviceCookie(NextResponse.json(snapshotBody(result)), deviceId, isNew)
+}
+
+const deleteSchema = z.object({
+    profileId: z.string().uuid(),
+})
+
+export async function DELETE(request: Request) {
+    const { id: deviceId, isNew } = await getOrCreateDeviceId()
+    const json = await request.json().catch(() => null)
+    const parsed = deleteSchema.safeParse(json)
+
+    if (!parsed.success) {
+        return withDeviceCookie(NextResponse.json({ error: 'invalid' }, { status: 400 }), deviceId, isNew)
+    }
+
+    if (!isDatabaseConfigured()) {
+        return withDeviceCookie(NextResponse.json({ configured: false, error: 'unavailable' }, { status: 503 }), deviceId, isNew)
+    }
+
+    const result = await deleteHouseholdProfile(deviceId, parsed.data.profileId)
+    if ('error' in result) {
+        const status = result.error === 'db' ? 500 : 400
+        return withDeviceCookie(NextResponse.json({ error: result.error }, { status }), deviceId, isNew)
+    }
+
+    return withDeviceCookie(NextResponse.json({ ok: true, ...presentHousehold(result, deviceId) }), deviceId, isNew)
 }
