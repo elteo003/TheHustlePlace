@@ -1339,7 +1339,7 @@
       }
       page.appendChild(wrap);
     }
-    if (household.profiles.length < 5) {
+    if (household.profiles.length < 8) {
       wrap = el('div', 'pcol');
       wrap.appendChild(focusBtn('plus', '+', 'profile-add', function () {
         createName = '';
@@ -1493,7 +1493,7 @@
             renderGate();
             return;
           }
-          adoptError = data && data.error === 'full' ? 'Hai già 5 profili.' : 'Codice non valido.';
+          adoptError = data && data.error === 'full' ? 'Hai già 8 profili.' : 'Codice non valido.';
           renderGate();
         });
       } },

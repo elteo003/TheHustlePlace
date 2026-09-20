@@ -1,6 +1,6 @@
 import { MAX_PACKED_AVATAR } from '@/tv/lib/avatars'
 
-export const MAX_HOUSEHOLD_PROFILES = 5
+export const MAX_HOUSEHOLD_PROFILES = 8
 export const PLACEHOLDER_PROFILE_NAME = 'Profilo 1'
 export const PROFILE_NAME_MAX = 16
 
@@ -43,9 +43,10 @@ export function decideAdoptStrategy(input: {
     canReplacePlaceholder: boolean
 }): AdoptStrategy {
     if (input.alreadyInHousehold) return 'switch'
-    if (input.targetNamed > input.currentNamed) return 'join-target'
+    if (input.targetNamed >= 2 || input.targetNamed > input.currentNamed) return 'join-target'
     if (input.targetIsPlaceholder) return 'pair-device'
     if (input.canReplacePlaceholder || canAddHouseholdProfile(input.currentCount)) return 'add-profile'
+    if (input.targetNamed > 0) return 'join-target'
     return 'full'
 }
 

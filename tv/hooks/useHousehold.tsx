@@ -76,7 +76,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         })
         const data = await response.json()
         if (!response.ok) {
-            setError(data.error === 'full' ? 'Hai già 5 profili.' : 'Non siamo riusciti a creare il profilo.')
+            setError(data.error === 'full' ? 'Hai già 8 profili.' : 'Non siamo riusciti a creare il profilo.')
             return false
         }
         setState(applySnapshot(data))
@@ -147,7 +147,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         })
         const data = await response.json()
         if (!response.ok) {
-            setError(data.error === 'full' ? 'Hai già 5 profili.' : 'Codice non valido.')
+            setError(data.error === 'full' ? 'Hai già 8 profili.' : 'Codice non valido.')
             return false
         }
         if (data.profiles) setState(applySnapshot(data))

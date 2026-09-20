@@ -99,7 +99,7 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
             if (data.error === 'self') {
                 setError('È già questo dispositivo.')
             } else if (data.error === 'full') {
-                setError('Hai già 5 profili.')
+                setError('Hai già 8 profili.')
             } else {
                 setError('Codice non valido.')
             }

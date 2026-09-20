@@ -12,9 +12,9 @@ import {
 import { MAX_PACKED_AVATAR, packAvatar, unpackAvatar } from '@/tv/lib/avatars'
 
 describe('household-rules', () => {
-    it('limita a 5 profili', () => {
-        expect(canAddHouseholdProfile(4)).toBe(true)
-        expect(canAddHouseholdProfile(5)).toBe(false)
+    it('limita a 8 profili', () => {
+        expect(canAddHouseholdProfile(7)).toBe(true)
+        expect(canAddHouseholdProfile(8)).toBe(false)
     })
 
     it('non cancella l’unico profilo rimasto', () => {
@@ -104,7 +104,17 @@ describe('household-rules', () => {
                 alreadyInHousehold: false,
                 currentNamed: 5,
                 currentCount: 5,
-                targetNamed: 1,
+                targetNamed: 4,
+                targetIsPlaceholder: false,
+                canReplacePlaceholder: false,
+            })
+        ).toBe('join-target')
+        expect(
+            decideAdoptStrategy({
+                alreadyInHousehold: false,
+                currentNamed: 8,
+                currentCount: 8,
+                targetNamed: 0,
                 targetIsPlaceholder: false,
                 canReplacePlaceholder: false,
             })
