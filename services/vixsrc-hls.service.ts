@@ -157,6 +157,7 @@ export async function resolveVixsrcHls(input: {
     season?: number
     episode?: number
     lang?: string
+    fresh?: boolean
 }): Promise<ResolvedVixsrcHls> {
     const lang = input.lang ?? 'it'
     const cacheKey =
@@ -164,8 +165,10 @@ export async function resolveVixsrcHls(input: {
             ? `vixsrc-hls-v2-movie-${input.tmdbId}-${lang}`
             : `vixsrc-hls-v2-tv-${input.tmdbId}-${input.season}-${input.episode}-${lang}`
 
-    const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
-    if (cached?.master && hlsStreamLooksPlayable(cached)) return cached
+    if (!input.fresh) {
+        const cached = await cache.get<ResolvedVixsrcHls>(cacheKey)
+        if (cached?.master && hlsStreamLooksPlayable(cached)) return cached
+    }
 
     const persist = async (stream: ResolvedVixsrcHls, mode: string) => {
         if (!hlsStreamLooksPlayable(stream)) {

@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation'
 import { HouseholdProvider } from '@/tv/hooks/useHousehold'
 import { focusFirstTvNode, useSpatialNavigation } from '@/tv/hooks/useSpatialNavigation'
 import { useTvBack } from '@/tv/hooks/useTvBack'
+import { isLivingPlayerPath } from '@/tv/lib/paths'
 
 export function TvApp({ children }: { children: ReactNode }) {
     const pathname = usePathname()
-    useSpatialNavigation(true)
+    const onPlayer = isLivingPlayerPath(pathname)
+    useSpatialNavigation(!onPlayer)
     useTvBack()
 
     useEffect(() => {
@@ -21,9 +23,10 @@ export function TvApp({ children }: { children: ReactNode }) {
     }, [])
 
     useEffect(() => {
+        if (onPlayer) return
         const frame = window.requestAnimationFrame(() => focusFirstTvNode())
         return () => window.cancelAnimationFrame(frame)
-    }, [pathname])
+    }, [onPlayer, pathname])
 
     return (
         <HouseholdProvider>

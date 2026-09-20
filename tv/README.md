@@ -55,4 +55,4 @@ ares-launch --device lgtv com.thehustleplace.app.tv
 
 Dettagli: account [webOS TV Developer](https://webostv.developer.lge.com/), porta `9922`, user `prisoner`, Key Server acceso solo per il pairing. EXTEND circa ogni 40 giorni. Non usare Clear Cache Data.
 
-Aggiornamenti UI: deploy Vercel, niente nuovo `.ipk`. Nuovo pacchetto solo se cambi icona, id o URL nel guscio.
+Aggiornamenti UI: deploy Vercel, niente nuovo `.ipk`. Nuovo pacchetto solo se cambi icona, splash, id o URL nel guscio.

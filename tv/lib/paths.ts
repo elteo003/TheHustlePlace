@@ -45,6 +45,10 @@ export function isLivingPath(pathname: string | null | undefined): boolean {
     return Boolean(pathname?.startsWith(LIVING_ROOT))
 }
 
+export function isLivingPlayerPath(pathname: string | null | undefined): boolean {
+    return Boolean(pathname?.startsWith(`${LIVING_ROOT}/player/`))
+}
+
 export function isWebosUserAgent(ua: string): boolean {
     return /webos|web0s|netcast/i.test(ua)
 }

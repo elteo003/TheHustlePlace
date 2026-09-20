@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     isLivingPath,
+    isLivingPlayerPath,
     isWebosUserAgent,
     livingDetailsPath,
     livingHomePath,
@@ -16,6 +17,8 @@ describe('living paths', () => {
 
     it('riconosce living e webOS', () => {
         expect(isLivingPath('/living/home')).toBe(true)
+        expect(isLivingPlayerPath('/living/player/tv/1399')).toBe(true)
+        expect(isLivingPlayerPath('/living/home')).toBe(false)
         expect(isLivingPath('/home')).toBe(false)
         expect(isWebosUserAgent('Mozilla/5.0 (Web0S; Linux/SmartTV)')).toBe(true)
         expect(isWebosUserAgent('Chrome')).toBe(false)

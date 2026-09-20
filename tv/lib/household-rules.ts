@@ -8,6 +8,18 @@ export function isPlaceholderProfile(profile: { name: string; historyCount?: num
     return profile.name.trim() === PLACEHOLDER_PROFILE_NAME && (profile.historyCount ?? 0) === 0
 }
 
+export function visibleHouseholdProfiles<T extends { id?: string; name: string; historyCount?: number }>(
+    profiles: T[]
+): T[] {
+    const withoutGuest = profiles.filter((profile) => profile.id !== 'local')
+    if (withoutGuest.length === 0) return profiles
+    const named = withoutGuest.filter((profile) => {
+        if (profile.historyCount == null) return true
+        return !isPlaceholderProfile(profile)
+    })
+    return named.length > 0 ? named : withoutGuest
+}
+
 export function canAddHouseholdProfile(count: number): boolean {
     return count < MAX_HOUSEHOLD_PROFILES
 }

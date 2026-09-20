@@ -1,7 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { getWatchHistory, syncWatchHistoryFromRemote, WatchHistoryEntry } from '@/lib/watch-history'
+import {
+    getWatchHistory,
+    setWatchHistoryProfile,
+    syncWatchHistoryFromRemote,
+    WatchHistoryEntry,
+} from '@/lib/watch-history'
 
 export function useWatchHistory() {
     const [entries, setEntries] = useState<WatchHistoryEntry[]>([])
@@ -12,9 +17,11 @@ export function useWatchHistory() {
             if (response.ok) {
                 const data = (await response.json()) as {
                     configured?: boolean
+                    profileId?: string | null
                     entries?: WatchHistoryEntry[]
                 }
-                if (data.configured && Array.isArray(data.entries) && data.entries.length > 0) {
+                if (data.profileId) setWatchHistoryProfile(data.profileId)
+                if (data.configured && Array.isArray(data.entries)) {
                     setEntries(syncWatchHistoryFromRemote(data.entries))
                     return
                 }

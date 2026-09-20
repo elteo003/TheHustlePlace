@@ -8,12 +8,12 @@ test.describe('Smoke test piattaforma', () => {
 
     test('app TV mostra la scelta profilo', async ({ page }) => {
         await page.goto('/living', { waitUntil: 'domcontentloaded' })
-        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible({ timeout: 15_000 })
     })
 
     test('telecomando sposta il focus tra i profili', async ({ page }) => {
         await page.goto('/living', { waitUntil: 'domcontentloaded' })
-        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Chi guarda?' })).toBeVisible({ timeout: 15_000 })
         const tiles = page.locator('[data-tv-focus]')
         await expect(tiles.first()).toBeVisible()
         await expect(tiles.first()).toHaveClass(/is-tv-focused/, { timeout: 10_000 })

@@ -265,6 +265,31 @@ export function bytesToBase64(bytes: Uint8Array): string {
     return btoa(binary)
 }
 
+/** Unix seconds o millisecondi da `expires=` nelle URL HLS. */
+export function readHlsTokenExpiryMs(text: string): number | null {
+    const match = text.match(/[?&]expires=(\d+)/)
+    if (!match) return null
+    const raw = Number(match[1])
+    if (!Number.isFinite(raw) || raw <= 0) return null
+    return raw > 1e12 ? raw : raw * 1000
+}
+
+export function readStreamTokenExpiryMs(stream: { master: string; parts?: Record<string, string> }): number | null {
+    const fromMaster = readHlsTokenExpiryMs(stream.master)
+    if (fromMaster) return fromMaster
+    for (const part of Object.values(stream.parts ?? {})) {
+        const expiry = readHlsTokenExpiryMs(part)
+        if (expiry) return expiry
+    }
+    return null
+}
+
+/** Attesa prima di rinfrescare i token, 30s prima della scadenza. Null se è troppo tardi. */
+export function msUntilHlsRefresh(expiryMs: number, now = Date.now(), leadMs = 30_000): number | null {
+    const wait = expiryMs - leadMs - now
+    return wait >= 8_000 ? wait : null
+}
+
 export function createVixsrcBrowserSource(input: {
     master: string
     parts: Record<string, string>

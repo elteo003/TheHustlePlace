@@ -4,6 +4,7 @@ import {
     clampAvatar,
     isPlaceholderProfile,
     sanitizeProfileName,
+    visibleHouseholdProfiles,
 } from '@/tv/lib/household-rules'
 import { MAX_PACKED_AVATAR, packAvatar, unpackAvatar } from '@/tv/lib/avatars'
 
@@ -17,6 +18,30 @@ describe('household-rules', () => {
         expect(isPlaceholderProfile({ name: 'Profilo 1', historyCount: 0 })).toBe(true)
         expect(isPlaceholderProfile({ name: 'Mattia', historyCount: 0 })).toBe(false)
         expect(isPlaceholderProfile({ name: 'Profilo 1', historyCount: 2 })).toBe(false)
+    })
+
+    it('nasconde solo l’ospite finto quando ci sono profili veri', () => {
+        expect(
+            visibleHouseholdProfiles([
+                { id: 'local', name: 'Ospite' },
+                { id: 'a', name: 'Mattia' },
+            ]).map((item) => item.name)
+        ).toEqual(['Mattia'])
+        expect(visibleHouseholdProfiles([{ id: 'local', name: 'Ospite' }])).toEqual([
+            { id: 'local', name: 'Ospite' },
+        ])
+        expect(
+            visibleHouseholdProfiles([
+                { id: 'p1', name: 'Profilo 1' },
+                { id: 'a', name: 'Papà' },
+            ]).map((item) => item.name)
+        ).toEqual(['Profilo 1', 'Papà'])
+        expect(
+            visibleHouseholdProfiles([
+                { id: 'p1', name: 'Profilo 1', historyCount: 0 },
+                { id: 'a', name: 'Papà' },
+            ]).map((item) => item.name)
+        ).toEqual(['Papà'])
     })
 
     it('pulisce il nome', () => {

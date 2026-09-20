@@ -68,6 +68,21 @@ function upsertEpisodeProgress(
 const STORAGE_KEY = 'thp_watch_history'
 const MAX_ENTRIES = 12
 
+let activeProfileId: string | null = null
+
+export function watchHistoryStorageKey(profileId: string | null = activeProfileId): string {
+    if (!profileId || profileId === 'local') return STORAGE_KEY
+    return `${STORAGE_KEY}:${profileId}`
+}
+
+export function setWatchHistoryProfile(profileId: string | null): void {
+    activeProfileId = profileId && profileId !== 'local' ? profileId : null
+}
+
+export function getWatchHistoryProfile(): string | null {
+    return activeProfileId
+}
+
 function isBrowser(): boolean {
     return typeof window !== 'undefined'
 }
@@ -75,7 +90,7 @@ function isBrowser(): boolean {
 function readAll(): WatchHistoryEntry[] {
     if (!isBrowser()) return []
     try {
-        const raw = localStorage.getItem(STORAGE_KEY)
+        const raw = localStorage.getItem(watchHistoryStorageKey())
         if (!raw) return []
         const parsed = JSON.parse(raw) as WatchHistoryEntry[]
         return Array.isArray(parsed) ? parsed : []
@@ -86,7 +101,7 @@ function readAll(): WatchHistoryEntry[] {
 
 function writeAll(entries: WatchHistoryEntry[]): void {
     if (!isBrowser()) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
+    localStorage.setItem(watchHistoryStorageKey(), JSON.stringify(entries))
 }
 
 export function getWatchHistory(): WatchHistoryEntry[] {

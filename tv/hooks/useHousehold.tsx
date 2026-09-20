@@ -1,13 +1,14 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { setWatchHistoryProfile } from '@/lib/watch-history'
 import { TvHouseholdState, TvProfile } from '@/tv/lib/types'
 
 const emptyState: TvHouseholdState = {
     configured: false,
     householdId: null,
-    activeProfileId: 'local',
-    profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }],
+    activeProfileId: '',
+    profiles: [],
 }
 
 interface HouseholdContextValue extends TvHouseholdState {
@@ -24,17 +25,19 @@ interface HouseholdContextValue extends TvHouseholdState {
 const HouseholdContext = createContext<HouseholdContextValue | null>(null)
 
 function applySnapshot(data: Partial<TvHouseholdState> & { profiles?: TvProfile[] }): TvHouseholdState {
-    return {
+    const next = {
         configured: Boolean(data.configured),
         householdId: data.householdId ?? null,
-        activeProfileId: data.activeProfileId ?? emptyState.activeProfileId,
-        profiles: data.profiles ?? emptyState.profiles,
+        activeProfileId: data.activeProfileId ?? '',
+        profiles: data.profiles ?? [],
     }
+    setWatchHistoryProfile(next.activeProfileId || null)
+    return next
 }
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<TvHouseholdState>(emptyState)
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     const refresh = useCallback(async () => {

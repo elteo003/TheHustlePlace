@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { canAddHouseholdProfile } from '@/tv/lib/household-rules'
+import { canAddHouseholdProfile, visibleHouseholdProfiles } from '@/tv/lib/household-rules'
 import { livingHomePath } from '@/tv/lib/paths'
 import { useHousehold } from '@/tv/hooks/useHousehold'
 import { focusFirstTvNode } from '@/tv/hooks/useSpatialNavigation'
@@ -17,9 +17,11 @@ type GateView = 'pick' | 'create' | 'edit' | 'adopt' | 'code'
 
 export function ProfileGate() {
     const router = useRouter()
-    const { profiles, loading, error, configured, createProfile, updateProfile, switchProfile, adoptCode } = useHousehold()
+    const { profiles, loading, error, configured, createProfile, updateProfile, switchProfile, adoptCode } =
+        useHousehold()
     const [view, setView] = useState<GateView>('pick')
     const [selected, setSelected] = useState<TvProfile | null>(null)
+    const shown = visibleHouseholdProfiles(profiles)
 
     useEffect(() => {
         if (loading || view !== 'pick') return
@@ -33,6 +35,16 @@ export function ProfileGate() {
             if (!ok) return
         }
         router.push(livingHomePath())
+    }
+
+    if (loading && view === 'pick') {
+        return (
+            <div className="flex min-h-[70vh] items-center justify-center" aria-hidden>
+                <div className="flex h-20 w-20 items-center justify-center rounded-[22px] bg-white text-4xl font-bold text-black">
+                    H
+                </div>
+            </div>
+        )
     }
 
     if (view === 'create') {
@@ -117,7 +129,7 @@ export function ProfileGate() {
                 <p className="mt-4 text-lg text-white/45">Senza database i profili restano solo su questa TV.</p>
             ) : null}
             <div className="mt-14 flex flex-wrap justify-center gap-8">
-                    {profiles.map((profile, index) => (
+                    {shown.map((profile, index) => (
                         <div key={profile.id} className="flex flex-col items-center gap-3">
                             <TvFocus
                                 autoFocusItem={index === 0}

@@ -25,29 +25,24 @@ function chunk(type, data) {
     return Buffer.concat([len, typeBuf, data, crc])
 }
 
-function png(size) {
-    const raw = Buffer.alloc((size * 4 + 1) * size)
-    for (let y = 0; y < size; y += 1) {
-        const row = y * (size * 4 + 1)
+function png(width, height, paint) {
+    const raw = Buffer.alloc((width * 4 + 1) * height)
+    for (let y = 0; y < height; y += 1) {
+        const row = y * (width * 4 + 1)
         raw[row] = 0
-        for (let x = 0; x < size; x += 1) {
+        for (let x = 0; x < width; x += 1) {
             const i = row + 1 + x * 4
-            const inset = Math.floor(size * 0.18)
-            const inside = x >= inset && x < size - inset && y >= inset && y < size - inset
-            if (inside) {
-                raw[i] = 255
-                raw[i + 1] = 255
-                raw[i + 2] = 255
-                raw[i + 3] = 255
-            } else {
-                raw[i + 3] = 255
-            }
+            const pixel = paint(x, y)
+            raw[i] = pixel[0]
+            raw[i + 1] = pixel[1]
+            raw[i + 2] = pixel[2]
+            raw[i + 3] = pixel[3]
         }
     }
 
     const ihdr = Buffer.alloc(13)
-    ihdr.writeUInt32BE(size, 0)
-    ihdr.writeUInt32BE(size, 4)
+    ihdr.writeUInt32BE(width, 0)
+    ihdr.writeUInt32BE(height, 4)
     ihdr[8] = 8
     ihdr[9] = 6
 
@@ -59,6 +54,23 @@ function png(size) {
     ])
 }
 
-writeFileSync(join(dir, 'icon.png'), png(80))
-writeFileSync(join(dir, 'largeIcon.png'), png(130))
-console.log('icone webOS scritte')
+function markPaint(size) {
+    const inset = Math.floor(size * 0.18)
+    return function paint(x, y) {
+        const inside = x >= inset && x < size - inset && y >= inset && y < size - inset
+        return inside ? [255, 255, 255, 255] : [0, 0, 0, 255]
+    }
+}
+
+function splashPaint(x, y) {
+    const cx = 960
+    const cy = 540
+    const half = 56
+    const inside = x >= cx - half && x < cx + half && y >= cy - half && y < cy + half
+    return inside ? [255, 255, 255, 255] : [0, 0, 0, 255]
+}
+
+writeFileSync(join(dir, 'icon.png'), png(80, 80, markPaint(80)))
+writeFileSync(join(dir, 'largeIcon.png'), png(130, 130, markPaint(130)))
+writeFileSync(join(dir, 'splashBackground.png'), png(1920, 1080, splashPaint))
+console.log('icone e splash webOS scritti')

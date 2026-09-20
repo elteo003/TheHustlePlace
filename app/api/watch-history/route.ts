@@ -6,6 +6,7 @@ import {
     listWatchHistory,
     upsertWatchHistory,
 } from '@/lib/db/watch-history'
+import { ensureProfile } from '@/lib/db/profiles'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
 
 export const dynamic = 'force-dynamic'
@@ -26,15 +27,24 @@ export async function GET() {
     const { id: deviceId, isNew } = await getOrCreateDeviceId()
 
     if (!isDatabaseConfigured()) {
-        return withDeviceCookie(NextResponse.json({ configured: false, entries: [] }), deviceId, isNew)
+        return withDeviceCookie(
+            NextResponse.json({ configured: false, profileId: null, entries: [] }),
+            deviceId,
+            isNew
+        )
     }
 
     try {
+        const profile = await ensureProfile(deviceId)
         const entries = await listWatchHistory(deviceId)
-        return withDeviceCookie(NextResponse.json({ configured: true, entries }), deviceId, isNew)
+        return withDeviceCookie(
+            NextResponse.json({ configured: true, profileId: profile?.id ?? null, entries }),
+            deviceId,
+            isNew
+        )
     } catch {
         return withDeviceCookie(
-            NextResponse.json({ configured: true, error: 'db_error', entries: [] }, { status: 500 }),
+            NextResponse.json({ configured: true, error: 'db_error', profileId: null, entries: [] }, { status: 500 }),
             deviceId,
             isNew
         )

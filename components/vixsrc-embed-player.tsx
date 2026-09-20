@@ -11,9 +11,18 @@ import { usePlayerChrome } from '@/components/player-chrome-context'
 import { ContentType } from '@/lib/content-navigation'
 import { pickHighestHlsLevel } from '@/lib/hls-quality'
 import { HLS_CONFIG } from '@/utils/hls-config'
-import { createVixsrcBrowserSource } from '@/lib/vixsrc-hls'
+import { createVixsrcBrowserSource, msUntilHlsRefresh, readStreamTokenExpiryMs } from '@/lib/vixsrc-hls'
 import { fetchResolvedPlayback } from '@/lib/player-resolve'
 import { VixsrcPlayerEvent } from '@/lib/vixsrc-player-events'
+import {
+    mediaTransportAction,
+    shouldResumeUnexpectedPause,
+    userPausedFromTransport,
+} from '@/lib/playback-resume'
+
+const STALL_RECOVER_MS = 4000
+const MAX_HLS_RECOVERIES = 5
+const MAX_HARD_RELOADS = 2
 
 const LOAD_TIMEOUT_MS = 55000
 
@@ -50,16 +59,16 @@ export function VixsrcEmbedPlayer({
     const stageRef = useRef<HTMLDivElement | null>(null)
     const shell = usePlayerChrome()
     const hlsRef = useRef<Hls | null>(null)
-    const startAtRef = useRef(startAt)
+    const resumeAtRef = useRef(startAt ?? 0)
     const onPlaybackRef = useRef(onPlayback)
     const onEndedRef = useRef(onEnded)
-    startAtRef.current = startAt
     onPlaybackRef.current = onPlayback
     onEndedRef.current = onEnded
     const [error, setError] = useState(false)
     const [streamMissing, setStreamMissing] = useState(false)
     const [ready, setReady] = useState(false)
     const [reloadKey, setReloadKey] = useState(0)
+    const hardReloadsRef = useRef(0)
 
     const emit = useCallback((event: VixsrcPlayerEvent['event'], video: HTMLVideoElement, videoId?: number) => {
         const playback: VixsrcPlayerEvent = {
@@ -79,6 +88,40 @@ export function VixsrcEmbedPlayer({
         let cancelled = false
         let revokeSource: (() => void) | undefined
         let timeout = 0
+        let stallTimer = 0
+        let refreshTimer = 0
+        let playOkTimer = 0
+        let userPaused = false
+        let lastUserInputAt = 0
+        const rememberPosition = () => {
+            if (video.currentTime > 1) resumeAtRef.current = video.currentTime
+        }
+        const reloadFresh = () => {
+            rememberPosition()
+            if (hardReloadsRef.current >= MAX_HARD_RELOADS) {
+                fail(false, 'Impossibile caricare il player')
+                return
+            }
+            hardReloadsRef.current += 1
+            setReloadKey((value) => value + 1)
+        }
+        const tryPlay = () => {
+            if (cancelled || video.ended || userPaused) return
+            void video.play().catch(() => undefined)
+        }
+        const onKeyDown = (event: KeyboardEvent) => {
+            lastUserInputAt = Date.now()
+            const action = mediaTransportAction(event.key || '', event.keyCode || event.which || 0)
+            if (action) {
+                userPaused = userPausedFromTransport(action, video.paused)
+            }
+            if (nativeControls && video.paused && !video.ended && !userPaused) tryPlay()
+        }
+        const onVisible = () => {
+            if (nativeControls && document.visibilityState === 'visible') tryPlay()
+        }
+        document.addEventListener('keydown', onKeyDown)
+        document.addEventListener('visibilitychange', onVisible)
         const fail = (missing: boolean, message: string) => {
             if (cancelled) return
             window.clearTimeout(timeout)
@@ -96,10 +139,11 @@ export function VixsrcEmbedPlayer({
             query.set('season', String(season))
             query.set('episode', String(episode))
         }
+        if (reloadKey > 0) query.set('fresh', '1')
 
         setError(false)
         setStreamMissing(false)
-        setReady(false)
+        if (reloadKey === 0) setReady(false)
 
         const start = async () => {
             try {
@@ -122,24 +166,74 @@ export function VixsrcEmbedPlayer({
                     if (cancelled) return
                     window.clearTimeout(timeout)
                     setReady(true)
-                    const resumeAt = startAtRef.current
+                    const resumeAt = resumeAtRef.current
                     if (resumeAt && resumeAt > 0) {
                         video.currentTime = resumeAt
                     }
                     void video.play().catch(() => undefined)
                 }
+                const expiry = readStreamTokenExpiryMs(payload.data)
+                const refreshIn = expiry ? msUntilHlsRefresh(expiry) : null
+                if (refreshIn != null) {
+                    refreshTimer = window.setTimeout(() => {
+                        if (cancelled || video.ended) return
+                        rememberPosition()
+                        setReloadKey((value) => value + 1)
+                    }, refreshIn)
+                }
 
-                video.onplay = () => emit('play', video, videoId)
-                video.onpause = () => emit('pause', video, videoId)
+                video.onplay = () => {
+                    userPaused = false
+                    emit('play', video, videoId)
+                }
+                video.onpause = () => {
+                    emit('pause', video, videoId)
+                    if (
+                        nativeControls &&
+                        shouldResumeUnexpectedPause({
+                            ended: video.ended,
+                            userPaused,
+                            lastUserInputAt,
+                            now: Date.now(),
+                        })
+                    ) {
+                        window.setTimeout(tryPlay, 400)
+                    }
+                }
                 video.onseeked = () => emit('seeked', video, videoId)
                 video.onended = () => emit('ended', video, videoId)
-                video.ontimeupdate = () => emit('timeupdate', video, videoId)
+                video.ontimeupdate = () => {
+                    rememberPosition()
+                    emit('timeupdate', video, videoId)
+                }
+                video.onwaiting = () => {
+                    window.clearTimeout(stallTimer)
+                    const stuckAt = video.currentTime
+                    stallTimer = window.setTimeout(() => {
+                        if (cancelled || video.ended || userPaused) return
+                        hlsRef.current?.startLoad()
+                        tryPlay()
+                        stallTimer = window.setTimeout(() => {
+                            if (cancelled || video.ended || userPaused) return
+                            if (!video.paused && video.currentTime > stuckAt + 0.25) return
+                            reloadFresh()
+                        }, STALL_RECOVER_MS)
+                    }, STALL_RECOVER_MS)
+                }
+                video.onplaying = () => {
+                    window.clearTimeout(stallTimer)
+                    window.clearTimeout(playOkTimer)
+                    playOkTimer = window.setTimeout(() => {
+                        hardReloadsRef.current = 0
+                    }, 20000)
+                }
                 video.onloadedmetadata = onReady
 
                 if (Hls.isSupported()) {
                     const hls = new Hls({
                         enableWorker: HLS_CONFIG.enableWorker,
                         maxBufferLength: HLS_CONFIG.maxBufferLength,
+                        maxMaxBufferLength: HLS_CONFIG.maxMaxBufferLength,
                         backBufferLength: HLS_CONFIG.backBufferLength,
                         testBandwidth: HLS_CONFIG.testBandwidth,
                         capLevelToPlayerSize: HLS_CONFIG.capLevelToPlayerSize,
@@ -153,19 +247,22 @@ export function VixsrcEmbedPlayer({
                     hls.loadSource(playlist)
                     hls.attachMedia(video)
                     let recoveries = 0
+                    hls.on(Hls.Events.FRAG_LOADED, () => {
+                        recoveries = 0
+                    })
                     hls.on(Hls.Events.ERROR, (_event, data) => {
                         if (!data.fatal || cancelled) return
-                        if (recoveries < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        if (recoveries < MAX_HLS_RECOVERIES && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                             recoveries += 1
                             hls.startLoad()
                             return
                         }
-                        if (recoveries < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        if (recoveries < MAX_HLS_RECOVERIES && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                             recoveries += 1
                             hls.recoverMediaError()
                             return
                         }
-                        fail(false, 'Impossibile caricare il player')
+                        reloadFresh()
                     })
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                     video.src = playlist
@@ -182,11 +279,18 @@ export function VixsrcEmbedPlayer({
         return () => {
             cancelled = true
             window.clearTimeout(timeout)
+            window.clearTimeout(stallTimer)
+            window.clearTimeout(refreshTimer)
+            window.clearTimeout(playOkTimer)
+            document.removeEventListener('keydown', onKeyDown)
+            document.removeEventListener('visibilitychange', onVisible)
             video.onplay = null
             video.onpause = null
             video.onseeked = null
             video.onended = null
             video.ontimeupdate = null
+            video.onwaiting = null
+            video.onplaying = null
             video.onloadedmetadata = null
             hlsRef.current?.destroy()
             hlsRef.current = null
@@ -194,7 +298,12 @@ export function VixsrcEmbedPlayer({
             video.removeAttribute('src')
             video.load()
         }
-    }, [emit, episode, reloadKey, season, tmdbId, type])
+    }, [emit, episode, nativeControls, reloadKey, season, tmdbId, type])
+
+    useEffect(() => {
+        resumeAtRef.current = startAt ?? 0
+        hardReloadsRef.current = 0
+    }, [episode, season, startAt, tmdbId, type])
 
     const overlayBack = shell?.onBack ?? onBack
     const overlayTitle = shell?.title ?? title

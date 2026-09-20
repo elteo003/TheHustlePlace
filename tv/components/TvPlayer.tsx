@@ -8,7 +8,6 @@ import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { resolvePlayerStartAt } from '@/lib/watch-history'
 import { parseStartAtParam } from '@/lib/watch-progress'
-import { TvFocus } from '@/tv/components/TvFocus'
 
 interface TvPlayerProps {
     id: number
@@ -61,9 +60,13 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
     return (
         <div className="relative h-screen w-screen bg-black">
             <div className="absolute left-8 top-8 z-20">
-                <TvFocus autoFocusItem onClick={back} className="rounded-lg bg-black/55 px-5 py-3 text-lg text-white">
+                <button
+                    type="button"
+                    onClick={back}
+                    className="rounded-lg bg-black/55 px-5 py-3 text-lg text-white"
+                >
                     Indietro
-                </TvFocus>
+                </button>
             </div>
             <VixsrcEmbedPlayer
                 tmdbId={id}

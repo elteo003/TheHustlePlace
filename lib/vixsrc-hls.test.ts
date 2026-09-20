@@ -8,6 +8,9 @@ import {
     isAllowedRelayPublicUrl,
     isHlsManifestBuffer,
     isM3u8Playlist,
+    msUntilHlsRefresh,
+    readHlsTokenExpiryMs,
+    readStreamTokenExpiryMs,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
     hlsStreamLooksPlayable,
@@ -229,6 +232,21 @@ describe('rewriteEdgeCdnThroughProxy', () => {
             `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s?token=abc')}`
         )
         expect(rewritten).toContain('https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc')
+    })
+})
+
+describe('readHlsTokenExpiryMs', () => {
+    it('legge expires unix e calcola quando rinfrescare', () => {
+        expect(readHlsTokenExpiryMs('https://cdn.example/a.ts?token=a&expires=1700000000')).toBe(1_700_000_000_000)
+        expect(readHlsTokenExpiryMs('#EXTM3U\nhttps://cdn.example/a.ts')).toBeNull()
+        expect(
+            readStreamTokenExpiryMs({
+                master: '#EXTM3U',
+                parts: { p0: 'https://cdn.example/a.ts?expires=1700000000' },
+            })
+        ).toBe(1_700_000_000_000)
+        expect(msUntilHlsRefresh(10_000_000, 9_960_000)).toBe(10_000)
+        expect(msUntilHlsRefresh(10_000_000, 9_995_000)).toBeNull()
     })
 })
 

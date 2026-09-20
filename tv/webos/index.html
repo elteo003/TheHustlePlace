@@ -5,19 +5,42 @@
     <title>TheHustlePlace</title>
     <style>
       html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-      iframe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: 0; background: #000; }
+      #splash {
+        position: fixed; inset: 0; z-index: 2; background: #000;
+        display: -webkit-box; display: flex;
+        -webkit-box-align: center; align-items: center;
+        -webkit-box-pack: center; justify-content: center;
+      }
+      #splash i {
+        display: block; width: 88px; height: 88px; line-height: 88px;
+        border-radius: 22px; background: #fff; color: #111;
+        font-style: normal; font-size: 42px; font-weight: 700; text-align: center;
+      }
+      iframe {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        border: 0; background: #000; opacity: 0;
+      }
+      iframe.is-ready { opacity: 1; }
     </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true"><i>H</i></div>
     <iframe
       id="thp"
       src="https://the-hustle-place.vercel.app/living"
+      allow="autoplay; fullscreen; encrypted-media"
       allowfullscreen="allowfullscreen"
     ></iframe>
     <script>
       var frame = document.getElementById('thp');
+      var splash = document.getElementById('splash');
+      function ready() {
+        if (frame) frame.className = 'is-ready';
+        if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        try { frame.focus(); } catch (e) {}
+      }
       if (frame) {
-        frame.focus();
+        frame.addEventListener('load', ready);
         document.addEventListener('keydown', function () {
           try { frame.focus(); } catch (e) {}
         });

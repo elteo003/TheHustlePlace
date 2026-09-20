@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
             type,
             season: type === 'tv' ? season : undefined,
             episode: type === 'tv' ? episode : undefined,
+            fresh: request.nextUrl.searchParams.get('fresh') === '1',
         })
 
         return NextResponse.json({

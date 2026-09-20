@@ -348,6 +348,17 @@
       width: 56px; height: 56px; border: 4px solid rgba(255,255,255,.16); border-top-color: #fff;
       border-radius: 50%; animation: spin .75s linear infinite;
     }
+    .boot {
+      height: 100%;
+      display: -webkit-box; display: flex;
+      -webkit-box-align: center; align-items: center;
+      -webkit-box-pack: center; justify-content: center;
+    }
+    .boot-mark {
+      width: 88px; height: 88px; line-height: 88px;
+      border-radius: 22px; background: #fff; color: #111;
+      font-size: 42px; font-weight: 700; text-align: center;
+    }
     .spin-screen {
       position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 8; pointer-events: none;
     }
@@ -361,7 +372,9 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot"><div class="boot-mark">H</div></div>
+  </div>
   <script>
 (function () {
   var AVATARS = ['#2563eb', '#db2777', '#16a34a', '#ca8a04', '#7c3aed', '#ea580c', '#0d9488', '#e11d48'];
@@ -381,7 +394,11 @@
   var wantFid = '';
   var gateView = 'pick';
   var selectedProfile = null;
-  var household = { configured: false, profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }] };
+  var household = { configured: false, profiles: [], activeProfileId: '' };
+  var householdReady = false;
+  var householdLoading = false;
+  var householdWaiters = [];
+  var historyProfileId = '';
   var createName = '';
   var createAvatar = 0;
   var editProfileId = '';
@@ -405,11 +422,28 @@
     try { window.sessionStorage.setItem(key, value || ''); } catch (e) {}
   }
 
+  function watchStorageKey() {
+    if (historyProfileId && historyProfileId !== 'local') return 'thp_watch_history:' + historyProfileId;
+    return 'thp_watch_history';
+  }
+
+  function setHistoryProfile(profileId) {
+    var next = profileId && profileId !== 'local' ? profileId : '';
+    if (historyProfileId === next) return;
+    historyProfileId = next;
+    cache.home = null;
+    cache.series = null;
+  }
+
   function readLocalWatch() {
     try {
-      var raw = window.localStorage.getItem('thp_watch_history');
+      var raw = window.localStorage.getItem(watchStorageKey());
       return raw ? JSON.parse(raw) : [];
     } catch (e) { return []; }
+  }
+
+  function writeLocalList(list) {
+    try { window.localStorage.setItem(watchStorageKey(), JSON.stringify(list)); } catch (e) {}
   }
 
   function writeLocalWatch(entry) {
@@ -421,7 +455,7 @@
     if (found >= 0) list.splice(found, 1);
     list.unshift(entry);
     if (list.length > 12) list = list.slice(0, 12);
-    try { window.localStorage.setItem('thp_watch_history', JSON.stringify(list)); } catch (e) {}
+    writeLocalList(list);
   }
 
   function historyFrom(entries) {
@@ -453,24 +487,34 @@
   }
 
   function mergeHistory(json) {
+    if (json && json.profileId) setHistoryProfile(json.profileId);
     var remote = historyFrom((json && json.entries) || []);
     var local = historyFrom(readLocalWatch());
     var map = {};
     var i, key, out;
-    for (i = 0; i < remote.length; i++) {
-      key = remote[i].type + '-' + remote[i].id;
-      map[key] = remote[i];
-    }
-    for (i = 0; i < local.length; i++) {
-      key = local[i].type + '-' + local[i].id;
-      if (!map[key] || (local[i].watchedAt || 0) >= (map[key].watchedAt || 0)) map[key] = local[i];
+    if (json && json.configured) {
+      for (i = 0; i < remote.length; i++) {
+        key = remote[i].type + '-' + remote[i].id;
+        map[key] = remote[i];
+      }
+      for (i = 0; i < local.length; i++) {
+        key = local[i].type + '-' + local[i].id;
+        if (!map[key] || (local[i].watchedAt || 0) >= (map[key].watchedAt || 0)) map[key] = local[i];
+      }
+    } else {
+      for (i = 0; i < local.length; i++) {
+        key = local[i].type + '-' + local[i].id;
+        map[key] = local[i];
+      }
     }
     out = [];
     for (key in map) {
       if (Object.prototype.hasOwnProperty.call(map, key)) out.push(map[key]);
     }
     out.sort(function (a, b) { return (b.watchedAt || 0) - (a.watchedAt || 0); });
-    return out.slice(0, 12);
+    out = out.slice(0, 12);
+    writeLocalList(out);
+    return out;
   }
 
   function rememberPlay(item, type, id) {
@@ -508,7 +552,16 @@
     var savedHouse = storeGet('tv.house');
     if (savedHouse) {
       var parsedHouse = JSON.parse(savedHouse);
-      if (parsedHouse && parsedHouse.profiles && parsedHouse.profiles.length) household = parsedHouse;
+      if (parsedHouse && parsedHouse.profiles && parsedHouse.profiles.length) {
+        var onlyGuest = parsedHouse.profiles.length === 1 && parsedHouse.profiles[0].id === 'local';
+        if (!onlyGuest) {
+          household = parsedHouse;
+          householdReady = true;
+          historyProfileId = parsedHouse.activeProfileId && parsedHouse.activeProfileId !== 'local'
+            ? parsedHouse.activeProfileId
+            : '';
+        }
+      }
     }
   } catch (houseErr) {}
 
@@ -713,12 +766,57 @@
   function applyHousehold(data) {
     if (!data || !data.profiles || !data.profiles.length) return;
     household = data;
+    setHistoryProfile(data.activeProfileId);
     storeSet('tv.house', JSON.stringify({
       configured: data.configured,
       householdId: data.householdId,
       activeProfileId: data.activeProfileId,
       profiles: data.profiles
     }));
+  }
+
+  function whenHousehold(done) {
+    if (householdReady) {
+      done();
+      return;
+    }
+    householdWaiters.push(done);
+    if (householdLoading) return;
+    householdLoading = true;
+    getJson('/api/household', function (data) {
+      if (data && data.profiles && data.profiles.length) {
+        applyHousehold(data);
+      } else if (!household.profiles.length) {
+        household = {
+          configured: false,
+          profiles: [{ id: 'local', name: 'Ospite', avatar: 0, pairCode: null }],
+          activeProfileId: 'local'
+        };
+      }
+      householdReady = true;
+      householdLoading = false;
+      var queue = householdWaiters.splice(0, householdWaiters.length);
+      var i;
+      for (i = 0; i < queue.length; i++) queue[i]();
+    });
+  }
+
+  function renderBoot() {
+    root.innerHTML = '';
+    var page = el('div', 'boot');
+    page.appendChild(el('div', 'boot-mark', 'H'));
+    root.appendChild(page);
+  }
+
+  function gateProfiles() {
+    var list = household.profiles || [];
+    var out = [];
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === 'local' && list.length > 1) continue;
+      out.push(list[i]);
+    }
+    return out.length ? out : list;
   }
 
   function activeProfile() {
@@ -734,8 +832,12 @@
     if (!profile) return;
     wantFid = '';
     storeSet('tv.fid', 'hero-play');
+    setHistoryProfile(profile.id);
+    cache.home = null;
+    cache.series = null;
     if (profile.id === 'local') { go('/living/home'); return; }
-    postJson('/api/household/switch', { profileId: profile.id }, function () {
+    postJson('/api/household/switch', { profileId: profile.id }, function (data) {
+      if (data && data.profiles) applyHousehold(data);
       go('/living/home');
     });
   }
@@ -1108,6 +1210,10 @@
 
   function renderGate() {
     backHandler = function () {};
+    if (!householdReady && gateView === 'pick') {
+      renderBoot();
+      return;
+    }
     root.innerHTML = '';
     var page = el('div', 'shell gate');
     if (gateView === 'create') { root.appendChild(page); renderCreate(page); return; }
@@ -1129,8 +1235,9 @@
 
     page.appendChild(el('h1', '', 'Chi guarda?'));
     var i, profile, wrap, avatar;
-    for (i = 0; i < household.profiles.length; i++) {
-      profile = household.profiles[i];
+    var shown = gateProfiles();
+    for (i = 0; i < shown.length; i++) {
+      profile = shown[i];
       wrap = el('div', 'pcol');
       avatar = focusBtn('avatar', '', 'profile-' + profile.id, (function (p) {
         return function () { enterProfile(p); };
@@ -1178,7 +1285,7 @@
       page.appendChild(foot);
     }
     root.appendChild(page);
-    collect(wantFid || 'profile-' + household.profiles[0].id);
+    collect(wantFid || (shown[0] ? 'profile-' + shown[0].id : ''));
   }
 
   function saveProfile(isNew) {
@@ -2255,12 +2362,13 @@
     var section = parts[2] || '';
     var third = parts[3] || '';
     var fourth = parts[4] || '';
+    if (section !== 'player' && !householdReady) {
+      renderBoot();
+      whenHousehold(function () { route(); });
+      return;
+    }
     if (!section) {
       renderGate();
-      getJson('/api/household', function (data) {
-        applyHousehold(data);
-        if (gateView === 'pick' && pathNow() === '/living') renderGate();
-      });
       return;
     }
     if (section === 'home') return renderBrowse('home');
@@ -2279,7 +2387,6 @@
   if (window.addEventListener) {
     window.addEventListener('popstate', function () { route(); }, false);
   }
-  getJson('/api/household', function (data) { applyHousehold(data); });
   route();
 })();
   </script>

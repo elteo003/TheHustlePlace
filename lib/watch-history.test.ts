@@ -4,8 +4,11 @@ import {
     getLastWatchedEpisode,
     getResumeStartAt,
     getSeriesEpisodeProgress,
+    setWatchHistoryProfile,
+    syncWatchHistoryFromRemote,
     trackWatchEntry,
     removeWatchEntry,
+    watchHistoryStorageKey,
 } from '@/lib/watch-history'
 import { isNearEnd, nextWatchProgress, progressPercent, resumeStartAt } from '@/lib/watch-progress'
 
@@ -27,6 +30,7 @@ describe('watch-history', () => {
         vi.stubGlobal('window', {
             dispatchEvent: vi.fn(),
         })
+        setWatchHistoryProfile(null)
     })
 
     it('salva e ordina per data', () => {
@@ -113,6 +117,26 @@ describe('watch-history', () => {
         expect(getResumeStartAt(11, 'tv', 1, 2)).toBe(90)
         expect(getLastWatchedEpisode(11)).toEqual(expect.objectContaining({ season: 1, episode: 2 }))
         expect(getSeriesEpisodeProgress(11).map((item) => item.episode).sort()).toEqual([1, 2])
+    })
+
+    it('separa la cronologia per profilo', () => {
+        setWatchHistoryProfile('papa')
+        trackWatchEntry({ id: 1, type: 'movie', title: 'Film di papà' })
+        setWatchHistoryProfile('mattia')
+        trackWatchEntry({ id: 2, type: 'movie', title: 'Film mio' })
+
+        expect(getWatchHistory().map((item) => item.title)).toEqual(['Film mio'])
+        setWatchHistoryProfile('papa')
+        expect(getWatchHistory().map((item) => item.title)).toEqual(['Film di papà'])
+        expect(watchHistoryStorageKey('papa')).toBe('thp_watch_history:papa')
+    })
+
+    it('non mescola il remoto vuoto con la cronologia di un altro profilo', () => {
+        setWatchHistoryProfile('papa')
+        trackWatchEntry({ id: 1, type: 'movie', title: 'Film di papà' })
+        setWatchHistoryProfile('mattia')
+        expect(syncWatchHistoryFromRemote([])).toEqual([])
+        expect(getWatchHistory()).toEqual([])
     })
 })
 
