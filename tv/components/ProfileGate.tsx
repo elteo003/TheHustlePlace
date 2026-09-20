@@ -22,6 +22,7 @@ export function ProfileGate() {
         useHousehold()
     const [view, setView] = useState<GateView>('pick')
     const [selected, setSelected] = useState<TvProfile | null>(null)
+    const [railIndex, setRailIndex] = useState(0)
     const [hiddenIds, setHiddenIds] = useState<string[]>(() => {
         try {
             return readHiddenTvProfileIds(window.localStorage.getItem(TV_HIDDEN_PROFILES_KEY))
@@ -145,70 +146,95 @@ export function ProfileGate() {
         )
     }
 
+    const focused = shown[railIndex]
+    const railShift = railIndex <= 1 ? 0 : railIndex - 1
+
     return (
-        <div className="flex w-full flex-col items-center">
+        <div className="flex w-full flex-col items-start px-10">
             <h1 className="text-5xl font-semibold text-white">Chi guarda?</h1>
             {!configured && error ? (
                 <p className="mt-4 text-lg text-white/45">Senza database i profili restano solo su questa TV.</p>
             ) : null}
-            <div className="mt-14 flex flex-wrap justify-center gap-8">
-                    {shown.map((profile, index) => (
-                        <div key={profile.id} className="flex flex-col items-center gap-3">
-                            <TvFocus
-                                autoFocusItem={index === 0}
-                                onClick={() => void enter(profile)}
-                                className="flex h-40 w-40 overflow-hidden rounded-2xl p-0"
-                            >
-                                <ProfileAvatar
-                                    avatar={profile.avatar}
-                                    name={profile.name}
-                                    className="h-full w-full"
-                                    initialClassName="text-6xl"
-                                />
-                            </TvFocus>
-                            <p className="text-2xl text-white">{profile.name}</p>
-                            <TvFocus
-                                onClick={() => {
-                                    setSelected(profile)
-                                    setView('edit')
-                                }}
-                                className="rounded-md px-3 py-2 text-base text-white/55"
-                            >
-                                Modifica
-                            </TvFocus>
-                            {configured && profile.pairCode && (
+            <div className="mt-10 flex items-start">
+                <div className="h-[29.5rem] w-56 overflow-hidden">
+                    <div
+                        className="motion-reduce:transition-none"
+                        style={{
+                            transform: `translateY(${-railShift * 13.5}rem)`,
+                            transitionProperty: 'transform',
+                            transitionDuration: '240ms',
+                            transitionTimingFunction: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+                        }}
+                    >
+                        {shown.map((profile, index) => (
+                            <div key={profile.id} className="mb-6 h-[12rem]">
                                 <TvFocus
-                                    onClick={() => {
-                                        setSelected(profile)
-                                        setView('code')
-                                    }}
-                                    className="rounded-md px-3 py-2 text-base text-white/55"
+                                    autoFocusItem={index === 0}
+                                    onFocus={() => setRailIndex(index)}
+                                    onClick={() => void enter(profile)}
+                                    className="flex h-40 w-40 overflow-hidden rounded-2xl p-0"
                                 >
-                                    Collega telefono
+                                    <ProfileAvatar
+                                        avatar={profile.avatar}
+                                        name={profile.name}
+                                        className="h-full w-full"
+                                        initialClassName="text-6xl"
+                                    />
                                 </TvFocus>
-                            )}
-                        </div>
-                    ))}
-                    {canAddHouseholdProfile(profiles.length) && (
-                        <div className="flex flex-col items-center gap-3">
-                            <TvFocus
-                                onClick={() => setView('create')}
-                                className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
-                            >
-                                +
-                            </TvFocus>
-                            <p className="text-2xl text-white/70">Aggiungi</p>
-                        </div>
+                                <p className="mt-2 text-2xl text-white">{profile.name}</p>
+                            </div>
+                        ))}
+                        {canAddHouseholdProfile(profiles.length) && (
+                            <div className="h-[12rem]">
+                                <TvFocus
+                                    onFocus={() => setRailIndex(shown.length)}
+                                    onClick={() => setView('create')}
+                                    className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
+                                >
+                                    +
+                                </TvFocus>
+                                <p className="mt-2 text-2xl text-white/70">Aggiungi</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="min-w-[280px] pl-14 pt-2">
+                    <p className="text-4xl font-semibold text-white">{focused ? focused.name : 'Aggiungi'}</p>
+                    <p className="mt-2 text-lg text-white/45">
+                        {focused ? 'OK sul riquadro per entrare.' : 'OK per creare un profilo.'}
+                    </p>
+                    {focused && focused.id !== 'local' && (
+                        <TvFocus
+                            onClick={() => {
+                                setSelected(focused)
+                                setView('edit')
+                            }}
+                            className="mt-8 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
+                        >
+                            Modifica
+                        </TvFocus>
                     )}
+                    {focused && configured && focused.pairCode && (
+                        <TvFocus
+                            onClick={() => {
+                                setSelected(focused)
+                                setView('code')
+                            }}
+                            className="mt-3 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
+                        >
+                            Collega telefono
+                        </TvFocus>
+                    )}
+                    {configured && (
+                        <TvFocus
+                            onClick={() => setView('adopt')}
+                            className="mt-3 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
+                        >
+                            Ho un codice
+                        </TvFocus>
+                    )}
+                </div>
             </div>
-            {configured && (
-                <TvFocus
-                    onClick={() => setView('adopt')}
-                    className="mt-12 h-14 rounded-lg bg-white/10 px-8 text-lg text-white"
-                >
-                    Ho un codice
-                </TvFocus>
-            )}
             {error && view === 'pick' && <p className="mt-6 text-lg text-white/55">{error}</p>}
         </div>
     )
