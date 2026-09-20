@@ -6,7 +6,17 @@ import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
 const INTRO_MS = 1800
+const CURSOR_HIDE_MS = 2000
 const SKIP_S = 10
+
+export function shouldHidePlayerCursor(opts: {
+    isTouch: boolean
+    playing: boolean
+    chromeOpen: boolean
+    idle: boolean
+}) {
+    return !opts.isTouch && opts.playing && !opts.chromeOpen && opts.idle
+}
 
 export function formatMediaTime(total: number) {
     if (!Number.isFinite(total) || total < 0) return '0:00'
@@ -118,6 +128,7 @@ export function CinemaOverlay({
     const [hoverTop, setHoverTop] = useState(false)
     const [hoverBottom, setHoverBottom] = useState(false)
     const [playing, setPlaying] = useState(false)
+    const [idle, setIdle] = useState(false)
     const [muted, setMuted] = useState(false)
     const [fullscreen, setFullscreen] = useState(false)
     const fillRef = useRef<HTMLSpanElement>(null)
@@ -137,6 +148,43 @@ export function CinemaOverlay({
 
     const open =
         !chromePaused && (isTouch || pinChrome || intro || hoverTop || hoverBottom)
+    const hideCursor = shouldHidePlayerCursor({
+        isTouch,
+        playing,
+        chromeOpen: open,
+        idle,
+    })
+
+    useEffect(() => {
+        if (isTouch || chromePaused) {
+            setIdle(false)
+            return
+        }
+        const stage = stageRef.current
+        if (!stage) return
+
+        let timer = 0
+        const bump = () => {
+            setIdle(false)
+            window.clearTimeout(timer)
+            timer = window.setTimeout(() => setIdle(true), CURSOR_HIDE_MS)
+        }
+        bump()
+        stage.addEventListener('mousemove', bump)
+        stage.addEventListener('pointerdown', bump)
+        return () => {
+            window.clearTimeout(timer)
+            stage.removeEventListener('mousemove', bump)
+            stage.removeEventListener('pointerdown', bump)
+        }
+    }, [chromePaused, isTouch, resetKey, stageRef])
+
+    useEffect(() => {
+        const stage = stageRef.current
+        if (!stage) return
+        stage.classList.toggle('player-idle-cursor', hideCursor)
+        return () => stage.classList.remove('player-idle-cursor')
+    }, [hideCursor, stageRef])
 
     useEffect(() => {
         const video = videoRef.current

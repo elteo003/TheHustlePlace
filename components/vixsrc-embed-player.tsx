@@ -359,7 +359,7 @@ export function VixsrcEmbedPlayer({
                 controls={nativeControls}
                 playsInline
                 autoPlay
-                title={title}
+                aria-label={title}
                 onClick={() => {
                     if (nativeControls) return
                     const video = videoRef.current

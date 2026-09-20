@@ -604,6 +604,12 @@ html {
     pointer-events: auto;
 }
 
+/* video è un replaced element: senza regola diretta il cursore resta visibile */
+.player-idle-cursor,
+.player-idle-cursor video {
+    cursor: none !important;
+}
+
 .player-skin-chrome {
     transition-property: opacity, transform;
     transition-duration: 200ms;
