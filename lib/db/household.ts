@@ -112,14 +112,18 @@ async function findCanonicalHousehold(excludeId?: string | null): Promise<string
         scores.set(row.householdId, current)
     }
 
-    let best: { id: string; named: number; total: number } | null = null
+    let bestId: string | null = null
+    let bestNamed = 0
+    let bestTotal = 0
     scores.forEach((score, id) => {
         if (score.named === 0) return
-        if (!best || score.named > best.named || (score.named === best.named && score.total > best.total)) {
-            best = { id, named: score.named, total: score.total }
+        if (score.named > bestNamed || (score.named === bestNamed && score.total > bestTotal)) {
+            bestId = id
+            bestNamed = score.named
+            bestTotal = score.total
         }
     })
-    return best?.id ?? null
+    return bestId
 }
 
 async function attachDeviceToHousehold(
