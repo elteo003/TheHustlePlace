@@ -215,11 +215,7 @@ export function SeriesPlayer({
                                             {episode.episode_number}
                                         </span>
 
-                                        <div
-                                            className={`relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group ${
-                                                watched ? 'ring-1 ring-white/70' : ''
-                                            }`}
-                                        >
+                                        <div className="relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group">
                                             {episode.still_path ? (
                                                 <Image
                                                     src={getImageUrl(episode.still_path, 'w500')}

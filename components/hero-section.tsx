@@ -36,14 +36,31 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const isTouch = useIsCoarsePointer()
     const isPhoneLandscape = useIsPhoneLandscape()
     const reduceMotion = useReducedMotion()
+    const heroRef = useRef<HTMLDivElement>(null)
+    const [pastHero, setPastHero] = useState(false)
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
     const showMeta = isTouch || metaHovered || introVisible
 
     useEffect(() => {
-        setNavbarVisible(true)
+        const sync = () => {
+            const node = heroRef.current
+            if (!node) return
+            setPastHero(node.getBoundingClientRect().bottom <= 72)
+        }
+        sync()
+        window.addEventListener('scroll', sync, { passive: true })
+        window.addEventListener('resize', sync)
+        return () => {
+            window.removeEventListener('scroll', sync)
+            window.removeEventListener('resize', sync)
+        }
+    }, [])
+
+    useEffect(() => {
+        setNavbarVisible(pastHero || showMeta)
         return () => setNavbarVisible(true)
-    }, [setNavbarVisible])
+    }, [pastHero, setNavbarVisible, showMeta])
 
     useEffect(() => {
         setIntroVisible(true)
@@ -207,7 +224,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Mostra loading durante verifica trailer
     if (loading) {
         return (
-            <div className={`${HERO_FRAME} bg-black flex items-center justify-center`}>
+            <div ref={heroRef} className={`${HERO_FRAME} bg-black flex items-center justify-center`}>
                 <Spinner />
             </div>
         )
@@ -215,7 +232,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     if (error || !featuredMovie) {
         return (
-            <div className={`${HERO_FRAME} bg-black flex items-center justify-center px-4`}>
+            <div ref={heroRef} className={`${HERO_FRAME} bg-black flex items-center justify-center px-4`}>
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
@@ -232,9 +249,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     return (
         <>
-            <div
-                className={HERO_FRAME}
-            >
+            <div ref={heroRef} className={HERO_FRAME}>
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                     <div

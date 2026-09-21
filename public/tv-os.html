@@ -567,7 +567,8 @@
       white-space: nowrap;
     }
     .season-scroller { padding: 14px 0 0; }
-    .ep-scroller { padding: 28px 0 32px; }
+    .ep-scroller { padding: 52px 0 60px; }
+    .ep-scroller .rail-strip { padding: 20px 80px 28px 80px; }
     .season-chip {
       display: inline-block;
       height: 56px; line-height: 56px;
@@ -635,16 +636,20 @@
     .ep-card.episode-watched:before {
       content: "";
       position: absolute;
-      left: -80px; top: -40px; bottom: -40px; width: 140px;
-      pointer-events: none; z-index: 2;
-      background: radial-gradient(ellipse at left center, rgba(255,255,255,.5) 0%, rgba(255,255,255,.16) 42%, transparent 76%);
+      left: -12px; top: 10%; bottom: 26%; width: 16px;
+      border-radius: 999px;
+      pointer-events: none; z-index: 0;
+      background: transparent;
+      box-shadow: 0 0 0 26px rgba(255,255,255,.42);
+      -webkit-filter: blur(18px);
+      filter: blur(18px);
     }
     .ep-card.episode-watched .ep-card-still:after {
       content: "";
       position: absolute;
-      left: 0; top: 0; bottom: 0; width: 46%;
+      left: 0; top: 0; bottom: 0; width: 50%;
       pointer-events: none;
-      background: linear-gradient(90deg, rgba(255,255,255,.2), rgba(255,255,255,.05) 55%, transparent);
+      background: radial-gradient(ellipse at left center, rgba(255,255,255,.22) 0%, rgba(255,255,255,.06) 48%, transparent 78%);
     }
     .ep-card.episode-watched > * { position: relative; z-index: 1; }
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }

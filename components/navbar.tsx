@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
@@ -14,33 +14,68 @@ import { NAV_VIEW_TRANSITION_NAME } from '@/lib/view-transitions'
 import { cn } from '@/lib/utils'
 import { useIsPhoneLandscape } from '@/hooks/useMediaQuery'
 
+const navRevealTransition = { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
+
 interface NavbarProps {
     immersive?: boolean
 }
 
 export function Navbar({ immersive = false }: NavbarProps) {
-    const { isVisible: contextVisible } = useNavbarContext()
+    const { isVisible: contextVisible, isHovered, setIsHovered } = useNavbarContext()
     const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
     const isPhoneLandscape = useIsPhoneLandscape()
     const onSearchPage = pathname === '/search'
+    const peekLeave = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         if (onSearchPage) setIsMenuOpen(false)
     }, [onSearchPage])
 
-    const shouldShow = !immersive || contextVisible || searchFocused || isMenuOpen
+    useEffect(() => {
+        setIsHovered(false)
+        return () => {
+            if (peekLeave.current) clearTimeout(peekLeave.current)
+            setIsHovered(false)
+        }
+    }, [pathname, setIsHovered])
+
+    const holdPeek = () => {
+        if (peekLeave.current) {
+            clearTimeout(peekLeave.current)
+            peekLeave.current = null
+        }
+        setIsHovered(true)
+    }
+
+    const releasePeek = () => {
+        if (peekLeave.current) clearTimeout(peekLeave.current)
+        peekLeave.current = setTimeout(() => setIsHovered(false), 80)
+    }
+
+    const shouldShow = !immersive || contextVisible || searchFocused || isMenuOpen || isHovered
 
     return (
-        <motion.nav
+        <>
+            {immersive && (
+                <div
+                    aria-hidden
+                    className="fixed inset-x-0 top-0 z-[49] h-14"
+                    onMouseEnter={holdPeek}
+                    onMouseLeave={releasePeek}
+                />
+            )}
+            <motion.nav
             aria-label="Navigazione principale"
             initial={false}
             animate={{
-                y: shouldShow ? 0 : -72,
+                y: shouldShow ? 0 : -8,
                 opacity: shouldShow ? 1 : 0,
             }}
-            transition={springTransition}
+            transition={navRevealTransition}
+            onMouseEnter={immersive ? holdPeek : undefined}
+            onMouseLeave={immersive ? releasePeek : undefined}
             style={{ viewTransitionName: NAV_VIEW_TRANSITION_NAME }}
             className={cn(
                 'fixed top-0 left-0 right-0 z-50 border-b border-white/5',
@@ -163,5 +198,6 @@ export function Navbar({ immersive = false }: NavbarProps) {
                 )}
             </AnimatePresence>
         </motion.nav>
+        </>
     )
 }

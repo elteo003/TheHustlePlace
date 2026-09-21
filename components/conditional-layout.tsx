@@ -43,7 +43,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
             <Suspense fallback={null}>
                 <TvEntryRedirect />
             </Suspense>
-            {showNavbar && <Navbar immersive={false} />}
+            {showNavbar && <Navbar immersive={isHome} />}
             <div className={needsTopPadding ? 'pt-16' : ''}>
                 <PageTransition>{children}</PageTransition>
             </div>
