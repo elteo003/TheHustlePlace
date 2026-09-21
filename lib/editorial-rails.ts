@@ -47,6 +47,13 @@ export const WAR_KEYWORDS = [
     TMDB_KEYWORD.worldWarII,
 ]
 
+export const WAR_STORY_KEYWORDS = [
+    TMDB_KEYWORD.war,
+    TMDB_KEYWORD.worldWar,
+    TMDB_KEYWORD.worldWarI,
+    TMDB_KEYWORD.worldWarII,
+]
+
 export const POLITICS_KEYWORDS = [
     TMDB_KEYWORD.politics,
     TMDB_KEYWORD.politicalThriller,
@@ -65,6 +72,10 @@ export const PERIOD_KEYWORDS = [
 
 export function keywordPipe(ids: number[]): string {
     return ids.join('|')
+}
+
+export function andKeywordGroups(left: number[], right: number[]): string {
+    return `${keywordPipe(left)},${keywordPipe(right)}`
 }
 
 export function sortByPopularity(items: Top10Content[]): Top10Content[] {

@@ -46,6 +46,8 @@ import {
     POLITICS_KEYWORDS,
     TMDB_GENRE,
     WAR_KEYWORDS,
+    WAR_STORY_KEYWORDS,
+    andKeywordGroups,
     composeEditorialRails,
     keywordPipe,
     type EditorialRails,
@@ -365,7 +367,7 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v3:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v4:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -374,22 +376,29 @@ export class CatalogService {
         try {
             const warKeywords = keywordPipe(WAR_KEYWORDS)
             const politicsKeywords = keywordPipe(POLITICS_KEYWORDS)
+            const warAndPoliticsKeywords = andKeywordGroups(WAR_STORY_KEYWORDS, POLITICS_KEYWORDS)
             const periodKeywords = keywordPipe(PERIOD_KEYWORDS)
             const periodMovieGenres = `${TMDB_GENRE.movieHistory}|${TMDB_GENRE.movieWestern}`
 
-            const [warMovies, warShows, intrigueShows, periodMovies, periodKeywordMovies, periodShows] =
+            const [warPolMovies, warPolShows, warPolKeywordShows, intrigueShows, periodMovies, periodKeywordMovies, periodShows] =
                 await Promise.all([
                 this.discoverPages('movie', {
                     with_genres: TMDB_GENRE.movieWar,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 200,
-                    include_adult: false,
-                }),
-                this.discoverPages('tv', {
-                    with_keywords: warKeywords,
+                    with_keywords: politicsKeywords,
                     sort_by: 'popularity.desc',
                     'vote_count.gte': 80,
-                }),
+                    include_adult: false,
+                }, 3),
+                this.discoverPages('tv', {
+                    with_genres: TMDB_GENRE.tvWarPolitics,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 40,
+                }, 3),
+                this.discoverPages('tv', {
+                    with_keywords: warAndPoliticsKeywords,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 40,
+                }, 3),
                 this.discoverPages('tv', {
                     with_keywords: politicsKeywords,
                     without_keywords: warKeywords,
@@ -420,7 +429,7 @@ export class CatalogService {
             ])
 
             const [warAndPolitics, politicalIntrigue, periodStories] = await Promise.all([
-                this.filterAvailableMixed([...warMovies, ...warShows]),
+                this.filterAvailableMixed([...warPolMovies, ...warPolShows, ...warPolKeywordShows]),
                 this.filterAvailableMixed(intrigueShows),
                 this.filterAvailableMixed([...periodMovies, ...periodKeywordMovies, ...periodShows]),
             ])

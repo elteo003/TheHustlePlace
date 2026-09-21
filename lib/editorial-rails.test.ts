@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { Top10Content } from '@/types'
 import {
     EDITORIAL_RAIL_TITLES,
+    POLITICS_KEYWORDS,
     TMDB_GENRE,
+    WAR_STORY_KEYWORDS,
+    andKeywordGroups,
     composeEditorialRails,
     keywordPipe,
 } from './editorial-rails'
@@ -101,5 +104,14 @@ describe('editorial-rails', () => {
 
     it('unisce le keyword in OR per TMDB', () => {
         expect(keywordPipe([6078, 209817])).toBe('6078|209817')
+    })
+
+    it('incrocia guerra e politica in AND, senza il tag military da solo', () => {
+        const query = andKeywordGroups(WAR_STORY_KEYWORDS, POLITICS_KEYWORDS)
+        expect(query).toContain(',')
+        expect(query.split(',')[0]).toBe(keywordPipe(WAR_STORY_KEYWORDS))
+        expect(query.split(',')[1]).toBe(keywordPipe(POLITICS_KEYWORDS))
+        expect(query).not.toContain(String(162365))
+        expect(TMDB_GENRE.tvWarPolitics).toBe(10768)
     })
 })
