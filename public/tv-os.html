@@ -560,22 +560,18 @@
       border-radius: 50%; animation: spin .75s linear infinite;
     }
     .boot {
-      height: 100%;
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      z-index: 9;
       display: -webkit-box; display: flex;
       -webkit-box-align: center; align-items: center;
       -webkit-box-pack: center; justify-content: center;
-    }
-    .boot-brand {
-      display: -webkit-box; display: flex;
-      -webkit-box-align: center; align-items: center;
+      background: #000;
     }
     .boot-mark {
       width: 72px; height: 72px; line-height: 72px;
       border-radius: 16px; background: #fff; color: #111;
       font-size: 34px; font-weight: 700; text-align: center;
-    }
-    .boot-name {
-      margin-left: 16px; font-size: 34px; font-weight: 600; letter-spacing: -.02em;
     }
     .spin-screen {
       position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 8; pointer-events: none;
@@ -591,7 +587,7 @@
 </head>
 <body>
   <div id="root">
-    <div class="boot"><div class="boot-brand"><div class="boot-mark">H</div><div class="boot-name">TheHustlePlace</div></div></div>
+    <div class="boot"><div class="boot-mark">H</div></div>
   </div>
   <script>
 (function () {
@@ -1267,12 +1263,10 @@
   }
 
   function renderBoot() {
+    backHandler = function () {};
     root.innerHTML = '';
     var page = el('div', 'boot');
-    var brand = el('div', 'boot-brand');
-    brand.appendChild(el('div', 'boot-mark', 'H'));
-    brand.appendChild(el('div', 'boot-name', 'TheHustlePlace'));
-    page.appendChild(brand);
+    page.appendChild(el('div', 'boot-mark', 'H'));
     root.appendChild(page);
   }
 
@@ -1403,7 +1397,7 @@
     var title = document.getElementById('hero-title');
     var plot = document.getElementById('hero-plot');
     if (title) title.innerHTML = '';
-    if (title) title.appendChild(document.createTextNode(heroItem.title || 'TheHustlePlace'));
+    if (title) title.appendChild(document.createTextNode(heroItem.title || ''));
     if (plot) {
       plot.innerHTML = '';
       plot.appendChild(document.createTextNode(heroItem.overview || ''));
@@ -1414,7 +1408,7 @@
     var src = (item && (item.backdrop || item.poster)) || '';
     box.style.backgroundImage = src ? 'url(' + src + ')' : '';
     var copy = el('div', 'hero-copy');
-    var title = el('h1', '', item && item.title ? item.title : 'TheHustlePlace');
+    var title = el('h1', '', item && item.title ? item.title : '');
     title.id = 'hero-title';
     var plot = el('p', '', item && item.overview ? item.overview : 'Scegli un titolo con le frecce, OK per aprire.');
     plot.id = 'hero-plot';
@@ -1975,7 +1969,7 @@
     pic.onload = finish;
     pic.onerror = finish;
     pic.src = url;
-    setTimeout(finish, 900);
+    setTimeout(finish, 8000);
   }
 
   function browsePathOf(kind) {
