@@ -40,7 +40,6 @@ import {
     streamingProviderPipe,
     yearsAgoFrom,
 } from '@/lib/top10-moment'
-import { fetchPlatformChart, type FlixPatrolChartEntry } from '@/lib/flixpatrol'
 import {
     emptyPlatformTop10,
     platformOn,
@@ -337,13 +336,8 @@ export class CatalogService {
 
     async getPlatformTop10(now = new Date()): Promise<PlatformTop10> {
         const empty = emptyPlatformTop10(now)
-        const apiKey = process.env.FLIXPATROL_API_KEY?.trim()
-        if (!apiKey) {
-            return empty
-        }
-
         const platform = platformOn(now)
-        const cacheKey = `platform-top10-v1:${platform.slug}:${romeDayKey(now)}`
+        const cacheKey = `platform-top10-tmdb-v1:${platform.slug}:${romeDayKey(now)}`
         const cached = await cache.get<PlatformTop10>(cacheKey)
         if (cached) {
             return {
@@ -354,21 +348,43 @@ export class CatalogService {
         }
 
         try {
-            const [seriesChart, moviesChart] = await Promise.all([
-                fetchPlatformChart(platform, 'tv', apiKey, now),
-                fetchPlatformChart(platform, 'movie', apiKey, now),
+            const provider = String(platform.tmdbProviderId)
+            const [seriesPool, moviesPool] = await Promise.all([
+                this.discoverPages(
+                    'tv',
+                    {
+                        sort_by: 'popularity.desc',
+                        watch_region: 'IT',
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        'vote_count.gte': 20,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        sort_by: 'popularity.desc',
+                        watch_region: 'IT',
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        include_adult: false,
+                        'vote_count.gte': 20,
+                    },
+                    3
+                ),
             ])
-            const [series, movies] = await Promise.all([
-                this.resolveChartEntries(seriesChart.entries, 'tv'),
-                this.resolveChartEntries(moviesChart.entries, 'movie'),
+            const [seriesAvailable, moviesAvailable] = await Promise.all([
+                this.filterAvailableMixed(seriesPool),
+                this.filterAvailableMixed(moviesPool),
             ])
             const result: PlatformTop10 = {
                 platform,
-                chartDate: seriesChart.date || moviesChart.date,
+                chartDate: romeDayKey(now),
                 seriesTitle: seriesTitleFor(platform),
                 moviesTitle: moviesTitleFor(platform),
-                series: this.decorateRailItems(series),
-                movies: this.decorateRailItems(movies),
+                series: this.decorateRailItems(seriesAvailable.slice(0, 10)),
+                movies: this.decorateRailItems(moviesAvailable.slice(0, 10)),
             }
             await cache.set(cacheKey, result, { ttl: 60 * 60 })
             logger.info('Top 10 di piattaforma costruita', {
@@ -382,43 +398,6 @@ export class CatalogService {
             logger.error('Errore nella costruzione top 10 di piattaforma', { error })
             return empty
         }
-    }
-
-    private async resolveChartEntries(
-        entries: FlixPatrolChartEntry[],
-        type: 'movie' | 'tv'
-    ): Promise<Top10Content[]> {
-        const hits = await Promise.all(
-            entries.map((entry) => this.searchChartTitle(entry, type))
-        )
-        const available = await this.filterAvailableMixed(
-            hits.filter((item): item is Top10Content => Boolean(item))
-        )
-        const availableKeys = new Set(available.map((item) => railItemKey(item.type, item.id)))
-        const ordered: Top10Content[] = []
-        const seen = new Set<string>()
-        for (const item of hits) {
-            if (!item) continue
-            const key = railItemKey(item.type, item.id)
-            if (!availableKeys.has(key) || seen.has(key)) continue
-            seen.add(key)
-            ordered.push(item)
-        }
-        return ordered.slice(0, 10)
-    }
-
-    private async searchChartTitle(
-        entry: FlixPatrolChartEntry,
-        type: 'movie' | 'tv'
-    ): Promise<Top10Content | null> {
-        const queries = [entry.name, entry.originalName].filter(
-            (value, index, list): value is string => Boolean(value) && list.indexOf(value) === index
-        )
-        for (const query of queries) {
-            const hit = await this.searchEditorialSeed(query, type, entry.year)
-            if (hit) return hit
-        }
-        return null
     }
 
     async getComingSoon(limit = 20): Promise<Top10Content[]> {

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { parseChartEntries, parseCompanyId, parseTitleName } from './flixpatrol'
 import {
     PLATFORM_CHARTS,
     moviesTitleFor,
@@ -17,6 +16,7 @@ describe('platform-top10', () => {
         expect(platformOn(monday)).toEqual(platformOn(sameMonday))
         expect(platformOn(tuesday).slug).not.toBe(platformOn(monday).slug)
         expect(PLATFORM_CHARTS).toHaveLength(7)
+        expect(new Set(PLATFORM_CHARTS.map((platform) => platform.tmdbProviderId)).size).toBe(7)
         expect(seriesTitleFor(platformOn(monday))).toMatch(/^Top 10 serie TV da /)
         expect(moviesTitleFor(platformOn(monday))).toMatch(/^Top 10 film da /)
     })
@@ -69,36 +69,5 @@ describe('platform-top10', () => {
             { id: 'platform-top10-movie', title: 'Top 10 film da Max', items: [1] },
         ])
         expect(weaved.map((rail) => rail.id)).toEqual(['top', 'a', 'b', 'platform-top10-movie', 'soon'])
-    })
-})
-
-describe('flixpatrol parsers', () => {
-    it('legge ranking, titolo espanso e id compagnia da payload diversi', () => {
-        expect(
-            parseChartEntries({
-                data: [
-                    { ranking: 2, movie: 'ttl_b', name: 'Slow Horses' },
-                    {
-                        rank: 1,
-                        movie: { id: 'ttl_a', name: 'The Night Agent', originalName: 'The Night Agent', year: 2023 },
-                    },
-                ],
-            }).map((entry) => ({ rank: entry.rank, name: entry.name, year: entry.year }))
-        ).toEqual([
-            { rank: 1, name: 'The Night Agent', year: 2023 },
-            { rank: 2, name: 'Slow Horses', year: undefined },
-        ])
-
-        expect(parseTitleName({ data: { name: 'Ripley', originalName: 'Ripley', year: 2024 } })).toEqual({
-            name: 'Ripley',
-            originalName: 'Ripley',
-            year: 2024,
-        })
-        expect(
-            parseCompanyId(
-                { data: [{ id: 'cmp_1', name: 'Disney+' }, { id: 'cmp_2', name: 'Netflix' }] },
-                ['Netflix']
-            )
-        ).toBe('cmp_2')
     })
 })

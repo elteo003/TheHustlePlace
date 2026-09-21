@@ -5,17 +5,17 @@ export const PLATFORM_TOP10_GAP = 4
 export type PlatformChart = {
     slug: string
     label: string
-    names: string[]
+    tmdbProviderId: number
 }
 
 export const PLATFORM_CHARTS: PlatformChart[] = [
-    { slug: 'netflix', label: 'Netflix', names: ['Netflix'] },
-    { slug: 'amazon', label: 'Amazon Prime', names: ['Amazon Prime Video', 'Amazon Prime', 'Prime Video', 'Amazon'] },
-    { slug: 'disney', label: 'Disney+', names: ['Disney+', 'Disney Plus', 'Disney'] },
-    { slug: 'hbo', label: 'Max', names: ['Max', 'HBO Max', 'HBO'] },
-    { slug: 'apple-tv', label: 'Apple TV+', names: ['Apple TV+', 'Apple TV'] },
-    { slug: 'paramount-plus', label: 'Paramount+', names: ['Paramount+', 'Paramount Plus', 'Paramount'] },
-    { slug: 'now', label: 'Now', names: ['NOW', 'Now TV', 'Now'] },
+    { slug: 'netflix', label: 'Netflix', tmdbProviderId: 8 },
+    { slug: 'amazon', label: 'Amazon Prime', tmdbProviderId: 119 },
+    { slug: 'disney', label: 'Disney+', tmdbProviderId: 337 },
+    { slug: 'hbo', label: 'Max', tmdbProviderId: 384 },
+    { slug: 'apple-tv', label: 'Apple TV+', tmdbProviderId: 350 },
+    { slug: 'paramount-plus', label: 'Paramount+', tmdbProviderId: 531 },
+    { slug: 'now', label: 'Now', tmdbProviderId: 39 },
 ]
 
 export type PlatformTop10 = {
