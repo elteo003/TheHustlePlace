@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils'
 import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 import { listenToYouTubePlayer, readYouTubePlayerState, YOUTUBE_ENDED, YOUTUBE_PLAYING } from '@/lib/youtube-command'
 
+const HERO_FRAME =
+    'relative h-[calc(100dvh-13.5rem)] min-h-[22rem] w-full overflow-hidden'
+
 interface HeroSectionProps {
     onTrailerEnded?: () => void
     onMovieChange?: (index: number) => void
@@ -230,7 +233,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Mostra loading durante verifica trailer
     if (loading) {
         return (
-            <div className="relative h-dvh bg-black flex items-center justify-center">
+            <div className={`${HERO_FRAME} bg-black flex items-center justify-center`}>
                 <Spinner />
             </div>
         )
@@ -238,7 +241,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     if (error || !featuredMovie) {
         return (
-            <div className="relative h-dvh bg-black flex items-center justify-center px-4">
+            <div className={`${HERO_FRAME} bg-black flex items-center justify-center px-4`}>
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-white mb-4">Errore nel caricamento</h2>
                     <p className="text-gray-400 mb-4">{error || 'Film non trovato'}</p>
@@ -256,7 +259,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     return (
         <>
             <div
-                className="relative h-dvh w-full overflow-hidden"
+                className={HERO_FRAME}
             >
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">

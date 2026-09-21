@@ -19,12 +19,7 @@ export default async function LivingHomePage() {
 
     const occupiedBase = [...(top10 as Top10Content[]), ...(comingSoon as Top10Content[])]
     const personal = await fetchPersonalRails(occupiedBase)
-    const editorial = await fetchEditorialRails([
-        ...occupiedBase,
-        ...personal.picks,
-        ...personal.affinity,
-        ...personal.treasures,
-    ])
+    const editorial = await fetchEditorialRails(occupiedBase)
 
     const rows = [
         { title: 'Scelti per te oggi', items: personal.picks as TvRailItem[] },
@@ -32,6 +27,8 @@ export default async function LivingHomePage() {
         ...(personal.affinity.length
             ? [{ title: 'Pensiamo ti appassioneranno', items: personal.affinity as TvRailItem[] }]
             : []),
+        { title: 'Film popolari', items: popularMovies as TvRailItem[], type: 'movie' as const },
+        { title: 'Serie recenti', items: recentTV as TvRailItem[], type: 'tv' as const },
         { title: 'Tesori per te', items: personal.treasures as TvRailItem[] },
         { title: EDITORIAL_RAIL_TITLES.warAndPolitics, items: editorial.warAndPolitics as TvRailItem[] },
         {
@@ -41,10 +38,8 @@ export default async function LivingHomePage() {
         },
         { title: EDITORIAL_RAIL_TITLES.periodStories, items: editorial.periodStories as TvRailItem[] },
         { title: 'In arrivo', items: comingSoon as TvRailItem[] },
-        { title: 'Film popolari', items: popularMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Film recenti', items: recentMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie popolari', items: popularTV as TvRailItem[], type: 'tv' as const },
-        { title: 'Serie recenti', items: recentTV as TvRailItem[], type: 'tv' as const },
     ].filter((row) => row.items.length > 0)
 
     return <TvHome rows={rows} personal={personal} occupied={occupiedBase} />

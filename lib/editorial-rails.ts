@@ -2,11 +2,12 @@ import { Top10Content } from '@/types'
 import { takeUnseen } from '@/lib/personal-rails'
 
 export const EDITORIAL_RAIL_SIZE = 24
-export const EDITORIAL_MIN_ITEMS = 8
+export const EDITORIAL_MIN_ITEMS = 6
 
 export const TMDB_GENRE = {
     movieWar: 10752,
     movieHistory: 36,
+    movieWestern: 37,
     tvWarPolitics: 10768,
 } as const
 

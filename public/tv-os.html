@@ -2072,6 +2072,12 @@
       if (rail) track.appendChild(rail);
       rail = renderRail('Pensiamo ti appassioneranno', data.affinity, 'movie', 'aff');
       if (rail) track.appendChild(rail);
+      rail = renderRail('Film popolari', data.movies, 'movie', 'mov');
+      if (rail) track.appendChild(rail);
+      if (data.tvRecent && data.tvRecent.length) {
+        rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
+        if (rail) track.appendChild(rail);
+      }
       rail = renderRail('Tesori per te', data.treasures, 'movie', 'tre');
       if (rail) track.appendChild(rail);
       rail = renderRail('Guerra e politica', data.war, 'movie', 'war');
@@ -2082,18 +2088,12 @@
       if (rail) track.appendChild(rail);
       rail = renderRail('In arrivo', data.coming, 'movie', 'soon');
       if (rail) track.appendChild(rail);
-      rail = renderRail('Film popolari', data.movies, 'movie', 'mov');
-      if (rail) track.appendChild(rail);
       if (data.recent && data.recent.length) {
         rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
         if (rail) track.appendChild(rail);
       }
       rail = renderRail('Serie popolari', data.tv, 'tv', 'tv');
       if (rail) track.appendChild(rail);
-      if (data.tvRecent && data.tvRecent.length) {
-        rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
-        if (rail) track.appendChild(rail);
-      }
     } else if (kind === 'movies') {
       rail = renderRail('Popolari', data.movies, 'movie', 'mov');
       if (rail) track.appendChild(rail);

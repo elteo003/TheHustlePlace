@@ -29,28 +29,38 @@ function mergePersonalRows(
             row.title !== 'Pensiamo ti appassioneranno' &&
             row.title !== 'Tesori per te'
     )
-    const personalRows = [
-        { title: 'Scelti per te oggi', items: rails.picks as TvRailItem[] },
-        ...(rails.affinity.length
-            ? [{ title: 'Pensiamo ti appassioneranno', items: rails.affinity as TvRailItem[] }]
-            : []),
-        { title: 'Tesori per te', items: rails.treasures as TvRailItem[] },
-    ].filter((row) => row.items.length > 0)
+    const scelti = rails.picks.length
+        ? [{ title: 'Scelti per te oggi', items: rails.picks as TvRailItem[] }]
+        : []
+    const pensiamo = rails.affinity.length
+        ? [{ title: 'Pensiamo ti appassioneranno', items: rails.affinity as TvRailItem[] }]
+        : []
+    const tesori = rails.treasures.length
+        ? [{ title: 'Tesori per te', items: rails.treasures as TvRailItem[] }]
+        : []
 
     const topIndex = next.findIndex((row) => row.title === 'Top 10')
     if (topIndex < 0) {
-        return [...personalRows, ...next]
+        return [...scelti, ...pensiamo, ...next, ...tesori]
     }
 
-    const scelti = personalRows.filter((row) => row.title === 'Scelti per te oggi')
-    const restPersonal = personalRows.filter((row) => row.title !== 'Scelti per te oggi')
-    return [
+    const merged = [
         ...next.slice(0, topIndex),
         ...scelti,
         next[topIndex],
-        ...restPersonal,
+        ...pensiamo,
         ...next.slice(topIndex + 1),
     ]
+    const afterRecent = merged.findIndex(
+        (row) => row.title === 'Serie recenti' || row.title === 'Serie TV Recenti'
+    )
+    const afterPopular = merged.findIndex(
+        (row) => row.title === 'Film popolari' || row.title === 'Film Popolari'
+    )
+    const insertAt =
+        afterRecent >= 0 ? afterRecent + 1 : afterPopular >= 0 ? afterPopular + 1 : topIndex + 1 + pensiamo.length
+
+    return [...merged.slice(0, insertAt), ...tesori, ...merged.slice(insertAt)]
 }
 
 export function TvHome({ rows, personal, occupied = [] }: TvHomeProps) {

@@ -365,7 +365,7 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v2:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v3:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -375,6 +375,7 @@ export class CatalogService {
             const warKeywords = keywordPipe(WAR_KEYWORDS)
             const politicsKeywords = keywordPipe(POLITICS_KEYWORDS)
             const periodKeywords = keywordPipe(PERIOD_KEYWORDS)
+            const periodMovieGenres = `${TMDB_GENRE.movieHistory}|${TMDB_GENRE.movieWestern}`
 
             const [warMovies, warShows, intrigueShows, periodMovies, periodKeywordMovies, periodShows] =
                 await Promise.all([
@@ -398,24 +399,24 @@ export class CatalogService {
                 this.discoverPages(
                     'movie',
                     {
-                        with_genres: TMDB_GENRE.movieHistory,
+                        with_genres: periodMovieGenres,
                         sort_by: 'popularity.desc',
-                        'vote_count.gte': 80,
+                        'vote_count.gte': 40,
                         include_adult: false,
                     },
-                    3
+                    4
                 ),
                 this.discoverPages('movie', {
                     with_keywords: periodKeywords,
                     sort_by: 'popularity.desc',
-                    'vote_count.gte': 80,
+                    'vote_count.gte': 40,
                     include_adult: false,
-                }, 3),
+                }, 4),
                 this.discoverPages('tv', {
                     with_keywords: periodKeywords,
                     sort_by: 'popularity.desc',
-                    'vote_count.gte': 50,
-                }, 3),
+                    'vote_count.gte': 20,
+                }, 4),
             ])
 
             const [warAndPolitics, politicalIntrigue, periodStories] = await Promise.all([

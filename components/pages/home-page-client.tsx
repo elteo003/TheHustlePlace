@@ -122,6 +122,28 @@ export function HomePageClient({
                         </HomeRail>
                     )}
 
+                    <HomeRail title="Film Popolari">
+                        <MovieGridIntegrated
+                            type="movie"
+                            section="popular"
+                            limit={HOME_RAIL_SIZE}
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={popularMovies}
+                        />
+                    </HomeRail>
+
+                    <HomeRail title="Serie TV Recenti">
+                        <MovieGridIntegrated
+                            type="tv"
+                            section="recent"
+                            limit={HOME_RAIL_SIZE}
+                            onPlay={play}
+                            onDetails={openDetails}
+                            initialData={recentTV}
+                        />
+                    </HomeRail>
+
                     {rails.treasures.length > 0 && (
                         <HomeRail title="Tesori per te">
                             <MovieGridIntegrated
@@ -187,17 +209,6 @@ export function HomePageClient({
                         </HomeRail>
                     )}
 
-                    <HomeRail title="Film Popolari">
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="popular"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={popularMovies}
-                        />
-                    </HomeRail>
-
                     <HomeRail title="Film Recenti">
                         <MovieGridIntegrated
                             type="movie"
@@ -217,17 +228,6 @@ export function HomePageClient({
                             onPlay={play}
                             onDetails={openDetails}
                             initialData={popularTV}
-                        />
-                    </HomeRail>
-
-                    <HomeRail title="Serie TV Recenti">
-                        <MovieGridIntegrated
-                            type="tv"
-                            section="recent"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={recentTV}
                         />
                     </HomeRail>
                 </div>

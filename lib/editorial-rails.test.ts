@@ -81,6 +81,24 @@ describe('editorial-rails', () => {
         expect(EDITORIAL_RAIL_TITLES.periodStories).toBe("Storie di un'epoca passata")
     })
 
+    it("tiene lo scaffale d'epoca anche se Tesori ha gia mangiato qualche classico", () => {
+        const occupied = ['movie:1', 'movie:3']
+        const period = [
+            item({ id: 1, title: '1917', type: 'movie', popularity: 80 }),
+            item({ id: 3, title: 'The Crown', type: 'tv', popularity: 90 }),
+            ...Array.from({ length: 8 }, (_, index) =>
+                item({ id: 80 + index, title: `Epoca ${index}`, type: 'movie', popularity: 30 - index })
+            ),
+        ]
+        const rails = composeEditorialRails(
+            { warAndPolitics: [], politicalIntrigue: [], periodStories: period },
+            occupied
+        )
+        expect(rails.periodStories.length).toBeGreaterThanOrEqual(6)
+        expect(rails.periodStories.map((entry) => entry.title)).not.toContain('1917')
+        expect(rails.periodStories.map((entry) => entry.title)).toContain('Epoca 0')
+    })
+
     it('unisce le keyword in OR per TMDB', () => {
         expect(keywordPipe([6078, 209817])).toBe('6078|209817')
     })
