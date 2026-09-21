@@ -171,19 +171,6 @@ export function HomePageClient({
                         </HomeRail>
                     )}
 
-                    {editorial.politicalIntrigue.length > 0 && (
-                        <HomeRail title={EDITORIAL_RAIL_TITLES.politicalIntrigue}>
-                            <MovieGridIntegrated
-                                type="tv"
-                                section="political-intrigue"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={editorial.politicalIntrigue}
-                            />
-                        </HomeRail>
-                    )}
-
                     {editorial.periodStories.length > 0 && (
                         <HomeRail title={EDITORIAL_RAIL_TITLES.periodStories}>
                             <MovieGridIntegrated
@@ -197,15 +184,15 @@ export function HomePageClient({
                         </HomeRail>
                     )}
 
-                    {comingSoon.length > 0 && (
-                        <HomeRail title="In arrivo">
+                    {editorial.politicalIntrigue.length > 0 && (
+                        <HomeRail title={EDITORIAL_RAIL_TITLES.politicalIntrigue}>
                             <MovieGridIntegrated
                                 type="movie"
-                                section="upcoming"
+                                section="political-intrigue"
                                 limit={HOME_RAIL_SIZE}
                                 onPlay={play}
                                 onDetails={openDetails}
-                                initialData={comingSoon}
+                                initialData={editorial.politicalIntrigue}
                             />
                         </HomeRail>
                     )}
@@ -231,6 +218,19 @@ export function HomePageClient({
                             initialData={popularTV}
                         />
                     </HomeRail>
+
+                    {comingSoon.length > 0 && (
+                        <HomeRail title="In arrivo">
+                            <MovieGridIntegrated
+                                type="movie"
+                                section="upcoming"
+                                limit={HOME_RAIL_SIZE}
+                                onPlay={play}
+                                onDetails={openDetails}
+                                initialData={comingSoon}
+                            />
+                        </HomeRail>
+                    )}
                 </div>
             </main>
         </MovieProvider>

@@ -31,15 +31,11 @@ export default async function LivingHomePage() {
         { title: 'Serie recenti', items: recentTV as TvRailItem[], type: 'tv' as const },
         { title: 'Tesori per te', items: personal.treasures as TvRailItem[] },
         { title: EDITORIAL_RAIL_TITLES.warAndPolitics, items: editorial.warAndPolitics as TvRailItem[] },
-        {
-            title: EDITORIAL_RAIL_TITLES.politicalIntrigue,
-            items: editorial.politicalIntrigue as TvRailItem[],
-            type: 'tv' as const,
-        },
         { title: EDITORIAL_RAIL_TITLES.periodStories, items: editorial.periodStories as TvRailItem[] },
-        { title: 'In arrivo', items: comingSoon as TvRailItem[] },
+        { title: EDITORIAL_RAIL_TITLES.politicalIntrigue, items: editorial.politicalIntrigue as TvRailItem[] },
         { title: 'Film recenti', items: recentMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie popolari', items: popularTV as TvRailItem[], type: 'tv' as const },
+        { title: 'In arrivo', items: comingSoon as TvRailItem[] },
     ].filter((row) => row.items.length > 0)
 
     return <TvHome rows={rows} personal={personal} occupied={occupiedBase} />

@@ -41,7 +41,7 @@ function mergePersonalRows(
 
     const topIndex = next.findIndex((row) => row.title === 'Top 10')
     if (topIndex < 0) {
-        return [...scelti, ...pensiamo, ...next, ...tesori]
+        return pinComingSoonLast([...scelti, ...pensiamo, ...next, ...tesori])
     }
 
     const merged = [
@@ -60,7 +60,13 @@ function mergePersonalRows(
     const insertAt =
         afterRecent >= 0 ? afterRecent + 1 : afterPopular >= 0 ? afterPopular + 1 : topIndex + 1 + pensiamo.length
 
-    return [...merged.slice(0, insertAt), ...tesori, ...merged.slice(insertAt)]
+    return pinComingSoonLast([...merged.slice(0, insertAt), ...tesori, ...merged.slice(insertAt)])
+}
+
+function pinComingSoonLast(rows: TvHomeProps['rows']): TvHomeProps['rows'] {
+    const coming = rows.filter((row) => row.title === 'In arrivo')
+    if (!coming.length) return rows
+    return [...rows.filter((row) => row.title !== 'In arrivo'), ...coming]
 }
 
 export function TvHome({ rows, personal, occupied = [] }: TvHomeProps) {

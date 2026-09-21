@@ -42,12 +42,13 @@ import {
 } from '@/lib/top10-moment'
 import {
     EDITORIAL_RAIL_SIZE,
+    HISTORICAL_WAR_KEYWORDS,
+    MODERN_CONFLICT_KEYWORDS,
+    MODERN_GEO_KEYWORDS,
+    MODERN_WAR_KEYWORDS,
     PERIOD_KEYWORDS,
-    POLITICS_KEYWORDS,
+    PERIOD_EXCLUDE_KEYWORDS,
     TMDB_GENRE,
-    WAR_KEYWORDS,
-    WAR_STORY_KEYWORDS,
-    andKeywordGroups,
     composeEditorialRails,
     keywordPipe,
     type EditorialRails,
@@ -367,71 +368,137 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v4:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v7:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
         }
 
         try {
-            const warKeywords = keywordPipe(WAR_KEYWORDS)
-            const politicsKeywords = keywordPipe(POLITICS_KEYWORDS)
-            const warAndPoliticsKeywords = andKeywordGroups(WAR_STORY_KEYWORDS, POLITICS_KEYWORDS)
+            const historicalKeywords = keywordPipe(HISTORICAL_WAR_KEYWORDS)
+            const modernConflictKeywords = keywordPipe(MODERN_CONFLICT_KEYWORDS)
+            const modernGeoKeywords = keywordPipe(MODERN_GEO_KEYWORDS)
+            const modernKeywords = keywordPipe(MODERN_WAR_KEYWORDS)
             const periodKeywords = keywordPipe(PERIOD_KEYWORDS)
-            const periodMovieGenres = `${TMDB_GENRE.movieHistory}|${TMDB_GENRE.movieWestern}`
+            const periodExcludeKeywords = `${historicalKeywords}|${keywordPipe(PERIOD_EXCLUDE_KEYWORDS)}`
+            const historicalMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHistory}`
+            const modernGeoMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieThriller}`
+            const fantasyMovieGenres = `${TMDB_GENRE.movieFantasy}|${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieAnimation}`
+            const modernMovieExclude = `${fantasyMovieGenres}|${TMDB_GENRE.movieComedy}`
+            const periodMovieExclude = `${TMDB_GENRE.movieWar}|${fantasyMovieGenres}|${TMDB_GENRE.movieComedy}|${TMDB_GENRE.movieThriller}`
+            const periodTvExclude = `${TMDB_GENRE.tvWarPolitics}|${TMDB_GENRE.tvSciFiFantasy}`
 
-            const [warPolMovies, warPolShows, warPolKeywordShows, intrigueShows, periodMovies, periodKeywordMovies, periodShows] =
-                await Promise.all([
-                this.discoverPages('movie', {
-                    with_genres: TMDB_GENRE.movieWar,
-                    with_keywords: politicsKeywords,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 80,
-                    include_adult: false,
-                }, 3),
-                this.discoverPages('tv', {
-                    with_genres: TMDB_GENRE.tvWarPolitics,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 40,
-                }, 3),
-                this.discoverPages('tv', {
-                    with_keywords: warAndPoliticsKeywords,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 40,
-                }, 3),
-                this.discoverPages('tv', {
-                    with_keywords: politicsKeywords,
-                    without_keywords: warKeywords,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 80,
-                }, 3),
+            const [
+                historicalKeywordMovies,
+                historicalKeywordShows,
+                modernConflictMovies,
+                modernGeoMovies,
+                modernKeywordShows,
+                westernMovies,
+                periodKeywordMovies,
+                periodShows,
+            ] = await Promise.all([
                 this.discoverPages(
                     'movie',
                     {
-                        with_genres: periodMovieGenres,
+                        with_keywords: historicalKeywords,
+                        with_genres: historicalMovieGenres,
+                        without_genres: fantasyMovieGenres,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: historicalKeywords,
+                        with_genres: TMDB_GENRE.tvWarPolitics,
+                        without_genres: TMDB_GENRE.tvSciFiFantasy,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: modernConflictKeywords,
+                        with_genres: TMDB_GENRE.movieWar,
+                        without_keywords: historicalKeywords,
+                        without_genres: modernMovieExclude,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: modernGeoKeywords,
+                        with_genres: modernGeoMovieGenres,
+                        without_keywords: historicalKeywords,
+                        without_genres: modernMovieExclude,
                         sort_by: 'popularity.desc',
                         'vote_count.gte': 40,
                         include_adult: false,
                     },
+                    3
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: modernKeywords,
+                        with_genres: TMDB_GENRE.tvWarPolitics,
+                        without_keywords: historicalKeywords,
+                        without_genres: TMDB_GENRE.tvSciFiFantasy,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_genres: TMDB_GENRE.movieWestern,
+                        without_genres: fantasyMovieGenres,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: periodKeywords,
+                        without_genres: periodMovieExclude,
+                        without_keywords: periodExcludeKeywords,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: periodKeywords,
+                        without_genres: periodTvExclude,
+                        without_keywords: periodExcludeKeywords,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 20,
+                    },
                     4
                 ),
-                this.discoverPages('movie', {
-                    with_keywords: periodKeywords,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 40,
-                    include_adult: false,
-                }, 4),
-                this.discoverPages('tv', {
-                    with_keywords: periodKeywords,
-                    sort_by: 'popularity.desc',
-                    'vote_count.gte': 20,
-                }, 4),
             ])
 
             const [warAndPolitics, politicalIntrigue, periodStories] = await Promise.all([
-                this.filterAvailableMixed([...warPolMovies, ...warPolShows, ...warPolKeywordShows]),
-                this.filterAvailableMixed(intrigueShows),
-                this.filterAvailableMixed([...periodMovies, ...periodKeywordMovies, ...periodShows]),
+                this.filterAvailableMixed([...historicalKeywordMovies, ...historicalKeywordShows]),
+                this.filterAvailableMixed([...modernConflictMovies, ...modernGeoMovies, ...modernKeywordShows]),
+                this.filterAvailableMixed([...westernMovies, ...periodKeywordMovies, ...periodShows]),
             ])
 
             const rails = composeEditorialRails(
