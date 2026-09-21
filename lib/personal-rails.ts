@@ -44,6 +44,7 @@ export type PersonalRails = {
     affinity: Top10Content[]
     treasures: Top10Content[]
     seedTitle?: string
+    topGenres?: number[]
 }
 
 export type PersonalCandidatePools = {
@@ -423,6 +424,7 @@ export function composePersonalRails(
         affinity: affinity.length >= AFFINITY_MIN_ITEMS ? affinity : [],
         treasures,
         seedTitle: taste.seedTitle,
+        topGenres: taste.topGenres,
     }
 }
 

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { PlayerShell } from '@/components/player-shell'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
+import { TastePrompt, useTastePrompt } from '@/components/taste-prompt'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { resolvePlayerStartAt } from '@/lib/watch-history'
 import { parseStartAtParam } from '@/lib/watch-progress'
@@ -46,6 +47,7 @@ export default function MoviePlayerPage() {
     const movieId = params.id as string
     const [movie, setMovie] = useState<MovieDetails | null>(null)
     const [loading, setLoading] = useState(true)
+    const [ended, setEnded] = useState(false)
     const fetchedId = useRef<string | null>(null)
 
     useEffect(() => {
@@ -118,6 +120,19 @@ export default function MoviePlayerPage() {
             : null
     )
 
+    useEffect(() => {
+        setEnded(false)
+    }, [movieId])
+
+    const taste = useTastePrompt({
+        tmdbId,
+        type: 'movie',
+        title: movie?.title || '',
+        ended,
+    })
+
+    const handleEnded = useCallback(() => setEnded(true), [])
+
     if (loading) {
         return <PageSpinner />
     }
@@ -135,6 +150,7 @@ export default function MoviePlayerPage() {
             <PlayerShell
                 backdropPath={movie.backdrop_path}
                 onBack={() => router.back()}
+                chromePaused={Boolean(taste.moment)}
                 footer={
                     <div className="p-8 bg-black">
                         <div className="max-w-4xl mx-auto">
@@ -170,15 +186,26 @@ export default function MoviePlayerPage() {
                     </div>
                 }
             >
-                <VixsrcEmbedPlayer
-                    tmdbId={movie.tmdb_id || movie.id}
-                    type="movie"
-                    title={movie.title}
-                    startAt={startAt}
-                    onPlayback={trackPlayback}
-                    onBack={() => router.back()}
-                    unavailableDescription="Questo film non è attualmente disponibile per lo streaming su vixsrc.to"
-                />
+                <div className="relative w-full h-full">
+                    <VixsrcEmbedPlayer
+                        tmdbId={movie.tmdb_id || movie.id}
+                        type="movie"
+                        title={movie.title}
+                        startAt={startAt}
+                        onPlayback={trackPlayback}
+                        onEnded={handleEnded}
+                        onBack={() => router.back()}
+                        unavailableDescription="Questo film non è attualmente disponibile per lo streaming su vixsrc.to"
+                    />
+                    {taste.moment && (
+                        <TastePrompt
+                            title={taste.title}
+                            moment={taste.moment}
+                            onSubmit={taste.submit}
+                            onSkip={taste.skip}
+                        />
+                    )}
+                </div>
             </PlayerShell>
         </ErrorBoundary>
     )

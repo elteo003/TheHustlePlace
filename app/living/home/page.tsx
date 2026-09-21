@@ -26,7 +26,7 @@ export default async function LivingHomePage() {
         ...(comingSoon as Top10Content[]),
     ]
     const personal = await fetchPersonalRails(occupiedBase)
-    const editorial = await fetchEditorialRails(occupiedBase)
+    const editorial = await fetchEditorialRails(occupiedBase, personal.topGenres)
 
     const rows = [
         { id: 'picks', title: 'Scelti per te oggi', items: personal.picks as TvRailItem[] },

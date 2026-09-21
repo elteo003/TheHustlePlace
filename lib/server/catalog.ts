@@ -1,11 +1,13 @@
 import { CatalogService } from '@/services/catalog.service'
 import { Movie, TVShow, Top10Content } from '@/types'
 import { CatalogSection, CINEMA_RAIL_SIZE, HOME_RAIL_SIZE } from '@/lib/catalog-types'
-import { listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
+import { listTasteHistory, listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
+import { listTitleFeedback, loadRankerWeights } from '@/lib/db/title-feedback'
 import { getOrCreateDeviceId, isDeviceId } from '@/lib/supabase/device'
 import { HistorySeed, PersonalRails } from '@/lib/personal-rails'
-import { EditorialRails, EDITORIAL_RAIL_SIZE } from '@/lib/editorial-rails'
+import { EditorialRails, EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, emptyEditorialRails } from '@/lib/editorial-rails'
 import { emptyPlatformTop10, type PlatformTop10 } from '@/lib/platform-top10'
+import { buildRankerContext, rerankWithTaste, type RankerContext } from '@/lib/taste-ranker'
 
 const catalogService = new CatalogService()
 
@@ -32,18 +34,69 @@ export async function fetchServerWatchHistory(): Promise<HistorySeed[]> {
     }
 }
 
+async function viewerRankerContext(): Promise<RankerContext | null> {
+    if (!isDatabaseConfigured()) return null
+    const { id: deviceId } = await getOrCreateDeviceId()
+    if (!isDeviceId(deviceId)) return null
+
+    try {
+        const [historyRows, feedbacks, weights] = await Promise.all([
+            listTasteHistory(deviceId),
+            listTitleFeedback(deviceId),
+            loadRankerWeights(),
+        ])
+        const history: HistorySeed[] = historyRows.map((entry) => ({
+            id: entry.id,
+            type: entry.type,
+            progress: entry.progress,
+            watchedAt: entry.watchedAt,
+        }))
+        return buildRankerContext(history, feedbacks, [], weights)
+    } catch {
+        return null
+    }
+}
+
+function withTopGenres(context: RankerContext, topGenres?: number[]): RankerContext {
+    if (!topGenres?.length) return context
+    return { ...context, topGenres }
+}
+
+function rankPersonal(rails: PersonalRails, context: RankerContext): PersonalRails {
+    const ranked = withTopGenres(context, rails.topGenres)
+    return {
+        ...rails,
+        picks: rerankWithTaste(rails.picks, ranked),
+        affinity: rerankWithTaste(rails.affinity, ranked),
+        treasures: rerankWithTaste(rails.treasures, ranked),
+    }
+}
+
+function rankEditorial(rails: EditorialRails, context: RankerContext): EditorialRails {
+    const next = emptyEditorialRails()
+    for (const { id } of EDITORIAL_HOME_RAILS) {
+        next[id] = rerankWithTaste(rails[id] || [], context)
+    }
+    return next
+}
+
 export async function fetchPersonalRails(
     occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
     history?: HistorySeed[]
 ): Promise<PersonalRails> {
     const seeds = history ?? (await fetchServerWatchHistory())
-    return catalogService.getPersonalRails(seeds, occupied, HOME_RAIL_SIZE)
+    const rails = await catalogService.getPersonalRails(seeds, occupied, HOME_RAIL_SIZE)
+    const viewer = await viewerRankerContext()
+    return viewer ? rankPersonal(rails, viewer) : rails
 }
 
 export async function fetchEditorialRails(
-    occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = []
+    occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
+    topGenres?: number[]
 ): Promise<EditorialRails> {
-    return catalogService.getEditorialRails(occupied, EDITORIAL_RAIL_SIZE)
+    const rails = await catalogService.getEditorialRails(occupied, EDITORIAL_RAIL_SIZE)
+    const viewer = await viewerRankerContext()
+    return viewer ? rankEditorial(rails, withTopGenres(viewer, topGenres)) : rails
 }
 
 export async function fetchPlatformTop10(): Promise<PlatformTop10> {

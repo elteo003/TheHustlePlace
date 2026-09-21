@@ -39,6 +39,23 @@ export async function listWatchHistory(deviceId: string): Promise<WatchHistoryEn
     return rows.map(toWatchHistoryEntry)
 }
 
+export async function listTasteHistory(deviceId: string): Promise<WatchHistoryEntry[]> {
+    const db = getDb()
+    const profile = await ensureProfile(deviceId)
+    if (!db || !profile) {
+        return []
+    }
+
+    const rows = await db
+        .select()
+        .from(watchHistory)
+        .where(eq(watchHistory.profileId, profile.id))
+        .orderBy(desc(watchHistory.watchedAt))
+        .limit(80)
+
+    return rows.map(toWatchHistoryEntry)
+}
+
 export interface UpsertWatchInput {
     deviceId: string
     id: number

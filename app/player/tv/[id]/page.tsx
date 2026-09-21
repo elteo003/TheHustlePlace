@@ -8,6 +8,7 @@ import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { TVShowDetails, Episode } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
 import { NextEpisodeOverlay } from '@/components/next-episode-overlay'
+import { TastePrompt, useTastePrompt } from '@/components/taste-prompt'
 import { getTMDBImageUrl } from '@/lib/tmdb'
 import { getPlayerPath, getSeriesPath } from '@/lib/content-navigation'
 import { resolvePlayerStartAt } from '@/lib/watch-history'
@@ -57,6 +58,7 @@ export default function TVPlayerPage() {
     const [loading, setLoading] = useState(true)
     const [offerNext, setOfferNext] = useState(false)
     const [nearEnd, setNearEnd] = useState(false)
+    const [ended, setEnded] = useState(false)
     const fetchedId = useRef<string | null>(null)
 
     useEffect(() => {
@@ -151,6 +153,7 @@ export default function TVPlayerPage() {
     useEffect(() => {
         setOfferNext(false)
         setNearEnd(false)
+        setEnded(false)
     }, [season, episode])
 
     const findEpisode = useCallback(
@@ -206,13 +209,8 @@ export default function TVPlayerPage() {
     }, [episode, router, season, tvId])
 
     const handleEpisodeEnded = useCallback(() => {
-        const next = findNextEpisode(season, episode)
-        if (next) {
-            setOfferNext(true)
-            return
-        }
-        exitPlayer()
-    }, [episode, exitPlayer, findNextEpisode, season])
+        setEnded(true)
+    }, [])
 
     const goToNextEpisode = useCallback(() => {
         const next = findNextEpisode(season, episode)
@@ -234,6 +232,28 @@ export default function TVPlayerPage() {
         },
         [episode, findNextEpisode, season, trackPlayback]
     )
+
+    const seasonEpisodeCount =
+        tvShowDetails?.seasons.find((entry) => entry.season_number === season)?.episodes.length || 0
+    const taste = useTastePrompt({
+        tmdbId: tvShow?.tmdb_id || tvShow?.id,
+        type: 'tv',
+        title: tvShow?.name || '',
+        season,
+        episode,
+        episodeCount: seasonEpisodeCount,
+        ended,
+    })
+
+    useEffect(() => {
+        if (!ended || taste.pending) return
+        const next = findNextEpisode(season, episode)
+        if (next) {
+            setOfferNext(true)
+            return
+        }
+        exitPlayer()
+    }, [ended, episode, exitPlayer, findNextEpisode, season, taste.pending])
 
     const currentEpisodeData = findEpisode(season, episode)
     const nextRef = findNextEpisode(season, episode)
@@ -259,7 +279,7 @@ export default function TVPlayerPage() {
             nextLabel={nextRef ? `S${nextRef.season} E${nextRef.episode}` : undefined}
             pinChrome={nearEnd}
             title={`${tvShow.name} · S${season}E${episode}`}
-            chromePaused={offerNext}
+            chromePaused={offerNext || Boolean(taste.moment)}
             footer={
                 <div className="p-8 bg-black">
                     <div className="max-w-4xl mx-auto">
@@ -296,6 +316,14 @@ export default function TVPlayerPage() {
                     unavailableTitle="Episodio non disponibile"
                     unavailableDescription={`L'episodio ${episode} della stagione ${season} non è disponibile su VixSrc.`}
                 />
+                {taste.moment && (
+                    <TastePrompt
+                        title={taste.title}
+                        moment={taste.moment}
+                        onSubmit={taste.submit}
+                        onSkip={taste.skip}
+                    />
+                )}
                 {offerNext && nextRef && (
                     <NextEpisodeOverlay
                         season={nextRef.season}

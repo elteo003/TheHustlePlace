@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ContentType } from '@/lib/content-navigation'
 import { livingDetailsPath } from '@/tv/lib/paths'
 import { VixsrcEmbedPlayer } from '@/components/vixsrc-embed-player'
+import { TastePrompt, useTastePrompt } from '@/components/taste-prompt'
 import { useTrackWatch } from '@/hooks/useTrackWatch'
 import { resolvePlayerStartAt } from '@/lib/watch-history'
 import { parseStartAtParam } from '@/lib/watch-progress'
@@ -18,6 +19,8 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [title, setTitle] = useState(type === 'tv' ? 'Serie' : 'Film')
+    const [episodeCount, setEpisodeCount] = useState(0)
+    const [ended, setEnded] = useState(false)
     const season = Number(searchParams.get('season') ?? '') || undefined
     const episode = Number(searchParams.get('episode') ?? '') || undefined
     const startAt = useMemo(
@@ -40,6 +43,10 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
     })
 
     useEffect(() => {
+        setEnded(false)
+    }, [id, season, episode, type])
+
+    useEffect(() => {
         let cancelled = false
         const path = type === 'tv' ? `/api/tmdb/tv/${id}` : `/api/tmdb/movies/${id}`
         void fetch(path)
@@ -52,6 +59,41 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
             cancelled = true
         }
     }, [id, title, type])
+
+    useEffect(() => {
+        if (type !== 'tv' || !season) {
+            setEpisodeCount(0)
+            return
+        }
+        let cancelled = false
+        void fetch(`/api/tmdb/tv/${id}/seasons`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (cancelled || !data.success || !Array.isArray(data.data)) return
+                const current = data.data.find(
+                    (entry: { season_number?: number }) => entry.season_number === season
+                )
+                setEpisodeCount(Array.isArray(current?.episodes) ? current.episodes.length : 0)
+            })
+            .catch(() => {
+                if (!cancelled) setEpisodeCount(0)
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [id, season, type])
+
+    const taste = useTastePrompt({
+        tmdbId: id,
+        type,
+        title,
+        season,
+        episode,
+        episodeCount,
+        ended,
+    })
+
+    const handleEnded = useCallback(() => setEnded(true), [])
 
     function back() {
         router.push(livingDetailsPath(id, type))
@@ -76,9 +118,18 @@ export function TvPlayer({ id, type }: TvPlayerProps) {
                 title={title}
                 startAt={startAt}
                 onPlayback={onPlayback}
+                onEnded={handleEnded}
                 onBack={back}
                 nativeControls
             />
+            {taste.moment && (
+                <TastePrompt
+                    title={taste.title}
+                    moment={taste.moment}
+                    onSubmit={taste.submit}
+                    onSkip={taste.skip}
+                />
+            )}
         </div>
     )
 }

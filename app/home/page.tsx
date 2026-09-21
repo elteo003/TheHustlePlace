@@ -24,7 +24,7 @@ export default async function HomePage() {
         ...(comingSoon as Top10Content[]),
     ]
     const personal = await fetchPersonalRails(occupiedBase)
-    const editorial = await fetchEditorialRails(occupiedBase)
+    const editorial = await fetchEditorialRails(occupiedBase, personal.topGenres)
 
     return (
         <HomePageClient

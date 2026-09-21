@@ -146,6 +146,7 @@ describe('personal-rails', () => {
         expect(rails.picks.map((entry) => entry.title)).toEqual(['Pick A', 'Pick B'])
         expect(rails.affinity).toEqual([])
         expect(rails.treasures.map((entry) => entry.title)).toEqual(['Treasure'])
+        expect(rails.topGenres?.[0]).toBe(28)
         expect(new Set([...rails.picks, ...rails.treasures].map((entry) => railItemKey(entry.type, entry.id))).size).toBe(
             rails.picks.length + rails.treasures.length
         )

@@ -12,7 +12,13 @@ vi.mock('next/headers', () => ({
 
 vi.mock('@/lib/db/watch-history', () => ({
     listWatchHistory: (...args: unknown[]) => listWatchHistory(...args),
+    listTasteHistory: async () => [],
     isDatabaseConfigured: () => isDatabaseConfigured(),
+}))
+
+vi.mock('@/lib/db/title-feedback', () => ({
+    listTitleFeedback: async () => [],
+    loadRankerWeights: async () => null,
 }))
 
 vi.mock('@/services/catalog.service', () => ({
