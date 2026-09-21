@@ -25,12 +25,13 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
 
     return (
         <div>
-            <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2">
+            <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2 pl-4 sm:pl-5">
                 {items.map((item, index) => {
                 const rank = index + 1
                 const itemType = resolveContentType(item, type)
                 const itemId = getContentId(item)
                 const title = getContentTitle(item, itemType)
+                const isOne = rank === 1
 
                 return (
                     <motion.div
@@ -47,10 +48,13 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                         }}
                     >
                         <span
-                            className="select-none font-black leading-none text-transparent bg-clip-text bg-gradient-to-b from-zinc-500 to-zinc-800 -mr-3 sm:-mr-5 z-0 pointer-events-none"
+                            className={`relative z-0 inline-block select-none shrink-0 overflow-hidden font-black leading-none pointer-events-none ${
+                                isOne ? 'mr-0' : '-mr-3 sm:-mr-5'
+                            }`}
                             style={{
                                 fontSize: 'clamp(4rem, 12vw, 7rem)',
-                                WebkitTextStroke: '2px rgba(255,255,255,0.12)',
+                                color: '#a1a1aa',
+                                minWidth: isOne ? '0.58em' : undefined,
                             }}
                             aria-hidden
                         >

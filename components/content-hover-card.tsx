@@ -318,7 +318,7 @@ export function ContentHoverCard({
             <div
                 className={`group relative flex-shrink-0 hover:z-20 ${
                     variant === 'top10'
-                        ? 'z-[1] w-[clamp(7.5rem,8vw,12.5rem)] aspect-[2/3]'
+                        ? 'z-10 w-[clamp(7.5rem,8vw,12.5rem)] aspect-[2/3]'
                         : variant === 'carousel'
                           ? 'poster-tile aspect-[2/3]'
                           : 'w-full aspect-[2/3]'
