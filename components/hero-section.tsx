@@ -16,8 +16,7 @@ import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
 import { useYouTubeCurtain, YOUTUBE_DISSOLVE_EASE, YOUTUBE_DISSOLVE_MS } from '@/hooks/useYouTubeCurtain'
 import { postYouTubeCommand } from '@/lib/youtube-command'
 
-const HERO_FRAME =
-    'relative h-[calc(100dvh-13.5rem)] min-h-[22rem] w-full overflow-hidden'
+const HERO_FRAME = 'home-hero'
 
 interface HeroSectionProps {
     onTrailerEnded?: () => void

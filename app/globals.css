@@ -38,6 +38,15 @@ body {
     }
 }
 
+/* Home: trailer alto, sotto si intravede Continua a guardare. */
+.home-hero {
+    position: relative;
+    width: 100%;
+    min-height: 22rem;
+    height: calc(100dvh - 8.5rem);
+    overflow: hidden;
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;

@@ -80,9 +80,10 @@ export function HomePageClient({
 
                 <div className="relative z-10">
                     {watchHistory.length > 0 && (
-                        <HomeRail title="Continua a guardare">
+                        <section className="content-gutter pb-8 pt-5">
+                            <h2 className="section-title">Continua a guardare</h2>
                             <ContinueWatchingRow entries={watchHistory} />
-                        </HomeRail>
+                        </section>
                     )}
 
                     {rails.picks.length > 0 && (
