@@ -908,6 +908,24 @@
     writeLocalList(list);
   }
 
+  function personalHistorySeeds(items) {
+    var out = [];
+    var i, e, id;
+    if (!items) return out;
+    for (i = 0; i < items.length && i < 12; i++) {
+      e = items[i];
+      id = e && Number(e.id || e.tmdb_id);
+      if (!id) continue;
+      out.push({
+        id: id,
+        type: e.type === 'tv' ? 'tv' : 'movie',
+        progress: typeof e.progress === 'number' ? e.progress : 0,
+        watchedAt: e.watchedAt || Date.now()
+      });
+    }
+    return out;
+  }
+
   function historyFrom(entries) {
     var out = [];
     var i, e;
@@ -1088,6 +1106,17 @@
 
   function postJson(url, body, done) {
     sendJson('POST', url, body, done);
+  }
+
+  function postJsonWait(url, body, done, waitMs) {
+    var finished = false;
+    function finish(data) {
+      if (finished) return;
+      finished = true;
+      done(data);
+    }
+    postJson(url, body, finish);
+    setTimeout(function () { finish(null); }, waitMs || 45000);
   }
 
   function patchJson(url, body, done) {
@@ -1854,7 +1883,7 @@
       afterReady();
     }
     postJson('/api/household/switch', { profileId: profile.id }, afterSwitch);
-    setTimeout(function () { afterSwitch(null); }, 4000);
+    setTimeout(function () { afterSwitch(null); }, 8000);
   }
 
   function renderNav(active) {
@@ -2639,21 +2668,37 @@
     }
     catalogPersonalWaiters = [done];
     var bag = { profileId: pid, ready: false, history: [], picks: [], affinity: [], treasures: [] };
-    var step = runSteps(2, function () {
+    function finishPersonal() {
       if (gen !== personalGen) return;
       bag.ready = true;
       catalogPersonal = bag;
       var queue = catalogPersonalWaiters;
       catalogPersonalWaiters = null;
       flushWaiters(queue);
-    });
-    getJson('/api/watch-history', function (json) { bag.history = historyItems(json); step(); }, 12000);
-    getJson('/api/catalog/personal', function (json) {
+    }
+    function applyPersonalRails(json) {
       var rails = json && json.data ? json.data : {};
       bag.picks = listOf({ data: rails.picks });
       bag.affinity = listOf({ data: rails.affinity });
       bag.treasures = listOf({ data: rails.treasures });
-      step();
+    }
+    getJson('/api/watch-history', function (json) {
+      if (gen !== personalGen) return;
+      bag.history = historyItems(json);
+      getJson('/api/catalog/personal', function (personalJson) {
+        if (gen !== personalGen) return;
+        applyPersonalRails(personalJson);
+        var seeds = personalHistorySeeds(bag.history);
+        if (bag.affinity.length || seeds.length < 3) {
+          finishPersonal();
+          return;
+        }
+        postJsonWait('/api/catalog/personal', { entries: seeds }, function (posted) {
+          if (gen !== personalGen) return;
+          applyPersonalRails(posted);
+          finishPersonal();
+        }, 45000);
+      }, 45000);
     }, 12000);
   }
 

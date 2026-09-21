@@ -1,9 +1,8 @@
 import { CatalogService } from '@/services/catalog.service'
 import { Movie, TVShow, Top10Content } from '@/types'
 import { CatalogSection, HOME_RAIL_SIZE } from '@/lib/catalog-types'
-import { cookies } from 'next/headers'
 import { listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
-import { DEVICE_COOKIE, isDeviceId } from '@/lib/supabase/device'
+import { getOrCreateDeviceId, isDeviceId } from '@/lib/supabase/device'
 import { HistorySeed, PersonalRails } from '@/lib/personal-rails'
 import { EditorialRails, EDITORIAL_RAIL_SIZE } from '@/lib/editorial-rails'
 
@@ -14,8 +13,7 @@ export async function fetchServerWatchHistory(): Promise<HistorySeed[]> {
         return []
     }
 
-    const store = await cookies()
-    const deviceId = store.get(DEVICE_COOKIE)?.value
+    const { id: deviceId } = await getOrCreateDeviceId()
     if (!isDeviceId(deviceId)) {
         return []
     }

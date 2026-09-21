@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { CatalogService } from '@/services/catalog.service'
 import { fetchPersonalRails, fetchServerWatchHistory } from '@/lib/server/catalog'
 import { HOME_RAIL_SIZE } from '@/lib/catalog-types'
+import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,12 +38,17 @@ async function occupiedFromCatalog() {
 }
 
 export async function GET() {
+    const { id: deviceId, isNew } = await getOrCreateDeviceId()
     try {
         const [history, occupied] = await Promise.all([fetchServerWatchHistory(), occupiedFromCatalog()])
         const rails = await fetchPersonalRails(occupied, history)
-        return NextResponse.json({ success: true, data: rails })
+        return withDeviceCookie(NextResponse.json({ success: true, data: rails }), deviceId, isNew)
     } catch {
-        return NextResponse.json({ success: false, error: 'personal_rails_error' }, { status: 500 })
+        return withDeviceCookie(
+            NextResponse.json({ success: false, error: 'personal_rails_error' }, { status: 500 }),
+            deviceId,
+            isNew
+        )
     }
 }
 
