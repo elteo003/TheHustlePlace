@@ -6,6 +6,20 @@ Questo documento traccia gli aggiornamenti più recenti al sistema TheHustlePlac
 
 ## 🚀 Ultimi Aggiornamenti
 
+### TV — Splash catalogo e camera a 3 scaffali (Settembre 2026)
+
+**Problema**: Lo scroll verticale della home TV scattava in arrivo sulla card. Lo splash caricava i JSON ma poi tutti gli scaffali finivano sulla camera: decode delle locandine e cambio hero durante il gesto.
+
+**Soluzione Implementata**:
+- Splash 1 (avvio): scarica tutto il catalogo condiviso in cache (`warmSharedCatalog`) prima del gate
+- Splash 2 (profilo): ricalcola gli scaffali della persona e decodifica hero + primi due scaffali
+- In scena solo tre file calde (`setRailHot` a distanza ≤ 1); peek hero e prefetch solo dopo il settle della camera
+- Un solo orologio: `translate3d` 320ms. Niente `paintBrowse` a metà navigazione
+- Blueprint: [`doc/blueprints/tv-splash-cache-camera.md`](blueprints/tv-splash-cache-camera.md)
+- Codice: `public/tv-os.html`
+
+**Risultato**: ✅ Il tasto su/giù non tocca rete né decode; lo splash fa il lavoro una volta
+
 ### 1. Fix TypeScript Next.js 16 (Gennaio 2025)
 
 **Problema**: Errori di compilazione TypeScript dovuti ai cambiamenti in Next.js 16 dove `params` è ora una Promise.
@@ -262,6 +276,7 @@ Questo documento traccia gli aggiornamenti più recenti al sistema TheHustlePlac
 3. **`doc/animations.md`** - Documentazione animazioni
 4. **`doc/player-system.md`** - Sistema player completo
 5. **`doc/troubleshooting.md`** - Guida risoluzione problemi
+6. **`doc/blueprints/tv-splash-cache-camera.md`** - Splash TV, cache scaffali, camera a 3 file
 
 ### Diagrammi Mermaid Inclusi
 - Architettura generale

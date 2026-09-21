@@ -12,6 +12,7 @@ doc/
 ├── 📄 INDEX.md                     # Questo indice
 ├── 📁 blueprints/                  # Spec di feature da implementare
 │   ├── 📄 README.md
+│   ├── 📄 tv-splash-cache-camera.md
 │   └── 📄 hero-trailer-audio-visibility.md
 ├── 📄 recent-updates.md            # Ultimi aggiornamenti
 ├── 📄 architecture-diagrams.md     # Diagrammi Mermaid
@@ -63,6 +64,7 @@ doc/
 
 ### 📐 **Blueprint di feature**
 - **[Indice blueprint](blueprints/README.md)** - Spec di implementazione
+- **[Splash catalogo e camera a 3 scaffali](blueprints/tv-splash-cache-camera.md)** - Splash TV, cache scaffali, finestra a 3 file
 - **[Audio hero al cambio visibilità](blueprints/hero-trailer-audio-visibility.md)** - Mute/unmute trailer hero sullo scroll
 
 ### 🏗️ **Architettura e Design**
