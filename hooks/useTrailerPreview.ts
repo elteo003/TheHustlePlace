@@ -11,7 +11,7 @@ function cacheKey(id: number, type: ContentType) {
 }
 
 export function buildTrailerEmbedUrl(videoKey: string, muted: boolean): string {
-    return `${getYouTubeEmbedUrl(videoKey, true, muted, true)}&iv_load_policy=3&playsinline=1&fs=0`
+    return `${getYouTubeEmbedUrl(videoKey, true, muted, false)}&iv_load_policy=3&playsinline=1&fs=0&disablekb=1`
 }
 
 export async function prefetchTrailerKey(id: number, type: ContentType): Promise<string | null> {

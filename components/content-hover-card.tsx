@@ -9,7 +9,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
 import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
 import { buildTrailerEmbedUrl, prefetchTrailerKey, useTrailerPreview } from '@/hooks/useTrailerPreview'
-import { postYouTubeCommand, startYouTubePreview } from '@/lib/youtube-command'
+import { useYouTubeCurtain, YOUTUBE_DISSOLVE_EASE, YOUTUBE_DISSOLVE_MS } from '@/hooks/useYouTubeCurtain'
+import { postYouTubeCommand } from '@/lib/youtube-command'
 import { useIsCoarsePointer, useReducedMotion } from '@/hooks/useMediaQuery'
 import { ContentActionSheet } from '@/components/ui/content-action-sheet'
 import { PosterTransition } from '@/components/ui/poster-transition'
@@ -59,11 +60,8 @@ export function ContentHoverCard({
     const closeArmed = useRef(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
-    const [trailerReady, setTrailerReady] = useState(false)
     const [trailerMuted, setTrailerMuted] = useState(true)
     const iframeRef = useRef<HTMLIFrameElement>(null)
-    const mutedRef = useRef(true)
-    mutedRef.current = trailerMuted
 
     const itemType = resolveContentType(item, type)
     const itemId = getContentId(item)
@@ -78,6 +76,11 @@ export function ContentHoverCard({
         400
     )
     const trailerUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, true) : null
+    const { revealed, kickPlayback } = useYouTubeCurtain(iframeRef, {
+        enabled: isExpanded && Boolean(trailerUrl),
+        muted: trailerMuted,
+        loop: true,
+    })
 
     const toggleAudio = () => {
         const nextMuted = !trailerMuted
@@ -101,7 +104,6 @@ export function ContentHoverCard({
 
     const handlePreviewExit = () => {
         if (expandedRef.current) return
-        setTrailerReady(false)
         setTrailerMuted(true)
         resetPreview()
     }
@@ -211,29 +213,31 @@ export function ContentHoverCard({
                             src={previewImage}
                             alt=""
                             fill
-                            className="object-cover transition-opacity duration-500 ease-out"
+                            className="z-[3] object-cover"
                             sizes="96vw"
-                            style={{ opacity: trailerReady ? 0 : 1 }}
+                            style={{
+                                opacity: revealed ? 0 : 1,
+                                transition:
+                                    revealed && !reduceMotion
+                                        ? `opacity ${YOUTUBE_DISSOLVE_MS}ms ${YOUTUBE_DISSOLVE_EASE}`
+                                        : 'none',
+                            }}
                         />
                         {trailerUrl && (
                             <iframe
                                 ref={iframeRef}
                                 key={trailerKey}
                                 src={trailerUrl}
-                                className={`pointer-events-none transition-opacity duration-500 ease-out ${
-                                    trailerReady ? 'opacity-100' : 'opacity-0'
-                                }`}
+                                className="pointer-events-none"
                                 tabIndex={-1}
                                 allow="autoplay; encrypted-media"
                                 title={`Trailer ${title}`}
-                                onLoad={() => {
-                                    setTrailerReady(true)
-                                    startYouTubePreview(iframeRef.current?.contentWindow, mutedRef.current)
-                                }}
+                                onLoad={kickPlayback}
                                 style={{
                                     position: 'absolute',
                                     top: '50%',
                                     left: '50%',
+                                    zIndex: 1,
                                     width: '100%',
                                     height: '100%',
                                     transform: 'translate(-50%, -50%) scale(1.12)',
@@ -241,8 +245,8 @@ export function ContentHoverCard({
                                 }}
                             />
                         )}
-                        {isLoading && !trailerReady && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        {isLoading && !trailerKey && (
+                            <div className="absolute inset-0 z-[4] flex items-center justify-center bg-black/40">
                                 <Spinner size="sm" />
                             </div>
                         )}
@@ -261,7 +265,7 @@ export function ContentHoverCard({
                             </button>
                         )}
 
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                            <div className="pointer-events-none absolute inset-0 z-[4] bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                             <div className="absolute bottom-0 left-0 right-0 z-10 p-5">
                                 <h3 className="text-white font-semibold text-xl leading-snug line-clamp-1">

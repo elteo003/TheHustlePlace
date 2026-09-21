@@ -10,7 +10,8 @@ import { useTrailerPreview, buildTrailerEmbedUrl } from '@/hooks/useTrailerPrevi
 import { useIsPhoneLandscape, useReducedMotion } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { shouldDismissSheet } from '@/lib/sheet-gesture'
-import { postYouTubeCommand, startYouTubePreview } from '@/lib/youtube-command'
+import { postYouTubeCommand } from '@/lib/youtube-command'
+import { useYouTubeCurtain, YOUTUBE_DISSOLVE_EASE, YOUTUBE_DISSOLVE_MS } from '@/hooks/useYouTubeCurtain'
 import { Spinner } from '@/components/ui/spinner'
 import { DetailLink } from '@/components/ui/detail-link'
 
@@ -148,9 +149,6 @@ function TrailerStage({
         0
     )
     const [muted, setMuted] = useState(true)
-    const mutedRef = useRef(true)
-    mutedRef.current = muted
-    const [ready, setReady] = useState(false)
     const [open, setOpen] = useState(reduceMotion)
     const iframeRef = useRef<HTMLIFrameElement>(null)
     const backdropRef = useRef<HTMLDivElement>(null)
@@ -170,9 +168,11 @@ function TrailerStage({
     openRef.current = open
     leavingRef.current = leaving
 
-    const kickPlayback = () => {
-        startYouTubePreview(iframeRef.current?.contentWindow, mutedRef.current)
-    }
+    const { revealed, kickPlayback } = useYouTubeCurtain(iframeRef, {
+        enabled: Boolean(trailerKey) && !leaving,
+        muted,
+        loop: true,
+    })
 
     const toggleAudio = () => {
         const nextMuted = !muted
@@ -351,7 +351,8 @@ function TrailerStage({
 
     const embedUrl = trailerKey ? buildTrailerEmbedUrl(trailerKey, true) : null
     const origin = originRef.current
-    const showVideo = open && ready
+    const showVideo = open && revealed
+    const videoFadeMs = reduceMotion ? 0 : YOUTUBE_DISSOLVE_MS
 
     return (
         <section
@@ -389,7 +390,9 @@ function TrailerStage({
                     className="absolute inset-0"
                     style={{
                         opacity: showVideo ? 1 : 0,
-                        transition: `opacity ${FADE_MS}ms ${EASE_OPACITY}`,
+                        transition: showVideo
+                            ? `opacity ${videoFadeMs}ms ${YOUTUBE_DISSOLVE_EASE}`
+                            : 'none',
                     }}
                 >
                     {embedUrl && (
@@ -400,10 +403,7 @@ function TrailerStage({
                             title={`Trailer ${title}`}
                             className="pointer-events-none border-0"
                             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                            onLoad={() => {
-                                setReady(true)
-                                kickPlayback()
-                            }}
+                            onLoad={kickPlayback}
                             style={{
                                 position: 'absolute',
                                 top: '50%',
@@ -416,7 +416,7 @@ function TrailerStage({
                     )}
                 </div>
 
-                {isLoading && open && !ready && (
+                {isLoading && open && !trailerKey && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <Spinner size="sm" />
                     </div>

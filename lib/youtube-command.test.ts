@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isYouTubeEndedMessage, parseYouTubePlayerMessage, readYouTubePlayerState } from '@/lib/youtube-command'
+import {
+    curtainActionForState,
+    isYouTubeEndedMessage,
+    parseYouTubePlayerMessage,
+    readYouTubePlayerState,
+} from '@/lib/youtube-command'
 
 describe('parseYouTubePlayerMessage', () => {
     it('legge onStateChange da stringa JSON', () => {
@@ -27,5 +32,19 @@ describe('readYouTubePlayerState', () => {
     it('restituisce lo stato numerico di onStateChange', () => {
         expect(readYouTubePlayerState('https://www.youtube.com', { event: 'onStateChange', info: 1 })).toBe(1)
         expect(readYouTubePlayerState('https://www.youtube.com', { event: 'infoDelivery' })).toBeNull()
+    })
+})
+
+describe('curtainActionForState', () => {
+    it('arma il clock solo al primo PLAYING', () => {
+        expect(curtainActionForState(1, false, true)).toBe('arm')
+        expect(curtainActionForState(1, true, true)).toBe('ignore')
+        expect(curtainActionForState(3, false, true)).toBe('ignore')
+    })
+
+    it('al termine fa loop oppure ended solo dopo PLAYING', () => {
+        expect(curtainActionForState(0, false, true)).toBe('ignore')
+        expect(curtainActionForState(0, true, true)).toBe('loop')
+        expect(curtainActionForState(0, true, false)).toBe('ended')
     })
 })

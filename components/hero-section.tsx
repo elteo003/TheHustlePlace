@@ -10,10 +10,11 @@ import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/ui/spinner'
-import { useIsCoarsePointer, useIsPhoneLandscape } from '@/hooks/useMediaQuery'
+import { useIsCoarsePointer, useIsPhoneLandscape, useReducedMotion } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { buildTrailerEmbedUrl } from '@/hooks/useTrailerPreview'
-import { listenToYouTubePlayer, readYouTubePlayerState, YOUTUBE_ENDED, YOUTUBE_PLAYING } from '@/lib/youtube-command'
+import { useYouTubeCurtain, YOUTUBE_DISSOLVE_EASE, YOUTUBE_DISSOLVE_MS } from '@/hooks/useYouTubeCurtain'
+import { postYouTubeCommand } from '@/lib/youtube-command'
 
 const HERO_FRAME =
     'relative h-[calc(100dvh-13.5rem)] min-h-[22rem] w-full overflow-hidden'
@@ -35,6 +36,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const { movies, currentIndex, featuredMovie, loading, error, changeToNextMovie, changeToMovie } = useMovieContext()
     const isTouch = useIsCoarsePointer()
     const isPhoneLandscape = useIsPhoneLandscape()
+    const reduceMotion = useReducedMotion()
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
     const showMeta = isTouch || metaHovered || introVisible
@@ -55,25 +57,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const [trailer, setTrailer] = useState<string | null>(null)
     const [isMuted, setIsMuted] = useState(true)
     const iframeRef = useRef<HTMLIFrameElement>(null)
-    const trailerPlayedRef = useRef(false)
-
-    const sendYoutube = (func: string) => {
-        iframeRef.current?.contentWindow?.postMessage(
-            JSON.stringify({ event: 'command', func, args: [] }),
-            'https://www.youtube.com'
-        )
-    }
-
-    const kickPlayback = () => {
-        sendYoutube('mute')
-        sendYoutube('playVideo')
-        listenToYouTubePlayer(iframeRef.current?.contentWindow)
-    }
 
     const toggleAudio = () => {
         const nextMuted = !isMuted
         setIsMuted(nextMuted)
-        sendYoutube(nextMuted ? 'mute' : 'unMute')
+        postYouTubeCommand(iframeRef.current?.contentWindow, nextMuted ? 'mute' : 'unMute')
     }
 
     const onTrailerEndedRef = useRef(onTrailerEnded)
@@ -94,25 +82,12 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         hideEndedTrailer()
     }, [hideEndedTrailer, setTrailerEnded])
 
-    useEffect(() => {
-        trailerPlayedRef.current = false
-    }, [trailer])
-
-    useEffect(() => {
-        const onMessage = (event: MessageEvent) => {
-            const state = readYouTubePlayerState(event.origin, event.data)
-            if (state == null) return
-            if (state === YOUTUBE_PLAYING) {
-                trailerPlayedRef.current = true
-                return
-            }
-            if (state === YOUTUBE_ENDED && trailerPlayedRef.current) {
-                finishTrailer()
-            }
-        }
-        window.addEventListener('message', onMessage)
-        return () => window.removeEventListener('message', onMessage)
-    }, [finishTrailer])
+    const { revealed, kickPlayback } = useYouTubeCurtain(iframeRef, {
+        enabled: Boolean(trailer) && !trailerEnded && !showUpcomingTrailers,
+        muted: isMuted,
+        loop: false,
+        onEnded: finishTrailer,
+    })
 
     // Notifica quando la Hero Section è caricata
     useEffect(() => {
@@ -291,6 +266,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                 width: 'max(100vw, 177.78dvh)',
                                 height: 'max(100dvh, 56.25vw)',
                                 transform: 'translate(-50%, -50%) scale(1.08)',
+                                opacity: revealed ? 1 : 0,
+                                transition:
+                                    revealed && !reduceMotion
+                                        ? `opacity ${YOUTUBE_DISSOLVE_MS}ms ${YOUTUBE_DISSOLVE_EASE}`
+                                        : 'none',
                             }}
                         />
                     )}

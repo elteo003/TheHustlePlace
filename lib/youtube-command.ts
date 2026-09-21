@@ -24,6 +24,31 @@ export function startYouTubePreview(frame: Window | null | undefined, muted: boo
     }
 }
 
+export function killYouTubeCaptions(frame: Window | null | undefined) {
+    postYouTubeCommand(frame, 'unloadModule', ['captions'])
+    postYouTubeCommand(frame, 'unloadModule', ['cc'])
+}
+
+export function restartYouTubePreview(frame: Window | null | undefined, muted: boolean) {
+    postYouTubeCommand(frame, 'seekTo', [0, true])
+    startYouTubePreview(frame, muted)
+}
+
+export type YouTubeCurtainAction = 'arm' | 'ignore' | 'loop' | 'ended'
+
+export function curtainActionForState(
+    state: number,
+    armed: boolean,
+    loop: boolean
+): YouTubeCurtainAction {
+    if (state === YOUTUBE_PLAYING) return armed ? 'ignore' : 'arm'
+    if (state === YOUTUBE_ENDED) {
+        if (!armed) return 'ignore'
+        return loop ? 'loop' : 'ended'
+    }
+    return 'ignore'
+}
+
 export function parseYouTubePlayerMessage(data: unknown): { event: string; info?: number } | null {
     let payload = data
     if (typeof data === 'string') {
