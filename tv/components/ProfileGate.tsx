@@ -150,29 +150,39 @@ export function ProfileGate() {
     const railShift = railIndex <= 1 ? 0 : railIndex - 1
 
     return (
-        <div className="flex w-full flex-col items-start px-10">
-            <h1 className="text-5xl font-semibold text-white">Chi guarda?</h1>
+        <div className="relative h-full min-h-[100dvh] w-full overflow-hidden">
+            <h1 className="pointer-events-none absolute inset-x-0 top-[5.5vh] z-10 text-center text-5xl font-semibold text-white [text-shadow:0_10px_32px_#000]">
+                Chi vuole guardare la tv?
+            </h1>
             {!configured && error ? (
-                <p className="mt-4 text-lg text-white/45">Senza database i profili restano solo su questa TV.</p>
+                <p className="absolute inset-x-0 top-[14vh] z-10 text-center text-lg text-white/45">
+                    Senza database i profili restano solo su questa TV.
+                </p>
             ) : null}
-            <div className="mt-10 flex items-start">
-                <div className="h-[29.5rem] w-56 overflow-hidden">
+            <div className="flex h-full items-start pl-[4.5vw]">
+                <div
+                    className="h-full w-64 shrink-0 px-10 py-[12vh]"
+                    style={{
+                        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)',
+                        maskImage: 'linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)',
+                    }}
+                >
                     <div
                         className="motion-reduce:transition-none"
                         style={{
-                            transform: `translateY(${-railShift * 13.5}rem)`,
+                            transform: `translateY(${-railShift * 12.5}rem)`,
                             transitionProperty: 'transform',
                             transitionDuration: '240ms',
                             transitionTimingFunction: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
                         }}
                     >
                         {shown.map((profile, index) => (
-                            <div key={profile.id} className="mb-6 h-[12rem]">
+                            <div key={profile.id} className="h-[12.5rem]">
                                 <TvFocus
                                     autoFocusItem={index === 0}
                                     onFocus={() => setRailIndex(index)}
                                     onClick={() => void enter(profile)}
-                                    className="flex h-40 w-40 overflow-hidden rounded-2xl p-0"
+                                    className="gate-avatar flex h-40 w-40 overflow-hidden rounded-2xl p-0"
                                 >
                                     <ProfileAvatar
                                         avatar={profile.avatar}
@@ -181,35 +191,30 @@ export function ProfileGate() {
                                         initialClassName="text-6xl"
                                     />
                                 </TvFocus>
-                                <p className="mt-2 text-2xl text-white">{profile.name}</p>
                             </div>
                         ))}
                         {canAddHouseholdProfile(profiles.length) && (
-                            <div className="h-[12rem]">
+                            <div className="h-[12.5rem]">
                                 <TvFocus
                                     onFocus={() => setRailIndex(shown.length)}
                                     onClick={() => setView('create')}
-                                    className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
+                                    className="gate-avatar flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-white/25 text-6xl text-white/70"
                                 >
                                     +
                                 </TvFocus>
-                                <p className="mt-2 text-2xl text-white/70">Aggiungi</p>
                             </div>
                         )}
                     </div>
                 </div>
-                <div className="min-w-[280px] pl-14 pt-2">
-                    <p className="text-4xl font-semibold text-white">{focused ? focused.name : 'Aggiungi'}</p>
-                    <p className="mt-2 text-lg text-white/45">
-                        {focused ? 'OK sul riquadro per entrare.' : 'OK per creare un profilo.'}
-                    </p>
+                <div className="min-w-[280px] pl-7 pt-[18vh]">
+                    <p className="mb-6 text-4xl font-semibold text-white">{focused ? focused.name : 'Aggiungi'}</p>
                     {focused && focused.id !== 'local' && (
                         <TvFocus
                             onClick={() => {
                                 setSelected(focused)
                                 setView('edit')
                             }}
-                            className="mt-8 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
+                            className="mt-0 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
                         >
                             Modifica
                         </TvFocus>
@@ -233,9 +238,9 @@ export function ProfileGate() {
                             Ho un codice
                         </TvFocus>
                     )}
+                    {error && view === 'pick' ? <p className="mt-6 text-lg text-white/55">{error}</p> : null}
                 </div>
             </div>
-            {error && view === 'pick' && <p className="mt-6 text-lg text-white/55">{error}</p>}
         </div>
     )
 }

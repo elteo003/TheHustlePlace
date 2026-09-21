@@ -110,43 +110,53 @@
     }
     .gate { text-align: center; padding-top: 7vh; }
     .gate h1 { font-size: 52px; margin: 0 0 40px; font-weight: 700; }
-    .gate-pick { --gate-slot: 220px; text-align: left; padding: 7vh 6vw 0; }
-    .gate-pick h1 { margin: 0 0 28px; }
+    .shell.gate-pick {
+      --gate-slot: 200px;
+      position: relative;
+      height: 100%;
+      padding: 0;
+      overflow: hidden;
+      text-align: left;
+    }
+    .gate-pick h1 {
+      position: absolute;
+      left: 0; right: 0;
+      top: 5.5vh;
+      margin: 0;
+      text-align: center;
+      z-index: 4;
+      pointer-events: none;
+      text-shadow: 0 10px 32px #000;
+    }
     .gate-split {
       display: -webkit-box; display: flex;
       -webkit-box-align: start; align-items: flex-start;
+      height: 100%;
+      padding-left: 4.5vw;
     }
     .gate-rail {
-      width: 220px;
-      height: calc(var(--gate-slot, 220px) * 2.15);
+      width: 168px;
+      height: 100%;
       overflow: hidden;
       -webkit-flex-shrink: 0; flex-shrink: 0;
-      padding: 10px 10px 0 4px;
+      padding: 12vh 48px 12vh;
       box-sizing: content-box;
-      -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
-      mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
-    }
-    .gate-pick .avatar.is-tv-focused, .gate-pick .plus.is-tv-focused {
-      -webkit-transform: none; transform: none;
-      box-shadow: none;
-      outline: 4px solid #fff;
-      outline-offset: 3px;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
     }
     .gate-track {
       transition: transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
     }
     .gate-pick .pcol {
       display: block;
-      width: 200px;
-      height: var(--gate-slot, 220px);
+      width: 168px;
+      height: var(--gate-slot, 200px);
       margin: 0;
       text-align: left;
     }
-    .gate-pick .avatar, .gate-pick .plus { margin: 0 0 10px; }
-    .gate-pick .pname { text-align: left; margin: 0; }
-    .gate-side { padding: 8px 0 0 56px; min-width: 280px; }
-    .gate-side-name { font-size: 40px; font-weight: 700; margin: 0 0 8px; }
-    .gate-side-hint { margin: 0 0 22px; }
+    .gate-pick .avatar, .gate-pick .plus { margin: 0; }
+    .gate-side { padding: 18vh 0 0 28px; min-width: 280px; }
+    .gate-side-name { font-size: 40px; font-weight: 700; margin: 0 0 22px; }
     .gate-side .action { display: block; width: 240px; margin: 0 0 10px; }
     @media (prefers-reduced-motion: reduce) {
       .gate-track { transition: none; }
@@ -382,6 +392,14 @@
       -webkit-transform: none; transform: none;
       box-shadow: none;
       background: rgba(255,255,255,.08);
+    }
+    .gate-pick .avatar.is-tv-focused, .gate-pick .plus.is-tv-focused {
+      -webkit-transform: none; transform: none;
+      outline: none;
+      box-shadow:
+        0 0 22px 6px rgba(255,255,255,.95),
+        0 0 56px 18px rgba(255,255,255,.55),
+        0 0 96px 36px rgba(255,255,255,.22);
     }
     .hint { color: rgba(255,255,255,.5); font-size: 20px; }
     .muted { color: rgba(255,255,255,.5); font-size: 18px; }
@@ -874,7 +892,7 @@
     if (slot >= 0) gateRailIndex = slot;
     var shift = gateRailIndex <= 1 ? 0 : gateRailIndex - 1;
     if (instant) track.style.transitionDuration = '0ms';
-    track.style.transform = 'translateY(' + (-shift * 220) + 'px)';
+    track.style.transform = 'translateY(' + (-shift * 200) + 'px)';
     if (instant) {
       track.offsetHeight;
       track.style.transitionDuration = '';
@@ -883,20 +901,14 @@
 
   function syncGateSide() {
     var nameNode = document.getElementById('gate-side-name');
-    var hint = document.getElementById('gate-side-hint');
     var edit = document.getElementById('gate-side-edit');
     var link = document.getElementById('gate-side-link');
     var shown = gateProfiles();
     var slot = gateSlotIndex();
-    var profile = slot >= 0 && slot < shown.length ? shown[slot] : null;
-    gateFocusProfile = profile;
+    var profile = slot >= 0 && slot < shown.length ? shown[slot] : gateFocusProfile;
     if (nameNode) {
       nameNode.innerHTML = '';
       nameNode.appendChild(document.createTextNode(profile ? (profile.name || 'Profilo') : 'Aggiungi'));
-    }
-    if (hint) {
-      hint.innerHTML = '';
-      hint.appendChild(document.createTextNode(profile ? 'OK sul riquadro per entrare.' : 'OK per creare un profilo.'));
     }
     if (edit) edit.style.display = profile && profile.id !== 'local' ? 'block' : 'none';
     if (link) link.style.display = profile && household.configured && profile.pairCode && profile.id !== 'local' ? 'block' : 'none';
@@ -1409,7 +1421,7 @@
     }
 
     page.className = 'shell gate gate-pick';
-    page.appendChild(el('h1', '', 'Chi guarda?'));
+    page.appendChild(el('h1', '', 'Chi vuole guardare la tv?'));
     var split = el('div', 'gate-split');
     var rail = el('div', 'gate-rail');
     var track = el('div', 'gate-track');
@@ -1423,7 +1435,6 @@
       })(profile), i === 0);
       paintAvatarNode(avatar, profile.avatar || 0, profile.name || '?');
       wrap.appendChild(avatar);
-      wrap.appendChild(el('span', 'pname', profile.name || 'Profilo'));
       track.appendChild(wrap);
     }
     if (household.profiles.length < 8) {
@@ -1435,7 +1446,6 @@
         wantFid = 'art-1';
         renderGate();
       }));
-      wrap.appendChild(el('span', 'pname', 'Aggiungi'));
       track.appendChild(wrap);
     }
     rail.appendChild(track);
@@ -1444,8 +1454,6 @@
     var side = el('div', 'gate-side');
     side.appendChild(el('div', 'gate-side-name', shown[0] ? (shown[0].name || 'Profilo') : 'Aggiungi'));
     side.lastChild.id = 'gate-side-name';
-    side.appendChild(el('p', 'muted gate-side-hint', 'OK sul riquadro per entrare.'));
-    side.lastChild.id = 'gate-side-hint';
     var editBtn = focusBtn('action', 'Modifica', 'side-edit', function () {
       if (!gateFocusProfile || gateFocusProfile.id === 'local') return;
       editProfileId = gateFocusProfile.id;

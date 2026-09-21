@@ -890,3 +890,14 @@ html {
 .tv-focusable:disabled {
     pointer-events: none;
 }
+
+.gate-avatar.tv-focusable:focus,
+.gate-avatar.tv-focusable:focus-visible,
+.gate-avatar.tv-focusable.is-tv-focused {
+    outline: none;
+    transform: none;
+    box-shadow:
+        0 0 22px 6px rgba(255, 255, 255, 0.95),
+        0 0 56px 18px rgba(255, 255, 255, 0.55),
+        0 0 96px 36px rgba(255, 255, 255, 0.22);
+}
