@@ -201,6 +201,6 @@ export interface SeriesPlayerProps {
     }> | null;
     onSeasonChange: (season: number) => void;
     onEpisodeChange: (episode: number) => void;
-    onPlay: (season: number, episode: number) => void;
+    onPlay?: (season: number, episode: number) => void;
     onAutoplayNext: (season: number, episode: number) => void;
 }

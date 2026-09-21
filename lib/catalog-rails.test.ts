@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+    cinemaYearWindow,
     comingSoonWindow,
     excludeAvailableOnVixsrc,
+    keepCinemaReleases,
     keepFutureReleases,
     keepNotableComingSoon,
     mergeComingSoon,
@@ -84,10 +86,41 @@ describe('catalog-rails', () => {
         expect(kept.map((item) => item.title)).toEqual(['Atteso'])
     })
 
+    it('tiene al cinema solo i film con locandina e un minimo di attesa', () => {
+        const kept = keepCinemaReleases(
+            mergeComingSoon([
+                {
+                    type: 'movie',
+                    items: [{ id: 1, title: 'Corto', popularity: 1, poster_path: '/a.jpg' }],
+                },
+                {
+                    type: 'movie',
+                    items: [{ id: 2, title: 'Senza locandina', popularity: 40 }],
+                },
+                {
+                    type: 'tv',
+                    items: [{ id: 3, name: 'Serie', popularity: 40, poster_path: '/b.jpg' }],
+                },
+                {
+                    type: 'movie',
+                    items: [{ id: 4, title: 'Blockbuster', popularity: 80, poster_path: '/c.jpg' }],
+                },
+            ])
+        )
+        expect(kept.map((item) => item.title)).toEqual(['Blockbuster'])
+    })
+
     it('calcola una finestra di 90 giorni', () => {
         expect(comingSoonWindow(new Date('2026-09-20T12:00:00.000Z'))).toEqual({
             from: '2026-09-20',
             to: '2026-12-19',
+        })
+    })
+
+    it('tiene Presto al cinema da oggi a fine anno a Roma', () => {
+        expect(cinemaYearWindow(new Date('2026-09-21T10:00:00.000Z'))).toEqual({
+            from: '2026-09-21',
+            to: '2026-12-31',
         })
     })
 })

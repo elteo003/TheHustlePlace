@@ -28,8 +28,20 @@ export function getPlayerPath(
     return query ? `/player/movie/${id}?${query}` : `/player/movie/${id}`
 }
 
-export function getDetailsPath(id: number, type: ContentType): string {
-    return type === 'tv' ? `/series/${id}` : `/movie/${id}`
+export function getDetailsPath(
+    id: number,
+    type: ContentType,
+    options?: { watchable?: boolean }
+): string {
+    const base = type === 'tv' ? `/series/${id}` : `/movie/${id}`
+    if (options?.watchable === false) {
+        return `${base}?watch=0`
+    }
+    return base
+}
+
+export function isWatchableSearchParam(value: string | null | undefined): boolean {
+    return value !== '0'
 }
 
 export function getSeriesPath(

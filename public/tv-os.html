@@ -2017,8 +2017,8 @@
     box.appendChild(copy);
   }
 
-  function openDetail(type, id) {
-    go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
+  function openDetail(type, id, noWatch) {
+    go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id + (noWatch ? '?watch=0' : ''));
   }
 
   function firstEpisode(seasons) {
@@ -2115,6 +2115,7 @@
     var i, item, tile, fid, limit, card, sub, kind, rank, ranked;
     ranked = isRankedRail(railId);
     limit = items.length > 40 ? 40 : items.length;
+    if (railId === 'cine') limit = items.length > 80 ? 80 : items.length;
     if (ranked && limit > 10) limit = 10;
     for (i = 0; i < limit; i++) {
       item = items[i];
@@ -2133,7 +2134,7 @@
               return;
             }
           }
-          openDetail(itemType(it, fb), itemId(it));
+          openDetail(itemType(it, fb), itemId(it), rail === 'soon' || rail === 'cine');
         };
       })(item, fallbackType, railId), i === 0 && railId === 'top');
       decorateTile(tile, item, fallbackType, fid, railId === 'hist');
@@ -2623,14 +2624,14 @@
     catalogSharedWaiters = [done];
     var bag = {
       top: [], movies: [], recent: [], tv: [], tvRecent: [],
-      coming: [], war: [], intrigue: [], period: [],
+      coming: [], cinema: [], war: [], intrigue: [], period: [],
       medieval: [], puzzle: [], mystery: [], dark: [], jukebox: [], vintage: [],
       drug: [], crime: [],
       platformSeries: [], platformMovies: [],
       platformSeriesTitle: '', platformMoviesTitle: '',
       ready: false
     };
-    var step = runSteps(8, function () {
+    var step = runSteps(9, function () {
       bag.ready = true;
       catalogShared = bag;
       var queue = catalogSharedWaiters;
@@ -2643,6 +2644,7 @@
     getJson('/api/catalog/popular/tv', function (json) { bag.tv = listOf(json); step(); }, 8000);
     getJson('/api/catalog/latest/tv', function (json) { bag.tvRecent = listOf(json); step(); }, 8000);
     getJson('/api/catalog/coming-soon', function (json) { bag.coming = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/coming-to-cinema', function (json) { bag.cinema = listOf(json); step(); }, 12000);
     getJson('/api/catalog/editorial', function (json) {
       var rails = json && json.data ? json.data : {};
       bag.war = listOf({ data: rails.warAndPolitics });
@@ -2727,6 +2729,7 @@
       tv: shared.tv || [],
       tvRecent: shared.tvRecent || [],
       coming: shared.coming || [],
+      cinema: shared.cinema || [],
       war: shared.war || [],
       intrigue: shared.intrigue || [],
       period: shared.period || [],
@@ -2768,8 +2771,22 @@
     };
   }
 
+  function pinTailRails(rails) {
+    var cinema = [];
+    var coming = [];
+    var body = [];
+    var i;
+    for (i = 0; i < (rails || []).length; i++) {
+      if (rails[i].id === 'cine' || rails[i].title === 'Presto al cinema') cinema.push(rails[i]);
+      else if (rails[i].id === 'soon' || rails[i].title === 'In arrivo') coming.push(rails[i]);
+      else body.push(rails[i]);
+    }
+    return body.concat(cinema, coming);
+  }
+
   function weavePlatformTop10s(rails, inserts) {
     var filled = [];
+    var cinema = [];
     var coming = [];
     var body = [];
     var out;
@@ -2781,9 +2798,12 @@
     for (i = 0; i < inserts.length; i++) {
       if (inserts[i] && inserts[i].items && inserts[i].items.length) filled.push(inserts[i]);
     }
-    if (!filled.length) return rails;
+    if (!filled.length) {
+      return pinTailRails(rails);
+    }
     for (i = 0; i < rails.length; i++) {
-      if (rails[i].id === 'soon' || rails[i].title === 'In arrivo') coming.push(rails[i]);
+      if (rails[i].id === 'cine' || rails[i].title === 'Presto al cinema') cinema.push(rails[i]);
+      else if (rails[i].id === 'soon' || rails[i].title === 'In arrivo') coming.push(rails[i]);
       else if (rails[i].id !== 'ptv' && rails[i].id !== 'pmov') body.push(rails[i]);
     }
     for (i = 0; i < body.length; i++) {
@@ -2792,7 +2812,7 @@
         break;
       }
     }
-    if (topIdx < 0) return body.concat(filled, coming);
+    if (topIdx < 0) return body.concat(filled, cinema, coming);
     out = body.slice(0, topIdx + 1);
     rest = body.slice(topIdx + 1);
     for (i = 0; i < rest.length; i++) {
@@ -2808,7 +2828,7 @@
       out.push(filled[insertIndex]);
       insertIndex += 1;
     }
-    return out.concat(coming);
+    return out.concat(cinema, coming);
   }
 
   function railsOf(kind, data) {
@@ -2837,6 +2857,7 @@
       add('Le guerre di oggi', data.intrigue, 'movie', 'int');
       add('Aggiunti di recente', data.recent, 'movie', 'mrec');
       add('Serie popolari', data.tv, 'tv', 'tv');
+      add('Presto al cinema', data.cinema, 'movie', 'cine');
       add('In arrivo', data.coming, 'movie', 'soon');
       rails = weavePlatformTop10s(rails, [
         { title: data.platformSeriesTitle || 'Top 10 serie TV', items: data.platformSeries, type: 'tv', id: 'ptv' },
@@ -3199,6 +3220,7 @@
   }
 
   function renderDetail(type, id) {
+    var noWatch = qs('watch') === '0';
     backHandler = function () { go('/living/home'); };
     root.innerHTML = '';
     var page = el('div', 'shell');
@@ -3236,15 +3258,17 @@
       var copy = el('div', 'detail-copy');
       copy.appendChild(el('h1', '', itemTitle(item)));
       copy.appendChild(el('p', 'overview', item.overview || ''));
-      copy.appendChild(focusBtn('action main', 'Riproduci', 'detail-play', function () {
-        rememberPlay(item, 'movie', id);
-        openPlay('movie', id);
-      }, true));
-      copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }));
+      if (!noWatch) {
+        copy.appendChild(focusBtn('action main', 'Riproduci', 'detail-play', function () {
+          rememberPlay(item, 'movie', id);
+          openPlay('movie', id);
+        }, true));
+      }
+      copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }, noWatch));
       stage.appendChild(copy);
       page.appendChild(stage);
       root.appendChild(page);
-      collect('detail-play');
+      collect(noWatch ? 'detail-back' : 'detail-play');
     });
   }
 
@@ -3316,6 +3340,8 @@
 
     function playEpisode(en) {
       selectedEpisode = Number(en);
+      refreshPlayLabel();
+      if (qs('watch') === '0') return;
       var lw = findLastWatched(history, id);
       var start = (lw && lw.season === selectedSeason && lw.episode === selectedEpisode) ? lw.currentTime : 0;
       rememberPlay(item, 'tv', id);
@@ -3421,8 +3447,10 @@
     meta.appendChild(el('span', '', seasons.length + (seasons.length === 1 ? ' stagione' : ' stagioni')));
     copy.appendChild(meta);
     copy.appendChild(el('p', 'overview', item.overview || ''));
-    playBtn = focusBtn('action main', playLabelText(), 'detail-play', playSelected, true);
-    copy.appendChild(playBtn);
+    if (qs('watch') !== '0') {
+      playBtn = focusBtn('action main', playLabelText(), 'detail-play', playSelected, true);
+      copy.appendChild(playBtn);
+    }
     copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () {
       seriesPage = null;
       go('/living/home');

@@ -32,6 +32,7 @@ interface ContentHoverCardProps {
     onPlay?: (id: number, type?: ContentType) => void
     onDetails?: (id: number, type?: ContentType) => void
     variant?: 'carousel' | 'grid' | 'top10'
+    watchable?: boolean
 }
 
 function getYear(item: ContentItem, type: ContentType): number | null {
@@ -52,6 +53,7 @@ export function ContentHoverCard({
     onPlay,
     onDetails,
     variant = 'carousel',
+    watchable = true,
 }: ContentHoverCardProps) {
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
@@ -69,6 +71,7 @@ export function ContentHoverCard({
     const year = getYear(item, itemType)
     const rating = item.vote_average > 0 ? item.vote_average.toFixed(1) : null
     const previewImage = getContentPosterUrl(item.backdrop_path || item.poster_path, 'original')
+    const canWatch = watchable && Boolean(onPlay)
 
     const { trailerKey, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
@@ -163,6 +166,10 @@ export function ContentHoverCard({
     }
 
     const handleTap = () => {
+        if (!canWatch && onDetails) {
+            onDetails(itemId, itemType)
+            return
+        }
         if (isTouch) {
             if (onPeek) {
                 void prefetchTrailerKey(itemId, itemType)
@@ -284,7 +291,7 @@ export function ContentHoverCard({
                                     </p>
                                 )}
                                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                                    {onPlay && (
+                                    {canWatch && onPlay && (
                                         <button
                                             type="button"
                                             onClick={() => onPlay(itemId, itemType)}
@@ -299,6 +306,7 @@ export function ContentHoverCard({
                                         <DetailLink
                                             id={itemId}
                                             type={itemType}
+                                            watchable={canWatch}
                                             className="btn-ghost-outline text-sm py-2.5 px-4 inline-flex items-center gap-1.5"
                                         >
                                             <Info className="w-4 h-4" />
@@ -352,7 +360,7 @@ export function ContentHoverCard({
                         />
                     </PosterTransition>
 
-                    {!isTouch && (
+                    {!isTouch && canWatch && (
                         <button
                             type="button"
                             className={`absolute inset-0 z-10 flex items-center justify-center bg-black/45 transition-opacity duration-300 ease-out ${
@@ -374,7 +382,7 @@ export function ContentHoverCard({
                         </button>
                     )}
 
-                    {isTouch && onPlay && (
+                    {isTouch && canWatch && onPlay && (
                         <button
                             type="button"
                             className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
@@ -399,7 +407,7 @@ export function ContentHoverCard({
                 overview={item.overview}
                 posterUrl={getContentPosterUrl(item.poster_path)}
                 contentType={itemType}
-                onPlay={() => onPlay?.(itemId, itemType)}
+                onPlay={canWatch && onPlay ? () => onPlay(itemId, itemType) : undefined}
                 onDetails={() => onDetails?.(itemId, itemType)}
             />
         </>

@@ -13,7 +13,7 @@ interface ContentActionSheetProps {
     title: string
     overview?: string
     posterUrl: string
-    onPlay: () => void
+    onPlay?: () => void
     onDetails: () => void
     contentType: ContentType
 }
@@ -97,17 +97,19 @@ export function ContentActionSheet({
                         </div>
 
                         <div className="px-5 pb-8 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    onPlay()
-                                    onClose()
-                                }}
-                                className="flex-1 btn-play flex items-center justify-center gap-2"
-                            >
-                                <Play className="w-4 h-4 fill-current" />
-                                Guarda
-                            </button>
+                            {onPlay && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onPlay()
+                                        onClose()
+                                    }}
+                                    className="flex-1 btn-play flex items-center justify-center gap-2"
+                                >
+                                    <Play className="w-4 h-4 fill-current" />
+                                    Guarda
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => {

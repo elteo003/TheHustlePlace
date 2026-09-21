@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { CatalogService } from '@/services/catalog.service'
 import { fetchPersonalRails, fetchServerWatchHistory } from '@/lib/server/catalog'
-import { HOME_RAIL_SIZE } from '@/lib/catalog-types'
+import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE } from '@/lib/catalog-types'
 import { getOrCreateDeviceId, withDeviceCookie } from '@/lib/supabase/device'
 
 export const dynamic = 'force-dynamic'
@@ -30,11 +30,12 @@ const bodySchema = z.object({
 })
 
 async function occupiedFromCatalog() {
-    const [top10, comingSoon] = await Promise.all([
+    const [top10, comingSoon, cinema] = await Promise.all([
         catalogService.getTop10Mixed(),
         catalogService.getComingSoon(HOME_RAIL_SIZE),
+        catalogService.getComingToCinema(CINEMA_RAIL_SIZE),
     ])
-    return [...top10, ...comingSoon]
+    return [...top10, ...cinema, ...comingSoon]
 }
 
 export async function GET() {

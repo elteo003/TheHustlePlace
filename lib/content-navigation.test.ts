@@ -22,6 +22,8 @@ describe('content-navigation', () => {
     it('genera il path dettagli coerente col tipo', () => {
         expect(getDetailsPath(7, 'movie')).toBe('/movie/7')
         expect(getDetailsPath(7, 'tv')).toBe('/series/7')
+        expect(getDetailsPath(7, 'movie', { watchable: false })).toBe('/movie/7?watch=0')
+        expect(getDetailsPath(7, 'tv', { watchable: false })).toBe('/series/7?watch=0')
     })
 
     it('genera il path serie con puntata opzionale', () => {

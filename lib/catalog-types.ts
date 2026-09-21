@@ -5,6 +5,7 @@ export type CatalogSection =
     | 'trending'
     | 'now-playing'
     | 'upcoming'
+    | 'coming-to-cinema'
     | 'picks'
     | 'affinity'
     | 'treasures'
@@ -23,4 +24,9 @@ export type CatalogSection =
     | 'platform-top10-movie'
 
 export const HOME_RAIL_SIZE = 24
+export const CINEMA_RAIL_SIZE = 80
 export const TOP10_SIZE = 10
+
+export function isPreviewOnlySection(section: CatalogSection): boolean {
+    return section === 'upcoming' || section === 'coming-to-cinema'
+}

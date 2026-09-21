@@ -1,5 +1,5 @@
 import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails, fetchPlatformTop10 } from '@/lib/server/catalog'
-import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
+import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_TITLES } from '@/lib/editorial-rails'
 import { TvRailItem } from '@/tv/lib/types'
 import { TvHome } from '@/tv/components/TvHome'
@@ -8,17 +8,23 @@ import { Top10Content } from '@/types'
 export const dynamic = 'force-dynamic'
 
 export default async function LivingHomePage() {
-    const [top10, comingSoon, popularMovies, recentMovies, popularTV, recentTV, platformTop10] = await Promise.all([
-        fetchCatalogSection('movie', 'trending', TOP10_SIZE),
-        fetchCatalogSection('movie', 'upcoming', HOME_RAIL_SIZE),
-        fetchCatalogSection('movie', 'popular', HOME_RAIL_SIZE),
-        fetchCatalogSection('movie', 'recent', HOME_RAIL_SIZE),
-        fetchCatalogSection('tv', 'popular', HOME_RAIL_SIZE),
-        fetchCatalogSection('tv', 'recent', HOME_RAIL_SIZE),
-        fetchPlatformTop10(),
-    ])
+    const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10] =
+        await Promise.all([
+            fetchCatalogSection('movie', 'trending', TOP10_SIZE),
+            fetchCatalogSection('movie', 'upcoming', HOME_RAIL_SIZE),
+            fetchCatalogSection('movie', 'coming-to-cinema', CINEMA_RAIL_SIZE),
+            fetchCatalogSection('movie', 'popular', HOME_RAIL_SIZE),
+            fetchCatalogSection('movie', 'recent', HOME_RAIL_SIZE),
+            fetchCatalogSection('tv', 'popular', HOME_RAIL_SIZE),
+            fetchCatalogSection('tv', 'recent', HOME_RAIL_SIZE),
+            fetchPlatformTop10(),
+        ])
 
-    const occupiedBase = [...(top10 as Top10Content[]), ...(comingSoon as Top10Content[])]
+    const occupiedBase = [
+        ...(top10 as Top10Content[]),
+        ...(cinema as Top10Content[]),
+        ...(comingSoon as Top10Content[]),
+    ]
     const personal = await fetchPersonalRails(occupiedBase)
     const editorial = await fetchEditorialRails(occupiedBase)
 
@@ -37,6 +43,7 @@ export default async function LivingHomePage() {
         })),
         { title: 'Film recenti', items: recentMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie popolari', items: popularTV as TvRailItem[], type: 'tv' as const },
+        { id: 'coming-to-cinema', title: 'Presto al cinema', items: cinema as TvRailItem[] },
         { id: 'soon', title: 'In arrivo', items: comingSoon as TvRailItem[] },
     ].filter((row) => row.items.length > 0)
 

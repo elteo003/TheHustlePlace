@@ -371,6 +371,28 @@ export class CatalogController {
         }
     }
 
+    async getComingToCinema(request: NextRequest): Promise<NextResponse> {
+        try {
+            const cinema = await this.catalogService.getComingToCinema()
+
+            return NextResponse.json({
+                success: true,
+                data: cinema,
+                message: 'Film in uscita al cinema recuperati con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero presto al cinema', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
     async getPopularMovies(request: NextRequest): Promise<NextResponse> {
         try {
             const movies = await this.catalogService.getPopularMovies()
@@ -433,3 +455,4 @@ export const getGenresHandler = catalogController.getGenres.bind(catalogControll
 export const getTop10MixedHandler = catalogController.getTop10Mixed.bind(catalogController)
 export const getPlatformTop10Handler = catalogController.getPlatformTop10.bind(catalogController)
 export const getComingSoonHandler = catalogController.getComingSoon.bind(catalogController)
+export const getComingToCinemaHandler = catalogController.getComingToCinema.bind(catalogController)

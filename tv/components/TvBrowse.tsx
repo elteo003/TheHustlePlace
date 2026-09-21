@@ -43,8 +43,8 @@ export function TvBrowse({ rows, continueWatching = [] }: TvBrowseProps) {
         [continueWatching]
     )
 
-    function openDetails(id: number, type: ContentType) {
-        router.push(livingDetailsPath(id, type))
+    function openDetails(id: number, type: ContentType, watchable = true) {
+        router.push(livingDetailsPath(id, type, { watchable }))
     }
 
     function play(id: number, type: ContentType) {
@@ -84,7 +84,13 @@ export function TvBrowse({ rows, continueWatching = [] }: TvBrowseProps) {
                         title={row.title}
                         items={row.items}
                         type={row.type}
-                        onSelect={openDetails}
+                        onSelect={(id, type) =>
+                            openDetails(
+                                id,
+                                type,
+                                row.title !== 'In arrivo' && row.title !== 'Presto al cinema'
+                            )
+                        }
                         onPeek={(id, type) => peek(id, type, row.items, row.type)}
                     />
                 ))}

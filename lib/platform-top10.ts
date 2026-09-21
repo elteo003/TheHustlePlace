@@ -73,6 +73,21 @@ export function isComingSoonRail(rail: WeavableRail): boolean {
     return rail.id === 'soon' || rail.id === 'coming-soon' || rail.title === 'In arrivo'
 }
 
+export function isCinemaRail(rail: WeavableRail): boolean {
+    return (
+        rail.id === 'cine' ||
+        rail.id === 'coming-to-cinema' ||
+        rail.title === 'Presto al cinema'
+    )
+}
+
+export function pinTailRails<T extends WeavableRail>(rails: T[]): T[] {
+    const cinema = rails.filter(isCinemaRail)
+    const coming = rails.filter(isComingSoonRail)
+    const body = rails.filter((rail) => !isCinemaRail(rail) && !isComingSoonRail(rail))
+    return [...body, ...cinema, ...coming]
+}
+
 export function isGeneralTop10Rail(rail: WeavableRail): boolean {
     return (
         rail.id === 'top' ||
@@ -92,13 +107,16 @@ export function weavePlatformTop10s<T extends WeavableRail>(
     gap = PLATFORM_TOP10_GAP
 ): T[] {
     const filled = inserts.filter((item) => (item.items?.length ?? 0) > 0)
-    if (!filled.length) return rails
+    if (!filled.length) return pinTailRails(rails)
 
+    const cinema = rails.filter(isCinemaRail)
     const coming = rails.filter(isComingSoonRail)
-    const body = rails.filter((rail) => !isComingSoonRail(rail) && !isPlatformTop10Rail(rail))
+    const body = rails.filter(
+        (rail) => !isCinemaRail(rail) && !isComingSoonRail(rail) && !isPlatformTop10Rail(rail)
+    )
     const topIdx = body.findIndex(isGeneralTop10Rail)
     if (topIdx < 0) {
-        return [...body, ...filled, ...coming]
+        return [...body, ...filled, ...cinema, ...coming]
     }
 
     const out = body.slice(0, topIdx + 1)
@@ -118,5 +136,5 @@ export function weavePlatformTop10s<T extends WeavableRail>(
         out.push(filled[insertIndex])
         insertIndex += 1
     }
-    return [...out, ...coming]
+    return [...out, ...cinema, ...coming]
 }

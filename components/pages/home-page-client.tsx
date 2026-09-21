@@ -9,7 +9,7 @@ import { ContinueWatchingRow } from '@/components/continue-watching-row'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
-import { HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
+import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
 import { weavePlatformTop10s, type PlatformTop10 } from '@/lib/platform-top10'
@@ -27,6 +27,7 @@ function HomeRail({ title, children }: { title: string; children: ReactNode }) {
 interface HomePageClientProps {
     top10: Top10Content[]
     comingSoon?: Top10Content[]
+    comingToCinema?: Top10Content[]
     personal: PersonalRails
     editorial: EditorialRails
     popularMovies: Movie[]
@@ -43,11 +44,13 @@ type HomeShelf = {
     section: CatalogSection
     items: (Movie | TVShow | Top10Content)[]
     limit: number
+    playable?: boolean
 }
 
 export function HomePageClient({
     top10,
     comingSoon = [],
+    comingToCinema = [],
     personal,
     editorial,
     popularMovies,
@@ -58,7 +61,10 @@ export function HomePageClient({
 }: HomePageClientProps) {
     const { play, openDetails } = useContentNavigation()
     const { entries: watchHistory } = useWatchHistory()
-    const occupied = useMemo(() => occupiedFromRails([...top10, ...comingSoon]), [top10, comingSoon])
+    const occupied = useMemo(
+        () => occupiedFromRails([...top10, ...comingToCinema, ...comingSoon]),
+        [top10, comingToCinema, comingSoon]
+    )
     const rails = usePersonalRails({ initial: personal, occupied })
     const [hasApiKey, setHasApiKey] = useState(true)
     const [isCheckingApi, setIsCheckingApi] = useState(false)
@@ -145,12 +151,22 @@ export function HomePageClient({
             limit: HOME_RAIL_SIZE,
         })
         push({
+            id: 'coming-to-cinema',
+            title: 'Presto al cinema',
+            type: 'movie',
+            section: 'coming-to-cinema',
+            items: comingToCinema,
+            limit: CINEMA_RAIL_SIZE,
+            playable: false,
+        })
+        push({
             id: 'coming-soon',
             title: 'In arrivo',
             type: 'movie',
             section: 'upcoming',
             items: comingSoon,
             limit: HOME_RAIL_SIZE,
+            playable: false,
         })
 
         return weavePlatformTop10s(next, [
@@ -173,6 +189,7 @@ export function HomePageClient({
         ])
     }, [
         comingSoon,
+        comingToCinema,
         editorial,
         platformTop10,
         popularMovies,
@@ -224,8 +241,12 @@ export function HomePageClient({
                                 type={shelf.type}
                                 section={shelf.section}
                                 limit={shelf.limit}
-                                onPlay={play}
-                                onDetails={openDetails}
+                                onPlay={shelf.playable === false ? undefined : play}
+                                onDetails={(id, type) =>
+                                    openDetails(id, type, {
+                                        watchable: shelf.playable !== false,
+                                    })
+                                }
                                 initialData={shelf.items}
                             />
                         </HomeRail>

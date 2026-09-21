@@ -10,14 +10,23 @@ interface DetailLinkProps {
     type: ContentType
     children: ReactNode
     className?: string
+    watchable?: boolean
     onClick?: (e: MouseEvent<HTMLAnchorElement>) => void
     onPointerDown?: (e: PointerEvent<HTMLAnchorElement>) => void
 }
 
-export function DetailLink({ id, type, children, className, onClick, onPointerDown }: DetailLinkProps) {
+export function DetailLink({
+    id,
+    type,
+    children,
+    className,
+    watchable = true,
+    onClick,
+    onPointerDown,
+}: DetailLinkProps) {
     return (
         <Link
-            href={getDetailsPath(id, type)}
+            href={getDetailsPath(id, type, { watchable })}
             className={cn(className)}
             onClick={onClick}
             onPointerDown={onPointerDown}

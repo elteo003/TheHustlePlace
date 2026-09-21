@@ -1,16 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { MovieDetailView, MovieDetails } from '@/components/movie-detail-view'
-import { getPlayerPath } from '@/lib/content-navigation'
+import { getPlayerPath, isWatchableSearchParam } from '@/lib/content-navigation'
 import { toast } from 'sonner'
 import { PageSpinner } from '@/components/ui/spinner'
 
 export default function MovieDetailPage() {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const movieId = params.id as string
+    const watchable = isWatchableSearchParam(searchParams.get('watch'))
     const [movie, setMovie] = useState<MovieDetails | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -77,7 +79,11 @@ export default function MovieDetailPage() {
     return (
         <MovieDetailView
             movie={movie}
-            onPlay={() => router.push(getPlayerPath(parseInt(movieId, 10), 'movie'))}
+            onPlay={
+                watchable
+                    ? () => router.push(getPlayerPath(parseInt(movieId, 10), 'movie'))
+                    : undefined
+            }
         />
     )
 }

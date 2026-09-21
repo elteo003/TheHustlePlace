@@ -33,6 +33,7 @@ describe('platform-top10', () => {
             { id: 'med', title: 'Il medio evo che ti appassiona', items: [1] },
             { id: 'puz', title: 'Indagini rompicapo', items: [1] },
             { id: 'mys', title: 'I capolavori del mistero', items: [1] },
+            { id: 'cine', title: 'Presto al cinema', items: [1] },
             { id: 'soon', title: 'In arrivo', items: [1] },
         ]
         const weaved = weavePlatformTop10s(rails, [
@@ -53,6 +54,7 @@ describe('platform-top10', () => {
             'puz',
             'mys',
             'platform-top10-movie',
+            'cine',
             'soon',
         ])
     })
@@ -62,12 +64,20 @@ describe('platform-top10', () => {
             { id: 'top', title: 'Top 10', items: [1] },
             { id: 'a', title: 'A', items: [1] },
             { id: 'b', title: 'B', items: [1] },
+            { id: 'cine', title: 'Presto al cinema', items: [1] },
             { id: 'soon', title: 'In arrivo', items: [1] },
         ]
         const weaved = weavePlatformTop10s(rails, [
             { id: 'platform-top10-tv', title: 'Top 10 serie TV da Max', items: [] },
             { id: 'platform-top10-movie', title: 'Top 10 film da Max', items: [1] },
         ])
-        expect(weaved.map((rail) => rail.id)).toEqual(['top', 'a', 'b', 'platform-top10-movie', 'soon'])
+        expect(weaved.map((rail) => rail.id)).toEqual([
+            'top',
+            'a',
+            'b',
+            'platform-top10-movie',
+            'cine',
+            'soon',
+        ])
     })
 })

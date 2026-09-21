@@ -29,6 +29,9 @@ vi.mock('@/services/catalog.service', () => ({
         getComingSoon() {
             return []
         }
+        getComingToCinema() {
+            return []
+        }
     },
 }))
 

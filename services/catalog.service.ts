@@ -8,14 +8,17 @@ import { TMDBMovie } from './tmdb-movies.service'
 import { getVixsrcIdSet } from './vixsrc-ids.service'
 import { filterByVixsrcIds, collectVixsrcTmdbIds, contentTmdbId } from '@/lib/vixsrc-ids'
 import {
+    cinemaYearWindow,
     comingSoonWindow,
     excludeAvailableOnVixsrc,
+    keepCinemaReleases,
     keepFutureReleases,
     keepNotableComingSoon,
     mapTmdbItemToTop10,
     mergeComingSoon,
     sortComingSoonByDate,
     takeGlobalTrending,
+    THEATRICAL_RELEASE_TYPES,
     type TmdbRailItem,
 } from '@/lib/catalog-rails'
 import {
@@ -450,6 +453,53 @@ export class CatalogService {
             return comingSoon.slice(0, limit)
         } catch (error) {
             logger.error('Errore nel recupero in arrivo', { error })
+            return []
+        }
+    }
+
+    async getComingToCinema(limit = 80): Promise<Top10Content[]> {
+        try {
+            const cacheKey = 'coming-to-cinema-v2'
+            const cached = await cache.get<Top10Content[]>(cacheKey)
+            if (cached) {
+                return cached.slice(0, limit)
+            }
+
+            const { from, to } = cinemaYearWindow()
+            const [pages, movieIds] = await Promise.all([
+                this.discoverPages(
+                    'movie',
+                    {
+                        region: 'IT',
+                        with_release_type: THEATRICAL_RELEASE_TYPES,
+                        'primary_release_date.gte': from,
+                        'primary_release_date.lte': to,
+                        'with_runtime.gte': 70,
+                        sort_by: 'popularity.desc',
+                    },
+                    8
+                ),
+                getVixsrcIdSet('movie'),
+            ])
+
+            const cinema = sortComingSoonByDate(
+                excludeAvailableOnVixsrc(
+                    keepCinemaReleases(keepFutureReleases(pages, from)),
+                    movieIds,
+                    new Set()
+                )
+            )
+
+            await cache.set(cacheKey, cinema, { ttl: this.CACHE_TTL })
+            logger.info('Presto al cinema recuperati', {
+                count: cinema.length,
+                from,
+                to,
+            })
+
+            return cinema.slice(0, limit)
+        } catch (error) {
+            logger.error('Errore nel recupero presto al cinema', { error })
             return []
         }
     }

@@ -18,8 +18,16 @@ export function livingSearchPath(): string {
     return `${LIVING_ROOT}/search`
 }
 
-export function livingDetailsPath(id: number, type: ContentType): string {
-    return type === 'tv' ? `${LIVING_ROOT}/series/${id}` : `${LIVING_ROOT}/movie/${id}`
+export function livingDetailsPath(
+    id: number,
+    type: ContentType,
+    options?: { watchable?: boolean }
+): string {
+    const base = type === 'tv' ? `${LIVING_ROOT}/series/${id}` : `${LIVING_ROOT}/movie/${id}`
+    if (options?.watchable === false) {
+        return `${base}?watch=0`
+    }
+    return base
 }
 
 export function livingPlayerPath(

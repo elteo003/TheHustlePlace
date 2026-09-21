@@ -116,6 +116,7 @@ export function SeriesPlayer({
                                     {tvShow.overview}
                                 </p>
 
+                                {onPlay && (
                                 <button
                                     type="button"
                                     onClick={() => onPlay(selectedSeason, selectedEpisode)}
@@ -125,6 +126,7 @@ export function SeriesPlayer({
                                     {isContinuing ? 'Continua' : 'Guarda'}
                                     {selectedEpisodeData ? ` S${selectedSeason}E${selectedEpisode}` : ''}
                                 </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -197,7 +199,7 @@ export function SeriesPlayer({
                                         onClick={() => {
                                             setSelectedEpisode(episode.episode_number)
                                             onEpisodeChange(episode.episode_number)
-                                            onPlay(selectedSeason, episode.episode_number)
+                                            onPlay?.(selectedSeason, episode.episode_number)
                                         }}
                                         className={`w-full flex items-start gap-4 py-5 text-left transition-colors ${
                                             watched
@@ -231,9 +233,11 @@ export function SeriesPlayer({
                                             ) : (
                                                 <div className="absolute inset-0 bg-zinc-800" />
                                             )}
+                                            {onPlay && (
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                                 <PlayMark className="h-10 w-10" iconClassName="h-4 w-4" />
                                             </div>
+                                            )}
                                             {progress > 0 && (
                                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
                                                     <div

@@ -5,7 +5,7 @@ import { ContentType } from '@/lib/content-navigation'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { PersonalRails } from '@/lib/personal-rails'
-import { weavePlatformTop10s, type PlatformTop10 } from '@/lib/platform-top10'
+import { weavePlatformTop10s, pinTailRails, type PlatformTop10 } from '@/lib/platform-top10'
 import { TvBrowse } from '@/tv/components/TvBrowse'
 import { TvRailItem } from '@/tv/lib/types'
 import { Top10Content } from '@/types'
@@ -44,7 +44,7 @@ function mergePersonalRows(
 
     const topIndex = next.findIndex((row) => row.title === 'Top 10')
     if (topIndex < 0) {
-        return pinComingSoonLast([...scelti, ...pensiamo, ...next, ...tesori])
+        return pinTailRails([...scelti, ...pensiamo, ...next, ...tesori])
     }
 
     const merged = [
@@ -63,13 +63,7 @@ function mergePersonalRows(
     const insertAt =
         afterRecent >= 0 ? afterRecent + 1 : afterPopular >= 0 ? afterPopular + 1 : topIndex + 1 + pensiamo.length
 
-    return pinComingSoonLast([...merged.slice(0, insertAt), ...tesori, ...merged.slice(insertAt)])
-}
-
-function pinComingSoonLast(rows: TvHomeProps['rows']): TvHomeProps['rows'] {
-    const coming = rows.filter((row) => row.title === 'In arrivo')
-    if (!coming.length) return rows
-    return [...rows.filter((row) => row.title !== 'In arrivo'), ...coming]
+    return pinTailRails([...merged.slice(0, insertAt), ...tesori, ...merged.slice(insertAt)])
 }
 
 export function TvHome({ rows, personal, occupied = [], platformTop10 }: TvHomeProps) {

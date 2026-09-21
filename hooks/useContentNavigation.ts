@@ -20,8 +20,8 @@ export function useContentNavigation() {
     )
 
     const openDetails = useCallback(
-        (id: number, type: ContentType = 'movie') => {
-            router.push(getDetailsPath(id, type))
+        (id: number, type: ContentType = 'movie', options?: { watchable?: boolean }) => {
+            router.push(getDetailsPath(id, type, options))
         },
         [router]
     )

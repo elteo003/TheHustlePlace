@@ -148,6 +148,14 @@ export function keepNotableComingSoon(items: Top10Content[], minPopularity = 10)
     return items.filter((item) => (item.popularity ?? 0) >= minPopularity)
 }
 
+export function keepCinemaReleases(items: Top10Content[], minPopularity = 8): Top10Content[] {
+    return items.filter((item) => {
+        if (item.type === 'tv') return false
+        if (!item.poster_path) return false
+        return (item.popularity ?? 0) >= minPopularity
+    })
+}
+
 export function excludeAvailableOnVixsrc<T extends { id: number; tmdb_id?: number; type?: 'movie' | 'tv' }>(
     items: T[],
     movieIds: Set<number>,
@@ -172,4 +180,17 @@ export function comingSoonWindow(now = new Date(), days = 90): { from: string; t
     const to = new Date(from)
     to.setUTCDate(to.getUTCDate() + days)
     return { from: isoDateOnly(from), to: isoDateOnly(to) }
+}
+
+/** Theatrical limited (2) and theatrical (3). */
+export const THEATRICAL_RELEASE_TYPES = '2|3'
+
+export function cinemaYearWindow(now = new Date()): { from: string; to: string } {
+    const from = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Rome',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(now)
+    return { from, to: `${from.slice(0, 4)}-12-31` }
 }

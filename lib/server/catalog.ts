@@ -1,6 +1,6 @@
 import { CatalogService } from '@/services/catalog.service'
 import { Movie, TVShow, Top10Content } from '@/types'
-import { CatalogSection, HOME_RAIL_SIZE } from '@/lib/catalog-types'
+import { CatalogSection, CINEMA_RAIL_SIZE, HOME_RAIL_SIZE } from '@/lib/catalog-types'
 import { listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
 import { getOrCreateDeviceId, isDeviceId } from '@/lib/supabase/device'
 import { HistorySeed, PersonalRails } from '@/lib/personal-rails'
@@ -76,6 +76,17 @@ export async function fetchCatalogSection(
         case 'upcoming': {
             const comingSoon = await catalogService.getComingSoon(Math.max(limit, 20))
             results = comingSoon.map((item) => ({
+                ...item,
+                title: item.title || item.name,
+                name: item.name || item.title,
+                contentType: item.type,
+                tmdb_id: item.tmdb_id ?? item.id,
+            })) as Top10Content[]
+            break
+        }
+        case 'coming-to-cinema': {
+            const cinema = await catalogService.getComingToCinema(Math.max(limit, CINEMA_RAIL_SIZE))
+            results = cinema.map((item) => ({
                 ...item,
                 title: item.title || item.name,
                 name: item.name || item.title,

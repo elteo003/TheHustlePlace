@@ -9,7 +9,7 @@ import { CatalogSection, HOME_RAIL_SIZE } from '@/lib/catalog-types'
 interface MovieGridIntegratedProps {
     type: 'movie' | 'tv'
     section: CatalogSection
-    onPlay: (id: number, type?: 'movie' | 'tv') => void
+    onPlay?: (id: number, type?: 'movie' | 'tv') => void
     onDetails: (id: number, type?: 'movie' | 'tv') => void
     limit?: number
     initialData?: (Movie | TVShow | Top10Content)[]
@@ -18,6 +18,7 @@ interface MovieGridIntegratedProps {
 const MIXED_SECTIONS: CatalogSection[] = [
     'trending',
     'upcoming',
+    'coming-to-cinema',
     'picks',
     'affinity',
     'treasures',
@@ -107,6 +108,8 @@ export default function MovieGridIntegrated({
                     endpoint = `/api/catalog/platform-top10`
                 } else if (section === 'upcoming') {
                     endpoint = `/api/catalog/coming-soon`
+                } else if (section === 'coming-to-cinema') {
+                    endpoint = `/api/catalog/coming-to-cinema`
                 } else if (section === 'now-playing') {
                     endpoint = `/api/catalog/now-playing`
                 } else if (section === 'popular') {

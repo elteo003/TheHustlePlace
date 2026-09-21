@@ -492,6 +492,7 @@ function TrailerStage({
                             <DetailLink
                                 id={itemId}
                                 type={itemType}
+                                watchable={Boolean(onPlay)}
                                 className={cn(
                                     'btn-ghost-outline inline-flex items-center gap-1 text-sm',
                                     isPhoneLandscape ? 'px-2 py-1.5' : 'px-3 py-2'

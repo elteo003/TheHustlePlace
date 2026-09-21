@@ -1,19 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
 import { toast } from 'sonner'
 import { PageSpinner } from '@/components/ui/spinner'
 import { getLastWatchedEpisode, getResumeStartAt, getSeriesEpisodeProgress } from '@/lib/watch-history'
 import { resolveSeriesResume } from '@/lib/series-resume'
-import { getPlayerPath } from '@/lib/content-navigation'
+import { getPlayerPath, isWatchableSearchParam } from '@/lib/content-navigation'
 
 export default function SeriesPage() {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const seriesId = params.id as string
+    const watchable = isWatchableSearchParam(searchParams.get('watch'))
 
     const [tvShow, setTVShow] = useState<TVShowDetails | null>(null)
     const [currentSeason, setCurrentSeason] = useState(1)
@@ -31,7 +33,7 @@ export default function SeriesPage() {
 
     useEffect(() => {
         fetchSeriesDetails()
-    }, [seriesId])
+    }, [seriesId, watchable])
 
     useEffect(() => {
         const numericId = parseInt(seriesId, 10)
@@ -56,7 +58,7 @@ export default function SeriesPage() {
             if (data.success && data.data) {
                 const seriesData = data.data
 
-                const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId)
+                const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId, watchable)
 
                 const actualNumberOfSeasons = seasonsWithEpisodes.length
                 const actualNumberOfEpisodes = seasonsWithEpisodes.reduce(
@@ -101,13 +103,13 @@ export default function SeriesPage() {
         }
     }
 
-    const loadSeasonsWithEpisodes = async (id: string): Promise<Season[]> => {
+    const loadSeasonsWithEpisodes = async (id: string, canWatch: boolean): Promise<Season[]> => {
         try {
             const response = await fetch(`/api/tmdb/tv/${id}/seasons`)
             const data = await response.json()
 
             if (data.success && data.data) {
-                return filterAvailableEpisodes(id, data.data)
+                return canWatch ? filterAvailableEpisodes(id, data.data) : data.data
             }
 
             return []
@@ -229,7 +231,7 @@ export default function SeriesPage() {
             episodeProgress={episodeProgress}
             onSeasonChange={handleSeasonChange}
             onEpisodeChange={handleEpisodeChange}
-            onPlay={handlePlay}
+            onPlay={watchable ? handlePlay : undefined}
             onAutoplayNext={handleAutoplayNext}
         />
     )
