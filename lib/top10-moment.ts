@@ -1,6 +1,7 @@
 import { TOP10_SIZE } from '@/lib/catalog-types'
 import { isoDateOnly, mapTmdbItemToTop10, type TmdbRailItem } from '@/lib/catalog-rails'
 import { itemReleaseDate, popNorm, railItemKey } from '@/lib/personal-rails'
+import { Top10Content } from '@/types'
 export const STREAMING_PROVIDERS_IT = [8, 119, 337, 350, 531, 39, 384]
 
 export type MomentSource = 'trendingDay' | 'trendingWeek' | 'streaming' | 'cinema'
@@ -85,7 +86,7 @@ export function composeMomentTop10(
         (left, right) => scoreMoment(right, maxPop, now) - scoreMoment(left, maxPop, now)
     )
 
-    const picked: Top10Content[] = []
+    const picked: MomentCandidate[] = []
     let movies = 0
     let shows = 0
 
@@ -119,7 +120,10 @@ export function composeMomentTop10(
         }
     }
 
-    return picked.slice(0, limit).map(({ sources: _sources, ...item }) => item as Top10Content)
+    return picked.slice(0, limit).map((item) => {
+        const { sources: _sources, ...rest } = item
+        return rest
+    })
 }
 
 export function mapTrendingList(items: TmdbRailItem[] | undefined): Top10Content[] {
