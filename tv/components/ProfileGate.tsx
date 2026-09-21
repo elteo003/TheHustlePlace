@@ -159,14 +159,10 @@ export function ProfileGate() {
                     Senza database i profili restano solo su questa TV.
                 </p>
             ) : null}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-[18vh] bg-gradient-to-b from-black from-[18%] to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[18vh] bg-gradient-to-t from-black from-[18%] to-transparent" />
             <div className="flex h-full items-start pl-[4.5vw]">
-                <div
-                    className="h-full w-64 shrink-0 px-10 py-[12vh]"
-                    style={{
-                        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)',
-                        maskImage: 'linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)',
-                    }}
-                >
+                <div className="h-full w-40 shrink-0 overflow-visible py-[12vh]">
                     <div
                         className="motion-reduce:transition-none"
                         style={{

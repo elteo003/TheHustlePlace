@@ -118,13 +118,29 @@
       overflow: hidden;
       text-align: left;
     }
+    .shell.gate-pick:before, .shell.gate-pick:after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 18vh;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .shell.gate-pick:before {
+      top: 0;
+      background: linear-gradient(to bottom, #000 18%, rgba(0,0,0,0));
+    }
+    .shell.gate-pick:after {
+      bottom: 0;
+      background: linear-gradient(to top, #000 18%, rgba(0,0,0,0));
+    }
     .gate-pick h1 {
       position: absolute;
       left: 0; right: 0;
       top: 5.5vh;
       margin: 0;
       text-align: center;
-      z-index: 4;
+      z-index: 6;
       pointer-events: none;
       text-shadow: 0 10px 32px #000;
     }
@@ -137,12 +153,10 @@
     .gate-rail {
       width: 168px;
       height: 100%;
-      overflow: hidden;
+      overflow: visible;
       -webkit-flex-shrink: 0; flex-shrink: 0;
-      padding: 12vh 48px 12vh;
+      padding: 12vh 0;
       box-sizing: content-box;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
-      mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
     }
     .gate-track {
       transition: transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
@@ -152,6 +166,7 @@
       width: 168px;
       height: var(--gate-slot, 200px);
       margin: 0;
+      overflow: visible;
       text-align: left;
     }
     .gate-pick .avatar, .gate-pick .plus { margin: 0; }
@@ -397,9 +412,9 @@
       -webkit-transform: none; transform: none;
       outline: none;
       box-shadow:
-        0 0 22px 6px rgba(255,255,255,.95),
-        0 0 56px 18px rgba(255,255,255,.55),
-        0 0 96px 36px rgba(255,255,255,.22);
+        0 0 28px 10px rgba(255,255,255,.95),
+        0 0 70px 28px rgba(255,255,255,.42),
+        0 0 130px 56px rgba(255,255,255,.16);
     }
     .hint { color: rgba(255,255,255,.5); font-size: 20px; }
     .muted { color: rgba(255,255,255,.5); font-size: 18px; }
