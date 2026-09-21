@@ -4,8 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TheHustlePlace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    html, body { margin: 0; background: #000; color: #fff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100%; }
+    html, body { margin: 0; background: #000; color: #fff; font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100%; }
     body { overflow: hidden; }
     html, body, #root, .shell, .scroller { -ms-overflow-style: none; scrollbar-width: none; }
     ::-webkit-scrollbar { width: 0; height: 0; display: none; }
@@ -133,8 +136,8 @@
     }
     .action.main { background: #fff; color: #111; font-weight: 700; }
     .rail { margin: 0 0 24px; animation: tvIn .32s ease-out; }
-    .rail h2 { font-size: 24px; font-weight: 600; margin: 0 0 12px; color: rgba(255,255,255,.9); }
-    .scroller { white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 488px; padding: 28px 20px 28px 12px; }
+    .rail h2 { font-size: 36px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 18px; color: #fff; }
+    .scroller { white-space: nowrap; overflow-x: auto; overflow-y: hidden; height: 428px; padding: 28px 20px 28px 12px; }
     .poster-card {
       display: inline-block; width: 248px; margin: 0 22px 0 0; vertical-align: top; white-space: normal;
     }
@@ -167,8 +170,8 @@
       background: rgba(255,255,255,.2); font-size: 14px; font-weight: 700;
     }
     .hist-title {
-      display: block; margin: 10px 0 2px; font-size: 16px; font-weight: 600;
-      white-space: nowrap; overflow: hidden;
+      display: block; margin: 10px 0 2px; font-size: 18px; font-weight: 500;
+      letter-spacing: -.02em; white-space: nowrap; overflow: hidden;
     }
     .hist-sub { display: block; font-size: 14px; color: rgba(255,255,255,.5); }
     .skel-title { width: 220px; height: 22px; border-radius: 8px; margin: 0 0 14px; }
@@ -1559,6 +1562,7 @@
     tile.setAttribute('data-id', String(id || ''));
     tile.setAttribute('data-type', type);
     tile.setAttribute('data-title', itemTitle(item));
+    tile.setAttribute('aria-label', itemTitle(item));
     tile.setAttribute('data-overview', item.overview || '');
     tile.setAttribute('data-poster', img(item, 'w500', 'poster'));
     tile.setAttribute('data-back', img(item, 'w1280', 'back'));
@@ -1615,10 +1619,7 @@
         card.appendChild(el('span', 'hist-sub', sub));
         strip.appendChild(card);
       } else {
-        card = el('div', 'poster-card');
-        card.appendChild(tile);
-        card.appendChild(el('span', 'tile-title', itemTitle(item)));
-        strip.appendChild(card);
+        strip.appendChild(tile);
       }
     }
     scroller.appendChild(strip);
