@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Top10Content } from '@/types'
 import {
     EDITORIAL_HOME_RAILS,
+    EDITORIAL_RAIL_SIZE,
     EDITORIAL_RAIL_TITLES,
     HISTORICAL_WAR_KEYWORDS,
     JUKEBOX_BIOPIC_KEYWORDS,
@@ -18,6 +19,8 @@ import {
     composeEditorialRails,
     emptyEditorialRails,
     keywordPipe,
+    romeWeekIndex,
+    rotateEditorialWindow,
 } from './editorial-rails'
 
 function item(partial: Partial<Top10Content> & Pick<Top10Content, 'id' | 'title' | 'type'>): Top10Content {
@@ -34,6 +37,14 @@ function item(partial: Partial<Top10Content> & Pick<Top10Content, 'id' | 'title'
         tmdb_id: partial.id,
         ...partial,
     }
+}
+
+function compose(
+    source: ReturnType<typeof emptyEditorialRails>,
+    occupied: Iterable<string> = [],
+    weekIndex = 0
+) {
+    return composeEditorialRails(source, occupied, EDITORIAL_RAIL_SIZE, weekIndex)
 }
 
 function pools(overrides: Partial<ReturnType<typeof emptyEditorialRails>>) {
@@ -80,7 +91,7 @@ describe('editorial-rails', () => {
             item({ id: 11, title: 'Occupato', type: 'movie', popularity: 99 }),
         ]
 
-        const rails = composeEditorialRails(
+        const rails = compose(
             pools({ warAndPolitics: war, periodStories: period, politicalIntrigue: modern }),
             []
         )
@@ -99,7 +110,7 @@ describe('editorial-rails', () => {
     })
 
     it('nasconde una riga se dopo il dedup resta troppo corta', () => {
-        const rails = composeEditorialRails(
+        const rails = compose(
             pools({
                 warAndPolitics: [item({ id: 1, title: 'Dunkirk', type: 'movie', popularity: 50 })],
             }),
@@ -130,7 +141,7 @@ describe('editorial-rails', () => {
             item({ id: 3, title: 'Bridgerton', type: 'tv', popularity: 90 }),
             ...many('Epoca', 80, 8, 30),
         ]
-        const rails = composeEditorialRails(pools({ periodStories: period }), occupied)
+        const rails = compose(pools({ periodStories: period }), occupied)
         expect(rails.periodStories.length).toBeGreaterThanOrEqual(6)
         expect(rails.periodStories.map((entry) => entry.title)).not.toContain('1917')
         expect(rails.periodStories.map((entry) => entry.title)).toContain('Epoca 0')
@@ -147,7 +158,7 @@ describe('editorial-rails', () => {
             item({ id: 51, title: 'The King', type: 'movie', popularity: 70 }),
             ...many('Medieval', 300, 8, 50),
         ]
-        const rails = composeEditorialRails(pools({ warAndPolitics: war, medievalPassion: medieval }), [])
+        const rails = compose(pools({ warAndPolitics: war, medievalPassion: medieval }), [])
         expect(rails.medievalPassion.map((entry) => entry.title)).toContain('Shogun')
         expect(rails.medievalPassion.map((entry) => entry.title)).toContain('The King')
         expect(rails.medievalPassion.map((entry) => entry.title)).not.toContain('1917')
@@ -166,7 +177,7 @@ describe('editorial-rails', () => {
             item({ id: 71, title: 'The Conversation', type: 'movie', popularity: 65 }),
             ...many('ClassicMystery', 500, 8, 40),
         ]
-        const rails = composeEditorialRails(
+        const rails = compose(
             pools({ puzzleInvestigations: puzzle, mysteryMasterpieces: masterpieces }),
             []
         )
@@ -188,7 +199,7 @@ describe('editorial-rails', () => {
             item({ id: 91, title: 'American Hustle', type: 'movie', popularity: 75 }),
             ...many('Vintage', 700, 8, 45),
         ]
-        const rails = composeEditorialRails(pools({ jukeboxPopStars: jukebox, vintageStories: vintage }), [])
+        const rails = compose(pools({ jukeboxPopStars: jukebox, vintageStories: vintage }), [])
         expect(rails.jukeboxPopStars.map((entry) => entry.title)).toContain('Stranger Things')
         expect(rails.jukeboxPopStars.map((entry) => entry.title)).toContain('Bohemian Rhapsody')
         expect(rails.vintageStories.map((entry) => entry.title)).toContain("La regina degli scacchi")
@@ -213,7 +224,7 @@ describe('editorial-rails', () => {
             item({ id: 3, title: 'Bridgerton', type: 'tv', popularity: 92 }),
             ...many('Period', 1200, 40, 28),
         ]
-        const rails = composeEditorialRails(
+        const rails = compose(
             pools({ crimeLords: crime, vintageStories: vintage, periodStories: period }),
             []
         )
@@ -237,7 +248,7 @@ describe('editorial-rails', () => {
             item({ id: 112, title: 'City of God', type: 'movie', popularity: 92 }),
             ...many('Drug', 900, 40, 35),
         ]
-        const rails = composeEditorialRails(pools({ crimeLords: crime, drugEmpires: drug }), [])
+        const rails = compose(pools({ crimeLords: crime, drugEmpires: drug }), [])
         expect(rails.crimeLords.map((entry) => entry.title)).toContain('Il Padrino')
         expect(rails.crimeLords.map((entry) => entry.title)).toContain('Scarface')
         expect(rails.drugEmpires.map((entry) => entry.title)).toContain('Narcos')
@@ -247,7 +258,7 @@ describe('editorial-rails', () => {
     })
 
     it('riempie uno scaffale fino a 40 titoli', () => {
-        const rails = composeEditorialRails(pools({ warAndPolitics: many('War', 1, 50, 80) }), [])
+        const rails = compose(pools({ warAndPolitics: many('War', 1, 50, 80) }), [])
         expect(rails.warAndPolitics).toHaveLength(40)
     })
 
@@ -297,5 +308,43 @@ describe('editorial-rails', () => {
         expect(EDITORIAL_HOME_RAILS.map((rail) => rail.id)).toContain('drugEmpires')
         expect(EDITORIAL_HOME_RAILS.map((rail) => rail.id)).toContain('crimeLords')
         expect(EDITORIAL_HOME_RAILS.at(-1)?.id).toBe('politicalIntrigue')
+    })
+
+    it('sposta ogni settimana i 10 di prima pagina e fa entrare la panchina', () => {
+        const pool = many('War', 1, 50, 80)
+        const weekZero = rotateEditorialWindow(pool, 0)
+        const weekOne = rotateEditorialWindow(pool, 1)
+
+        expect(weekZero).toHaveLength(40)
+        expect(weekOne).toHaveLength(40)
+        expect(weekZero.slice(0, 10).map((entry) => entry.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        expect(weekOne.slice(0, 10).map((entry) => entry.id)).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+        expect(weekOne.map((entry) => entry.id)).toContain(50)
+        expect(weekOne.slice(0, 10).map((entry) => entry.id)).not.toContain(1)
+        expect(weekOne.map((entry) => entry.id)).not.toContain(1)
+
+        const onlyForty = rotateEditorialWindow(pool.slice(0, 40), 1)
+        expect(onlyForty.slice(0, 10).map((entry) => entry.id)).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+        expect(onlyForty.slice(-10).map((entry) => entry.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    })
+
+    it('cambia la prima pagina degli scaffali di genere da una settimana all altra', () => {
+        const source = pools({ warAndPolitics: many('War', 1, 50, 80) })
+        const thisWeek = compose(source, [], 0)
+        const nextWeek = compose(source, [], 1)
+        expect(thisWeek.warAndPolitics.slice(0, 10).map((entry) => entry.id)).not.toEqual(
+            nextWeek.warAndPolitics.slice(0, 10).map((entry) => entry.id)
+        )
+        expect(thisWeek.warAndPolitics[0].id).toBe(1)
+        expect(nextWeek.warAndPolitics[0].id).toBe(11)
+    })
+
+    it('tiene la stessa settimana da lunedi a domenica ora italiana', () => {
+        expect(romeWeekIndex(new Date('2026-09-21T10:00:00.000Z'))).toBe(
+            romeWeekIndex(new Date('2026-09-27T21:00:00.000Z'))
+        )
+        expect(romeWeekIndex(new Date('2026-09-28T00:00:00.000Z'))).not.toBe(
+            romeWeekIndex(new Date('2026-09-21T10:00:00.000Z'))
+        )
     })
 })

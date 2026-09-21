@@ -1,8 +1,10 @@
 import { Top10Content } from '@/types'
-import { takeUnseen } from '@/lib/personal-rails'
+import { railItemKey } from '@/lib/personal-rails'
 import { CatalogSection } from '@/lib/catalog-types'
 
 export const EDITORIAL_RAIL_SIZE = 40
+export const EDITORIAL_POOL_SIZE = 100
+export const EDITORIAL_FRONT_SIZE = 10
 export const EDITORIAL_MIN_ITEMS = 6
 
 export const TMDB_GENRE = {
@@ -400,20 +402,64 @@ export function andKeywordGroups(left: number[], right: number[]): string {
 }
 
 export function sortByPopularity(items: Top10Content[]): Top10Content[] {
-    return [...items].sort((left, right) => (right.popularity || 0) - (left.popularity || 0))
+    return [...items].sort((left, right) => {
+        const popularity = (right.popularity || 0) - (left.popularity || 0)
+        if (popularity !== 0) return popularity
+        return left.id - right.id
+    })
+}
+
+export function romeWeekIndex(now = new Date()): number {
+    const key = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Rome',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(now)
+    const [year, month, day] = key.split('-').map(Number)
+    const utc = Date.UTC(year, month - 1, day)
+    const mondayOffset = (((new Date(utc).getUTCDay() + 6) % 7) * 86_400_000)
+    return Math.floor((utc - mondayOffset) / (7 * 86_400_000))
+}
+
+export function rotateEditorialWindow<T>(
+    pool: T[],
+    weekIndex: number,
+    visible = EDITORIAL_RAIL_SIZE,
+    step = EDITORIAL_FRONT_SIZE
+): T[] {
+    const total = pool.length
+    if (total === 0) return []
+    const take = Math.min(visible, total)
+    if (total <= step) return pool.slice(0, take)
+    const shift = (Math.abs(weekIndex) * step) % total
+    const rotated: T[] = []
+    for (let index = 0; index < take; index += 1) {
+        rotated.push(pool[(shift + index) % total])
+    }
+    return rotated
 }
 
 export function composeEditorialRails(
     pools: EditorialRails,
     occupied: Iterable<string>,
-    size = EDITORIAL_RAIL_SIZE
+    size = EDITORIAL_RAIL_SIZE,
+    weekIndex = romeWeekIndex()
 ): EditorialRails {
     const seen = new Set(occupied)
     const rails = emptyEditorialRails()
 
     for (const id of OCCUPY_ORDER) {
-        const taken = takeUnseen(sortByPopularity(pools[id] || []), seen, size)
+        const ranked = sortByPopularity(pools[id] || []).filter((item) => {
+            const key = railItemKey(item.type, item.id)
+            return !seen.has(key)
+        })
+        const bench = ranked.slice(0, EDITORIAL_POOL_SIZE)
+        const taken = rotateEditorialWindow(bench, weekIndex, size, EDITORIAL_FRONT_SIZE)
         rails[id] = taken.length >= EDITORIAL_MIN_ITEMS ? taken : []
+        for (const item of taken) {
+            seen.add(railItemKey(item.type, item.id))
+        }
     }
 
     return rails

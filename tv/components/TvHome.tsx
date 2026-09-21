@@ -33,13 +33,13 @@ function mergePersonalRows(
             row.title !== 'Tesori per te'
     )
     const scelti = rails.picks.length
-        ? [{ title: 'Scelti per te oggi', items: rails.picks as TvRailItem[] }]
+        ? [{ id: 'picks', title: 'Scelti per te oggi', items: rails.picks as TvRailItem[] }]
         : []
     const pensiamo = rails.affinity.length
-        ? [{ title: 'Pensiamo ti appassioneranno', items: rails.affinity as TvRailItem[] }]
+        ? [{ id: 'affinity', title: 'Pensiamo ti appassioneranno', items: rails.affinity as TvRailItem[] }]
         : []
     const tesori = rails.treasures.length
-        ? [{ title: 'Tesori per te', items: rails.treasures as TvRailItem[] }]
+        ? [{ id: 'treasures', title: 'Tesori per te', items: rails.treasures as TvRailItem[] }]
         : []
 
     const topIndex = next.findIndex((row) => row.title === 'Top 10')

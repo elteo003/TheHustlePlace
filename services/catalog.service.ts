@@ -78,6 +78,7 @@ import {
     composeEditorialRails,
     emptyEditorialRails,
     keywordPipe,
+    romeWeekIndex,
     type EditorialRails,
 } from '@/lib/editorial-rails'
 
@@ -508,7 +509,8 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v16:${occupiedKeys(occupied).sort().join(',')}`
+        const weekIndex = romeWeekIndex()
+        const cacheKey = `editorial-rails-v17:${weekIndex}:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -901,7 +903,8 @@ export class CatalogService {
                     periodStories,
                 },
                 occupiedKeys(occupied),
-                size
+                size,
+                weekIndex
             )
             const decorated = this.decorateEditorialRails(rails)
             await cache.set(cacheKey, decorated, { ttl: this.CACHE_TTL })
