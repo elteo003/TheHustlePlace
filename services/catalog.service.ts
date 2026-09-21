@@ -759,7 +759,7 @@ export class CatalogService {
             return this.mapRailItems([first as TmdbRailItem], 'movie')[0] || null
         }
         const response = await tmdbWrapperService.searchTVShows(query, 1)
-        const first = Array.isArray(response) ? response[0] : response?.results?.[0]
+        const first = Array.isArray(response) ? response[0] : null
         if (!first) return null
         return this.mapRailItems([first as TmdbRailItem], 'tv')[0] || null
     }
