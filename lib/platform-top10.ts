@@ -28,7 +28,7 @@ export type PlatformTop10 = {
 }
 
 export type WeavableRail = {
-    id: string
+    id?: string
     title: string
     items?: unknown[]
 }
@@ -82,9 +82,14 @@ export function isCinemaRail(rail: WeavableRail): boolean {
 }
 
 export function pinTailRails<T extends WeavableRail>(rails: T[]): T[] {
-    const cinema = rails.filter(isCinemaRail)
-    const coming = rails.filter(isComingSoonRail)
-    const body = rails.filter((rail) => !isCinemaRail(rail) && !isComingSoonRail(rail))
+    const cinema: T[] = []
+    const coming: T[] = []
+    const body: T[] = []
+    for (const rail of rails) {
+        if (isCinemaRail(rail)) cinema.push(rail)
+        else if (isComingSoonRail(rail)) coming.push(rail)
+        else body.push(rail)
+    }
     return [...body, ...cinema, ...coming]
 }
 
@@ -109,11 +114,14 @@ export function weavePlatformTop10s<T extends WeavableRail>(
     const filled = inserts.filter((item) => (item.items?.length ?? 0) > 0)
     if (!filled.length) return pinTailRails(rails)
 
-    const cinema = rails.filter(isCinemaRail)
-    const coming = rails.filter(isComingSoonRail)
-    const body = rails.filter(
-        (rail) => !isCinemaRail(rail) && !isComingSoonRail(rail) && !isPlatformTop10Rail(rail)
-    )
+    const cinema: T[] = []
+    const coming: T[] = []
+    const body: T[] = []
+    for (const rail of rails) {
+        if (isCinemaRail(rail)) cinema.push(rail)
+        else if (isComingSoonRail(rail)) coming.push(rail)
+        else if (!isPlatformTop10Rail(rail)) body.push(rail)
+    }
     const topIdx = body.findIndex(isGeneralTop10Rail)
     if (topIdx < 0) {
         return [...body, ...filled, ...cinema, ...coming]
