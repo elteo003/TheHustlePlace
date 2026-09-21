@@ -116,13 +116,51 @@ export class TMDBMoviesService {
     }
 
     /**
+     * Trend globale della settimana (film + serie), nello stesso ordine TMDB.
+     */
+    async getTrendingAllDay(page = 1): Promise<TMDBResponse<TMDBMovie & { media_type?: string; name?: string; first_air_date?: string }>> {
+        return this.makeRequest('/trending/all/day', { page })
+    }
+
+    async getTrendingAllWeek(page = 1): Promise<TMDBResponse<TMDBMovie & { media_type?: string; name?: string; first_air_date?: string }>> {
+        return this.makeRequest('/trending/all/week', { page })
+    }
+
+    async discoverMovies(params: Record<string, string | number | boolean> = {}): Promise<TMDBResponse<TMDBMovie>> {
+        return this.makeRequest<TMDBResponse<TMDBMovie>>('/discover/movie', params)
+    }
+
+    async discoverTVShows(params: Record<string, string | number | boolean> = {}): Promise<TMDBResponse<any>> {
+        return this.makeRequest('/discover/tv', params)
+    }
+
+    /**
      * Ottiene i dettagli di un film specifico
      */
-    async getMovieDetails(movieId: number): Promise<TMDBMovie> {
+    async getMovieDetails(
+        movieId: number,
+        params: Record<string, string | number | boolean> = {}
+    ): Promise<TMDBMovie> {
         if (!Number.isFinite(movieId) || movieId <= 0) {
             throw new Error('TMDB movie id non valido')
         }
-        return this.makeRequest<TMDBMovie>(`/movie/${movieId}`)
+        return this.makeRequest<TMDBMovie>(`/movie/${movieId}`, params)
+    }
+
+    async getMovieRecommendations(movieId: number, page = 1): Promise<TMDBResponse<TMDBMovie>> {
+        return this.makeRequest<TMDBResponse<TMDBMovie>>(`/movie/${movieId}/recommendations`, { page })
+    }
+
+    async getMovieSimilar(movieId: number, page = 1): Promise<TMDBResponse<TMDBMovie>> {
+        return this.makeRequest<TMDBResponse<TMDBMovie>>(`/movie/${movieId}/similar`, { page })
+    }
+
+    async getTVRecommendations(tvShowId: number, page = 1): Promise<TMDBResponse<any>> {
+        return this.makeRequest(`/tv/${tvShowId}/recommendations`, { page })
+    }
+
+    async getTVSimilar(tvShowId: number, page = 1): Promise<TMDBResponse<any>> {
+        return this.makeRequest(`/tv/${tvShowId}/similar`, { page })
     }
 
     /**
@@ -156,11 +194,14 @@ export class TMDBMoviesService {
     /**
      * Ottiene i dettagli di una serie TV
      */
-    async getTVShowDetails(tvShowId: number): Promise<any> {
+    async getTVShowDetails(
+        tvShowId: number,
+        params: Record<string, string | number | boolean> = {}
+    ): Promise<any> {
         if (!Number.isFinite(tvShowId) || tvShowId <= 0) {
             return null
         }
-        const response = await this.makeRequest(`/tv/${tvShowId}`)
+        const response = await this.makeRequest(`/tv/${tvShowId}`, params)
 
         if (response) {
             // Aggiungi i campi mancanti per compatibilità

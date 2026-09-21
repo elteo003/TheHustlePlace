@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Play, Info, Volume2, VolumeX, SkipForward } from 'lucide-react'
-import { TMDBMovie, getTMDBImageUrl, findMainTrailer } from '@/lib/tmdb'
+import { TMDBMovie, getTMDBImageUrl, findMainTrailer, getMediaTitle } from '@/lib/tmdb'
+import { getContentId, getDetailsPath, getPlayerPath } from '@/lib/content-navigation'
 import { UpcomingTrailersSection } from '@/components/upcoming-trailers-section'
 import { useMovieContext } from '@/contexts/MovieContext'
-import { getContentId, getPlayerPath } from '@/lib/content-navigation'
 import { useTrailerTimer } from '@/hooks/useTrailerTimer'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { useRouter } from 'next/navigation'
@@ -137,8 +137,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Funzione per caricare trailer
     const loadTrailerForMovie = useCallback(async (movie: TMDBMovie) => {
         try {
-            console.log(`🎬 Caricamento trailer per: ${movie.title}`)
-            const response = await fetch(`/api/tmdb/movies/${movie.id}/videos`)
+            const videosPath =
+                movie.media_type === 'tv'
+                    ? `/api/tmdb/tv/${movie.id}/videos`
+                    : `/api/tmdb/movies/${movie.id}/videos`
+            const response = await fetch(videosPath)
             const data = await response.json()
 
             if (data.success && data.data?.results?.length > 0) {
@@ -169,22 +172,25 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         }
     }, [currentIndex, onMovieChange])
 
+    const featuredType = featuredMovie?.media_type === 'tv' ? 'tv' : 'movie'
+    const featuredTitle = getMediaTitle(featuredMovie)
+
     const handleWatchNow = () => {
         if (featuredMovie) {
             const itemId = getContentId(featuredMovie as { id: number; tmdb_id?: number })
-            router.push(getPlayerPath(itemId, 'movie'))
+            router.push(getPlayerPath(itemId, featuredType))
         }
     }
 
     const handleMoreInfo = () => {
         if (featuredMovie) {
             const itemId = getContentId(featuredMovie as { id: number; tmdb_id?: number })
-            router.push(`/movie/${itemId}`)
+            router.push(getDetailsPath(itemId, featuredType))
         }
     }
 
-    const releaseYear = featuredMovie?.release_date
-        ? new Date(featuredMovie.release_date).getFullYear()
+    const releaseYear = featuredMovie?.release_date || featuredMovie?.first_air_date
+        ? new Date(featuredMovie.release_date || featuredMovie.first_air_date || '').getFullYear()
         : null
     const rating =
         featuredMovie && featuredMovie.vote_average > 0
@@ -271,7 +277,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             ref={iframeRef}
                             key={trailer}
                             src={buildTrailerEmbedUrl(trailer, true)}
-                            title={`Trailer ${featuredMovie.title}`}
+                            title={`Trailer ${featuredTitle}`}
                             className="pointer-events-none border-0"
                             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                             onLoad={kickPlayback}
@@ -333,7 +339,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                                     : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
                             )}
                         >
-                            {featuredMovie.title}
+                            {featuredTitle}
                         </h1>
 
                         {(releaseYear || rating) && (

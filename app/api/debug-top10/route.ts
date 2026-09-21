@@ -1,45 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { fetchFromTMDB } from '@/lib/tmdb'
+import { NextResponse } from 'next/server'
+import { CatalogService } from '@/services/catalog.service'
 
-export async function GET(request: NextRequest) {
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export async function GET() {
     try {
-        console.log('🔍 Debug Top 10 - Recupero film trending...')
-
-        // Recupera film trending del giorno
-        const trendingResponse = await fetchFromTMDB('trending/movie/day')
-        console.log('📊 Risposta API:', trendingResponse)
-
-        // Ordina per popularity e prendi i primi 10
-        const top10Movies = (trendingResponse as any).results
-            .sort((a: any, b: any) => b.popularity - a.popularity)
-            .slice(0, 10)
-
-        console.log('🏆 Top 10 film:')
-        top10Movies.forEach((movie: any, index: number) => {
-            console.log(`${index + 1}. ${movie.title} (Popularity: ${movie.popularity})`)
-        })
-
+        const catalogService = new CatalogService()
+        const top10 = await catalogService.getTop10Mixed()
         return NextResponse.json({
             success: true,
             data: {
-                total: top10Movies.length,
-                movies: top10Movies.map((movie: any, index: number) => ({
+                total: top10.length,
+                movies: top10.map((item, index) => ({
                     rank: index + 1,
-                    title: movie.title,
-                    popularity: movie.popularity,
-                    vote_average: movie.vote_average,
-                    release_date: movie.release_date,
-                    id: movie.id
-                }))
-            }
+                    title: item.title,
+                    type: item.type,
+                    popularity: item.popularity,
+                    vote_average: item.vote_average,
+                    release_date: item.release_date || item.first_air_date,
+                    id: item.id,
+                })),
+            },
         })
-
-    } catch (error) {
-        console.error('❌ Errore debug Top 10:', error)
-        return NextResponse.json({
-            success: false,
-            error: 'Errore nel recupero dei dati Top 10'
-        }, { status: 500 })
+    } catch {
+        return NextResponse.json({ success: false, error: 'Errore nel recupero dei dati Top 10' }, { status: 500 })
     }
 }
-

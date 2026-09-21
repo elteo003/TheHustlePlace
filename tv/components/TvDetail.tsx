@@ -152,7 +152,10 @@ export function TvDetail({ id, type }: TvDetailProps) {
                             </TvFocus>
                         ))}
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div
+                        data-tv-loop=""
+                        className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
                         {(currentSeason?.episodes ?? []).map((episode) => (
                             <TvFocus
                                 key={episode.id}

@@ -18,7 +18,10 @@ export function TvRow({ title, items, type, onSelect, onPeek }: TvRowProps) {
     return (
         <section className="space-y-4">
             <h2 className="text-2xl font-medium text-white">{title}</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+                data-tv-loop=""
+                className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
                 {items.map((item) => (
                     <TvPoster
                         key={`${type ?? 'mix'}-${item.id}`}

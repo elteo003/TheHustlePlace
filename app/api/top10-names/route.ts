@@ -1,37 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { fetchFromTMDB } from '@/lib/tmdb'
+import { NextResponse } from 'next/server'
+import { CatalogService } from '@/services/catalog.service'
 
-export async function GET(request: NextRequest) {
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export async function GET() {
     try {
-        // Recupera film trending del giorno
-        const trendingResponse = await fetchFromTMDB('trending/movie/day')
-
-        // Ordina per popularity e prendi i primi 10
-        const top10Movies = (trendingResponse as any).results
-            .sort((a: any, b: any) => b.popularity - a.popularity)
-            .slice(0, 10)
-
-        // Formatta i risultati in modo leggibile
-        const movieNames = top10Movies.map((movie: any, index: number) => ({
-            rank: index + 1,
-            title: movie.title,
-            popularity: Math.round(movie.popularity),
-            vote_average: movie.vote_average,
-            release_date: movie.release_date
-        }))
-
+        const catalogService = new CatalogService()
+        const top10 = await catalogService.getTop10Mixed()
         return NextResponse.json({
             success: true,
-            message: "Top 10 Film del Giorno (ordinati per popolarità)",
-            movies: movieNames
+            message: 'Top 10 del momento (streaming IT + cinema + trending recente)',
+            movies: top10.map((item, index) => ({
+                rank: index + 1,
+                title: item.title,
+                type: item.type,
+                popularity: Math.round(item.popularity),
+                vote_average: item.vote_average,
+                release_date: item.release_date || item.first_air_date,
+            })),
         })
-
-    } catch (error) {
-        console.error('❌ Errore:', error)
-        return NextResponse.json({
-            success: false,
-            error: 'Errore nel recupero dei dati'
-        }, { status: 500 })
+    } catch {
+        return NextResponse.json({ success: false, error: 'Errore nel recupero dei dati' }, { status: 500 })
     }
 }
-

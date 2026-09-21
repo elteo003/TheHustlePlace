@@ -1,4 +1,5 @@
 import { fetchCatalogSection } from '@/lib/server/catalog'
+import { HOME_RAIL_SIZE } from '@/lib/catalog-types'
 import { TvRailItem } from '@/tv/lib/types'
 import { TvBrowse } from '@/tv/components/TvBrowse'
 
@@ -6,9 +7,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function LivingMoviesPage() {
     const [popular, recent, topRated] = await Promise.all([
-        fetchCatalogSection('movie', 'popular', 12),
-        fetchCatalogSection('movie', 'recent', 12),
-        fetchCatalogSection('movie', 'top-rated', 12),
+        fetchCatalogSection('movie', 'popular', HOME_RAIL_SIZE),
+        fetchCatalogSection('movie', 'recent', HOME_RAIL_SIZE),
+        fetchCatalogSection('movie', 'top-rated', HOME_RAIL_SIZE),
     ])
 
     return (

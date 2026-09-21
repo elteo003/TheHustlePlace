@@ -26,7 +26,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
                             section="popular"
                             onPlay={play}
                             onDetails={openDetails}
-                            limit={10}
+                            limit={24}
                             initialData={popular}
                         />
                     </div>
@@ -38,7 +38,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
                             section="recent"
                             onPlay={play}
                             onDetails={openDetails}
-                            limit={10}
+                            limit={24}
                             initialData={recent}
                         />
                     </div>
@@ -50,7 +50,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
                             section="top-rated"
                             onPlay={play}
                             onDetails={openDetails}
-                            limit={10}
+                            limit={24}
                             initialData={topRated}
                         />
                     </div>

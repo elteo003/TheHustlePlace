@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Movie, TVShow, Top10Content } from '@/types'
 import MovieGrid from './movie-grid'
 import { Top10Row } from './top-10-row'
-import { CatalogSection } from '@/lib/catalog-types'
+import { CatalogSection, HOME_RAIL_SIZE } from '@/lib/catalog-types'
 
 interface MovieGridIntegratedProps {
     type: 'movie' | 'tv'
@@ -14,6 +14,17 @@ interface MovieGridIntegratedProps {
     limit?: number
     initialData?: (Movie | TVShow | Top10Content)[]
 }
+
+const MIXED_SECTIONS: CatalogSection[] = [
+    'trending',
+    'upcoming',
+    'picks',
+    'affinity',
+    'treasures',
+    'war-politics',
+    'political-intrigue',
+    'period-stories',
+]
 
 function normalizeResults(
     data: unknown,
@@ -30,7 +41,7 @@ function normalizeResults(
         results = [data as Movie | TVShow]
     }
 
-    if (section === 'trending') {
+    if (MIXED_SECTIONS.includes(section)) {
         return (results as Top10Content[]).map((item) => ({
             ...item,
             title: item.title || item.name,
@@ -48,17 +59,20 @@ export default function MovieGridIntegrated({
     section,
     onPlay,
     onDetails,
-    limit = 10,
+    limit = HOME_RAIL_SIZE,
     initialData,
 }: MovieGridIntegratedProps) {
     const [movies, setMovies] = useState<(Movie | TVShow)[]>(
         initialData ? normalizeResults(initialData, section, type).slice(0, limit) : []
     )
-    const [loading, setLoading] = useState(!initialData?.length)
+    const [loading, setLoading] = useState(initialData === undefined)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (initialData?.length) {
+        if (initialData !== undefined) {
+            setMovies(normalizeResults(initialData, section, type).slice(0, limit))
+            setLoading(false)
+            setError(null)
             return
         }
 
@@ -70,6 +84,8 @@ export default function MovieGridIntegrated({
                 let endpoint = ''
                 if (section === 'trending') {
                     endpoint = `/api/catalog/top-10`
+                } else if (section === 'upcoming') {
+                    endpoint = `/api/catalog/coming-soon`
                 } else if (section === 'now-playing') {
                     endpoint = `/api/catalog/now-playing`
                 } else if (section === 'popular') {
@@ -102,7 +118,7 @@ export default function MovieGridIntegrated({
             }
         }
 
-        fetchMovies()
+        void fetchMovies()
     }, [type, section, limit, initialData])
 
     if (loading) {

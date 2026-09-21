@@ -6,7 +6,50 @@ import { VixsrcScraperService } from './vixsrc-scraper.service'
 import { tmdbWrapperService } from './tmdb-wrapper.service'
 import { TMDBMovie } from './tmdb-movies.service'
 import { getVixsrcIdSet } from './vixsrc-ids.service'
-import { filterByVixsrcIds, collectVixsrcTmdbIds } from '@/lib/vixsrc-ids'
+import { filterByVixsrcIds, collectVixsrcTmdbIds, contentTmdbId } from '@/lib/vixsrc-ids'
+import {
+    comingSoonWindow,
+    excludeAvailableOnVixsrc,
+    keepFutureReleases,
+    keepNotableComingSoon,
+    mapTmdbItemToTop10,
+    mergeComingSoon,
+    sortComingSoonByDate,
+    takeGlobalTrending,
+    type TmdbRailItem,
+} from '@/lib/catalog-rails'
+import {
+    PERSONAL_OVERFETCH,
+    PERSONAL_RAIL_SIZE,
+    TASTE_WINDOW,
+    type AffinityFlags,
+    type HistorySeed,
+    type PersonalRails,
+    type TitleFeatures,
+    buildTasteProfile,
+    composePersonalRails,
+    genrePipe,
+    occupiedKeys,
+    railItemKey,
+    toDiscoverGenres,
+    yearsAgoIso,
+} from '@/lib/personal-rails'
+import {
+    composeMomentTop10,
+    mapTrendingList,
+    streamingProviderPipe,
+    yearsAgoFrom,
+} from '@/lib/top10-moment'
+import {
+    EDITORIAL_RAIL_SIZE,
+    PERIOD_KEYWORDS,
+    POLITICS_KEYWORDS,
+    TMDB_GENRE,
+    WAR_KEYWORDS,
+    composeEditorialRails,
+    keywordPipe,
+    type EditorialRails,
+} from '@/lib/editorial-rails'
 
 export class CatalogService {
     private readonly VIXSRC_BASE_URL = process.env.VIXSRC_BASE_URL || 'https://vixsrc.to'
@@ -87,14 +130,14 @@ export class CatalogService {
     // Nuovo metodo per i top 10 film - usa TMDB
     async getTop10Movies(): Promise<Movie[]> {
         try {
-            const cacheKey = 'top-10-movies'
+            const cacheKey = 'top-10-movies-v2'
             const cached = await cache.get<Movie[]>(cacheKey)
             if (cached) {
                 return cached
             }
 
             // Usa TMDB per i top 10 film
-            const response = await tmdbWrapperService.getTopRatedMovies(10)
+            const response = await tmdbWrapperService.getPopularMovies(1)
 
             if (response && response.results) {
                 const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
@@ -156,84 +199,628 @@ export class CatalogService {
         }
     }
 
-    // Nuovo metodo per top 10 mista (5 film + 5 serie TV)
-    async getTop10Mixed(): Promise<Top10Content[]> {
+    async getGlobalTrending(limit = 20): Promise<Top10Content[]> {
         try {
-            const cacheKey = 'top-10-mixed'
+            const cacheKey = 'global-trending-week-v2'
             const cached = await cache.get<Top10Content[]>(cacheKey)
             if (cached) {
-                return cached
+                return cached.slice(0, limit)
             }
 
-            // Recupera i top film e serie TV in parallelo
-            const [moviesResponse, tvShowsResponse, movieIds, tvIds] = await Promise.all([
-                tmdbWrapperService.getTopRatedMovies(10),
-                tmdbWrapperService.getTopRatedTVShows(10),
+            const [page1, page2] = await Promise.all([
+                tmdbWrapperService.getTrendingAllWeek(1),
+                tmdbWrapperService.getTrendingAllWeek(2),
+            ])
+            const trending = takeGlobalTrending(
+                [...(page1?.results || []), ...(page2?.results || [])] as TmdbRailItem[],
+                40
+            )
+
+            await cache.set(cacheKey, trending, { ttl: this.CACHE_TTL })
+            logger.info('Trending globale recuperato', {
+                count: trending.length,
+                movies: trending.filter((item) => item.type === 'movie').length,
+                tvShows: trending.filter((item) => item.type === 'tv').length,
+            })
+
+            return trending.slice(0, limit)
+        } catch (error) {
+            logger.error('Errore nel recupero trending globale', { error })
+            return []
+        }
+    }
+
+    async getTop10Mixed(): Promise<Top10Content[]> {
+        const bucket = Math.floor(Date.now() / (20 * 60 * 1000))
+        const cacheKey = `top10-moment-v1:${bucket}`
+        const cached = await cache.get<Top10Content[]>(cacheKey)
+        if (cached?.length) {
+            return cached
+        }
+
+        try {
+            const now = new Date()
+            const providers = streamingProviderPipe()
+            const movieFrom = yearsAgoFrom(now, 3)
+            const tvFrom = yearsAgoFrom(now, 10)
+
+            const [day, week, streamingMovies, streamingShows, cinemaPage1, cinemaPage2] = await Promise.all([
+                tmdbWrapperService.getTrendingAllDay(1),
+                tmdbWrapperService.getTrendingAllWeek(1),
+                this.discoverPages('movie', {
+                    sort_by: 'popularity.desc',
+                    watch_region: 'IT',
+                    with_watch_providers: providers,
+                    with_watch_monetization_types: 'flatrate',
+                    'primary_release_date.gte': movieFrom,
+                    include_adult: false,
+                    'vote_count.gte': 40,
+                }),
+                this.discoverPages('tv', {
+                    sort_by: 'popularity.desc',
+                    watch_region: 'IT',
+                    with_watch_providers: providers,
+                    with_watch_monetization_types: 'flatrate',
+                    'first_air_date.gte': tvFrom,
+                    'vote_count.gte': 40,
+                }),
+                tmdbWrapperService.getNowPlayingMovies(1),
+                tmdbWrapperService.getNowPlayingMovies(2),
+            ])
+
+            const cinema = this.mapRailItems(
+                [...(cinemaPage1?.results || []), ...(cinemaPage2?.results || [])] as TmdbRailItem[],
+                'movie'
+            )
+
+            const [trendingDay, trendingWeek, streaming, cinemaAvailable] = await Promise.all([
+                this.filterAvailableMixed(mapTrendingList((day?.results || []) as TmdbRailItem[])),
+                this.filterAvailableMixed(mapTrendingList((week?.results || []) as TmdbRailItem[])),
+                this.filterAvailableMixed([...streamingMovies, ...streamingShows]),
+                this.filterAvailableMixed(cinema),
+            ])
+
+            const top10 = this.decorateRailItems(
+                composeMomentTop10(
+                    {
+                        trendingDay,
+                        trendingWeek,
+                        streaming,
+                        cinema: cinemaAvailable,
+                    },
+                    now,
+                    10
+                )
+            )
+
+            await cache.set(cacheKey, top10, { ttl: 25 * 60 })
+            logger.info('Top 10 del momento costruita', {
+                count: top10.length,
+                movies: top10.filter((item) => item.type === 'movie').length,
+                tvShows: top10.filter((item) => item.type === 'tv').length,
+                titles: top10.map((item) => item.title),
+            })
+            return top10
+        } catch (error) {
+            logger.error('Errore nella costruzione top 10 del momento', { error })
+            return this.getGlobalTrending(10)
+        }
+    }
+
+    async getComingSoon(limit = 20): Promise<Top10Content[]> {
+        try {
+            const cacheKey = 'coming-soon-notable-v2'
+            const cached = await cache.get<Top10Content[]>(cacheKey)
+            if (cached) {
+                return cached.slice(0, limit)
+            }
+
+            const { from, to } = comingSoonWindow()
+            const [upcomingMovies, discoverMovies, newShows, movieIds, tvIds] = await Promise.all([
+                tmdbWrapperService.getUpcomingMovies(1),
+                tmdbWrapperService.discoverMovies({
+                    'primary_release_date.gte': from,
+                    'primary_release_date.lte': to,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 20,
+                }),
+                tmdbWrapperService.discoverTVShows({
+                    'first_air_date.gte': from,
+                    'first_air_date.lte': to,
+                    sort_by: 'popularity.desc',
+                }),
                 getVixsrcIdSet('movie'),
                 getVixsrcIdSet('tv'),
             ])
 
-            const allContent: Top10Content[] = []
+            const merged = mergeComingSoon([
+                { type: 'movie', items: (upcomingMovies?.results || []) as TmdbRailItem[] },
+                { type: 'movie', items: (discoverMovies?.results || []) as TmdbRailItem[] },
+                { type: 'tv', items: (newShows?.results || []) as TmdbRailItem[] },
+            ])
 
-            if (moviesResponse?.results) {
-                const movies: Top10Content[] = moviesResponse.results
-                    .map((tmdbMovie: any) =>
-                        this.convertMovieToTop10Content(this.convertTMDBMovieToMovie(tmdbMovie))
-                    )
-                    .filter((movie) => movieIds.size === 0 || movieIds.has(movie.tmdb_id ?? movie.id))
-                    .slice(0, 5)
-                allContent.push(...movies)
-            }
+            const comingSoon = sortComingSoonByDate(
+                excludeAvailableOnVixsrc(
+                    keepNotableComingSoon(keepFutureReleases(merged, from)),
+                    movieIds,
+                    tvIds
+                )
+            ).slice(0, 40)
 
-            if (tvShowsResponse && (tvShowsResponse as { results?: unknown[] }).results) {
-                const tvShows: Top10Content[] = (tvShowsResponse as { results: unknown[] }).results
-                    .map((tmdbTVShow: any) =>
-                        this.convertTVShowToTop10Content(this.convertTMDBTVShowToTVShow(tmdbTVShow))
-                    )
-                    .filter((show) => tvIds.size === 0 || tvIds.has(show.tmdb_id ?? show.id))
-                    .slice(0, 5)
-                allContent.push(...tvShows)
-            }
-
-            // Ordina per popularity per mescolare i risultati
-            const top10Mixed = allContent
-                .sort((a, b) => b.popularity - a.popularity)
-
-            await cache.set(cacheKey, top10Mixed, { ttl: this.CACHE_TTL })
-            logger.info('Top 10 mista recuperata con successo', {
-                count: top10Mixed.length,
-                movies: top10Mixed.filter(item => item.type === 'movie').length,
-                tvShows: top10Mixed.filter(item => item.type === 'tv').length
+            await cache.set(cacheKey, comingSoon, { ttl: this.CACHE_TTL })
+            logger.info('In arrivo recuperati', {
+                count: comingSoon.length,
+                from,
+                to,
             })
 
-            return top10Mixed
+            return comingSoon.slice(0, limit)
         } catch (error) {
-            logger.error('Errore nel recupero top 10 mista', { error })
+            logger.error('Errore nel recupero in arrivo', { error })
             return []
         }
+    }
+
+    async getEditorialRails(
+        occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
+        size = EDITORIAL_RAIL_SIZE
+    ): Promise<EditorialRails> {
+        const cacheKey = `editorial-rails-v2:${occupiedKeys(occupied).sort().join(',')}`
+        const cached = await cache.get<EditorialRails>(cacheKey)
+        if (cached) {
+            return this.decorateEditorialRails(cached)
+        }
+
+        try {
+            const warKeywords = keywordPipe(WAR_KEYWORDS)
+            const politicsKeywords = keywordPipe(POLITICS_KEYWORDS)
+            const periodKeywords = keywordPipe(PERIOD_KEYWORDS)
+
+            const [warMovies, warShows, intrigueShows, periodMovies, periodKeywordMovies, periodShows] =
+                await Promise.all([
+                this.discoverPages('movie', {
+                    with_genres: TMDB_GENRE.movieWar,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 200,
+                    include_adult: false,
+                }),
+                this.discoverPages('tv', {
+                    with_keywords: warKeywords,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 80,
+                }),
+                this.discoverPages('tv', {
+                    with_keywords: politicsKeywords,
+                    without_keywords: warKeywords,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 80,
+                }, 3),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_genres: TMDB_GENRE.movieHistory,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages('movie', {
+                    with_keywords: periodKeywords,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 80,
+                    include_adult: false,
+                }, 3),
+                this.discoverPages('tv', {
+                    with_keywords: periodKeywords,
+                    sort_by: 'popularity.desc',
+                    'vote_count.gte': 50,
+                }, 3),
+            ])
+
+            const [warAndPolitics, politicalIntrigue, periodStories] = await Promise.all([
+                this.filterAvailableMixed([...warMovies, ...warShows]),
+                this.filterAvailableMixed(intrigueShows),
+                this.filterAvailableMixed([...periodMovies, ...periodKeywordMovies, ...periodShows]),
+            ])
+
+            const rails = composeEditorialRails(
+                { warAndPolitics, politicalIntrigue, periodStories },
+                occupiedKeys(occupied),
+                size
+            )
+            const decorated = this.decorateEditorialRails(rails)
+            await cache.set(cacheKey, decorated, { ttl: this.CACHE_TTL })
+            logger.info('Scaffali editoriali costruiti', {
+                warAndPolitics: decorated.warAndPolitics.length,
+                politicalIntrigue: decorated.politicalIntrigue.length,
+                periodStories: decorated.periodStories.length,
+            })
+            return decorated
+        } catch (error) {
+            logger.error('Errore nella costruzione scaffali editoriali', { error })
+            return { warAndPolitics: [], politicalIntrigue: [], periodStories: [] }
+        }
+    }
+
+    private decorateEditorialRails(rails: EditorialRails): EditorialRails {
+        return {
+            warAndPolitics: this.decorateRailItems(rails.warAndPolitics),
+            politicalIntrigue: this.decorateRailItems(rails.politicalIntrigue),
+            periodStories: this.decorateRailItems(rails.periodStories),
+        }
+    }
+
+    async getPersonalRails(
+        history: HistorySeed[] = [],
+        occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
+        size = PERSONAL_RAIL_SIZE
+    ): Promise<PersonalRails> {
+        const fingerprint = [...history]
+            .sort((left, right) => right.watchedAt - left.watchedAt)
+            .slice(0, TASTE_WINDOW)
+            .map((entry) => `${entry.type}:${entry.id}:${Math.round((entry.progress || 0) / 10)}`)
+            .join(',')
+        const cacheKey = `personal-rails-v2:${fingerprint || 'guest'}:${occupiedKeys(occupied).sort().join(',')}`
+        const cached = await cache.get<PersonalRails>(cacheKey)
+        if (cached) {
+            return this.decoratePersonalRails(cached)
+        }
+
+        try {
+            const recent = [...history]
+                .sort((left, right) => right.watchedAt - left.watchedAt)
+                .slice(0, TASTE_WINDOW)
+            const features = (
+                await Promise.all(recent.map((seed) => this.getTitleFeatures(seed)))
+            ).filter((item): item is TitleFeatures => Boolean(item))
+            const taste = buildTasteProfile(history, features)
+            const now = new Date()
+            const movieGenres = toDiscoverGenres(taste.topGenres, 'movie')
+            const tvGenres = toDiscoverGenres(taste.topGenres, 'tv')
+            const from5y = yearsAgoIso(5, now)
+
+            const [picksPool, picksRelaxed, affinityBundle, treasuresPool] = await Promise.all([
+                taste.personalized
+                    ? this.discoverMixed(
+                          {
+                              movie: {
+                                  sort_by: 'popularity.desc',
+                                  'vote_count.gte': 400,
+                                  'primary_release_date.gte': from5y,
+                                  include_adult: false,
+                                  ...(movieGenres.length ? { with_genres: genrePipe(movieGenres) } : {}),
+                              },
+                              tv: {
+                                  sort_by: 'popularity.desc',
+                                  'vote_count.gte': 400,
+                                  'first_air_date.gte': from5y,
+                                  ...(tvGenres.length ? { with_genres: genrePipe(tvGenres) } : {}),
+                              },
+                          },
+                          2
+                      )
+                    : this.getGlobalTrending(PERSONAL_OVERFETCH),
+                this.discoverMixed(
+                    {
+                        movie: {
+                            sort_by: 'popularity.desc',
+                            'vote_count.gte': 250,
+                            include_adult: false,
+                            ...(taste.personalized && movieGenres.length
+                                ? { with_genres: genrePipe(movieGenres) }
+                                : {}),
+                        },
+                        tv: {
+                            sort_by: 'popularity.desc',
+                            'vote_count.gte': 250,
+                            ...(taste.personalized && tvGenres.length
+                                ? { with_genres: genrePipe(tvGenres) }
+                                : {}),
+                        },
+                    },
+                    2
+                ),
+                taste.personalized
+                    ? this.getAffinityPool(taste.seeds, taste.topKeywords)
+                    : Promise.resolve({
+                          items: [] as Top10Content[],
+                          flags: new Map<string, AffinityFlags>(),
+                      }),
+                this.discoverMixed(
+                    {
+                        movie: {
+                            sort_by: 'vote_average.desc',
+                            'vote_average.gte': 7.3,
+                            'vote_count.gte': 300,
+                            include_adult: false,
+                            ...(taste.personalized && movieGenres.length
+                                ? { with_genres: genrePipe(movieGenres) }
+                                : {}),
+                        },
+                        tv: {
+                            sort_by: 'vote_average.desc',
+                            'vote_average.gte': 7.3,
+                            'vote_count.gte': 300,
+                            ...(taste.personalized && tvGenres.length
+                                ? { with_genres: genrePipe(tvGenres) }
+                                : {}),
+                        },
+                    },
+                    2
+                ),
+            ])
+
+            const [picks, relaxed, affinityItems, treasures] = await Promise.all([
+                this.filterAvailableMixed(picksPool),
+                this.filterAvailableMixed(picksRelaxed),
+                this.filterAvailableMixed(affinityBundle.items),
+                this.filterAvailableMixed(treasuresPool),
+            ])
+
+            const rails = composePersonalRails(
+                {
+                    picks,
+                    picksRelaxed: relaxed,
+                    affinity: affinityItems,
+                    affinityFlags: affinityBundle.flags,
+                    treasures,
+                },
+                taste,
+                occupiedKeys(occupied),
+                now,
+                size
+            )
+            const decorated = this.decoratePersonalRails(rails)
+            await cache.set(cacheKey, decorated, { ttl: taste.personalized ? 900 : this.CACHE_TTL })
+            logger.info('Scaffali personali costruiti', {
+                personalized: decorated.personalized,
+                picks: decorated.picks.length,
+                affinity: decorated.affinity.length,
+                treasures: decorated.treasures.length,
+            })
+            return decorated
+        } catch (error) {
+            logger.error('Errore nella costruzione scaffali personali', { error })
+            return { personalized: false, picks: [], affinity: [], treasures: [] }
+        }
+    }
+
+    private decoratePersonalRails(rails: PersonalRails): PersonalRails {
+        return {
+            ...rails,
+            picks: this.decorateRailItems(rails.picks),
+            affinity: this.decorateRailItems(rails.affinity),
+            treasures: this.decorateRailItems(rails.treasures),
+        }
+    }
+
+    private decorateRailItems(items: Top10Content[]): Top10Content[] {
+        return items.map((item) => ({
+            ...item,
+            title: item.title || item.name || '',
+            name: item.name || item.title,
+            tmdb_id: item.tmdb_id ?? item.id,
+            contentType: item.type,
+        })) as Top10Content[]
+    }
+
+    private mapRailItems(items: TmdbRailItem[] | undefined, type: 'movie' | 'tv'): Top10Content[] {
+        const result: Top10Content[] = []
+        const seen = new Set<string>()
+        for (const raw of items || []) {
+            const mapped = mapTmdbItemToTop10({ ...raw, media_type: raw.media_type || type }, type)
+            if (!mapped) {
+                continue
+            }
+            const key = railItemKey(mapped.type, mapped.id)
+            if (seen.has(key)) {
+                continue
+            }
+            seen.add(key)
+            result.push(mapped)
+        }
+        return result
+    }
+
+    private async discoverPages(
+        kind: 'movie' | 'tv',
+        params: Record<string, string | number | boolean>,
+        pages = 2
+    ): Promise<Top10Content[]> {
+        const requests = Array.from({ length: pages }, (_, index) =>
+            kind === 'movie'
+                ? tmdbWrapperService.discoverMovies({ ...params, page: index + 1 })
+                : tmdbWrapperService.discoverTVShows({ ...params, page: index + 1 })
+        )
+        const responses = await Promise.all(requests)
+        return responses.flatMap((response) =>
+            this.mapRailItems((response?.results || []) as TmdbRailItem[], kind)
+        )
+    }
+
+    private async discoverMixed(
+        params: {
+            movie: Record<string, string | number | boolean>
+            tv: Record<string, string | number | boolean>
+        },
+        pages = 2
+    ): Promise<Top10Content[]> {
+        const requests = Array.from({ length: pages }, (_, index) => [
+            tmdbWrapperService.discoverMovies({ ...params.movie, page: index + 1 }),
+            tmdbWrapperService.discoverTVShows({ ...params.tv, page: index + 1 }),
+        ]).flat()
+        const responses = await Promise.all(requests)
+        const mapped: Top10Content[] = []
+        responses.forEach((response, index) => {
+            const type = index % 2 === 0 ? 'movie' : 'tv'
+            mapped.push(...this.mapRailItems((response?.results || []) as TmdbRailItem[], type))
+        })
+        return mapped
+    }
+
+    private parseKeywordIds(
+        payload:
+            | Array<{ id: number }>
+            | { keywords?: Array<{ id: number }>; results?: Array<{ id: number }> }
+            | undefined
+    ) {
+        const list = Array.isArray(payload)
+            ? payload
+            : payload?.keywords || payload?.results || []
+        return list.map((item) => item.id).filter((id) => Number.isFinite(id) && id > 0)
+    }
+
+    private async getTitleFeatures(seed: HistorySeed): Promise<TitleFeatures | null> {
+        const cacheKey = `tmdb-features-${seed.type}-${seed.id}`
+        const cached = await cache.get<TitleFeatures>(cacheKey)
+        if (cached) {
+            return cached
+        }
+
+        const details =
+            seed.type === 'movie'
+                ? await tmdbWrapperService.getMovieDetails(seed.id, { append_to_response: 'keywords' })
+                : await tmdbWrapperService.getTVShowDetails(seed.id, { append_to_response: 'keywords' })
+        if (!details) {
+            return null
+        }
+
+        const genreIds =
+            Array.isArray(details.genre_ids) && details.genre_ids.length
+                ? details.genre_ids
+                : ((details.genres || []) as Array<{ id: number }>).map((genre) => genre.id)
+        const feature: TitleFeatures = {
+            id: seed.id,
+            type: seed.type,
+            genreIds: genreIds.filter((id: number) => Number.isFinite(id) && id > 0),
+            keywordIds: this.parseKeywordIds(
+                (details as { keywords?: { keywords?: Array<{ id: number }>; results?: Array<{ id: number }> } })
+                    .keywords
+            ),
+            title: seed.type === 'tv' ? details.name || details.title : details.title || details.name,
+        }
+        await cache.set(cacheKey, feature, { ttl: 7 * 86_400 })
+        return feature
+    }
+
+    private async getAffinityPool(
+        seeds: HistorySeed[],
+        keywordIds: number[]
+    ): Promise<{ items: Top10Content[]; flags: Map<string, AffinityFlags> }> {
+        const seedRequests = seeds.map(async (seed) => {
+            const [recommendations, similar] =
+                seed.type === 'movie'
+                    ? await Promise.all([
+                          tmdbWrapperService.getMovieRecommendations(seed.id),
+                          tmdbWrapperService.getMovieSimilar(seed.id),
+                      ])
+                    : await Promise.all([
+                          tmdbWrapperService.getTVRecommendations(seed.id),
+                          tmdbWrapperService.getTVSimilar(seed.id),
+                      ])
+            return [
+                {
+                    items: this.mapRailItems((recommendations?.results || []) as TmdbRailItem[], seed.type),
+                    flags: { seed: 1, keyword: false } satisfies AffinityFlags,
+                },
+                {
+                    items: this.mapRailItems((similar?.results || []) as TmdbRailItem[], seed.type),
+                    flags: { seed: 0.5, keyword: false } satisfies AffinityFlags,
+                },
+            ]
+        })
+
+        const keywordRequest =
+            keywordIds.length >= 2
+                ? this.discoverMixed(
+                      {
+                          movie: {
+                              with_keywords: keywordIds.join('|'),
+                              sort_by: 'popularity.desc',
+                              'vote_count.gte': 150,
+                              include_adult: false,
+                          },
+                          tv: {
+                              with_keywords: keywordIds.join('|'),
+                              sort_by: 'popularity.desc',
+                              'vote_count.gte': 150,
+                          },
+                      },
+                      1
+                  )
+                : Promise.resolve([] as Top10Content[])
+
+        const [seedBuckets, keywordItems] = await Promise.all([Promise.all(seedRequests), keywordRequest])
+        const flags = new Map<string, AffinityFlags>()
+        const items: Top10Content[] = []
+        const seen = new Set<string>()
+
+        const absorb = (batch: Top10Content[], next: AffinityFlags) => {
+            for (const item of batch) {
+                const key = railItemKey(item.type, item.id)
+                const previous = flags.get(key)
+                flags.set(key, {
+                    seed: Math.max(previous?.seed ?? 0, next.seed),
+                    keyword: Boolean(previous?.keyword || next.keyword),
+                })
+                if (seen.has(key)) {
+                    continue
+                }
+                seen.add(key)
+                items.push(item)
+            }
+        }
+
+        for (const pair of seedBuckets) {
+            for (const bucket of pair) {
+                absorb(bucket.items, bucket.flags)
+            }
+        }
+        absorb(keywordItems, { seed: 0, keyword: true })
+
+        return { items, flags }
+    }
+
+    private async filterAvailableMixed(items: Top10Content[]): Promise<Top10Content[]> {
+        const [movieIds, tvIds] = await Promise.all([getVixsrcIdSet('movie'), getVixsrcIdSet('tv')])
+        return items.filter((item) => {
+            const pool = item.type === 'tv' ? tvIds : movieIds
+            if (pool.size === 0) {
+                return true
+            }
+            return pool.has(contentTmdbId(item))
+        })
     }
 
     // Nuovo metodo per film popolari (recenti e di successo)
     async getPopularMovies(): Promise<Movie[]> {
         try {
-            const cacheKey = 'popular-movies'
+            const cacheKey = 'popular-movies-v2'
             const cached = await cache.get<Movie[]>(cacheKey)
             if (cached) {
                 return cached
             }
 
             // Usa direttamente TMDB API per i film popolari
-            const response = await tmdbWrapperService.getPopularMovies()
-
-            if (response && response.results) {
-                const movies = response.results.map(tmdbMovie => this.convertTMDBMovieToMovie(tmdbMovie))
-                const available = await this.filterAvailableMovies(movies)
-                await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
-                logger.info('Film popolari recuperati con successo', { count: available.length })
-                return available
-            }
-
-            return []
+            const [page1, page2] = await Promise.all([
+                tmdbWrapperService.getPopularMovies(1),
+                tmdbWrapperService.getPopularMovies(2),
+            ])
+            const seen = new Set<number>()
+            const movies = [...(page1?.results || []), ...(page2?.results || [])]
+                .filter((tmdbMovie) => {
+                    if (seen.has(tmdbMovie.id)) {
+                        return false
+                    }
+                    seen.add(tmdbMovie.id)
+                    return true
+                })
+                .map((tmdbMovie) => this.convertTMDBMovieToMovie(tmdbMovie))
+            const available = await this.filterAvailableMovies(movies)
+            await cache.set(cacheKey, available, { ttl: this.CACHE_TTL })
+            logger.info('Film popolari recuperati con successo', { count: available.length })
+            return available
         } catch (error) {
             logger.error('Errore nel recupero film popolari', { error })
             return []
@@ -269,7 +856,7 @@ export class CatalogService {
 
     async getMovies(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<Movie>> {
         try {
-            const cacheKey = this.generateCacheKey('movies', filters)
+            const cacheKey = this.generateCacheKey('movies_v2', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<Movie>>(cacheKey)
@@ -282,13 +869,13 @@ export class CatalogService {
                 const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/movie?lang=it`)
 
                 if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = collectVixsrcTmdbIds(response.data, 20)
+                    const tmdbIds = collectVixsrcTmdbIds(response.data, 40)
 
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 film alla volta per evitare rate limiting
                     const movies: Movie[] = []
 
-                    for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
+                    for (let i = 0; i < Math.min(tmdbIds.length, 40); i += batchSize) {
                         const batch = tmdbIds.slice(i, i + batchSize)
 
                         const batchResults = await Promise.allSettled(
@@ -466,7 +1053,7 @@ export class CatalogService {
 
     async getTVShows(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<TVShow>> {
         try {
-            const cacheKey = this.generateCacheKey('tv', filters)
+            const cacheKey = this.generateCacheKey('tv_v2', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<TVShow>>(cacheKey)
@@ -479,13 +1066,13 @@ export class CatalogService {
                 const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/tv?lang=it`)
 
                 if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = collectVixsrcTmdbIds(response.data, 20)
+                    const tmdbIds = collectVixsrcTmdbIds(response.data, 40)
 
                     // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
                     const batchSize = 5 // Processa 5 serie TV alla volta per evitare rate limiting
                     const tvShows: TVShow[] = []
 
-                    for (let i = 0; i < Math.min(tmdbIds.length, 20); i += batchSize) {
+                    for (let i = 0; i < Math.min(tmdbIds.length, 40); i += batchSize) {
                         const batch = tmdbIds.slice(i, i + batchSize)
 
                         const batchResults = await Promise.allSettled(

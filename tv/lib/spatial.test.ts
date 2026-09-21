@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isActivateKey, keyToSpatialDir, pickSpatialTarget } from '@/tv/lib/spatial'
+import { isActivateKey, keyToSpatialDir, pickLoopedSpatialTarget, pickSpatialTarget } from '@/tv/lib/spatial'
 
 describe('spatial nav', () => {
     const origin = { x: 100, y: 100, w: 80, h: 80 }
@@ -14,6 +14,16 @@ describe('spatial nav', () => {
 
     it('non torna indietro', () => {
         expect(pickSpatialTarget(origin, [right], 'left')).toBeNull()
+    })
+
+    it('in uno scaffale riparte da capo sulla stessa lista', () => {
+        const first = { id: 'first', rect: { x: 20, y: 100, w: 80, h: 80 } }
+        const last = { id: 'last', rect: { x: 300, y: 100, w: 80, h: 80 } }
+        expect(pickLoopedSpatialTarget(last.rect, [first], 'right')).toBe('first')
+        expect(pickLoopedSpatialTarget(first.rect, [last], 'left')).toBe('last')
+        expect(pickLoopedSpatialTarget(origin, [right, down], 'right')).toBe('right')
+        expect(pickLoopedSpatialTarget(origin, [down], 'down')).toBe('down')
+        expect(pickLoopedSpatialTarget(origin, [right], 'up')).toBeNull()
     })
 
     it('mappa i tasti freccia', () => {

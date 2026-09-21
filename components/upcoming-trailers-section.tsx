@@ -108,7 +108,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
             <div className="content-gutter">
                 <div className={cn('flex w-full overflow-x-auto', compact ? 'gap-2' : 'gap-3')}>
                     {upcomingMovies.map(({ movie, originalIndex }) => {
-                        const title = movie.title || 'Titolo non disponibile'
+                        const title = movie.title || movie.name || 'Titolo non disponibile'
                         const backdropPath = movie.backdrop_path || movie.poster_path
                         const isMovieHovered = hoveredMovieId === movie.id
 

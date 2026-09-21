@@ -48,8 +48,40 @@ class TMDBWrapperService {
         return this.safeCall(() => this.service!.getUpcomingMovies(page))
     }
 
-    async getMovieDetails(movieId: number) {
-        return this.safeCall(() => this.service!.getMovieDetails(movieId))
+    async getTrendingAllDay(page = 1) {
+        return this.safeCall(() => this.service!.getTrendingAllDay(page))
+    }
+
+    async getTrendingAllWeek(page = 1) {
+        return this.safeCall(() => this.service!.getTrendingAllWeek(page))
+    }
+
+    async discoverMovies(params: Record<string, string | number | boolean> = {}) {
+        return this.safeCall(() => this.service!.discoverMovies(params))
+    }
+
+    async discoverTVShows(params: Record<string, string | number | boolean> = {}) {
+        return this.safeCall(() => this.service!.discoverTVShows(params))
+    }
+
+    async getMovieDetails(movieId: number, params: Record<string, string | number | boolean> = {}) {
+        return this.safeCall(() => this.service!.getMovieDetails(movieId, params))
+    }
+
+    async getMovieRecommendations(movieId: number, page = 1) {
+        return this.safeCall(() => this.service!.getMovieRecommendations(movieId, page))
+    }
+
+    async getMovieSimilar(movieId: number, page = 1) {
+        return this.safeCall(() => this.service!.getMovieSimilar(movieId, page))
+    }
+
+    async getTVRecommendations(tvShowId: number, page = 1) {
+        return this.safeCall(() => this.service!.getTVRecommendations(tvShowId, page))
+    }
+
+    async getTVSimilar(tvShowId: number, page = 1) {
+        return this.safeCall(() => this.service!.getTVSimilar(tvShowId, page))
     }
 
     async getMovieTrailers(movieId: number) {
@@ -64,8 +96,8 @@ class TMDBWrapperService {
         return this.safeCall(() => this.service!.getMovieGenres())
     }
 
-    async getTVShowDetails(tvShowId: number) {
-        return this.safeCall(() => this.service!.getTVShowDetails(tvShowId))
+    async getTVShowDetails(tvShowId: number, params: Record<string, string | number | boolean> = {}) {
+        return this.safeCall(() => this.service!.getTVShowDetails(tvShowId, params))
     }
 
     async getTVShowSeasonDetails(tvShowId: number, seasonNumber: number) {

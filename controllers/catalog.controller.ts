@@ -312,10 +312,32 @@ export class CatalogController {
             return NextResponse.json({
                 success: true,
                 data: top10Content,
-                message: 'Top 10 mista (film e serie TV) recuperata con successo'
+                message: 'Top 10 del momento recuperata con successo'
             })
         } catch (error) {
             logger.error('Errore nel recupero top 10 mista', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
+    async getComingSoon(request: NextRequest): Promise<NextResponse> {
+        try {
+            const comingSoon = await this.catalogService.getComingSoon()
+
+            return NextResponse.json({
+                success: true,
+                data: comingSoon,
+                message: 'Titoli in arrivo recuperati con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero in arrivo', { error })
 
             return NextResponse.json(
                 {
@@ -387,3 +409,4 @@ export const searchMoviesHandler = catalogController.searchMovies.bind(catalogCo
 export const searchTVShowsHandler = catalogController.searchTVShows.bind(catalogController)
 export const getGenresHandler = catalogController.getGenres.bind(catalogController)
 export const getTop10MixedHandler = catalogController.getTop10Mixed.bind(catalogController)
+export const getComingSoonHandler = catalogController.getComingSoon.bind(catalogController)

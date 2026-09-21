@@ -5,6 +5,7 @@ import {
     eventKeyCode,
     isActivateKey,
     keyToSpatialDir,
+    pickLoopedSpatialTarget,
     pickSpatialTarget,
     SpatialCandidate,
     SpatialRect,
@@ -124,16 +125,23 @@ export function useSpatialNavigation(enabled: boolean) {
                 for (let i = 0; i < nodes.length; i++) {
                     if (nodes[i] !== current) mapped.push(nodes[i])
                 }
-                const candidates: SpatialCandidate[] = []
+                const loop = dir === 'left' || dir === 'right' ? current.closest('[data-tv-loop]') : null
+                const pool: HTMLElement[] = []
                 for (let i = 0; i < mapped.length; i++) {
-                    candidates.push({ id: String(i), rect: rectOf(mapped[i]) })
+                    if (!loop || loop.contains(mapped[i])) pool.push(mapped[i])
                 }
-                const nextId = pickSpatialTarget(rectOf(current), candidates, dir)
+                const candidates: SpatialCandidate[] = []
+                for (let i = 0; i < pool.length; i++) {
+                    candidates.push({ id: String(i), rect: rectOf(pool[i]) })
+                }
+                const nextId = loop
+                    ? pickLoopedSpatialTarget(rectOf(current), candidates, dir)
+                    : pickSpatialTarget(rectOf(current), candidates, dir)
                 if (nextId == null) {
                     paintFocus(current)
                     return
                 }
-                paintFocus(mapped[Number(nextId)] || current)
+                paintFocus(pool[Number(nextId)] || current)
                 return
             }
 

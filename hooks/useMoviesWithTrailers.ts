@@ -24,18 +24,16 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
             setLoading(true)
             setError(null)
             
-            console.log('🎬 Caricamento film con trailer...')
             const response = await fetch('/api/catalog/popular/movies-with-trailers')
             const data = await response.json()
             
             if (data.success && data.data?.length > 0) {
-                console.log(`📊 Ricevuti ${data.data.length} film con trailer dall'API`)
-                
-                // Verifica che il primo film abbia effettivamente un trailer
-                const firstMovie = data.data[0]
-                console.log(`🔍 Verifico trailer per: ${firstMovie.title}`)
-                
-                const trailerResponse = await fetch(`/api/tmdb/movies/${firstMovie.id}/videos`)
+                const firstMovie = data.data[0] as TMDBMovie
+                const videosPath =
+                    firstMovie.media_type === 'tv'
+                        ? `/api/tmdb/tv/${firstMovie.id}/videos`
+                        : `/api/tmdb/movies/${firstMovie.id}/videos`
+                const trailerResponse = await fetch(videosPath)
                 const trailerData = await trailerResponse.json()
                 
                 if (trailerData.success && trailerData.data?.results?.length > 0) {
@@ -97,7 +95,11 @@ export const useMoviesWithTrailers = (): UseMoviesWithTrailersReturn => {
             console.log(`🔍 Verifico trailer per: ${movie.title} (${i + 1}/${movies.length})`)
             
             try {
-                const trailerResponse = await fetch(`/api/tmdb/movies/${movie.id}/videos`)
+                const videosPath =
+                    movie.media_type === 'tv'
+                        ? `/api/tmdb/tv/${movie.id}/videos`
+                        : `/api/tmdb/movies/${movie.id}/videos`
+                const trailerResponse = await fetch(videosPath)
                 const trailerData = await trailerResponse.json()
                 
                 if (trailerData.success && trailerData.data?.results?.length > 0) {

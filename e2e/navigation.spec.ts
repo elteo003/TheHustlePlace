@@ -60,5 +60,8 @@ test.describe('Smoke test piattaforma', () => {
         })
         await expect(page.getByRole('heading', { name: 'Top 10 Titoli Oggi' })).toBeVisible()
         await expect(page.getByRole('heading', { name: 'Tesori per te' })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Guerra e politica' })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Intrighi politici' })).toBeVisible()
+        await expect(page.getByRole('heading', { name: "Storie di un'epoca passata" })).toBeVisible()
     })
 })

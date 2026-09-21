@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ContentType, getContentId } from '@/lib/content-navigation'
-import { ContentItem } from '@/lib/content-display'
+import { ContentItem, resolveContentType } from '@/lib/content-display'
 import { ContentHoverCard } from '@/components/content-hover-card'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
 import { TrailerDock } from '@/components/trailer-dock'
@@ -27,6 +27,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
             <CustomScrollbar className="pt-2 pb-8" containerClassName="gap-4 items-start">
                 {movies.map((movie) => {
                     const id = getContentId(movie)
+                    const itemType = resolveContentType(movie, type)
                     return (
                         <div
                             key={id}
@@ -34,7 +35,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
                         >
                             <ContentHoverCard
                                 item={movie}
-                                type={type}
+                                type={itemType}
                                 variant="carousel"
                                 isExpanded={!isTouch && expandedId === id}
                                 onExpand={() => setExpandedId(id)}
@@ -50,7 +51,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
             </CustomScrollbar>
             <TrailerDock
                 item={isTouch ? peekItem : null}
-                type={type}
+                type={peekItem ? resolveContentType(peekItem, type) : type}
                 onClose={onClose}
                 onExited={onExited}
                 onPlay={onPlay}

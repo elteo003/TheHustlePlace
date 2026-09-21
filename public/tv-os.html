@@ -170,11 +170,67 @@
       text-align: left;
     }
     .gate-pick .avatar, .gate-pick .plus { margin: 0; }
-    .gate-side { padding: 18vh 0 0 28px; min-width: 280px; }
-    .gate-side-name { font-size: 40px; font-weight: 700; margin: 0 0 22px; }
-    .gate-side .action { display: block; width: 240px; margin: 0 0 10px; }
+    .gate-hero {
+      position: absolute;
+      left: 50%;
+      top: 16vh;
+      width: 580px;
+      margin-left: -290px;
+      z-index: 6;
+      text-align: center;
+    }
+    .gate-side-name {
+      font-size: 44px;
+      font-weight: 700;
+      margin: 0 0 28px;
+      text-shadow: 0 8px 28px #000;
+    }
+    .gate-hero-row {
+      display: -webkit-box; display: flex;
+      -webkit-box-pack: justify; justify-content: space-between;
+    }
+    .gate-hero-row .action {
+      width: auto;
+      min-width: 168px;
+      margin: 0;
+    }
+    .gate-code {
+      position: absolute;
+      left: 0; right: 0;
+      bottom: 6.5vh;
+      text-align: center;
+      z-index: 7;
+    }
+    .gate-code-btn {
+      position: relative;
+      height: auto;
+      line-height: 1.2;
+      padding: 22px 72px;
+      margin: 0;
+      background: transparent;
+      color: rgba(255,255,255,.78);
+      font-size: 22px;
+      font-weight: 600;
+      overflow: visible;
+    }
+    .gate-code-btn:before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 300px;
+      height: 92px;
+      margin: -46px 0 0 -150px;
+      border-radius: 999px;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,.42) 0%, rgba(255,255,255,.18) 40%, rgba(255,255,255,0) 74%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+      transition: opacity 180ms ease;
+    }
     @media (prefers-reduced-motion: reduce) {
       .gate-track { transition: none; }
+      .gate-code-btn:before { transition: opacity 120ms ease; }
     }
     .gate-profile { padding-top: 3vh; }
     .gate-profile h1 { margin: 0 0 8px; font-size: 44px; }
@@ -415,6 +471,15 @@
         0 0 28px 10px rgba(255,255,255,.95),
         0 0 70px 28px rgba(255,255,255,.42),
         0 0 130px 56px rgba(255,255,255,.16);
+    }
+    .gate-code-btn.is-tv-focused, .gate-code-btn.action.is-tv-focused {
+      -webkit-transform: none; transform: none;
+      background: transparent;
+      box-shadow: none;
+      color: #fff;
+    }
+    .gate-code-btn.is-tv-focused:before {
+      opacity: 1;
     }
     .hint { color: rgba(255,255,255,.5); font-size: 20px; }
     .muted { color: rgba(255,255,255,.5); font-size: 18px; }
@@ -805,16 +870,37 @@
     paint();
   }
 
+  function loopHost(node) {
+    var el = node;
+    while (el && el !== root) {
+      if (el.getAttribute && el.getAttribute('data-tv-loop') != null) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
   function move(dir) {
     if (!nodes.length) return;
-    var cur = nodes[idx].getBoundingClientRect();
+    var curNode = nodes[idx];
+    var cur = curNode.getBoundingClientRect();
+    var host = (dir === 'left' || dir === 'right') ? loopHost(curNode) : null;
     var best = -1;
     var bestScore = 1000000;
-    var i, next, dx, dy, primary, side, score;
+    var wrap = -1;
+    var wrapPos = dir === 'right' ? 1000000 : -1000000;
+    var i, next, dx, dy, primary, side, score, inHost, edge;
     for (i = 0; i < nodes.length; i++) {
       if (i === idx) continue;
       next = nodes[i].getBoundingClientRect();
       if (next.width < 2 || next.height < 2) continue;
+      inHost = !host || (host.contains && host.contains(nodes[i]));
+      if (!inHost) continue;
+      if (host) {
+        edge = dir === 'right' ? next.left : (next.left + next.width);
+        if (dir === 'right') {
+          if (edge < wrapPos) { wrapPos = edge; wrap = i; }
+        } else if (edge > wrapPos) { wrapPos = edge; wrap = i; }
+      }
       dx = (next.left + next.width / 2) - (cur.left + cur.width / 2);
       dy = (next.top + next.height / 2) - (cur.top + cur.height / 2);
       if (dir === 'right') { if (dx <= 2) continue; primary = dx; side = dy < 0 ? -dy : dy; }
@@ -824,6 +910,7 @@
       score = primary + side * 2.4;
       if (score < bestScore) { bestScore = score; best = i; }
     }
+    if (best < 0 && host) best = wrap;
     if (best >= 0) {
       idx = best;
       remember();
@@ -1213,6 +1300,7 @@
     var box = el('div', 'rail');
     box.appendChild(el('h2', '', title));
     var scroller = el('div', railId === 'hist' ? 'scroller hist-scroller' : 'scroller');
+    scroller.setAttribute('data-tv-loop', '');
     var i, item, tile, fid, limit, card, sub, kind;
     limit = items.length > 14 ? 14 : items.length;
     for (i = 0; i < limit; i++) {
@@ -1404,6 +1492,7 @@
       rail = el('div', 'rail');
       rail.appendChild(el('div', 'skel-title shimmer'));
       scroller = el('div', 'scroller');
+      scroller.setAttribute('data-tv-loop', '');
       for (j = 0; j < 6; j++) scroller.appendChild(el('div', 'tile shimmer'));
       rail.appendChild(scroller);
       page.appendChild(rail);
@@ -1465,10 +1554,12 @@
     }
     rail.appendChild(track);
     split.appendChild(rail);
+    page.appendChild(split);
 
-    var side = el('div', 'gate-side');
-    side.appendChild(el('div', 'gate-side-name', shown[0] ? (shown[0].name || 'Profilo') : 'Aggiungi'));
-    side.lastChild.id = 'gate-side-name';
+    var hero = el('div', 'gate-hero');
+    hero.appendChild(el('div', 'gate-side-name', shown[0] ? (shown[0].name || 'Profilo') : 'Aggiungi'));
+    hero.lastChild.id = 'gate-side-name';
+    var heroRow = el('div', 'gate-hero-row');
     var editBtn = focusBtn('action', 'Modifica', 'side-edit', function () {
       if (!gateFocusProfile || gateFocusProfile.id === 'local') return;
       editProfileId = gateFocusProfile.id;
@@ -1479,7 +1570,7 @@
       renderGate();
     });
     editBtn.id = 'gate-side-edit';
-    side.appendChild(editBtn);
+    heroRow.appendChild(editBtn);
     var linkBtn = focusBtn('action', 'Collega', 'side-link', function () {
       if (!gateFocusProfile) return;
       selectedProfile = gateFocusProfile;
@@ -1487,18 +1578,20 @@
       renderGate();
     });
     linkBtn.id = 'gate-side-link';
-    side.appendChild(linkBtn);
+    heroRow.appendChild(linkBtn);
+    hero.appendChild(heroRow);
+    page.appendChild(hero);
     if (household.configured) {
-      side.appendChild(focusBtn('action', 'Ho un codice', 'profile-adopt', function () {
+      var codeWrap = el('div', 'gate-code');
+      codeWrap.appendChild(focusBtn('action gate-code-btn', 'Ho un codice', 'profile-adopt', function () {
         adoptCode = '';
         adoptError = '';
         gateView = 'adopt';
         wantFid = 'key-A';
         renderGate();
       }));
+      page.appendChild(codeWrap);
     }
-    split.appendChild(side);
-    page.appendChild(split);
     root.appendChild(page);
     gateRailInstant = true;
     collect(wantFid || (shown[0] ? 'profile-' + shown[0].id : ''));

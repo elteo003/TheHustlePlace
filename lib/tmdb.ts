@@ -25,6 +25,13 @@ export interface TMDBMovie {
     video: boolean
     genre_ids: number[]
     original_language: string
+    media_type?: 'movie' | 'tv'
+    name?: string
+    first_air_date?: string
+}
+
+export function getMediaTitle(item: { title?: string; name?: string } | null | undefined): string {
+    return item?.title?.trim() || item?.name?.trim() || 'Titolo non disponibile'
 }
 
 export interface TMDBTVShow {

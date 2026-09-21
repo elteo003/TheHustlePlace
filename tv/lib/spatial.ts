@@ -20,6 +20,22 @@ function overlap(a0: number, a1: number, b0: number, b1: number): number {
     return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0))
 }
 
+function wrapHorizontal<T extends string>(candidates: SpatialCandidate<T>[], dir: 'left' | 'right'): T | null {
+    const first = candidates[0]
+    if (!first) return null
+    let best = first
+    for (let i = 1; i < candidates.length; i++) {
+        const candidate = candidates[i]
+        if (!candidate) continue
+        if (dir === 'right') {
+            if (candidate.rect.x < best.rect.x) best = candidate
+        } else if (candidate.rect.x + candidate.rect.w > best.rect.x + best.rect.w) {
+            best = candidate
+        }
+    }
+    return best.id
+}
+
 export function pickSpatialTarget<T extends string>(
     origin: SpatialRect,
     candidates: SpatialCandidate<T>[],
@@ -72,6 +88,19 @@ export function pickSpatialTarget<T extends string>(
     }
 
     return best?.id ?? null
+}
+
+export function pickLoopedSpatialTarget<T extends string>(
+    origin: SpatialRect,
+    candidates: SpatialCandidate<T>[],
+    dir: SpatialDir
+): T | null {
+    const direct = pickSpatialTarget(origin, candidates, dir)
+    if (direct != null) return direct
+    if (dir === 'left' || dir === 'right') {
+        return wrapHorizontal(candidates, dir)
+    }
+    return null
 }
 
 const KEY_CODE_DIR: Record<number, SpatialDir> = {
