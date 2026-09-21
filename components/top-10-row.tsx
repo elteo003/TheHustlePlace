@@ -31,7 +31,6 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                 const itemType = resolveContentType(item, type)
                 const itemId = getContentId(item)
                 const title = getContentTitle(item, itemType)
-                const isOne = rank === 1
 
                 return (
                     <motion.div
@@ -48,13 +47,20 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
                         }}
                     >
                         <span
-                            className={`relative z-0 inline-block select-none shrink-0 overflow-hidden font-black leading-none pointer-events-none ${
-                                isOne ? 'mr-0' : '-mr-3 sm:-mr-5'
+                            className={`relative z-0 inline-block select-none shrink-0 font-black pointer-events-none ${
+                                rank === 10 ? '-mr-4 sm:-mr-6' : '-mr-3 sm:-mr-5'
                             }`}
                             style={{
-                                fontSize: 'clamp(4rem, 12vw, 7rem)',
-                                color: '#a1a1aa',
-                                minWidth: isOne ? '0.58em' : undefined,
+                                fontSize: rank === 10
+                                    ? 'clamp(4.25rem, 11vw, 8.25rem)'
+                                    : 'clamp(5.5rem, 14vw, 10.5rem)',
+                                fontWeight: 900,
+                                lineHeight: 0.78,
+                                letterSpacing: '-0.08em',
+                                color: '#111',
+                                WebkitTextStroke: '3px rgba(255,255,255,0.42)',
+                                textShadow:
+                                    '-2px -2px 0 rgba(255,255,255,.28), 2px -2px 0 rgba(255,255,255,.28), -2px 2px 0 rgba(255,255,255,.28), 2px 2px 0 rgba(255,255,255,.28), 0 10px 22px rgba(0,0,0,.55)',
                             }}
                             aria-hidden
                         >
