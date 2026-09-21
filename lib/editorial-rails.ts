@@ -19,6 +19,7 @@ export const TMDB_GENRE = {
     movieHorror: 27,
     movieMusic: 10402,
     movieDrama: 18,
+    movieFamily: 10751,
     tvWarPolitics: 10768,
     tvSciFiFantasy: 10765,
     tvMystery: 9648,
@@ -82,6 +83,8 @@ export const TMDB_KEYWORD = {
     rockAndRoll: 578,
     rockAndRollAlt: 292114,
     jukeboxMusical: 286529,
+    biography: 5565,
+    basedOnTrueStory: 9672,
     fashion: 15479,
     advertising: 15086,
     hollywood: 12396,
@@ -149,12 +152,12 @@ export const EDITORIAL_HOME_RAILS: Array<{ id: EditorialRailId; section: Catalog
 const OCCUPY_ORDER: EditorialRailId[] = [
     'warAndPolitics',
     'medievalPassion',
-    'periodStories',
+    'crimeLords',
+    'drugEmpires',
     'puzzleInvestigations',
     'jukeboxPopStars',
     'vintageStories',
-    'drugEmpires',
-    'crimeLords',
+    'periodStories',
     'mysteryMasterpieces',
     'darkestHorror',
     'politicalIntrigue',
@@ -206,6 +209,7 @@ export const EDITORIAL_SEEDS: Partial<Record<EditorialRailId, Array<{ query: str
         { query: 'Casino', type: 'movie' },
         { query: 'Scarface 1983', type: 'movie' },
         { query: "C'era una volta in America", type: 'movie' },
+        { query: 'Peaky Blinders', type: 'tv' },
     ],
 }
 
@@ -269,6 +273,9 @@ export const PERIOD_EXCLUDE_KEYWORDS = [
     TMDB_KEYWORD.romanEmpire,
     TMDB_KEYWORD.ancientWorld,
     TMDB_KEYWORD.gladiator,
+    TMDB_KEYWORD.mafia,
+    TMDB_KEYWORD.gangster,
+    TMDB_KEYWORD.organizedCrime,
 ]
 
 export const MEDIEVAL_PASSION_KEYWORDS = [
@@ -298,11 +305,12 @@ export const DARKEST_HORROR_KEYWORDS = [
 
 export const JUKEBOX_KEYWORDS = [
     TMDB_KEYWORD.musical,
-    TMDB_KEYWORD.singer,
     TMDB_KEYWORD.rockAndRoll,
     TMDB_KEYWORD.rockAndRollAlt,
     TMDB_KEYWORD.jukeboxMusical,
 ]
+
+export const JUKEBOX_BIOPIC_KEYWORDS = [TMDB_KEYWORD.biography, TMDB_KEYWORD.basedOnTrueStory]
 
 export const VINTAGE_DECADE_KEYWORDS = [TMDB_KEYWORD.sixties, TMDB_KEYWORD.seventies]
 
@@ -312,7 +320,18 @@ export const VINTAGE_INDUSTRY_KEYWORDS = [
     TMDB_KEYWORD.hollywood,
 ]
 
-export const VINTAGE_EXCLUDE_KEYWORDS = [TMDB_KEYWORD.eighties, TMDB_KEYWORD.coldWar, TMDB_KEYWORD.superhero]
+export const VINTAGE_EXCLUDE_KEYWORDS = [
+    TMDB_KEYWORD.eighties,
+    TMDB_KEYWORD.coldWar,
+    TMDB_KEYWORD.superhero,
+    TMDB_KEYWORD.mafia,
+    TMDB_KEYWORD.gangster,
+    TMDB_KEYWORD.organizedCrime,
+    TMDB_KEYWORD.italianMafia,
+    TMDB_KEYWORD.irishMob,
+    TMDB_KEYWORD.psychologicalHorror,
+    TMDB_KEYWORD.gore,
+]
 
 export const DRUG_EMPIRE_KEYWORDS = [
     TMDB_KEYWORD.drugCartel,

@@ -49,6 +49,7 @@ import {
     EDITORIAL_RAIL_SIZE,
     EDITORIAL_SEEDS,
     HISTORICAL_WAR_KEYWORDS,
+    JUKEBOX_BIOPIC_KEYWORDS,
     JUKEBOX_KEYWORDS,
     MEDIEVAL_PASSION_KEYWORDS,
     MODERN_CONFLICT_KEYWORDS,
@@ -383,7 +384,7 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v14:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v16:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -400,6 +401,7 @@ export class CatalogService {
             const puzzleKeywords = keywordPipe(PUZZLE_KEYWORDS)
             const horrorKeywords = keywordPipe(DARKEST_HORROR_KEYWORDS)
             const jukeboxKeywords = keywordPipe(JUKEBOX_KEYWORDS)
+            const jukeboxBiopicKeywords = keywordPipe(JUKEBOX_BIOPIC_KEYWORDS)
             const vintageDecadeKeywords = keywordPipe(VINTAGE_DECADE_KEYWORDS)
             const vintageIndustryKeywords = keywordPipe(VINTAGE_INDUSTRY_KEYWORDS)
             const vintageExcludeKeywords = keywordPipe(VINTAGE_EXCLUDE_KEYWORDS)
@@ -416,8 +418,8 @@ export class CatalogService {
             const medievalMovieExclude = `${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieHorror}|10751`
             const mysteryMovieExclude = `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieWar}`
             const mysteryGenres = `${TMDB_GENRE.movieMystery}|${TMDB_GENRE.movieCrime}|${TMDB_GENRE.movieThriller}`
-            const jukeboxTvExclude = `${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvTalk}|${TMDB_GENRE.tvNews}|${TMDB_GENRE.tvKids}`
-            const vintageMovieExclude = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHorror}|${fantasyMovieGenres}`
+            const jukeboxMovieExclude = `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieFantasy}|${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieFamily}|${TMDB_GENRE.movieCrime}|${TMDB_GENRE.movieThriller}`
+            const vintageMovieExclude = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieCrime}|${TMDB_GENRE.movieThriller}|${TMDB_GENRE.movieMystery}|${fantasyMovieGenres}`
 
             const [
                 historicalKeywordMovies,
@@ -612,34 +614,28 @@ export class CatalogService {
                     'movie',
                     {
                         with_genres: TMDB_GENRE.movieMusic,
-                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieAnimation}`,
+                        with_keywords: jukeboxBiopicKeywords,
+                        without_genres: jukeboxMovieExclude,
                         sort_by: 'popularity.desc',
                         'vote_count.gte': 80,
                         include_adult: false,
                     },
-                    3
+                    5
                 ),
                 this.discoverPages(
                     'movie',
                     {
                         with_keywords: jukeboxKeywords,
-                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieAnimation}`,
+                        without_genres: jukeboxMovieExclude,
+                        'primary_release_date.gte': '1952-01-01',
+                        'primary_release_date.lte': '2012-12-31',
                         sort_by: 'popularity.desc',
                         'vote_count.gte': 80,
                         include_adult: false,
                     },
-                    2
+                    4
                 ),
-                this.discoverPages(
-                    'tv',
-                    {
-                        with_keywords: jukeboxKeywords,
-                        without_genres: jukeboxTvExclude,
-                        sort_by: 'popularity.desc',
-                        'vote_count.gte': 80,
-                    },
-                    2
-                ),
+                Promise.resolve([] as Top10Content[]),
                 this.discoverPages(
                     'movie',
                     {
@@ -669,7 +665,7 @@ export class CatalogService {
                     {
                         with_keywords: vintageDecadeKeywords,
                         without_keywords: vintageExcludeKeywords,
-                        without_genres: `${TMDB_GENRE.tvWarPolitics}|${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvSciFiFantasy}|${TMDB_GENRE.movieAnimation}`,
+                        without_genres: `${TMDB_GENRE.tvWarPolitics}|${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvSciFiFantasy}|${TMDB_GENRE.tvMystery}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieCrime}`,
                         sort_by: 'popularity.desc',
                         'vote_count.gte': 40,
                     },

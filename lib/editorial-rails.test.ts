@@ -4,11 +4,14 @@ import {
     EDITORIAL_HOME_RAILS,
     EDITORIAL_RAIL_TITLES,
     HISTORICAL_WAR_KEYWORDS,
+    JUKEBOX_BIOPIC_KEYWORDS,
+    JUKEBOX_KEYWORDS,
     MEDIEVAL_PASSION_KEYWORDS,
     MODERN_WAR_KEYWORDS,
     PERIOD_KEYWORDS,
     PERIOD_EXCLUDE_KEYWORDS,
     PUZZLE_KEYWORDS,
+    VINTAGE_EXCLUDE_KEYWORDS,
     TMDB_GENRE,
     TMDB_KEYWORD,
     boostEditorialSeeds,
@@ -192,6 +195,36 @@ describe('editorial-rails', () => {
         expect(rails.vintageStories.map((entry) => entry.title)).not.toContain('Stranger Things')
     })
 
+    it('mette Quei bravi ragazzi e Peaky Blinders tra i signori del crimine, non in vintage o costume', () => {
+        const crime = [
+            item({ id: 120, title: 'Quei bravi ragazzi', type: 'movie', popularity: 90 }),
+            item({ id: 121, title: 'Peaky Blinders', type: 'tv', popularity: 95 }),
+            ...many('CrimeEpic', 1000, 40, 40),
+        ]
+        const vintage = [
+            item({ id: 120, title: 'Quei bravi ragazzi', type: 'movie', popularity: 90 }),
+            item({ id: 122, title: 'IT: Welcome to Derry', type: 'tv', popularity: 88 }),
+            item({ id: 123, title: 'Mindhunter', type: 'tv', popularity: 84 }),
+            item({ id: 90, title: "La regina degli scacchi", type: 'tv', popularity: 80 }),
+            ...many('Vintage', 1100, 40, 30),
+        ]
+        const period = [
+            item({ id: 121, title: 'Peaky Blinders', type: 'tv', popularity: 95 }),
+            item({ id: 3, title: 'Bridgerton', type: 'tv', popularity: 92 }),
+            ...many('Period', 1200, 40, 28),
+        ]
+        const rails = composeEditorialRails(
+            pools({ crimeLords: crime, vintageStories: vintage, periodStories: period }),
+            []
+        )
+        expect(rails.crimeLords.map((entry) => entry.title)).toContain('Quei bravi ragazzi')
+        expect(rails.crimeLords.map((entry) => entry.title)).toContain('Peaky Blinders')
+        expect(rails.vintageStories.map((entry) => entry.title)).toContain("La regina degli scacchi")
+        expect(rails.vintageStories.map((entry) => entry.title)).not.toContain('Quei bravi ragazzi')
+        expect(rails.periodStories.map((entry) => entry.title)).toContain('Bridgerton')
+        expect(rails.periodStories.map((entry) => entry.title)).not.toContain('Peaky Blinders')
+    })
+
     it('tiene Scarface e il Padrino tra i signori del crimine, non tra i cartelli', () => {
         const crime = [
             item({ id: 100, title: 'Il Padrino', type: 'movie', popularity: 99 }),
@@ -252,6 +285,9 @@ describe('editorial-rails', () => {
         expect(keywordPipe(MEDIEVAL_PASSION_KEYWORDS)).toContain(String(TMDB_KEYWORD.samurai))
         expect(keywordPipe(MEDIEVAL_PASSION_KEYWORDS)).toContain(String(TMDB_KEYWORD.medieval))
         expect(keywordPipe(PUZZLE_KEYWORDS)).toContain(String(TMDB_KEYWORD.whodunit))
+        expect(keywordPipe(JUKEBOX_KEYWORDS)).not.toContain(String(TMDB_KEYWORD.singer))
+        expect(keywordPipe(JUKEBOX_BIOPIC_KEYWORDS)).toContain(String(TMDB_KEYWORD.biography))
+        expect(keywordPipe(VINTAGE_EXCLUDE_KEYWORDS)).toContain(String(TMDB_KEYWORD.mafia))
         expect(TMDB_GENRE.movieWestern).toBe(37)
         expect(TMDB_GENRE.tvWarPolitics).toBe(10768)
         expect(TMDB_GENRE.movieHorror).toBe(27)
