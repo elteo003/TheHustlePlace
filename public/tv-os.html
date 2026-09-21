@@ -116,7 +116,10 @@
       overflow: hidden;
       padding: 28px 0 24px;
     }
-    .shell.browse .hist-scroller { height: auto; }
+    .shell.browse, .shell.browse .hero, .shell.browse .rail {
+      -webkit-animation: none;
+      animation: none;
+    }
     @media (prefers-reduced-motion: reduce) {
       .browse-track, .rail-strip {
         -webkit-transition: none;
@@ -507,7 +510,7 @@
     button:focus { outline: none; }
     [data-tv-focus] {
       outline: none;
-      transition: transform .22s cubic-bezier(0.19, 1, 0.22, 1), box-shadow .22s cubic-bezier(0.19, 1, 0.22, 1), background .22s cubic-bezier(0.19, 1, 0.22, 1);
+      transition: transform .18s cubic-bezier(0.19, 1, 0.22, 1), background .18s cubic-bezier(0.19, 1, 0.22, 1);
     }
     .is-tv-focused {
       outline: none;
@@ -621,6 +624,7 @@
   var gateRailIndex = 0;
   var gateRailInstant = false;
   var browseCameraInstant = false;
+  var peekTimer = null;
   var gateFocusProfile = null;
   var searchQ = '';
   var searchTab = 'all';
@@ -863,7 +867,7 @@
     return 'https://image.tmdb.org/t/p/' + (size || 'w300') + path;
   }
 
-  function getJson(url, done) {
+  function getJson(url, done, waitMs) {
     if (!window.fetch) { done(null); return; }
     var finished = false;
     function finish(data) {
@@ -874,7 +878,7 @@
     fetch(url, { credentials: 'same-origin', headers: deviceHeaders() }).then(function (res) {
       return res.json();
     }).then(finish).catch(function () { finish(null); });
-    setTimeout(function () { finish(null); }, 5000);
+    setTimeout(function () { finish(null); }, waitMs || 5000);
   }
 
   function sendJson(method, url, body, done) {
@@ -929,8 +933,8 @@
       } else if (!syncBrowseCamera(browseCameraInstant)) {
         try { nodes[idx].scrollIntoView(false); } catch (err2) {}
       }
+      requestPeek(nodes[idx], browseCameraInstant);
       browseCameraInstant = false;
-      peekFrom(nodes[idx]);
     }
   }
 
@@ -995,7 +999,7 @@
   }
 
   function setTranslate(el, x, y) {
-    var value = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    var value = 'translate3d(' + Math.round(x) + 'px,' + Math.round(y) + 'px,0)';
     el.style.webkitTransform = value;
     el.style.transform = value;
   }
@@ -1082,6 +1086,7 @@
     }
     scroller = loopHost(focused);
     if (scroller) syncRailStrip(scroller, focused, instant);
+    syncRailWeights(track, rail);
     resetBrowseScroll();
     return true;
   }
@@ -1379,6 +1384,60 @@
     return nav;
   }
 
+  function requestPeek(node, instant) {
+    var hero;
+    var delay;
+    if (peekTimer) {
+      clearTimeout(peekTimer);
+      peekTimer = null;
+    }
+    if (!node) return;
+    hero = document.getElementById('hero');
+    delay = 0;
+    if (!instant && node.getAttribute('data-kind') === 'tile') {
+      if (!(hero && hero.contains && hero.contains(node)) && !hasClass(node, 'navbtn') && !hasClass(node, 'who')) {
+        delay = prefersReducedMotion() ? 0 : 340;
+      }
+    }
+    if (!delay) {
+      peekFrom(node);
+      return;
+    }
+    peekTimer = setTimeout(function () {
+      peekTimer = null;
+      peekFrom(node);
+    }, delay);
+  }
+
+  function setRailHot(rail, hot) {
+    var tiles = rail.querySelectorAll('[data-kind="tile"]');
+    var hist = !!rail.querySelector('.hist-tile');
+    var i, tile, src;
+    for (i = 0; i < tiles.length; i++) {
+      tile = tiles[i];
+      if (hot) {
+        src = hist ? (tile.getAttribute('data-back') || tile.getAttribute('data-poster')) : tile.getAttribute('data-poster');
+        if (src) tile.style.backgroundImage = 'url(' + src + ')';
+      } else if (tile.style.backgroundImage) {
+        tile.style.backgroundImage = '';
+      }
+    }
+  }
+
+  function syncRailWeights(track, focusedRail) {
+    var rails = track.querySelectorAll('.rail');
+    var focusIdx = -1;
+    var i, dist;
+    for (i = 0; i < rails.length; i++) {
+      if (focusedRail && rails[i] === focusedRail) focusIdx = i;
+    }
+    if (focusIdx < 0) focusIdx = 0;
+    for (i = 0; i < rails.length; i++) {
+      dist = i > focusIdx ? i - focusIdx : focusIdx - i;
+      setRailHot(rails[i], dist <= 1);
+    }
+  }
+
   function peekFrom(node) {
     if (!node || node.getAttribute('data-kind') !== 'tile') return;
     heroItem = {
@@ -1522,7 +1581,7 @@
     scroller.setAttribute('data-tv-loop', '');
     var strip = el('div', 'rail-strip');
     var i, item, tile, fid, limit, card, sub, kind;
-    limit = items.length > 14 ? 14 : items.length;
+    limit = items.length > 20 ? 20 : items.length;
     for (i = 0; i < limit; i++) {
       item = items[i];
       fid = (i === 0 && railId === 'top') ? 'tile-0' : ('tile-' + railId + '-' + i);
@@ -2002,28 +2061,52 @@
     fillHero(hero, heroItem);
     track.appendChild(hero);
     var rail;
-    if (kind === 'home' && data.history && data.history.length) {
-      rail = renderRail('Continua a guardare', data.history, 'movie', 'hist');
-      if (rail) track.appendChild(rail);
-    }
-    if (kind === 'series' && data.history && data.history.length) {
-      rail = renderRail('Continua a guardare', data.history, 'tv', 'hist');
-      if (rail) track.appendChild(rail);
-    }
-    if (kind === 'home' || kind === 'movies') {
-      if (kind === 'home') {
-        rail = renderRail('Top 10', data.top, 'movie', 'top');
+    if (kind === 'home') {
+      if (data.history && data.history.length) {
+        rail = renderRail('Continua a guardare', data.history, 'movie', 'hist');
         if (rail) track.appendChild(rail);
       }
-      rail = renderRail(kind === 'movies' ? 'Popolari' : 'Film popolari', data.movies, 'movie', 'mov');
+      rail = renderRail('Scelti per te oggi', data.picks, 'movie', 'picks');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Top 10', data.top, 'movie', 'top');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Pensiamo ti appassioneranno', data.affinity, 'movie', 'aff');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Tesori per te', data.treasures, 'movie', 'tre');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Guerra e politica', data.war, 'movie', 'war');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Intrighi politici', data.intrigue, 'tv', 'int');
+      if (rail) track.appendChild(rail);
+      rail = renderRail("Storie di un'epoca passata", data.period, 'movie', 'per');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('In arrivo', data.coming, 'movie', 'soon');
+      if (rail) track.appendChild(rail);
+      rail = renderRail('Film popolari', data.movies, 'movie', 'mov');
       if (rail) track.appendChild(rail);
       if (data.recent && data.recent.length) {
         rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
         if (rail) track.appendChild(rail);
       }
-    }
-    if (kind === 'home' || kind === 'series') {
-      rail = renderRail(kind === 'series' ? 'Popolari' : 'Serie popolari', data.tv, 'tv', 'tv');
+      rail = renderRail('Serie popolari', data.tv, 'tv', 'tv');
+      if (rail) track.appendChild(rail);
+      if (data.tvRecent && data.tvRecent.length) {
+        rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
+        if (rail) track.appendChild(rail);
+      }
+    } else if (kind === 'movies') {
+      rail = renderRail('Popolari', data.movies, 'movie', 'mov');
+      if (rail) track.appendChild(rail);
+      if (data.recent && data.recent.length) {
+        rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
+        if (rail) track.appendChild(rail);
+      }
+    } else if (kind === 'series') {
+      if (data.history && data.history.length) {
+        rail = renderRail('Continua a guardare', data.history, 'tv', 'hist');
+        if (rail) track.appendChild(rail);
+      }
+      rail = renderRail('Popolari', data.tv, 'tv', 'tv');
       if (rail) track.appendChild(rail);
       if (data.tvRecent && data.tvRecent.length) {
         rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
@@ -2036,6 +2119,37 @@
     browseCameraInstant = true;
     collect(wantFid || storeGet('tv.fid') || 'hero-play');
     signalReady();
+  }
+
+  function loadHomeRails(bag) {
+    if (!bag || bag.railsReady || bag.railsLoading) return;
+    bag.railsLoading = true;
+    var left = 3;
+    function step() {
+      left -= 1;
+      if (left > 0) return;
+      bag.railsReady = true;
+      bag.railsLoading = false;
+      if (pathNow().indexOf('/living/home') === 0) paintBrowse('home', bag);
+    }
+    getJson('/api/catalog/personal', function (json) {
+      var rails = json && json.data ? json.data : {};
+      bag.picks = listOf({ data: rails.picks });
+      bag.affinity = listOf({ data: rails.affinity });
+      bag.treasures = listOf({ data: rails.treasures });
+      step();
+    }, 25000);
+    getJson('/api/catalog/editorial', function (json) {
+      var rails = json && json.data ? json.data : {};
+      bag.war = listOf({ data: rails.warAndPolitics });
+      bag.intrigue = listOf({ data: rails.politicalIntrigue });
+      bag.period = listOf({ data: rails.periodStories });
+      step();
+    }, 25000);
+    getJson('/api/catalog/coming-soon', function (json) {
+      bag.coming = listOf(json);
+      step();
+    }, 20000);
   }
 
   function historyItems(json) {
@@ -2058,6 +2172,7 @@
     }
     if (cache[kind] && (kind === 'home' || kind === 'series')) {
       paintBrowse(kind, cache[kind]);
+      if (kind === 'home') loadHomeRails(cache[kind]);
       getJson('/api/watch-history', function (json) {
         var hist = historyItems(json);
         if (kind === 'series') hist = tvHistory(hist);
@@ -2089,13 +2204,18 @@
       return;
     }
 
-    var bag = { top: [], movies: [], recent: [], tv: [], tvRecent: [], history: [] };
+    var bag = {
+      top: [], movies: [], recent: [], tv: [], tvRecent: [], history: [],
+      picks: [], affinity: [], treasures: [], coming: [], war: [], intrigue: [], period: [],
+      railsReady: false
+    };
     var left = 6;
     function step() {
       left -= 1;
       if (left > 0) return;
       cache.home = bag;
       revealBrowse('home', bag);
+      loadHomeRails(bag);
     }
     getJson('/api/watch-history', function (json) { bag.history = historyItems(json); step(); });
     getJson('/api/catalog/top-10', function (json) { bag.top = listOf(json); step(); });
