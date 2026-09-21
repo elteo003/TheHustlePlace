@@ -110,6 +110,12 @@ export async function fetchCatalogSection(
         case 'affinity':
         case 'treasures':
         case 'war-politics':
+        case 'medieval-passion':
+        case 'puzzle-investigations':
+        case 'mystery-masterpieces':
+        case 'darkest-horror':
+        case 'jukebox-pop-stars':
+        case 'vintage-stories':
         case 'political-intrigue':
         case 'period-stories':
             results = []

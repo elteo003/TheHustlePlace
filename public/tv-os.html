@@ -2570,7 +2570,9 @@
     catalogSharedWaiters = [done];
     var bag = {
       top: [], movies: [], recent: [], tv: [], tvRecent: [],
-      coming: [], war: [], intrigue: [], period: [], ready: false
+      coming: [], war: [], intrigue: [], period: [],
+      medieval: [], puzzle: [], mystery: [], dark: [], jukebox: [], vintage: [],
+      ready: false
     };
     var step = runSteps(7, function () {
       bag.ready = true;
@@ -2588,6 +2590,12 @@
     getJson('/api/catalog/editorial', function (json) {
       var rails = json && json.data ? json.data : {};
       bag.war = listOf({ data: rails.warAndPolitics });
+      bag.medieval = listOf({ data: rails.medievalPassion });
+      bag.puzzle = listOf({ data: rails.puzzleInvestigations });
+      bag.mystery = listOf({ data: rails.mysteryMasterpieces });
+      bag.dark = listOf({ data: rails.darkestHorror });
+      bag.jukebox = listOf({ data: rails.jukeboxPopStars });
+      bag.vintage = listOf({ data: rails.vintageStories });
       bag.intrigue = listOf({ data: rails.politicalIntrigue });
       bag.period = listOf({ data: rails.periodStories });
       step();
@@ -2640,6 +2648,12 @@
       war: shared.war || [],
       intrigue: shared.intrigue || [],
       period: shared.period || [],
+      medieval: shared.medieval || [],
+      puzzle: shared.puzzle || [],
+      mystery: shared.mystery || [],
+      dark: shared.dark || [],
+      jukebox: shared.jukebox || [],
+      vintage: shared.vintage || [],
       history: personal.history || [],
       picks: personal.picks || [],
       affinity: personal.affinity || [],
@@ -2680,6 +2694,12 @@
       add('Serie recenti', data.tvRecent, 'tv', 'trec');
       add('Tesori per te', data.treasures, 'movie', 'tre');
       add('Guerra e politica', data.war, 'movie', 'war');
+      add('Il medio evo che ti appassiona', data.medieval, 'movie', 'med');
+      add('Indagini rompicapo', data.puzzle, 'movie', 'puz');
+      add('I capolavori del mistero', data.mystery, 'movie', 'mys');
+      add('Quelli più cupi', data.dark, 'movie', 'dark');
+      add('Viaggio nel tempo: tra jukebox, lustrini e pop star', data.jukebox, 'movie', 'juke');
+      add('Storie vintage: eleganza, vizi e cambiamenti sociali', data.vintage, 'movie', 'vin');
       add("Storie di un'epoca passata", data.period, 'movie', 'per');
       add('Le guerre di oggi', data.intrigue, 'movie', 'int');
       add('Aggiunti di recente', data.recent, 'movie', 'mrec');

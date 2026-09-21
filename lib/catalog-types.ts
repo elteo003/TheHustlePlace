@@ -9,6 +9,12 @@ export type CatalogSection =
     | 'affinity'
     | 'treasures'
     | 'war-politics'
+    | 'medieval-passion'
+    | 'puzzle-investigations'
+    | 'mystery-masterpieces'
+    | 'darkest-horror'
+    | 'jukebox-pop-stars'
+    | 'vintage-stories'
     | 'political-intrigue'
     | 'period-stories'
 

@@ -1,5 +1,6 @@
 import { Top10Content } from '@/types'
 import { takeUnseen } from '@/lib/personal-rails'
+import { CatalogSection } from '@/lib/catalog-types'
 
 export const EDITORIAL_RAIL_SIZE = 24
 export const EDITORIAL_MIN_ITEMS = 6
@@ -13,8 +14,18 @@ export const TMDB_GENRE = {
     movieAnimation: 16,
     movieThriller: 53,
     movieComedy: 35,
+    movieMystery: 9648,
+    movieCrime: 80,
+    movieHorror: 27,
+    movieMusic: 10402,
+    movieDrama: 18,
     tvWarPolitics: 10768,
     tvSciFiFantasy: 10765,
+    tvMystery: 9648,
+    tvReality: 10764,
+    tvTalk: 10767,
+    tvNews: 10763,
+    tvKids: 10762,
 } as const
 
 export const TMDB_KEYWORD = {
@@ -50,16 +61,113 @@ export const TMDB_KEYWORD = {
     romanEmpire: 1405,
     ancientWorld: 14704,
     gladiator: 1394,
+    medieval: 161257,
+    knight: 10466,
+    crusade: 2868,
+    vikings: 5895,
+    samurai: 1462,
+    jidaigeki: 186753,
+    edoPeriod: 190446,
+    whodunit: 12570,
+    twistEnding: 326438,
+    neoNoir: 207268,
+    nonlinearTimeline: 157171,
+    amnesia: 1453,
+    psychologicalHorror: 295907,
+    bodyHorror: 283085,
+    folkHorror: 209568,
+    gore: 10292,
+    musical: 4344,
+    singer: 10229,
+    rockAndRoll: 578,
+    rockAndRollAlt: 292114,
+    jukeboxMusical: 286529,
+    fashion: 15479,
+    advertising: 15086,
+    hollywood: 12396,
 } as const
 
-export type EditorialRailId = 'warAndPolitics' | 'politicalIntrigue' | 'periodStories'
+export type EditorialRailId =
+    | 'warAndPolitics'
+    | 'medievalPassion'
+    | 'puzzleInvestigations'
+    | 'mysteryMasterpieces'
+    | 'darkestHorror'
+    | 'jukeboxPopStars'
+    | 'vintageStories'
+    | 'politicalIntrigue'
+    | 'periodStories'
 
 export type EditorialRails = Record<EditorialRailId, Top10Content[]>
 
 export const EDITORIAL_RAIL_TITLES: Record<EditorialRailId, string> = {
     warAndPolitics: 'Guerra e politica',
+    medievalPassion: 'Il medio evo che ti appassiona',
+    puzzleInvestigations: 'Indagini rompicapo',
+    mysteryMasterpieces: 'I capolavori del mistero',
+    darkestHorror: 'Quelli più cupi',
+    jukeboxPopStars: 'Viaggio nel tempo: tra jukebox, lustrini e pop star',
+    vintageStories: 'Storie vintage: eleganza, vizi e cambiamenti sociali',
     politicalIntrigue: 'Le guerre di oggi',
     periodStories: "Storie di un'epoca passata",
+}
+
+export const EDITORIAL_HOME_RAILS: Array<{ id: EditorialRailId; section: CatalogSection }> = [
+    { id: 'warAndPolitics', section: 'war-politics' },
+    { id: 'medievalPassion', section: 'medieval-passion' },
+    { id: 'puzzleInvestigations', section: 'puzzle-investigations' },
+    { id: 'mysteryMasterpieces', section: 'mystery-masterpieces' },
+    { id: 'darkestHorror', section: 'darkest-horror' },
+    { id: 'jukeboxPopStars', section: 'jukebox-pop-stars' },
+    { id: 'vintageStories', section: 'vintage-stories' },
+    { id: 'periodStories', section: 'period-stories' },
+    { id: 'politicalIntrigue', section: 'political-intrigue' },
+]
+
+const OCCUPY_ORDER: EditorialRailId[] = [
+    'warAndPolitics',
+    'medievalPassion',
+    'periodStories',
+    'puzzleInvestigations',
+    'jukeboxPopStars',
+    'vintageStories',
+    'mysteryMasterpieces',
+    'darkestHorror',
+    'politicalIntrigue',
+]
+
+export const EDITORIAL_SEEDS: Partial<Record<EditorialRailId, Array<{ query: string; type: 'movie' | 'tv' }>>> = {
+    puzzleInvestigations: [
+        { query: 'The Usual Suspects', type: 'movie' },
+        { query: 'Memento', type: 'movie' },
+        { query: 'Knives Out', type: 'movie' },
+        { query: 'Shutter Island', type: 'movie' },
+        { query: 'The Game Nessuna regola', type: 'movie' },
+    ],
+    jukeboxPopStars: [
+        { query: 'Bohemian Rhapsody', type: 'movie' },
+        { query: 'Rocketman', type: 'movie' },
+        { query: 'Elvis', type: 'movie' },
+        { query: 'Hairspray', type: 'movie' },
+        { query: 'Stranger Things', type: 'tv' },
+    ],
+    vintageStories: [
+        { query: 'The French Dispatch', type: 'movie' },
+        { query: "The Queen's Gambit", type: 'tv' },
+        { query: 'American Hustle', type: 'movie' },
+        { query: 'Licorice Pizza', type: 'movie' },
+        { query: 'Catch Me If You Can', type: 'movie' },
+        { query: 'The Man from U.N.C.L.E.', type: 'movie' },
+    ],
+}
+
+export function boostEditorialSeeds(seeds: Top10Content[], pool: Top10Content[]): Top10Content[] {
+    const boosted = seeds.map((item, index) => ({
+        ...item,
+        popularity: 100000 - index,
+    }))
+    const seen = new Set(boosted.map((item) => `${item.type}:${item.id}`))
+    return [...boosted, ...pool.filter((item) => !seen.has(`${item.type}:${item.id}`))]
 }
 
 export const WAR_KEYWORDS = [
@@ -115,6 +223,63 @@ export const PERIOD_EXCLUDE_KEYWORDS = [
     TMDB_KEYWORD.gladiator,
 ]
 
+export const MEDIEVAL_PASSION_KEYWORDS = [
+    TMDB_KEYWORD.medieval,
+    TMDB_KEYWORD.knight,
+    TMDB_KEYWORD.crusade,
+    TMDB_KEYWORD.vikings,
+    TMDB_KEYWORD.samurai,
+    TMDB_KEYWORD.jidaigeki,
+    TMDB_KEYWORD.edoPeriod,
+]
+
+export const PUZZLE_KEYWORDS = [
+    TMDB_KEYWORD.whodunit,
+    TMDB_KEYWORD.twistEnding,
+    TMDB_KEYWORD.neoNoir,
+    TMDB_KEYWORD.nonlinearTimeline,
+    TMDB_KEYWORD.amnesia,
+]
+
+export const DARKEST_HORROR_KEYWORDS = [
+    TMDB_KEYWORD.psychologicalHorror,
+    TMDB_KEYWORD.bodyHorror,
+    TMDB_KEYWORD.folkHorror,
+    TMDB_KEYWORD.gore,
+]
+
+export const JUKEBOX_KEYWORDS = [
+    TMDB_KEYWORD.musical,
+    TMDB_KEYWORD.singer,
+    TMDB_KEYWORD.rockAndRoll,
+    TMDB_KEYWORD.rockAndRollAlt,
+    TMDB_KEYWORD.jukeboxMusical,
+]
+
+export const VINTAGE_DECADE_KEYWORDS = [TMDB_KEYWORD.sixties, TMDB_KEYWORD.seventies]
+
+export const VINTAGE_INDUSTRY_KEYWORDS = [
+    TMDB_KEYWORD.fashion,
+    TMDB_KEYWORD.advertising,
+    TMDB_KEYWORD.hollywood,
+]
+
+export const VINTAGE_EXCLUDE_KEYWORDS = [TMDB_KEYWORD.eighties, TMDB_KEYWORD.coldWar, TMDB_KEYWORD.superhero]
+
+export function emptyEditorialRails(): EditorialRails {
+    return {
+        warAndPolitics: [],
+        medievalPassion: [],
+        puzzleInvestigations: [],
+        mysteryMasterpieces: [],
+        darkestHorror: [],
+        jukeboxPopStars: [],
+        vintageStories: [],
+        politicalIntrigue: [],
+        periodStories: [],
+    }
+}
+
 export function keywordPipe(ids: number[]): string {
     return ids.join('|')
 }
@@ -128,23 +293,17 @@ export function sortByPopularity(items: Top10Content[]): Top10Content[] {
 }
 
 export function composeEditorialRails(
-    pools: {
-        warAndPolitics: Top10Content[]
-        politicalIntrigue: Top10Content[]
-        periodStories: Top10Content[]
-    },
+    pools: EditorialRails,
     occupied: Iterable<string>,
     size = EDITORIAL_RAIL_SIZE
 ): EditorialRails {
     const seen = new Set(occupied)
+    const rails = emptyEditorialRails()
 
-    const warAndPolitics = takeUnseen(sortByPopularity(pools.warAndPolitics), seen, size)
-    const periodStories = takeUnseen(sortByPopularity(pools.periodStories), seen, size)
-    const politicalIntrigue = takeUnseen(sortByPopularity(pools.politicalIntrigue), seen, size)
-
-    return {
-        warAndPolitics: warAndPolitics.length >= EDITORIAL_MIN_ITEMS ? warAndPolitics : [],
-        politicalIntrigue: politicalIntrigue.length >= EDITORIAL_MIN_ITEMS ? politicalIntrigue : [],
-        periodStories: periodStories.length >= EDITORIAL_MIN_ITEMS ? periodStories : [],
+    for (const id of OCCUPY_ORDER) {
+        const taken = takeUnseen(sortByPopularity(pools[id] || []), seen, size)
+        rails[id] = taken.length >= EDITORIAL_MIN_ITEMS ? taken : []
     }
+
+    return rails
 }

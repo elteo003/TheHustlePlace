@@ -41,15 +41,26 @@ import {
     yearsAgoFrom,
 } from '@/lib/top10-moment'
 import {
+    DARKEST_HORROR_KEYWORDS,
     EDITORIAL_RAIL_SIZE,
+    EDITORIAL_SEEDS,
     HISTORICAL_WAR_KEYWORDS,
+    JUKEBOX_KEYWORDS,
+    MEDIEVAL_PASSION_KEYWORDS,
     MODERN_CONFLICT_KEYWORDS,
     MODERN_GEO_KEYWORDS,
     MODERN_WAR_KEYWORDS,
     PERIOD_KEYWORDS,
     PERIOD_EXCLUDE_KEYWORDS,
+    PUZZLE_KEYWORDS,
     TMDB_GENRE,
+    TMDB_KEYWORD,
+    VINTAGE_DECADE_KEYWORDS,
+    VINTAGE_EXCLUDE_KEYWORDS,
+    VINTAGE_INDUSTRY_KEYWORDS,
+    boostEditorialSeeds,
     composeEditorialRails,
+    emptyEditorialRails,
     keywordPipe,
     type EditorialRails,
 } from '@/lib/editorial-rails'
@@ -368,7 +379,7 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v7:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v11:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -381,12 +392,24 @@ export class CatalogService {
             const modernKeywords = keywordPipe(MODERN_WAR_KEYWORDS)
             const periodKeywords = keywordPipe(PERIOD_KEYWORDS)
             const periodExcludeKeywords = `${historicalKeywords}|${keywordPipe(PERIOD_EXCLUDE_KEYWORDS)}`
+            const medievalKeywords = keywordPipe(MEDIEVAL_PASSION_KEYWORDS)
+            const puzzleKeywords = keywordPipe(PUZZLE_KEYWORDS)
+            const horrorKeywords = keywordPipe(DARKEST_HORROR_KEYWORDS)
+            const jukeboxKeywords = keywordPipe(JUKEBOX_KEYWORDS)
+            const vintageDecadeKeywords = keywordPipe(VINTAGE_DECADE_KEYWORDS)
+            const vintageIndustryKeywords = keywordPipe(VINTAGE_INDUSTRY_KEYWORDS)
+            const vintageExcludeKeywords = keywordPipe(VINTAGE_EXCLUDE_KEYWORDS)
             const historicalMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHistory}`
             const modernGeoMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieThriller}`
             const fantasyMovieGenres = `${TMDB_GENRE.movieFantasy}|${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieAnimation}`
             const modernMovieExclude = `${fantasyMovieGenres}|${TMDB_GENRE.movieComedy}`
             const periodMovieExclude = `${TMDB_GENRE.movieWar}|${fantasyMovieGenres}|${TMDB_GENRE.movieComedy}|${TMDB_GENRE.movieThriller}`
             const periodTvExclude = `${TMDB_GENRE.tvWarPolitics}|${TMDB_GENRE.tvSciFiFantasy}`
+            const medievalMovieExclude = `${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieHorror}|10751`
+            const mysteryMovieExclude = `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieWar}`
+            const mysteryGenres = `${TMDB_GENRE.movieMystery}|${TMDB_GENRE.movieCrime}|${TMDB_GENRE.movieThriller}`
+            const jukeboxTvExclude = `${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvTalk}|${TMDB_GENRE.tvNews}|${TMDB_GENRE.tvKids}`
+            const vintageMovieExclude = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHorror}|${fantasyMovieGenres}`
 
             const [
                 historicalKeywordMovies,
@@ -397,6 +420,20 @@ export class CatalogService {
                 westernMovies,
                 periodKeywordMovies,
                 periodShows,
+                medievalMovies,
+                medievalShows,
+                puzzleMovies,
+                masterpieceMovies,
+                darkestMovies,
+                jukeboxMusicMovies,
+                jukeboxKeywordMovies,
+                jukeboxShows,
+                vintageDecadeMovies,
+                vintageIndustryMovies,
+                vintageShows,
+                puzzleSeeds,
+                jukeboxSeeds,
+                vintageSeeds,
             ] = await Promise.all([
                 this.discoverPages(
                     'movie',
@@ -493,16 +530,188 @@ export class CatalogService {
                     },
                     4
                 ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: medievalKeywords,
+                        without_genres: medievalMovieExclude,
+                        without_keywords: `${historicalKeywords}|${TMDB_KEYWORD.superhero}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: medievalKeywords,
+                        without_genres: `${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}`,
+                        without_keywords: historicalKeywords,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 30,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: puzzleKeywords,
+                        with_genres: mysteryGenres,
+                        without_genres: mysteryMovieExclude,
+                        without_keywords: TMDB_KEYWORD.superhero,
+                        'primary_release_date.gte': '1995-01-01',
+                        sort_by: 'vote_count.desc',
+                        'vote_count.gte': 400,
+                        include_adult: false,
+                    },
+                    4
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_genres: TMDB_GENRE.movieMystery,
+                        without_genres: `${mysteryMovieExclude}|28`,
+                        without_keywords: TMDB_KEYWORD.superhero,
+                        'primary_release_date.gte': '1960-01-01',
+                        'primary_release_date.lte': '2020-12-31',
+                        sort_by: 'vote_count.desc',
+                        'vote_count.gte': 800,
+                        include_adult: false,
+                    },
+                    4
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: horrorKeywords,
+                        with_genres: TMDB_GENRE.movieHorror,
+                        without_genres: `${TMDB_GENRE.movieComedy}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieMusic}`,
+                        sort_by: 'vote_count.desc',
+                        'vote_count.gte': 1500,
+                        'vote_average.gte': 6.4,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_genres: TMDB_GENRE.movieMusic,
+                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieAnimation}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: jukeboxKeywords,
+                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieAnimation}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    2
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: jukeboxKeywords,
+                        without_genres: jukeboxTvExclude,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                    },
+                    2
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: vintageDecadeKeywords,
+                        without_keywords: vintageExcludeKeywords,
+                        without_genres: vintageMovieExclude,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    3
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: `${vintageIndustryKeywords},${vintageDecadeKeywords}`,
+                        without_keywords: `${vintageExcludeKeywords}|${historicalKeywords}`,
+                        without_genres: vintageMovieExclude,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                        include_adult: false,
+                    },
+                    2
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: vintageDecadeKeywords,
+                        without_keywords: vintageExcludeKeywords,
+                        without_genres: `${TMDB_GENRE.tvWarPolitics}|${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvSciFiFantasy}|${TMDB_GENRE.movieAnimation}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                    },
+                    3
+                ),
+                this.loadEditorialSeeds(EDITORIAL_SEEDS.puzzleInvestigations),
+                this.loadEditorialSeeds(EDITORIAL_SEEDS.jukeboxPopStars),
+                this.loadEditorialSeeds(EDITORIAL_SEEDS.vintageStories),
             ])
 
-            const [warAndPolitics, politicalIntrigue, periodStories] = await Promise.all([
+            const [
+                warAndPolitics,
+                politicalIntrigue,
+                periodStories,
+                medievalPassion,
+                puzzleInvestigations,
+                mysteryMasterpieces,
+                darkestHorror,
+                jukeboxPopStars,
+                vintageStories,
+            ] = await Promise.all([
                 this.filterAvailableMixed([...historicalKeywordMovies, ...historicalKeywordShows]),
                 this.filterAvailableMixed([...modernConflictMovies, ...modernGeoMovies, ...modernKeywordShows]),
                 this.filterAvailableMixed([...westernMovies, ...periodKeywordMovies, ...periodShows]),
+                this.filterAvailableMixed([...medievalMovies, ...medievalShows]),
+                this.filterAvailableMixed(boostEditorialSeeds(puzzleSeeds, puzzleMovies)),
+                this.filterAvailableMixed(masterpieceMovies),
+                this.filterAvailableMixed(darkestMovies),
+                this.filterAvailableMixed(
+                    boostEditorialSeeds(jukeboxSeeds, [
+                        ...jukeboxMusicMovies,
+                        ...jukeboxKeywordMovies,
+                        ...jukeboxShows,
+                    ])
+                ),
+                this.filterAvailableMixed(
+                    boostEditorialSeeds(vintageSeeds, [
+                        ...vintageDecadeMovies,
+                        ...vintageIndustryMovies,
+                        ...vintageShows,
+                    ])
+                ),
             ])
 
             const rails = composeEditorialRails(
-                { warAndPolitics, politicalIntrigue, periodStories },
+                {
+                    warAndPolitics,
+                    medievalPassion,
+                    puzzleInvestigations,
+                    mysteryMasterpieces,
+                    darkestHorror,
+                    jukeboxPopStars,
+                    vintageStories,
+                    politicalIntrigue,
+                    periodStories,
+                },
                 occupiedKeys(occupied),
                 size
             )
@@ -510,22 +719,49 @@ export class CatalogService {
             await cache.set(cacheKey, decorated, { ttl: this.CACHE_TTL })
             logger.info('Scaffali editoriali costruiti', {
                 warAndPolitics: decorated.warAndPolitics.length,
+                medievalPassion: decorated.medievalPassion.length,
+                puzzleInvestigations: decorated.puzzleInvestigations.length,
+                mysteryMasterpieces: decorated.mysteryMasterpieces.length,
+                darkestHorror: decorated.darkestHorror.length,
+                jukeboxPopStars: decorated.jukeboxPopStars.length,
+                vintageStories: decorated.vintageStories.length,
                 politicalIntrigue: decorated.politicalIntrigue.length,
                 periodStories: decorated.periodStories.length,
             })
             return decorated
         } catch (error) {
             logger.error('Errore nella costruzione scaffali editoriali', { error })
-            return { warAndPolitics: [], politicalIntrigue: [], periodStories: [] }
+            return emptyEditorialRails()
         }
     }
 
     private decorateEditorialRails(rails: EditorialRails): EditorialRails {
-        return {
-            warAndPolitics: this.decorateRailItems(rails.warAndPolitics),
-            politicalIntrigue: this.decorateRailItems(rails.politicalIntrigue),
-            periodStories: this.decorateRailItems(rails.periodStories),
+        const decorated = emptyEditorialRails()
+        for (const id of Object.keys(rails) as Array<keyof EditorialRails>) {
+            decorated[id] = this.decorateRailItems(rails[id] || [])
         }
+        return decorated
+    }
+
+    private async loadEditorialSeeds(
+        seeds: Array<{ query: string; type: 'movie' | 'tv' }> | undefined
+    ): Promise<Top10Content[]> {
+        if (!seeds?.length) return []
+        const found = await Promise.all(seeds.map((seed) => this.searchEditorialSeed(seed.query, seed.type)))
+        return found.filter((item): item is Top10Content => Boolean(item))
+    }
+
+    private async searchEditorialSeed(query: string, type: 'movie' | 'tv'): Promise<Top10Content | null> {
+        if (type === 'movie') {
+            const response = await tmdbWrapperService.searchMovies(query, 1)
+            const first = response?.results?.[0]
+            if (!first) return null
+            return this.mapRailItems([first as TmdbRailItem], 'movie')[0] || null
+        }
+        const response = await tmdbWrapperService.searchTVShows(query, 1)
+        const first = Array.isArray(response) ? response[0] : response?.results?.[0]
+        if (!first) return null
+        return this.mapRailItems([first as TmdbRailItem], 'tv')[0] || null
     }
 
     async getPersonalRails(

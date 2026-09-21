@@ -1,6 +1,6 @@
 import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails } from '@/lib/server/catalog'
 import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
-import { EDITORIAL_RAIL_TITLES } from '@/lib/editorial-rails'
+import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_TITLES } from '@/lib/editorial-rails'
 import { TvRailItem } from '@/tv/lib/types'
 import { TvHome } from '@/tv/components/TvHome'
 import { Top10Content } from '@/types'
@@ -30,9 +30,10 @@ export default async function LivingHomePage() {
         { title: 'Film popolari', items: popularMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie recenti', items: recentTV as TvRailItem[], type: 'tv' as const },
         { title: 'Tesori per te', items: personal.treasures as TvRailItem[] },
-        { title: EDITORIAL_RAIL_TITLES.warAndPolitics, items: editorial.warAndPolitics as TvRailItem[] },
-        { title: EDITORIAL_RAIL_TITLES.periodStories, items: editorial.periodStories as TvRailItem[] },
-        { title: EDITORIAL_RAIL_TITLES.politicalIntrigue, items: editorial.politicalIntrigue as TvRailItem[] },
+        ...EDITORIAL_HOME_RAILS.map(({ id }) => ({
+            title: EDITORIAL_RAIL_TITLES[id],
+            items: editorial[id] as TvRailItem[],
+        })),
         { title: 'Film recenti', items: recentMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie popolari', items: popularTV as TvRailItem[], type: 'tv' as const },
         { title: 'In arrivo', items: comingSoon as TvRailItem[] },

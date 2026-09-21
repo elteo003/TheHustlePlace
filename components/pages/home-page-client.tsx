@@ -10,7 +10,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
-import { EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
+import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
 import { Movie, TVShow, Top10Content } from '@/types'
 
@@ -158,44 +158,22 @@ export function HomePageClient({
                         </HomeRail>
                     )}
 
-                    {editorial.warAndPolitics.length > 0 && (
-                        <HomeRail title={EDITORIAL_RAIL_TITLES.warAndPolitics}>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="war-politics"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={editorial.warAndPolitics}
-                            />
-                        </HomeRail>
-                    )}
-
-                    {editorial.periodStories.length > 0 && (
-                        <HomeRail title={EDITORIAL_RAIL_TITLES.periodStories}>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="period-stories"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={editorial.periodStories}
-                            />
-                        </HomeRail>
-                    )}
-
-                    {editorial.politicalIntrigue.length > 0 && (
-                        <HomeRail title={EDITORIAL_RAIL_TITLES.politicalIntrigue}>
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="political-intrigue"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={editorial.politicalIntrigue}
-                            />
-                        </HomeRail>
-                    )}
+                    {EDITORIAL_HOME_RAILS.map(({ id, section }) => {
+                        const items = editorial[id]
+                        if (!items.length) return null
+                        return (
+                            <HomeRail key={id} title={EDITORIAL_RAIL_TITLES[id]}>
+                                <MovieGridIntegrated
+                                    type="movie"
+                                    section={section}
+                                    limit={HOME_RAIL_SIZE}
+                                    onPlay={play}
+                                    onDetails={openDetails}
+                                    initialData={items}
+                                />
+                            </HomeRail>
+                        )
+                    })}
 
                     <HomeRail title="Film Recenti">
                         <MovieGridIntegrated
