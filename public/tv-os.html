@@ -57,6 +57,72 @@
     .hero-copy { position: absolute; left: 48px; bottom: 36px; right: 36%; z-index: 1; }
     .hero-copy h1 { font-size: 52px; line-height: 1.05; margin: 0 0 14px; font-weight: 700; }
     .hero-copy p { font-size: 20px; line-height: 1.4; color: rgba(255,255,255,.72); max-height: 4.2em; overflow: hidden; margin: 0 0 22px; }
+    .shell.browse {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .shell.browse .topnav {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      z-index: 8;
+      height: auto;
+      margin: 0;
+      padding: 28px 56px 48px;
+      box-sizing: border-box;
+      background: linear-gradient(to bottom, rgba(0,0,0,.78) 0%, rgba(0,0,0,.28) 55%, rgba(0,0,0,0) 100%);
+    }
+    .browse-stage {
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    .browse-track {
+      position: relative;
+      padding-bottom: 34vh;
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0;
+      -webkit-transition: -webkit-transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      transition: transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
+    }
+    .shell.browse .hero {
+      height: 78vh;
+      margin: 0;
+      border-radius: 0;
+    }
+    .shell.browse .hero:after {
+      background: linear-gradient(90deg, #000 8%, rgba(0,0,0,.7) 42%, transparent 78%),
+                  linear-gradient(0deg, #000 0%, rgba(0,0,0,.35) 28%, transparent 52%);
+    }
+    .shell.browse .hero-copy {
+      left: 64px;
+      bottom: 8vh;
+      right: 32%;
+    }
+    .shell.browse .rail h2 { padding-left: 64px; }
+    .rail-strip {
+      display: inline-block;
+      white-space: nowrap;
+      vertical-align: top;
+      position: relative;
+      padding: 8px 80px 8px 64px;
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0;
+      -webkit-transition: -webkit-transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      transition: transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
+    }
+    .shell.browse .scroller {
+      height: auto;
+      overflow: hidden;
+      padding: 28px 0 24px;
+    }
+    .shell.browse .hist-scroller { height: auto; }
+    @media (prefers-reduced-motion: reduce) {
+      .browse-track, .rail-strip {
+        -webkit-transition: none;
+        transition: none;
+      }
+    }
     .action {
       display: inline-block; height: 52px; line-height: 52px; padding: 0 26px; margin: 0 12px 0 0;
       border-radius: 10px; background: rgba(255,255,255,.14); font-size: 20px;
@@ -121,9 +187,10 @@
     .shell.gate-pick:before, .shell.gate-pick:after {
       content: '';
       position: absolute;
-      left: 0; right: 0;
-      height: 18vh;
-      z-index: 5;
+      left: 0;
+      width: 280px;
+      height: 16vh;
+      z-index: 1;
       pointer-events: none;
     }
     .shell.gate-pick:before {
@@ -149,6 +216,8 @@
       -webkit-box-align: start; align-items: flex-start;
       height: 100%;
       padding-left: 4.5vw;
+      position: relative;
+      z-index: 3;
     }
     .gate-rail {
       width: 168px;
@@ -157,6 +226,8 @@
       -webkit-flex-shrink: 0; flex-shrink: 0;
       padding: 12vh 0;
       box-sizing: content-box;
+      position: relative;
+      z-index: 3;
     }
     .gate-track {
       transition: transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
@@ -203,6 +274,7 @@
     }
     .gate-code-btn {
       position: relative;
+      z-index: 1;
       height: auto;
       line-height: 1.2;
       padding: 22px 72px;
@@ -552,6 +624,7 @@
   var adoptError = '';
   var gateRailIndex = 0;
   var gateRailInstant = false;
+  var browseCameraInstant = false;
   var gateFocusProfile = null;
   var searchQ = '';
   var searchTab = 'all';
@@ -796,9 +869,16 @@
 
   function getJson(url, done) {
     if (!window.fetch) { done(null); return; }
+    var finished = false;
+    function finish(data) {
+      if (finished) return;
+      finished = true;
+      done(data);
+    }
     fetch(url, { credentials: 'same-origin', headers: deviceHeaders() }).then(function (res) {
       return res.json();
-    }).then(done).catch(function () { done(null); });
+    }).then(finish).catch(function () { finish(null); });
+    setTimeout(function () { finish(null); }, 5000);
   }
 
   function sendJson(method, url, body, done) {
@@ -840,14 +920,20 @@
       el.className = cls.replace(/^\s+|\s+$/g, '');
     }
     if (nodes[idx]) {
-      try { nodes[idx].focus(); } catch (err) {}
+      try {
+        if (nodes[idx].focus) nodes[idx].focus({ preventScroll: true });
+      } catch (err) {
+        try { nodes[idx].focus(); } catch (err2) {}
+      }
+      resetBrowseScroll();
       if (root.querySelector('.gate-rail')) {
         syncGateRail(gateRailInstant);
         syncGateSide();
         gateRailInstant = false;
-      } else {
+      } else if (!syncBrowseCamera(browseCameraInstant)) {
         try { nodes[idx].scrollIntoView(false); } catch (err2) {}
       }
+      browseCameraInstant = false;
       peekFrom(nodes[idx]);
     }
   }
@@ -877,6 +963,131 @@
       el = el.parentNode;
     }
     return null;
+  }
+
+  function hasClass(node, name) {
+    return node && (' ' + (node.className || '') + ' ').indexOf(' ' + name + ' ') >= 0;
+  }
+
+  function closestClass(node, name) {
+    var el = node;
+    while (el && el !== root) {
+      if (hasClass(el, name)) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function resetBrowseScroll() {
+    var stage = root.querySelector('.browse-stage');
+    var page = root.querySelector('.shell.browse');
+    if (stage) stage.scrollTop = 0;
+    if (page) page.scrollTop = 0;
+    root.scrollTop = 0;
+    try {
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    } catch (err) {}
+  }
+
+  function setTranslate(el, x, y) {
+    var value = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    el.style.webkitTransform = value;
+    el.style.transform = value;
+  }
+
+  function sizeBrowseHero(stage, track) {
+    var hero = document.getElementById('hero');
+    if (!hero || !stage || hero.getAttribute('data-sized') === '1') return;
+    var firstRail = track.querySelector('.rail');
+    var viewH = stage.clientHeight || window.innerHeight || 1080;
+    var peek = Math.round(viewH * 0.22);
+    var tile, titleH, cardH, h2;
+    if (firstRail) {
+      h2 = firstRail.querySelector('h2');
+      tile = firstRail.querySelector('.tile');
+      titleH = h2 ? h2.offsetHeight + 12 : 36;
+      cardH = tile ? tile.offsetHeight : 180;
+      peek = Math.round(titleH + cardH * 0.33 + 16);
+    }
+    hero.style.height = Math.max(Math.round(viewH * 0.7), viewH - peek) + 'px';
+    hero.setAttribute('data-sized', '1');
+  }
+
+  function syncRailStrip(scroller, focused, instant) {
+    var strip = scroller.querySelector('.rail-strip');
+    var card;
+    var pad;
+    var x;
+    var max;
+    if (!strip) return;
+    card = focused;
+    while (card && card.parentNode !== strip) card = card.parentNode;
+    if (!card) card = focused;
+    pad = 64;
+    x = card.offsetLeft - pad;
+    if (x < 0) x = 0;
+    max = Math.max(0, strip.scrollWidth - scroller.clientWidth);
+    if (x > max) x = max;
+    if (instant || prefersReducedMotion()) strip.style.webkitTransitionDuration = strip.style.transitionDuration = '0ms';
+    else strip.style.webkitTransitionDuration = strip.style.transitionDuration = '';
+    setTranslate(strip, -x, 0);
+    if (instant) {
+      strip.offsetHeight;
+      strip.style.webkitTransitionDuration = strip.style.transitionDuration = '';
+    }
+  }
+
+  function syncBrowseCamera(instant) {
+    var page = root.querySelector('.shell.browse');
+    var stage;
+    var track;
+    var focused;
+    var hero;
+    var rail;
+    var scroller;
+    var viewH;
+    var targetY;
+    var maxY;
+    if (!page) return false;
+    stage = page.querySelector('.browse-stage');
+    track = page.querySelector('.browse-track');
+    focused = nodes[idx];
+    if (!stage || !track || !focused) return true;
+    sizeBrowseHero(stage, track);
+    resetBrowseScroll();
+    viewH = stage.clientHeight || window.innerHeight || 1080;
+    hero = document.getElementById('hero');
+    rail = closestClass(focused, 'rail');
+    if (hasClass(focused, 'navbtn') || hasClass(focused, 'who') || (hero && hero.contains && hero.contains(focused))) {
+      targetY = 0;
+    } else if (rail) {
+      targetY = rail.offsetTop - (viewH - rail.offsetHeight) / 2;
+      maxY = Math.max(0, track.offsetHeight - viewH);
+      if (targetY < 0) targetY = 0;
+      if (targetY > maxY) targetY = maxY;
+    } else {
+      targetY = 0;
+    }
+    if (instant || prefersReducedMotion()) track.style.webkitTransitionDuration = track.style.transitionDuration = '0ms';
+    else track.style.webkitTransitionDuration = track.style.transitionDuration = '';
+    setTranslate(track, 0, -targetY);
+    if (instant) {
+      track.offsetHeight;
+      track.style.webkitTransitionDuration = track.style.transitionDuration = '';
+    }
+    scroller = loopHost(focused);
+    if (scroller) syncRailStrip(scroller, focused, instant);
+    resetBrowseScroll();
+    return true;
   }
 
   function move(dir) {
@@ -1104,6 +1315,11 @@
       if (isHiddenProfile(list[i].id)) continue;
       out.push(list[i]);
     }
+    if (out.length) return out;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === 'local' && list.length > 1) continue;
+      out.push(list[i]);
+    }
     return out;
   }
 
@@ -1124,11 +1340,20 @@
     setHistoryProfile(profile.id);
     cache.home = null;
     cache.series = null;
-    if (profile.id === 'local') { go('/living/home'); return; }
-    postJson('/api/household/switch', { profileId: profile.id }, function (data) {
+    renderBoot();
+    if (profile.id === 'local') {
+      go('/living/home');
+      return;
+    }
+    var done = false;
+    function afterSwitch(data) {
+      if (done) return;
+      done = true;
       if (data && data.profiles) applyHousehold(data);
       go('/living/home');
-    });
+    }
+    postJson('/api/household/switch', { profileId: profile.id }, afterSwitch);
+    setTimeout(function () { afterSwitch(null); }, 4000);
   }
 
   function renderNav(active) {
@@ -1301,6 +1526,7 @@
     box.appendChild(el('h2', '', title));
     var scroller = el('div', railId === 'hist' ? 'scroller hist-scroller' : 'scroller');
     scroller.setAttribute('data-tv-loop', '');
+    var strip = el('div', 'rail-strip');
     var i, item, tile, fid, limit, card, sub, kind;
     limit = items.length > 14 ? 14 : items.length;
     for (i = 0; i < limit; i++) {
@@ -1334,14 +1560,15 @@
         else if (kind === 'tv') sub = 'Serie TV';
         else sub = 'Film';
         card.appendChild(el('span', 'hist-sub', sub));
-        scroller.appendChild(card);
+        strip.appendChild(card);
       } else {
         card = el('div', 'poster-card');
         card.appendChild(tile);
         card.appendChild(el('span', 'tile-title', itemTitle(item)));
-        scroller.appendChild(card);
+        strip.appendChild(card);
       }
     }
+    scroller.appendChild(strip);
     box.appendChild(scroller);
     return box;
   }
@@ -1733,47 +1960,86 @@
     collect(wantFid || 'key-A');
   }
 
+  function whenImageReady(url, done) {
+    if (!url) {
+      done();
+      return;
+    }
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      done();
+    }
+    var pic = new Image();
+    pic.onload = finish;
+    pic.onerror = finish;
+    pic.src = url;
+    setTimeout(finish, 900);
+  }
+
+  function browsePathOf(kind) {
+    if (kind === 'movies') return '/living/movies';
+    if (kind === 'series') return '/living/series';
+    return '/living/home';
+  }
+
+  function revealBrowse(kind, data) {
+    var first = (data.history && data.history[0]) || data.top[0] || data.movies[0] || data.tv[0];
+    var hero = asHero(first, kind === 'series' ? 'tv' : 'movie');
+    var url = hero && (hero.backdrop || hero.poster);
+    whenImageReady(url, function () {
+      if (pathNow().indexOf(browsePathOf(kind)) !== 0) return;
+      paintBrowse(kind, data);
+    });
+  }
+
   function paintBrowse(kind, data) {
     backHandler = function () { go('/living'); };
     root.innerHTML = '';
-    var page = el('div', 'shell');
+    var page = el('div', 'shell browse');
     page.appendChild(renderNav(kind));
+    var stage = el('div', 'browse-stage');
+    var track = el('div', 'browse-track');
     var first = (data.history && data.history[0]) || data.top[0] || data.movies[0] || data.tv[0];
     heroItem = asHero(first, kind === 'series' ? 'tv' : 'movie');
     var hero = el('div', 'hero');
     hero.id = 'hero';
     fillHero(hero, heroItem);
-    page.appendChild(hero);
+    track.appendChild(hero);
     var rail;
     if (kind === 'home' && data.history && data.history.length) {
       rail = renderRail('Continua a guardare', data.history, 'movie', 'hist');
-      if (rail) page.appendChild(rail);
+      if (rail) track.appendChild(rail);
     }
     if (kind === 'series' && data.history && data.history.length) {
       rail = renderRail('Continua a guardare', data.history, 'tv', 'hist');
-      if (rail) page.appendChild(rail);
+      if (rail) track.appendChild(rail);
     }
     if (kind === 'home' || kind === 'movies') {
       if (kind === 'home') {
         rail = renderRail('Top 10', data.top, 'movie', 'top');
-        if (rail) page.appendChild(rail);
+        if (rail) track.appendChild(rail);
       }
       rail = renderRail(kind === 'movies' ? 'Popolari' : 'Film popolari', data.movies, 'movie', 'mov');
-      if (rail) page.appendChild(rail);
+      if (rail) track.appendChild(rail);
       if (data.recent && data.recent.length) {
         rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
-        if (rail) page.appendChild(rail);
+        if (rail) track.appendChild(rail);
       }
     }
     if (kind === 'home' || kind === 'series') {
       rail = renderRail(kind === 'series' ? 'Popolari' : 'Serie popolari', data.tv, 'tv', 'tv');
-      if (rail) page.appendChild(rail);
+      if (rail) track.appendChild(rail);
       if (data.tvRecent && data.tvRecent.length) {
         rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
-        if (rail) page.appendChild(rail);
+        if (rail) track.appendChild(rail);
       }
     }
+    stage.appendChild(track);
+    page.appendChild(stage);
     root.appendChild(page);
+    browseCameraInstant = true;
     collect(wantFid || storeGet('tv.fid') || 'hero-play');
     signalReady();
   }
@@ -1812,7 +2078,7 @@
       getJson('/api/catalog/popular/movies', function (a) {
         getJson('/api/catalog/latest/movies', function (b) {
           cache.movies = { top: [], movies: listOf(a), recent: listOf(b), tv: [], tvRecent: [], history: [] };
-          paintBrowse('movies', cache.movies);
+          revealBrowse('movies', cache.movies);
         });
       });
       return;
@@ -1822,7 +2088,7 @@
         getJson('/api/catalog/latest/tv', function (b) {
           getJson('/api/watch-history', function (h) {
             cache.series = { top: [], movies: [], recent: [], tv: listOf(a), tvRecent: listOf(b), history: tvHistory(historyItems(h)) };
-            paintBrowse('series', cache.series);
+            revealBrowse('series', cache.series);
           });
         });
       });
@@ -1835,7 +2101,7 @@
       left -= 1;
       if (left > 0) return;
       cache.home = bag;
-      paintBrowse('home', bag);
+      revealBrowse('home', bag);
     }
     getJson('/api/watch-history', function (json) { bag.history = historyItems(json); step(); });
     getJson('/api/catalog/top-10', function (json) { bag.top = listOf(json); step(); });
