@@ -284,35 +284,38 @@
       margin: 0 0 16px;
       text-shadow: 0 8px 28px #000;
     }
+    .gate-hero.is-plain .gate-side-name { margin: 0 0 20px; }
     .gate-side-stage {
       position: relative;
-      width: 280px;
-      height: 280px;
-      margin: 0 auto 32px;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 28px;
+    }
+    .gate-hero.is-plain .gate-side-stage {
+      height: 0;
+      margin: 0;
     }
     .gate-side-portrait {
       position: absolute;
       left: 0; top: 0; right: 0; bottom: 0;
-      border-radius: 22px;
-      overflow: hidden;
+      overflow: visible;
       display: -webkit-box; display: flex;
       -webkit-box-align: center; align-items: center;
       -webkit-box-pack: center; justify-content: center;
-      font-size: 108px;
-      font-weight: 700;
-      line-height: 1;
-      box-sizing: border-box;
+      background: transparent;
       opacity: 0;
       pointer-events: none;
       -webkit-transition: opacity 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
       transition: opacity 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
     }
-    .gate-side-portrait.has-art { -webkit-box-align: end; align-items: flex-end; }
     .gate-side-portrait.is-on { opacity: 1; }
-    .gate-side-portrait.plus {
-      border: 3px dashed rgba(255,255,255,.28);
-      color: rgba(255,255,255,.7);
-      background: #141414;
+    .gate-side-portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      pointer-events: none;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,.55));
     }
     .gate-hero-row {
       display: -webkit-box; display: flex;
@@ -349,13 +352,13 @@
     .gate-code-btn:before {
       content: '';
       position: absolute;
-      left: -10px;
-      top: -8px;
-      right: -10px;
-      bottom: -8px;
-      border-radius: 10px;
-      background: radial-gradient(ellipse at center, rgba(255,255,255,.42) 0%, rgba(255,255,255,.18) 40%, rgba(255,255,255,0) 74%);
-      box-shadow: 0 0 28px 8px rgba(255,255,255,.28);
+      left: -8px; top: -10px; right: -8px; bottom: -10px;
+      border-radius: 12px;
+      background: transparent;
+      -webkit-box-shadow: 0 0 0 11px rgba(255,255,255,.42);
+      box-shadow: 0 0 0 11px rgba(255,255,255,.42);
+      -webkit-filter: blur(14px);
+      filter: blur(14px);
       opacity: 0;
       pointer-events: none;
       z-index: -1;
@@ -398,7 +401,7 @@
       transition: transform .22s cubic-bezier(0.19, 1, 0.22, 1), box-shadow .22s cubic-bezier(0.19, 1, 0.22, 1);
     }
     .avatar.has-art { -webkit-box-align: end; align-items: flex-end; }
-    .avatar img, .who i img, .art-swatch img, .avatar-preview img, .gate-side-portrait img {
+    .avatar img, .who i img, .art-swatch img, .avatar-preview img {
       width: 92%; height: 94%; object-fit: contain; object-position: center bottom; pointer-events: none;
       filter: drop-shadow(0 0 2px rgba(0,0,0,.9)) drop-shadow(0 8px 8px rgba(0,0,0,.7));
     }
@@ -1582,17 +1585,31 @@
     }
   }
 
+  function profileHasArt(profile) {
+    return !!(profile && avatarArtIndex(profile.avatar || 0) > 0);
+  }
+
+  function setGateHeroPlain(plain) {
+    var hero = root.querySelector('.gate-hero');
+    if (!hero) return;
+    if (plain) {
+      if (hero.className.indexOf('is-plain') < 0) hero.className += ' is-plain';
+    } else {
+      hero.className = hero.className.replace(/\bis-plain\b/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    }
+  }
+
   function paintGatePortrait(node, profile) {
     var on = node.className.indexOf('is-on') >= 0;
     node.className = 'gate-side-portrait' + (on ? ' is-on' : '');
-    node.style.background = '';
-    if (!profile) {
-      node.className += ' plus';
-      node.innerHTML = '';
-      node.appendChild(document.createTextNode('+'));
-      return;
-    }
-    paintAvatarNode(node, profile.avatar || 0, profile.name || '?');
+    node.style.background = 'transparent';
+    node.innerHTML = '';
+    if (!profileHasArt(profile)) return;
+    node.className += ' has-art';
+    var img = document.createElement('img');
+    img.src = '/avatars/' + AVATAR_ART[avatarArtIndex(profile.avatar || 0) - 1].file;
+    img.alt = '';
+    node.appendChild(img);
   }
 
   function syncGateSide() {
@@ -1614,6 +1631,7 @@
       profile = gateFocusProfile;
     }
     var key = profile ? String(profile.id) : 'add';
+    var hasArt = profileHasArt(profile);
     var nextFront;
     var incoming;
     var outgoing;
@@ -1624,7 +1642,17 @@
     }
     if (edit) edit.style.display = profile && profile.id !== 'local' ? '' : 'none';
     if (link) link.style.display = profile && household.configured && profile.pairCode && profile.id !== 'local' ? '' : 'none';
+    setGateHeroPlain(!hasArt);
     if (!layerA || !layerB) return;
+    if (!hasArt) {
+      layerA.className = 'gate-side-portrait';
+      layerB.className = 'gate-side-portrait';
+      layerA.innerHTML = '';
+      layerB.innerHTML = '';
+      gatePortraitKey = key;
+      gatePortraitFront = 'a';
+      return;
+    }
     if (key === gatePortraitKey) {
       paintGatePortrait(gatePortraitFront === 'b' ? layerB : layerA, profile);
       return;

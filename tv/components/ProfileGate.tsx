@@ -13,6 +13,7 @@ import { PairCodePad } from '@/tv/components/PairCodePad'
 import { TvFocus } from '@/tv/components/TvFocus'
 import { formatPairCode } from '@/lib/pair-code'
 import { cn } from '@/lib/utils'
+import { avatarArtSrc } from '@/tv/lib/avatars'
 import { TvProfile } from '@/tv/lib/types'
 
 type GateView = 'pick' | 'create' | 'edit' | 'adopt' | 'code'
@@ -148,9 +149,9 @@ export function ProfileGate() {
     }
 
     const focused = shown[railIndex]
-    const isAdd = railIndex >= shown.length
     const canAdd = canAddHouseholdProfile(profiles.length)
     const railShift = railIndex <= 1 ? 0 : railIndex - 1
+    const artSrc = focused ? avatarArtSrc(focused.avatar) : null
 
     return (
         <div className="relative h-full min-h-[100dvh] w-full overflow-hidden">
@@ -165,33 +166,33 @@ export function ProfileGate() {
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-[18vh] bg-gradient-to-b from-black from-[18%] to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[18vh] bg-gradient-to-t from-black from-[18%] to-transparent" />
             <div className="pointer-events-none absolute left-1/2 top-[18vh] z-[6] w-[360px] -translate-x-1/2 text-center">
-                <p className="mb-4 text-[44px] font-bold text-white [text-shadow:0_8px_28px_#000]">
+                <p
+                    className={cn(
+                        'text-[44px] font-bold text-white [text-shadow:0_8px_28px_#000]',
+                        artSrc ? 'mb-4' : 'mb-5'
+                    )}
+                >
                     {focused ? focused.name : 'Aggiungi'}
                 </p>
-                <div className="relative mx-auto mb-8 h-[280px] w-[280px]" aria-hidden>
-                    {shown.map((profile, index) => (
-                        <ProfileAvatar
-                            key={profile.id}
-                            avatar={profile.avatar}
-                            name={profile.name}
-                            className={cn(
-                                'absolute left-0 top-0 h-full w-full rounded-[22px] transition-opacity duration-[240ms] ease-[cubic-bezier(0.645,0.045,0.355,1)] motion-reduce:transition-none',
-                                index === railIndex ? 'opacity-100' : 'opacity-0'
-                            )}
-                            initialClassName="text-[108px]"
-                        />
-                    ))}
-                    {canAdd ? (
-                        <span
-                            className={cn(
-                                'absolute left-0 top-0 flex h-full w-full items-center justify-center rounded-[22px] border-[3px] border-dashed border-white/25 bg-[#141414] text-[108px] font-bold text-white/70 transition-opacity duration-[240ms] ease-[cubic-bezier(0.645,0.045,0.355,1)] motion-reduce:transition-none',
-                                isAdd ? 'opacity-100' : 'opacity-0'
-                            )}
-                        >
-                            +
-                        </span>
-                    ) : null}
-                </div>
+                {artSrc ? (
+                    <div className="relative mx-auto mb-7 h-[300px] w-[300px]" aria-hidden>
+                        {shown.map((profile) => {
+                            const src = avatarArtSrc(profile.avatar)
+                            if (!src) return null
+                            return (
+                                <img
+                                    key={profile.id}
+                                    src={src}
+                                    alt=""
+                                    className={cn(
+                                        'pointer-events-none absolute left-0 top-0 h-full w-full object-contain object-center transition-opacity duration-[240ms] ease-[cubic-bezier(0.645,0.045,0.355,1)] motion-reduce:transition-none [filter:drop-shadow(0_12px_18px_rgba(0,0,0,.55))]',
+                                        profile.id === focused.id ? 'opacity-100' : 'opacity-0'
+                                    )}
+                                />
+                            )
+                        })}
+                    </div>
+                ) : null}
                 <div className="pointer-events-auto flex justify-center">
                     {focused && focused.id !== 'local' ? (
                         <TvFocus
