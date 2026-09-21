@@ -32,6 +32,8 @@ const MIXED_SECTIONS: CatalogSection[] = [
     'crime-lords',
     'political-intrigue',
     'period-stories',
+    'platform-top10-tv',
+    'platform-top10-movie',
 ]
 
 function normalizeResults(
@@ -50,6 +52,15 @@ function normalizeResults(
     }
 
     if (MIXED_SECTIONS.includes(section)) {
+        if (
+            data &&
+            typeof data === 'object' &&
+            !Array.isArray(data) &&
+            ('series' in data || 'movies' in data)
+        ) {
+            const payload = data as { series?: Top10Content[]; movies?: Top10Content[] }
+            results = section === 'platform-top10-tv' ? payload.series || [] : payload.movies || []
+        }
         return (results as Top10Content[]).map((item) => ({
             ...item,
             title: item.title || item.name,
@@ -92,6 +103,8 @@ export default function MovieGridIntegrated({
                 let endpoint = ''
                 if (section === 'trending') {
                     endpoint = `/api/catalog/top-10`
+                } else if (section === 'platform-top10-tv' || section === 'platform-top10-movie') {
+                    endpoint = `/api/catalog/platform-top10`
                 } else if (section === 'upcoming') {
                     endpoint = `/api/catalog/coming-soon`
                 } else if (section === 'now-playing') {
@@ -158,7 +171,7 @@ export default function MovieGridIntegrated({
         )
     }
 
-    if (section === 'trending') {
+    if (section === 'trending' || section === 'platform-top10-tv' || section === 'platform-top10-movie') {
         return <Top10Row items={movies} type={type} onPlay={onPlay} onDetails={onDetails} />
     }
 

@@ -5,18 +5,21 @@ import { ContentType } from '@/lib/content-navigation'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { PersonalRails } from '@/lib/personal-rails'
+import { weavePlatformTop10s, type PlatformTop10 } from '@/lib/platform-top10'
 import { TvBrowse } from '@/tv/components/TvBrowse'
 import { TvRailItem } from '@/tv/lib/types'
 import { Top10Content } from '@/types'
 
 interface TvHomeProps {
     rows: Array<{
+        id?: string
         title: string
         items: TvRailItem[]
         type?: ContentType
     }>
     personal?: PersonalRails
     occupied?: Top10Content[]
+    platformTop10?: PlatformTop10
 }
 
 function mergePersonalRows(
@@ -69,16 +72,35 @@ function pinComingSoonLast(rows: TvHomeProps['rows']): TvHomeProps['rows'] {
     return [...rows.filter((row) => row.title !== 'In arrivo'), ...coming]
 }
 
-export function TvHome({ rows, personal, occupied = [] }: TvHomeProps) {
+export function TvHome({ rows, personal, occupied = [], platformTop10 }: TvHomeProps) {
     const { entries } = useWatchHistory()
     const rails = usePersonalRails({
         initial: personal ?? { personalized: false, picks: [], affinity: [], treasures: [] },
         occupied: occupiedFromRails(occupied),
     })
-    const mergedRows = useMemo(
-        () => (personal ? mergePersonalRows(rows, rails) : rows),
-        [personal, rails, rows]
-    )
+    const mergedRows = useMemo(() => {
+        const merged = personal ? mergePersonalRows(rows, rails) : rows
+        if (!platformTop10) return merged
+        return weavePlatformTop10s(merged.map((row) => ({
+            id: row.id || row.title,
+            title: row.title,
+            items: row.items,
+            type: row.type,
+        })), [
+            {
+                id: 'platform-top10-tv',
+                title: platformTop10.seriesTitle,
+                items: platformTop10.series as TvRailItem[],
+                type: 'tv' as const,
+            },
+            {
+                id: 'platform-top10-movie',
+                title: platformTop10.moviesTitle,
+                items: platformTop10.movies as TvRailItem[],
+                type: 'movie' as const,
+            },
+        ])
+    }, [personal, rails, rows, platformTop10])
 
     return <TvBrowse rows={mergedRows} continueWatching={entries} />
 }

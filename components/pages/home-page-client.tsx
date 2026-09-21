@@ -9,9 +9,10 @@ import { ContinueWatchingRow } from '@/components/continue-watching-row'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
-import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
+import { HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
+import { weavePlatformTop10s, type PlatformTop10 } from '@/lib/platform-top10'
 import { Movie, TVShow, Top10Content } from '@/types'
 
 function HomeRail({ title, children }: { title: string; children: ReactNode }) {
@@ -32,6 +33,16 @@ interface HomePageClientProps {
     recentMovies: Movie[]
     popularTV: TVShow[]
     recentTV: TVShow[]
+    platformTop10: PlatformTop10
+}
+
+type HomeShelf = {
+    id: string
+    title: string
+    type: 'movie' | 'tv'
+    section: CatalogSection
+    items: (Movie | TVShow | Top10Content)[]
+    limit: number
 }
 
 export function HomePageClient({
@@ -43,6 +54,7 @@ export function HomePageClient({
     recentMovies,
     popularTV,
     recentTV,
+    platformTop10,
 }: HomePageClientProps) {
     const { play, openDetails } = useContentNavigation()
     const { entries: watchHistory } = useWatchHistory()
@@ -52,6 +64,126 @@ export function HomePageClient({
     const [isCheckingApi, setIsCheckingApi] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
+    const shelves = useMemo(() => {
+        const next: HomeShelf[] = []
+        const push = (shelf: HomeShelf) => {
+            if (shelf.items.length) next.push(shelf)
+        }
+
+        push({
+            id: 'picks',
+            title: 'Scelti per te oggi',
+            type: 'movie',
+            section: 'picks',
+            items: rails.picks,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'top',
+            title: 'Top 10 Titoli Oggi',
+            type: 'movie',
+            section: 'trending',
+            items: top10,
+            limit: TOP10_SIZE,
+        })
+        push({
+            id: 'affinity',
+            title: 'Pensiamo ti appassioneranno',
+            type: 'movie',
+            section: 'affinity',
+            items: rails.affinity,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'popular-movies',
+            title: 'Film Popolari',
+            type: 'movie',
+            section: 'popular',
+            items: popularMovies,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'recent-tv',
+            title: 'Serie TV Recenti',
+            type: 'tv',
+            section: 'recent',
+            items: recentTV,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'treasures',
+            title: 'Tesori per te',
+            type: 'movie',
+            section: 'treasures',
+            items: rails.treasures,
+            limit: HOME_RAIL_SIZE,
+        })
+        for (const { id, section } of EDITORIAL_HOME_RAILS) {
+            push({
+                id,
+                title: EDITORIAL_RAIL_TITLES[id],
+                type: 'movie',
+                section,
+                items: editorial[id],
+                limit: EDITORIAL_RAIL_SIZE,
+            })
+        }
+        push({
+            id: 'recent-movies',
+            title: 'Film Recenti',
+            type: 'movie',
+            section: 'recent',
+            items: recentMovies,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'popular-tv',
+            title: 'Serie TV Popolari',
+            type: 'tv',
+            section: 'popular',
+            items: popularTV,
+            limit: HOME_RAIL_SIZE,
+        })
+        push({
+            id: 'coming-soon',
+            title: 'In arrivo',
+            type: 'movie',
+            section: 'upcoming',
+            items: comingSoon,
+            limit: HOME_RAIL_SIZE,
+        })
+
+        return weavePlatformTop10s(next, [
+            {
+                id: 'platform-top10-tv',
+                title: platformTop10.seriesTitle,
+                type: 'tv',
+                section: 'platform-top10-tv',
+                items: platformTop10.series,
+                limit: TOP10_SIZE,
+            },
+            {
+                id: 'platform-top10-movie',
+                title: platformTop10.moviesTitle,
+                type: 'movie',
+                section: 'platform-top10-movie',
+                items: platformTop10.movies,
+                limit: TOP10_SIZE,
+            },
+        ])
+    }, [
+        comingSoon,
+        editorial,
+        platformTop10,
+        popularMovies,
+        popularTV,
+        rails.affinity,
+        rails.picks,
+        rails.treasures,
+        recentMovies,
+        recentTV,
+        top10,
+    ])
 
     useEffect(() => {
         setIsCheckingApi(true)
@@ -86,129 +218,18 @@ export function HomePageClient({
                         </section>
                     )}
 
-                    {rails.picks.length > 0 && (
-                        <HomeRail title="Scelti per te oggi">
+                    {shelves.map((shelf) => (
+                        <HomeRail key={shelf.id} title={shelf.title}>
                             <MovieGridIntegrated
-                                type="movie"
-                                section="picks"
-                                limit={HOME_RAIL_SIZE}
+                                type={shelf.type}
+                                section={shelf.section}
+                                limit={shelf.limit}
                                 onPlay={play}
                                 onDetails={openDetails}
-                                initialData={rails.picks}
+                                initialData={shelf.items}
                             />
                         </HomeRail>
-                    )}
-
-                    <HomeRail title="Top 10 Titoli Oggi">
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="trending"
-                            limit={TOP10_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={top10}
-                        />
-                    </HomeRail>
-
-                    {rails.affinity.length > 0 && (
-                        <HomeRail title="Pensiamo ti appassioneranno">
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="affinity"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={rails.affinity}
-                            />
-                        </HomeRail>
-                    )}
-
-                    <HomeRail title="Film Popolari">
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="popular"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={popularMovies}
-                        />
-                    </HomeRail>
-
-                    <HomeRail title="Serie TV Recenti">
-                        <MovieGridIntegrated
-                            type="tv"
-                            section="recent"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={recentTV}
-                        />
-                    </HomeRail>
-
-                    {rails.treasures.length > 0 && (
-                        <HomeRail title="Tesori per te">
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="treasures"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={rails.treasures}
-                            />
-                        </HomeRail>
-                    )}
-
-                    {EDITORIAL_HOME_RAILS.map(({ id, section }) => {
-                        const items = editorial[id]
-                        if (!items.length) return null
-                        return (
-                            <HomeRail key={id} title={EDITORIAL_RAIL_TITLES[id]}>
-                                <MovieGridIntegrated
-                                    type="movie"
-                                    section={section}
-                                    limit={EDITORIAL_RAIL_SIZE}
-                                    onPlay={play}
-                                    onDetails={openDetails}
-                                    initialData={items}
-                                />
-                            </HomeRail>
-                        )
-                    })}
-
-                    <HomeRail title="Film Recenti">
-                        <MovieGridIntegrated
-                            type="movie"
-                            section="recent"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={recentMovies}
-                        />
-                    </HomeRail>
-
-                    <HomeRail title="Serie TV Popolari">
-                        <MovieGridIntegrated
-                            type="tv"
-                            section="popular"
-                            limit={HOME_RAIL_SIZE}
-                            onPlay={play}
-                            onDetails={openDetails}
-                            initialData={popularTV}
-                        />
-                    </HomeRail>
-
-                    {comingSoon.length > 0 && (
-                        <HomeRail title="In arrivo">
-                            <MovieGridIntegrated
-                                type="movie"
-                                section="upcoming"
-                                limit={HOME_RAIL_SIZE}
-                                onPlay={play}
-                                onDetails={openDetails}
-                                initialData={comingSoon}
-                            />
-                        </HomeRail>
-                    )}
+                    ))}
                 </div>
             </main>
         </MovieProvider>

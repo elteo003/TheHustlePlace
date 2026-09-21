@@ -19,6 +19,8 @@ export type CatalogSection =
     | 'crime-lords'
     | 'political-intrigue'
     | 'period-stories'
+    | 'platform-top10-tv'
+    | 'platform-top10-movie'
 
 export const HOME_RAIL_SIZE = 24
 export const TOP10_SIZE = 10

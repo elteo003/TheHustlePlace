@@ -327,6 +327,28 @@ export class CatalogController {
         }
     }
 
+    async getPlatformTop10(request: NextRequest): Promise<NextResponse> {
+        try {
+            const platformTop10 = await this.catalogService.getPlatformTop10()
+
+            return NextResponse.json({
+                success: true,
+                data: platformTop10,
+                message: 'Top 10 di piattaforma recuperata con successo'
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero top 10 di piattaforma', { error })
+
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Errore interno del server'
+                },
+                { status: 500 }
+            )
+        }
+    }
+
     async getComingSoon(request: NextRequest): Promise<NextResponse> {
         try {
             const comingSoon = await this.catalogService.getComingSoon()
@@ -409,4 +431,5 @@ export const searchMoviesHandler = catalogController.searchMovies.bind(catalogCo
 export const searchTVShowsHandler = catalogController.searchTVShows.bind(catalogController)
 export const getGenresHandler = catalogController.getGenres.bind(catalogController)
 export const getTop10MixedHandler = catalogController.getTop10Mixed.bind(catalogController)
+export const getPlatformTop10Handler = catalogController.getPlatformTop10.bind(catalogController)
 export const getComingSoonHandler = catalogController.getComingSoon.bind(catalogController)

@@ -5,6 +5,7 @@ import { listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
 import { getOrCreateDeviceId, isDeviceId } from '@/lib/supabase/device'
 import { HistorySeed, PersonalRails } from '@/lib/personal-rails'
 import { EditorialRails, EDITORIAL_RAIL_SIZE } from '@/lib/editorial-rails'
+import { emptyPlatformTop10, type PlatformTop10 } from '@/lib/platform-top10'
 
 const catalogService = new CatalogService()
 
@@ -43,6 +44,14 @@ export async function fetchEditorialRails(
     occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = []
 ): Promise<EditorialRails> {
     return catalogService.getEditorialRails(occupied, EDITORIAL_RAIL_SIZE)
+}
+
+export async function fetchPlatformTop10(): Promise<PlatformTop10> {
+    try {
+        return await catalogService.getPlatformTop10()
+    } catch {
+        return emptyPlatformTop10()
+    }
 }
 
 export async function fetchCatalogSection(
@@ -118,6 +127,8 @@ export async function fetchCatalogSection(
         case 'crime-lords':
         case 'political-intrigue':
         case 'period-stories':
+        case 'platform-top10-tv':
+        case 'platform-top10-movie':
             results = []
             break
     }

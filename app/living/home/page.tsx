@@ -1,4 +1,4 @@
-import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails } from '@/lib/server/catalog'
+import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails, fetchPlatformTop10 } from '@/lib/server/catalog'
 import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_TITLES } from '@/lib/editorial-rails'
 import { TvRailItem } from '@/tv/lib/types'
@@ -8,13 +8,14 @@ import { Top10Content } from '@/types'
 export const dynamic = 'force-dynamic'
 
 export default async function LivingHomePage() {
-    const [top10, comingSoon, popularMovies, recentMovies, popularTV, recentTV] = await Promise.all([
+    const [top10, comingSoon, popularMovies, recentMovies, popularTV, recentTV, platformTop10] = await Promise.all([
         fetchCatalogSection('movie', 'trending', TOP10_SIZE),
         fetchCatalogSection('movie', 'upcoming', HOME_RAIL_SIZE),
         fetchCatalogSection('movie', 'popular', HOME_RAIL_SIZE),
         fetchCatalogSection('movie', 'recent', HOME_RAIL_SIZE),
         fetchCatalogSection('tv', 'popular', HOME_RAIL_SIZE),
         fetchCatalogSection('tv', 'recent', HOME_RAIL_SIZE),
+        fetchPlatformTop10(),
     ])
 
     const occupiedBase = [...(top10 as Top10Content[]), ...(comingSoon as Top10Content[])]
@@ -22,8 +23,8 @@ export default async function LivingHomePage() {
     const editorial = await fetchEditorialRails(occupiedBase)
 
     const rows = [
-        { title: 'Scelti per te oggi', items: personal.picks as TvRailItem[] },
-        { title: 'Top 10', items: top10 as TvRailItem[] },
+        { id: 'picks', title: 'Scelti per te oggi', items: personal.picks as TvRailItem[] },
+        { id: 'top', title: 'Top 10', items: top10 as TvRailItem[] },
         ...(personal.affinity.length
             ? [{ title: 'Pensiamo ti appassioneranno', items: personal.affinity as TvRailItem[] }]
             : []),
@@ -36,8 +37,8 @@ export default async function LivingHomePage() {
         })),
         { title: 'Film recenti', items: recentMovies as TvRailItem[], type: 'movie' as const },
         { title: 'Serie popolari', items: popularTV as TvRailItem[], type: 'tv' as const },
-        { title: 'In arrivo', items: comingSoon as TvRailItem[] },
+        { id: 'soon', title: 'In arrivo', items: comingSoon as TvRailItem[] },
     ].filter((row) => row.items.length > 0)
 
-    return <TvHome rows={rows} personal={personal} occupied={occupiedBase} />
+    return <TvHome rows={rows} personal={personal} occupied={occupiedBase} platformTop10={platformTop10} />
 }

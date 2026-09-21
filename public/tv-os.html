@@ -2101,6 +2101,10 @@
     }
   }
 
+  function isRankedRail(railId) {
+    return railId === 'top' || railId === 'ptv' || railId === 'pmov';
+  }
+
   function renderRail(title, items, fallbackType, railId) {
     if (!items || !items.length) return null;
     var box = el('div', 'rail');
@@ -2108,9 +2112,10 @@
     var scroller = el('div', railId === 'hist' ? 'scroller hist-scroller' : 'scroller');
     scroller.setAttribute('data-tv-loop', '');
     var strip = el('div', 'rail-strip');
-    var i, item, tile, fid, limit, card, sub, kind, rank;
+    var i, item, tile, fid, limit, card, sub, kind, rank, ranked;
+    ranked = isRankedRail(railId);
     limit = items.length > 40 ? 40 : items.length;
-    if (railId === 'top' && limit > 10) limit = 10;
+    if (ranked && limit > 10) limit = 10;
     for (i = 0; i < limit; i++) {
       item = items[i];
       fid = (i === 0 && railId === 'top') ? 'tile-0' : ('tile-' + railId + '-' + i);
@@ -2132,7 +2137,7 @@
         };
       })(item, fallbackType, railId), i === 0 && railId === 'top');
       decorateTile(tile, item, fallbackType, fid, railId === 'hist');
-      if (railId === 'top') {
+      if (ranked) {
         tile.setAttribute('aria-label', (i + 1) + '. ' + itemTitle(item));
         card = el('div', 'top10-card');
         rank = el('span', 'top10-rank' + (i === 9 ? ' wide' : ''), String(i + 1));
@@ -2621,9 +2626,11 @@
       coming: [], war: [], intrigue: [], period: [],
       medieval: [], puzzle: [], mystery: [], dark: [], jukebox: [], vintage: [],
       drug: [], crime: [],
+      platformSeries: [], platformMovies: [],
+      platformSeriesTitle: '', platformMoviesTitle: '',
       ready: false
     };
-    var step = runSteps(7, function () {
+    var step = runSteps(8, function () {
       bag.ready = true;
       catalogShared = bag;
       var queue = catalogSharedWaiters;
@@ -2649,6 +2656,14 @@
       bag.crime = listOf({ data: rails.crimeLords });
       bag.intrigue = listOf({ data: rails.politicalIntrigue });
       bag.period = listOf({ data: rails.periodStories });
+      step();
+    }, 8000);
+    getJson('/api/catalog/platform-top10', function (json) {
+      var data = json && json.data ? json.data : {};
+      bag.platformSeries = listOf({ data: data.series });
+      bag.platformMovies = listOf({ data: data.movies });
+      bag.platformSeriesTitle = data.seriesTitle || '';
+      bag.platformMoviesTitle = data.moviesTitle || '';
       step();
     }, 8000);
   }
@@ -2723,6 +2738,10 @@
       vintage: shared.vintage || [],
       drug: shared.drug || [],
       crime: shared.crime || [],
+      platformSeries: shared.platformSeries || [],
+      platformMovies: shared.platformMovies || [],
+      platformSeriesTitle: shared.platformSeriesTitle || '',
+      platformMoviesTitle: shared.platformMoviesTitle || '',
       history: personal.history || [],
       picks: personal.picks || [],
       affinity: personal.affinity || [],
@@ -2747,6 +2766,49 @@
       tv: shared.tv || [], tvRecent: shared.tvRecent || [],
       history: tvHistory(personal.history)
     };
+  }
+
+  function weavePlatformTop10s(rails, inserts) {
+    var filled = [];
+    var coming = [];
+    var body = [];
+    var out;
+    var rest;
+    var i;
+    var topIdx = -1;
+    var counted = 0;
+    var insertIndex = 0;
+    for (i = 0; i < inserts.length; i++) {
+      if (inserts[i] && inserts[i].items && inserts[i].items.length) filled.push(inserts[i]);
+    }
+    if (!filled.length) return rails;
+    for (i = 0; i < rails.length; i++) {
+      if (rails[i].id === 'soon' || rails[i].title === 'In arrivo') coming.push(rails[i]);
+      else if (rails[i].id !== 'ptv' && rails[i].id !== 'pmov') body.push(rails[i]);
+    }
+    for (i = 0; i < body.length; i++) {
+      if (body[i].id === 'top' || body[i].title === 'Top 10' || body[i].title === 'Top 10 Titoli Oggi') {
+        topIdx = i;
+        break;
+      }
+    }
+    if (topIdx < 0) return body.concat(filled, coming);
+    out = body.slice(0, topIdx + 1);
+    rest = body.slice(topIdx + 1);
+    for (i = 0; i < rest.length; i++) {
+      out.push(rest[i]);
+      counted += 1;
+      if (insertIndex < filled.length && counted === 4) {
+        out.push(filled[insertIndex]);
+        insertIndex += 1;
+        counted = 0;
+      }
+    }
+    while (insertIndex < filled.length) {
+      out.push(filled[insertIndex]);
+      insertIndex += 1;
+    }
+    return out.concat(coming);
   }
 
   function railsOf(kind, data) {
@@ -2776,6 +2838,10 @@
       add('Aggiunti di recente', data.recent, 'movie', 'mrec');
       add('Serie popolari', data.tv, 'tv', 'tv');
       add('In arrivo', data.coming, 'movie', 'soon');
+      rails = weavePlatformTop10s(rails, [
+        { title: data.platformSeriesTitle || 'Top 10 serie TV', items: data.platformSeries, type: 'tv', id: 'ptv' },
+        { title: data.platformMoviesTitle || 'Top 10 film', items: data.platformMovies, type: 'movie', id: 'pmov' }
+      ]);
     } else if (kind === 'movies') {
       add('Popolari', data.movies, 'movie', 'mov');
       add('Aggiunti di recente', data.recent, 'movie', 'mrec');

@@ -40,6 +40,15 @@ import {
     streamingProviderPipe,
     yearsAgoFrom,
 } from '@/lib/top10-moment'
+import { fetchPlatformChart, type FlixPatrolChartEntry } from '@/lib/flixpatrol'
+import {
+    emptyPlatformTop10,
+    platformOn,
+    moviesTitleFor,
+    romeDayKey,
+    seriesTitleFor,
+    type PlatformTop10,
+} from '@/lib/platform-top10'
 import {
     CRIME_LORDS_EXCLUDE_KEYWORDS,
     CRIME_LORDS_KEYWORDS,
@@ -324,6 +333,92 @@ export class CatalogService {
             logger.error('Errore nella costruzione top 10 del momento', { error })
             return this.getGlobalTrending(10)
         }
+    }
+
+    async getPlatformTop10(now = new Date()): Promise<PlatformTop10> {
+        const empty = emptyPlatformTop10(now)
+        const apiKey = process.env.FLIXPATROL_API_KEY?.trim()
+        if (!apiKey) {
+            return empty
+        }
+
+        const platform = platformOn(now)
+        const cacheKey = `platform-top10-v1:${platform.slug}:${romeDayKey(now)}`
+        const cached = await cache.get<PlatformTop10>(cacheKey)
+        if (cached) {
+            return {
+                ...cached,
+                series: this.decorateRailItems(cached.series),
+                movies: this.decorateRailItems(cached.movies),
+            }
+        }
+
+        try {
+            const [seriesChart, moviesChart] = await Promise.all([
+                fetchPlatformChart(platform, 'tv', apiKey, now),
+                fetchPlatformChart(platform, 'movie', apiKey, now),
+            ])
+            const [series, movies] = await Promise.all([
+                this.resolveChartEntries(seriesChart.entries, 'tv'),
+                this.resolveChartEntries(moviesChart.entries, 'movie'),
+            ])
+            const result: PlatformTop10 = {
+                platform,
+                chartDate: seriesChart.date || moviesChart.date,
+                seriesTitle: seriesTitleFor(platform),
+                moviesTitle: moviesTitleFor(platform),
+                series: this.decorateRailItems(series),
+                movies: this.decorateRailItems(movies),
+            }
+            await cache.set(cacheKey, result, { ttl: 60 * 60 })
+            logger.info('Top 10 di piattaforma costruita', {
+                platform: platform.slug,
+                chartDate: result.chartDate,
+                series: result.series.length,
+                movies: result.movies.length,
+            })
+            return result
+        } catch (error) {
+            logger.error('Errore nella costruzione top 10 di piattaforma', { error })
+            return empty
+        }
+    }
+
+    private async resolveChartEntries(
+        entries: FlixPatrolChartEntry[],
+        type: 'movie' | 'tv'
+    ): Promise<Top10Content[]> {
+        const hits = await Promise.all(
+            entries.map((entry) => this.searchChartTitle(entry, type))
+        )
+        const available = await this.filterAvailableMixed(
+            hits.filter((item): item is Top10Content => Boolean(item))
+        )
+        const availableKeys = new Set(available.map((item) => railItemKey(item.type, item.id)))
+        const ordered: Top10Content[] = []
+        const seen = new Set<string>()
+        for (const item of hits) {
+            if (!item) continue
+            const key = railItemKey(item.type, item.id)
+            if (!availableKeys.has(key) || seen.has(key)) continue
+            seen.add(key)
+            ordered.push(item)
+        }
+        return ordered.slice(0, 10)
+    }
+
+    private async searchChartTitle(
+        entry: FlixPatrolChartEntry,
+        type: 'movie' | 'tv'
+    ): Promise<Top10Content | null> {
+        const queries = [entry.name, entry.originalName].filter(
+            (value, index, list): value is string => Boolean(value) && list.indexOf(value) === index
+        )
+        for (const query of queries) {
+            const hit = await this.searchEditorialSeed(query, type, entry.year)
+            if (hit) return hit
+        }
+        return null
     }
 
     async getComingSoon(limit = 20): Promise<Top10Content[]> {
@@ -817,17 +912,36 @@ export class CatalogService {
         return found.filter((item): item is Top10Content => Boolean(item))
     }
 
-    private async searchEditorialSeed(query: string, type: 'movie' | 'tv'): Promise<Top10Content | null> {
+    private pickSearchHit(
+        results: TmdbRailItem[] | undefined,
+        type: 'movie' | 'tv',
+        year?: number
+    ): Top10Content | null {
+        const mapped = this.mapRailItems(results, type)
+        if (!mapped.length) return null
+        if (!year) return mapped[0]
+        const match = mapped.find((item) => {
+            const date = item.type === 'tv' ? item.first_air_date : item.release_date
+            if (!date) return false
+            return Math.abs(Number(date.slice(0, 4)) - year) <= 1
+        })
+        return match || mapped[0]
+    }
+
+    private async searchEditorialSeed(
+        query: string,
+        type: 'movie' | 'tv',
+        year?: number
+    ): Promise<Top10Content | null> {
         if (type === 'movie') {
             const response = await tmdbWrapperService.searchMovies(query, 1)
-            const first = response?.results?.[0]
-            if (!first) return null
-            return this.mapRailItems([first as TmdbRailItem], 'movie')[0] || null
+            return this.pickSearchHit((response?.results || []) as TmdbRailItem[], 'movie', year)
         }
         const response = await tmdbWrapperService.searchTVShows(query, 1)
-        const first = Array.isArray(response) ? response[0] : null
-        if (!first) return null
-        return this.mapRailItems([first as TmdbRailItem], 'tv')[0] || null
+        const results = Array.isArray(response)
+            ? response
+            : (response as { results?: TmdbRailItem[] } | null)?.results
+        return this.pickSearchHit((results || []) as TmdbRailItem[], 'tv', year)
     }
 
     async getPersonalRails(
