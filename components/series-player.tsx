@@ -177,7 +177,7 @@ export function SeriesPlayer({
                     </div>
 
                     {currentSeasonData && (
-                        <div className="divide-y divide-white/10 border-t border-white/10">
+                        <div className="divide-y divide-white/10 border-t border-white/10 overflow-visible">
                             {currentSeasonData.episodes.map((episode: Episode) => {
                                 const watched =
                                     lastWatched?.season === selectedSeason &&
@@ -215,7 +215,11 @@ export function SeriesPlayer({
                                             {episode.episode_number}
                                         </span>
 
-                                        <div className="relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group">
+                                        <div
+                                            className={`relative w-36 sm:w-44 aspect-video rounded-md overflow-hidden bg-zinc-900 flex-shrink-0 group ${
+                                                watched ? 'ring-1 ring-white/70' : ''
+                                            }`}
+                                        >
                                             {episode.still_path ? (
                                                 <Image
                                                     src={getImageUrl(episode.still_path, 'w500')}
