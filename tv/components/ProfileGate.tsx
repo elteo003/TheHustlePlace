@@ -161,6 +161,39 @@ export function ProfileGate() {
             ) : null}
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-[18vh] bg-gradient-to-b from-black from-[18%] to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-[18vh] bg-gradient-to-t from-black from-[18%] to-transparent" />
+            <div className="absolute left-1/2 top-[16vh] z-[6] w-[580px] -translate-x-1/2 text-center">
+                <p className="mb-7 text-[44px] font-bold text-white [text-shadow:0_8px_28px_#000]">
+                    {focused ? focused.name : 'Aggiungi'}
+                </p>
+                <div className="flex justify-between">
+                    {focused && focused.id !== 'local' ? (
+                        <TvFocus
+                            onClick={() => {
+                                setSelected(focused)
+                                setView('edit')
+                            }}
+                            className="h-14 min-w-[168px] rounded-lg bg-white/10 px-6 text-lg text-white"
+                        >
+                            Modifica
+                        </TvFocus>
+                    ) : (
+                        <span />
+                    )}
+                    {focused && configured && focused.pairCode ? (
+                        <TvFocus
+                            onClick={() => {
+                                setSelected(focused)
+                                setView('code')
+                            }}
+                            className="h-14 min-w-[168px] rounded-lg bg-white/10 px-6 text-lg text-white"
+                        >
+                            Collega
+                        </TvFocus>
+                    ) : (
+                        <span />
+                    )}
+                </div>
+            </div>
             <div className="flex h-full items-start pl-[4.5vw]">
                 <div className="h-full w-40 shrink-0 overflow-visible py-[12vh]">
                     <div
@@ -202,41 +235,20 @@ export function ProfileGate() {
                         )}
                     </div>
                 </div>
-                <div className="min-w-[280px] pl-7 pt-[18vh]">
-                    <p className="mb-6 text-4xl font-semibold text-white">{focused ? focused.name : 'Aggiungi'}</p>
-                    {focused && focused.id !== 'local' && (
-                        <TvFocus
-                            onClick={() => {
-                                setSelected(focused)
-                                setView('edit')
-                            }}
-                            className="mt-0 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
-                        >
-                            Modifica
-                        </TvFocus>
-                    )}
-                    {focused && configured && focused.pairCode && (
-                        <TvFocus
-                            onClick={() => {
-                                setSelected(focused)
-                                setView('code')
-                            }}
-                            className="mt-3 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
-                        >
-                            Collega telefono
-                        </TvFocus>
-                    )}
-                    {configured && (
-                        <TvFocus
-                            onClick={() => setView('adopt')}
-                            className="mt-3 block h-14 w-60 rounded-lg bg-white/10 px-6 text-lg text-white"
-                        >
-                            Ho un codice
-                        </TvFocus>
-                    )}
-                    {error && view === 'pick' ? <p className="mt-6 text-lg text-white/55">{error}</p> : null}
-                </div>
             </div>
+            {configured ? (
+                <div className="absolute inset-x-0 bottom-[6.5vh] z-[7] text-center">
+                    <TvFocus
+                        onClick={() => setView('adopt')}
+                        className="gate-code-btn relative px-[72px] py-[22px] text-[22px] font-semibold text-white/80"
+                    >
+                        Ho un codice
+                    </TvFocus>
+                </div>
+            ) : null}
+            {error && view === 'pick' ? (
+                <p className="absolute inset-x-0 bottom-[16vh] z-[7] text-center text-lg text-white/55">{error}</p>
+            ) : null}
         </div>
     )
 }

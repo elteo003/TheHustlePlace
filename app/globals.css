@@ -901,3 +901,47 @@ html {
         0 0 70px 28px rgba(255, 255, 255, 0.42),
         0 0 130px 56px rgba(255, 255, 255, 0.16);
 }
+
+.gate-code-btn {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.gate-code-btn::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 300px;
+    height: 92px;
+    margin: -46px 0 0 -150px;
+    border-radius: 999px;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 255, 255, 0.42) 0%,
+        rgba(255, 255, 255, 0.18) 40%,
+        rgba(255, 255, 255, 0) 74%
+    );
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition: opacity 180ms ease;
+}
+
+.gate-code-btn.tv-focusable:focus,
+.gate-code-btn.tv-focusable:focus-visible,
+.gate-code-btn.tv-focusable.is-tv-focused {
+    outline: none;
+    transform: none;
+    background: transparent;
+    box-shadow: none;
+    color: #fff;
+}
+
+.gate-code-btn.tv-focusable:focus::before,
+.gate-code-btn.tv-focusable:focus-visible::before,
+.gate-code-btn.tv-focusable.is-tv-focused::before {
+    opacity: 1;
+}

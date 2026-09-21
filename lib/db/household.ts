@@ -1,4 +1,4 @@
-import { and, count, eq } from 'drizzle-orm'
+import { and, count, eq, isNotNull, ne } from 'drizzle-orm'
 import { formatPairCode, generatePairCode, normalizePairCode } from '@/lib/pair-code'
 import {
     canAddHouseholdProfile,
@@ -117,6 +117,7 @@ async function findCanonicalHousehold(excludeId?: string | null): Promise<string
             name: watchProfiles.name,
         })
         .from(watchProfiles)
+        .where(and(isNotNull(watchProfiles.householdId), ne(watchProfiles.name, PLACEHOLDER_PROFILE_NAME)))
 
     const scores = new Map<string, { named: number; total: number }>()
     for (const row of rows) {
