@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { listWatchHistory, isDatabaseConfigured } from '@/lib/db/watch-history'
 import { DEVICE_COOKIE, isDeviceId } from '@/lib/supabase/device'
 import { HistorySeed, PersonalRails } from '@/lib/personal-rails'
-import { EditorialRails } from '@/lib/editorial-rails'
+import { EditorialRails, EDITORIAL_RAIL_SIZE } from '@/lib/editorial-rails'
 
 const catalogService = new CatalogService()
 
@@ -44,7 +44,7 @@ export async function fetchPersonalRails(
 export async function fetchEditorialRails(
     occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = []
 ): Promise<EditorialRails> {
-    return catalogService.getEditorialRails(occupied, HOME_RAIL_SIZE)
+    return catalogService.getEditorialRails(occupied, EDITORIAL_RAIL_SIZE)
 }
 
 export async function fetchCatalogSection(
@@ -116,6 +116,8 @@ export async function fetchCatalogSection(
         case 'darkest-horror':
         case 'jukebox-pop-stars':
         case 'vintage-stories':
+        case 'drug-empires':
+        case 'crime-lords':
         case 'political-intrigue':
         case 'period-stories':
             results = []

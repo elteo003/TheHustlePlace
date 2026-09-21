@@ -116,6 +116,8 @@ describe('editorial-rails', () => {
         expect(EDITORIAL_RAIL_TITLES.vintageStories).toBe(
             'Storie vintage: eleganza, vizi e cambiamenti sociali'
         )
+        expect(EDITORIAL_RAIL_TITLES.drugEmpires).toBe('Imperi della droga oltre il confine')
+        expect(EDITORIAL_RAIL_TITLES.crimeLords).toBe('I signori del crimine')
     })
 
     it("tiene lo scaffale d'epoca anche se Tesori ha gia mangiato qualche classico", () => {
@@ -190,6 +192,32 @@ describe('editorial-rails', () => {
         expect(rails.vintageStories.map((entry) => entry.title)).not.toContain('Stranger Things')
     })
 
+    it('tiene Scarface e il Padrino tra i signori del crimine, non tra i cartelli', () => {
+        const crime = [
+            item({ id: 100, title: 'Il Padrino', type: 'movie', popularity: 99 }),
+            item({ id: 101, title: 'Scarface', type: 'movie', popularity: 90 }),
+            ...many('Crime', 800, 40, 40),
+        ]
+        const drug = [
+            item({ id: 110, title: 'Narcos', type: 'tv', popularity: 95 }),
+            item({ id: 111, title: 'Sicario', type: 'movie', popularity: 88 }),
+            item({ id: 112, title: 'City of God', type: 'movie', popularity: 92 }),
+            ...many('Drug', 900, 40, 35),
+        ]
+        const rails = composeEditorialRails(pools({ crimeLords: crime, drugEmpires: drug }), [])
+        expect(rails.crimeLords.map((entry) => entry.title)).toContain('Il Padrino')
+        expect(rails.crimeLords.map((entry) => entry.title)).toContain('Scarface')
+        expect(rails.drugEmpires.map((entry) => entry.title)).toContain('Narcos')
+        expect(rails.drugEmpires.map((entry) => entry.title)).toContain('Sicario')
+        expect(rails.drugEmpires.map((entry) => entry.title)).toContain('City of God')
+        expect(rails.crimeLords.map((entry) => entry.title)).not.toContain('City of God')
+    })
+
+    it('riempie uno scaffale fino a 40 titoli', () => {
+        const rails = composeEditorialRails(pools({ warAndPolitics: many('War', 1, 50, 80) }), [])
+        expect(rails.warAndPolitics).toHaveLength(40)
+    })
+
     it('mantiene i titoli seme in testa allo scaffale', () => {
         const seeds = [item({ id: 900, title: 'Knives Out', type: 'movie', popularity: 10 })]
         const pool = [
@@ -230,6 +258,8 @@ describe('editorial-rails', () => {
         expect(TMDB_GENRE.movieMusic).toBe(10402)
         expect(EDITORIAL_HOME_RAILS[0].id).toBe('warAndPolitics')
         expect(EDITORIAL_HOME_RAILS.map((rail) => rail.id)).toContain('medievalPassion')
+        expect(EDITORIAL_HOME_RAILS.map((rail) => rail.id)).toContain('drugEmpires')
+        expect(EDITORIAL_HOME_RAILS.map((rail) => rail.id)).toContain('crimeLords')
         expect(EDITORIAL_HOME_RAILS.at(-1)?.id).toBe('politicalIntrigue')
     })
 })

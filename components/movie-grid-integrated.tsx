@@ -28,6 +28,8 @@ const MIXED_SECTIONS: CatalogSection[] = [
     'darkest-horror',
     'jukebox-pop-stars',
     'vintage-stories',
+    'drug-empires',
+    'crime-lords',
     'political-intrigue',
     'period-stories',
 ]

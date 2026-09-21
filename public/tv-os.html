@@ -2061,7 +2061,7 @@
     scroller.setAttribute('data-tv-loop', '');
     var strip = el('div', 'rail-strip');
     var i, item, tile, fid, limit, card, sub, kind, rank;
-    limit = items.length > 20 ? 20 : items.length;
+    limit = items.length > 40 ? 40 : items.length;
     if (railId === 'top' && limit > 10) limit = 10;
     for (i = 0; i < limit; i++) {
       item = items[i];
@@ -2572,6 +2572,7 @@
       top: [], movies: [], recent: [], tv: [], tvRecent: [],
       coming: [], war: [], intrigue: [], period: [],
       medieval: [], puzzle: [], mystery: [], dark: [], jukebox: [], vintage: [],
+      drug: [], crime: [],
       ready: false
     };
     var step = runSteps(7, function () {
@@ -2596,6 +2597,8 @@
       bag.dark = listOf({ data: rails.darkestHorror });
       bag.jukebox = listOf({ data: rails.jukeboxPopStars });
       bag.vintage = listOf({ data: rails.vintageStories });
+      bag.drug = listOf({ data: rails.drugEmpires });
+      bag.crime = listOf({ data: rails.crimeLords });
       bag.intrigue = listOf({ data: rails.politicalIntrigue });
       bag.period = listOf({ data: rails.periodStories });
       step();
@@ -2654,6 +2657,8 @@
       dark: shared.dark || [],
       jukebox: shared.jukebox || [],
       vintage: shared.vintage || [],
+      drug: shared.drug || [],
+      crime: shared.crime || [],
       history: personal.history || [],
       picks: personal.picks || [],
       affinity: personal.affinity || [],
@@ -2700,6 +2705,8 @@
       add('Quelli più cupi', data.dark, 'movie', 'dark');
       add('Viaggio nel tempo: tra jukebox, lustrini e pop star', data.jukebox, 'movie', 'juke');
       add('Storie vintage: eleganza, vizi e cambiamenti sociali', data.vintage, 'movie', 'vin');
+      add('Imperi della droga oltre il confine', data.drug, 'movie', 'drug');
+      add('I signori del crimine', data.crime, 'movie', 'crm');
       add("Storie di un'epoca passata", data.period, 'movie', 'per');
       add('Le guerre di oggi', data.intrigue, 'movie', 'int');
       add('Aggiunti di recente', data.recent, 'movie', 'mrec');
@@ -2722,7 +2729,7 @@
     var src;
     var limit;
     if (!rail || !rail.items) return;
-    limit = rail.items.length > 20 ? 20 : rail.items.length;
+    limit = rail.items.length > 40 ? 40 : rail.items.length;
     for (i = 0; i < limit; i++) {
       item = rail.items[i];
       src = rail.id === 'hist'

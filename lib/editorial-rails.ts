@@ -2,7 +2,7 @@ import { Top10Content } from '@/types'
 import { takeUnseen } from '@/lib/personal-rails'
 import { CatalogSection } from '@/lib/catalog-types'
 
-export const EDITORIAL_RAIL_SIZE = 24
+export const EDITORIAL_RAIL_SIZE = 40
 export const EDITORIAL_MIN_ITEMS = 6
 
 export const TMDB_GENRE = {
@@ -85,6 +85,22 @@ export const TMDB_KEYWORD = {
     fashion: 15479,
     advertising: 15086,
     hollywood: 12396,
+    drugCartel: 10175,
+    mexicanCartel: 217064,
+    caliCartel: 283894,
+    colombianCartel: 373696,
+    drugLord: 18026,
+    cocaine: 2150,
+    narco: 206645,
+    narcos: 267329,
+    mafia: 10391,
+    sicilianMafia: 155538,
+    jewishMafia: 176098,
+    americanMafia: 209849,
+    italianMafia: 319591,
+    gangster: 3149,
+    organizedCrime: 10291,
+    irishMob: 8442,
 } as const
 
 export type EditorialRailId =
@@ -95,6 +111,8 @@ export type EditorialRailId =
     | 'darkestHorror'
     | 'jukeboxPopStars'
     | 'vintageStories'
+    | 'drugEmpires'
+    | 'crimeLords'
     | 'politicalIntrigue'
     | 'periodStories'
 
@@ -108,6 +126,8 @@ export const EDITORIAL_RAIL_TITLES: Record<EditorialRailId, string> = {
     darkestHorror: 'Quelli più cupi',
     jukeboxPopStars: 'Viaggio nel tempo: tra jukebox, lustrini e pop star',
     vintageStories: 'Storie vintage: eleganza, vizi e cambiamenti sociali',
+    drugEmpires: 'Imperi della droga oltre il confine',
+    crimeLords: 'I signori del crimine',
     politicalIntrigue: 'Le guerre di oggi',
     periodStories: "Storie di un'epoca passata",
 }
@@ -120,6 +140,8 @@ export const EDITORIAL_HOME_RAILS: Array<{ id: EditorialRailId; section: Catalog
     { id: 'darkestHorror', section: 'darkest-horror' },
     { id: 'jukeboxPopStars', section: 'jukebox-pop-stars' },
     { id: 'vintageStories', section: 'vintage-stories' },
+    { id: 'drugEmpires', section: 'drug-empires' },
+    { id: 'crimeLords', section: 'crime-lords' },
     { id: 'periodStories', section: 'period-stories' },
     { id: 'politicalIntrigue', section: 'political-intrigue' },
 ]
@@ -131,6 +153,8 @@ const OCCUPY_ORDER: EditorialRailId[] = [
     'puzzleInvestigations',
     'jukeboxPopStars',
     'vintageStories',
+    'drugEmpires',
+    'crimeLords',
     'mysteryMasterpieces',
     'darkestHorror',
     'politicalIntrigue',
@@ -158,6 +182,30 @@ export const EDITORIAL_SEEDS: Partial<Record<EditorialRailId, Array<{ query: str
         { query: 'Licorice Pizza', type: 'movie' },
         { query: 'Catch Me If You Can', type: 'movie' },
         { query: 'The Man from U.N.C.L.E.', type: 'movie' },
+    ],
+    drugEmpires: [
+        { query: 'Narcos', type: 'tv' },
+        { query: 'Griselda', type: 'tv' },
+        { query: 'El Chapo', type: 'tv' },
+        { query: 'Os Donos do Jogo', type: 'tv' },
+        { query: 'Narcos Mexico', type: 'tv' },
+        { query: 'Felix Gallardo', type: 'tv' },
+        { query: 'Sicario 2015', type: 'movie' },
+        { query: 'Cidade de Deus', type: 'movie' },
+        { query: 'Tropa de Elite', type: 'movie' },
+        { query: 'Blow 2001', type: 'movie' },
+    ],
+    crimeLords: [
+        { query: 'The Godfather', type: 'movie' },
+        { query: 'The Godfather Part II', type: 'movie' },
+        { query: 'The Godfather Part III', type: 'movie' },
+        { query: 'Quei bravi ragazzi', type: 'movie' },
+        { query: 'The Irishman', type: 'movie' },
+        { query: 'Public Enemies', type: 'movie' },
+        { query: 'Live by Night', type: 'movie' },
+        { query: 'Casino', type: 'movie' },
+        { query: 'Scarface 1983', type: 'movie' },
+        { query: "C'era una volta in America", type: 'movie' },
     ],
 }
 
@@ -266,6 +314,48 @@ export const VINTAGE_INDUSTRY_KEYWORDS = [
 
 export const VINTAGE_EXCLUDE_KEYWORDS = [TMDB_KEYWORD.eighties, TMDB_KEYWORD.coldWar, TMDB_KEYWORD.superhero]
 
+export const DRUG_EMPIRE_KEYWORDS = [
+    TMDB_KEYWORD.drugCartel,
+    TMDB_KEYWORD.mexicanCartel,
+    TMDB_KEYWORD.caliCartel,
+    TMDB_KEYWORD.colombianCartel,
+    TMDB_KEYWORD.drugLord,
+    TMDB_KEYWORD.cocaine,
+    TMDB_KEYWORD.narco,
+    TMDB_KEYWORD.narcos,
+]
+
+export const DRUG_EMPIRE_EXCLUDE_KEYWORDS = [
+    TMDB_KEYWORD.mafia,
+    TMDB_KEYWORD.italianMafia,
+    TMDB_KEYWORD.sicilianMafia,
+    TMDB_KEYWORD.americanMafia,
+    TMDB_KEYWORD.irishMob,
+    TMDB_KEYWORD.jewishMafia,
+    TMDB_KEYWORD.gangster,
+]
+
+export const CRIME_LORDS_KEYWORDS = [
+    TMDB_KEYWORD.mafia,
+    TMDB_KEYWORD.sicilianMafia,
+    TMDB_KEYWORD.jewishMafia,
+    TMDB_KEYWORD.americanMafia,
+    TMDB_KEYWORD.italianMafia,
+    TMDB_KEYWORD.gangster,
+    TMDB_KEYWORD.organizedCrime,
+    TMDB_KEYWORD.irishMob,
+]
+
+export const CRIME_LORDS_EXCLUDE_KEYWORDS = [
+    TMDB_KEYWORD.drugCartel,
+    TMDB_KEYWORD.mexicanCartel,
+    TMDB_KEYWORD.caliCartel,
+    TMDB_KEYWORD.colombianCartel,
+    TMDB_KEYWORD.narco,
+    TMDB_KEYWORD.narcos,
+    TMDB_KEYWORD.superhero,
+]
+
 export function emptyEditorialRails(): EditorialRails {
     return {
         warAndPolitics: [],
@@ -275,6 +365,8 @@ export function emptyEditorialRails(): EditorialRails {
         darkestHorror: [],
         jukeboxPopStars: [],
         vintageStories: [],
+        drugEmpires: [],
+        crimeLords: [],
         politicalIntrigue: [],
         periodStories: [],
     }

@@ -41,7 +41,11 @@ import {
     yearsAgoFrom,
 } from '@/lib/top10-moment'
 import {
+    CRIME_LORDS_EXCLUDE_KEYWORDS,
+    CRIME_LORDS_KEYWORDS,
     DARKEST_HORROR_KEYWORDS,
+    DRUG_EMPIRE_EXCLUDE_KEYWORDS,
+    DRUG_EMPIRE_KEYWORDS,
     EDITORIAL_RAIL_SIZE,
     EDITORIAL_SEEDS,
     HISTORICAL_WAR_KEYWORDS,
@@ -379,7 +383,7 @@ export class CatalogService {
         occupied: Array<{ id: number; type?: 'movie' | 'tv' }> = [],
         size = EDITORIAL_RAIL_SIZE
     ): Promise<EditorialRails> {
-        const cacheKey = `editorial-rails-v11:${occupiedKeys(occupied).sort().join(',')}`
+        const cacheKey = `editorial-rails-v14:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<EditorialRails>(cacheKey)
         if (cached) {
             return this.decorateEditorialRails(cached)
@@ -399,6 +403,10 @@ export class CatalogService {
             const vintageDecadeKeywords = keywordPipe(VINTAGE_DECADE_KEYWORDS)
             const vintageIndustryKeywords = keywordPipe(VINTAGE_INDUSTRY_KEYWORDS)
             const vintageExcludeKeywords = keywordPipe(VINTAGE_EXCLUDE_KEYWORDS)
+            const drugEmpireKeywords = keywordPipe(DRUG_EMPIRE_KEYWORDS)
+            const drugEmpireExcludeKeywords = keywordPipe(DRUG_EMPIRE_EXCLUDE_KEYWORDS)
+            const crimeLordsKeywords = keywordPipe(CRIME_LORDS_KEYWORDS)
+            const crimeLordsExcludeKeywords = keywordPipe(CRIME_LORDS_EXCLUDE_KEYWORDS)
             const historicalMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieHistory}`
             const modernGeoMovieGenres = `${TMDB_GENRE.movieWar}|${TMDB_GENRE.movieThriller}`
             const fantasyMovieGenres = `${TMDB_GENRE.movieFantasy}|${TMDB_GENRE.movieScienceFiction}|${TMDB_GENRE.movieAnimation}`
@@ -431,9 +439,15 @@ export class CatalogService {
                 vintageDecadeMovies,
                 vintageIndustryMovies,
                 vintageShows,
+                drugMovies,
+                drugShows,
+                crimeMovies,
+                crimeShows,
                 puzzleSeeds,
                 jukeboxSeeds,
                 vintageSeeds,
+                drugSeeds,
+                crimeSeeds,
             ] = await Promise.all([
                 this.discoverPages(
                     'movie',
@@ -565,7 +579,7 @@ export class CatalogService {
                         'vote_count.gte': 400,
                         include_adult: false,
                     },
-                    4
+                    5
                 ),
                 this.discoverPages(
                     'movie',
@@ -579,7 +593,7 @@ export class CatalogService {
                         'vote_count.gte': 800,
                         include_adult: false,
                     },
-                    4
+                    5
                 ),
                 this.discoverPages(
                     'movie',
@@ -588,11 +602,11 @@ export class CatalogService {
                         with_genres: TMDB_GENRE.movieHorror,
                         without_genres: `${TMDB_GENRE.movieComedy}|${TMDB_GENRE.movieAnimation}|${TMDB_GENRE.movieMusic}`,
                         sort_by: 'vote_count.desc',
-                        'vote_count.gte': 1500,
+                        'vote_count.gte': 800,
                         'vote_average.gte': 6.4,
                         include_adult: false,
                     },
-                    3
+                    5
                 ),
                 this.discoverPages(
                     'movie',
@@ -659,11 +673,59 @@ export class CatalogService {
                         sort_by: 'popularity.desc',
                         'vote_count.gte': 40,
                     },
-                    3
+                    5
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: drugEmpireKeywords,
+                        without_keywords: drugEmpireExcludeKeywords,
+                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieAnimation}|${fantasyMovieGenres}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                        include_adult: false,
+                    },
+                    5
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: drugEmpireKeywords,
+                        without_keywords: drugEmpireExcludeKeywords,
+                        without_genres: `${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 40,
+                    },
+                    5
+                ),
+                this.discoverPages(
+                    'movie',
+                    {
+                        with_keywords: crimeLordsKeywords,
+                        without_keywords: crimeLordsExcludeKeywords,
+                        without_genres: `${TMDB_GENRE.movieHorror}|${TMDB_GENRE.movieAnimation}|${fantasyMovieGenres}`,
+                        sort_by: 'vote_count.desc',
+                        'vote_count.gte': 200,
+                        include_adult: false,
+                    },
+                    5
+                ),
+                this.discoverPages(
+                    'tv',
+                    {
+                        with_keywords: crimeLordsKeywords,
+                        without_keywords: crimeLordsExcludeKeywords,
+                        without_genres: `${TMDB_GENRE.tvKids}|${TMDB_GENRE.tvReality}|${TMDB_GENRE.tvSciFiFantasy}|${TMDB_GENRE.movieAnimation}`,
+                        sort_by: 'popularity.desc',
+                        'vote_count.gte': 80,
+                    },
+                    4
                 ),
                 this.loadEditorialSeeds(EDITORIAL_SEEDS.puzzleInvestigations),
                 this.loadEditorialSeeds(EDITORIAL_SEEDS.jukeboxPopStars),
                 this.loadEditorialSeeds(EDITORIAL_SEEDS.vintageStories),
+                this.loadEditorialSeeds(EDITORIAL_SEEDS.drugEmpires),
+                this.loadEditorialSeeds(EDITORIAL_SEEDS.crimeLords),
             ])
 
             const [
@@ -676,6 +738,8 @@ export class CatalogService {
                 darkestHorror,
                 jukeboxPopStars,
                 vintageStories,
+                crimeLords,
+                drugEmpires,
             ] = await Promise.all([
                 this.filterAvailableMixed([...historicalKeywordMovies, ...historicalKeywordShows]),
                 this.filterAvailableMixed([...modernConflictMovies, ...modernGeoMovies, ...modernKeywordShows]),
@@ -698,6 +762,8 @@ export class CatalogService {
                         ...vintageShows,
                     ])
                 ),
+                this.filterAvailableMixed(boostEditorialSeeds(crimeSeeds, [...crimeMovies, ...crimeShows])),
+                this.filterAvailableMixed(boostEditorialSeeds(drugSeeds, [...drugMovies, ...drugShows])),
             ])
 
             const rails = composeEditorialRails(
@@ -709,6 +775,8 @@ export class CatalogService {
                     darkestHorror,
                     jukeboxPopStars,
                     vintageStories,
+                    drugEmpires,
+                    crimeLords,
                     politicalIntrigue,
                     periodStories,
                 },
@@ -725,6 +793,8 @@ export class CatalogService {
                 darkestHorror: decorated.darkestHorror.length,
                 jukeboxPopStars: decorated.jukeboxPopStars.length,
                 vintageStories: decorated.vintageStories.length,
+                drugEmpires: decorated.drugEmpires.length,
+                crimeLords: decorated.crimeLords.length,
                 politicalIntrigue: decorated.politicalIntrigue.length,
                 periodStories: decorated.periodStories.length,
             })

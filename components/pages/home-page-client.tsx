@@ -10,7 +10,7 @@ import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
-import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
+import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
 import { Movie, TVShow, Top10Content } from '@/types'
 
@@ -166,7 +166,7 @@ export function HomePageClient({
                                 <MovieGridIntegrated
                                     type="movie"
                                     section={section}
-                                    limit={HOME_RAIL_SIZE}
+                                    limit={EDITORIAL_RAIL_SIZE}
                                     onPlay={play}
                                     onDetails={openDetails}
                                     initialData={items}
