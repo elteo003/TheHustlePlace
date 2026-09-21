@@ -6,7 +6,10 @@
     <style>
       html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
       #splash {
-        position: fixed; inset: 0; z-index: 2; background: #000;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%; height: 100%;
+        z-index: 2; background: #000;
         display: -webkit-box; display: flex;
         -webkit-box-align: center; align-items: center;
         -webkit-box-pack: center; justify-content: center;
@@ -29,7 +32,7 @@
     </div>
     <iframe
       id="thp"
-      src="https://the-hustle-place.vercel.app/living"
+      src="about:blank"
       allow="autoplay; fullscreen; encrypted-media"
       allowfullscreen="allowfullscreen"
     ></iframe>
@@ -48,6 +51,7 @@
         if (event.data && event.data.type === 'thp-ready') ready();
       });
       if (frame) {
+        frame.src = 'https://the-hustle-place.vercel.app/living?boot=' + new Date().getTime();
         document.addEventListener('keydown', function () {
           try { frame.focus(); } catch (e) {}
         });

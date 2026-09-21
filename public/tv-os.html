@@ -6,7 +6,7 @@
   <title>TheHustlePlace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
   <style>
     html, body { margin: 0; background: #000; color: #fff; font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100%; }
     body { overflow: hidden; }
@@ -179,6 +179,43 @@
       letter-spacing: -.02em; white-space: nowrap; overflow: hidden;
     }
     .hist-sub { display: block; font-size: 14px; color: rgba(255,255,255,.5); }
+    .top10-card {
+      display: inline-block;
+      margin: 0 8px 0 0;
+      vertical-align: bottom;
+      white-space: nowrap;
+      position: relative;
+    }
+    .top10-rank {
+      display: inline-block;
+      font-size: 168px;
+      font-weight: 900;
+      line-height: .78;
+      letter-spacing: -.08em;
+      margin: 0 -32px 0 0;
+      vertical-align: bottom;
+      color: #111;
+      -webkit-text-stroke: 3px rgba(255,255,255,.42);
+      text-shadow:
+        -2px -2px 0 rgba(255,255,255,.28),
+        2px -2px 0 rgba(255,255,255,.28),
+        -2px 2px 0 rgba(255,255,255,.28),
+        2px 2px 0 rgba(255,255,255,.28),
+        0 10px 22px rgba(0,0,0,.55);
+      pointer-events: none;
+      position: relative;
+      z-index: 0;
+    }
+    .top10-rank.wide {
+      font-size: 132px;
+      margin-right: -40px;
+    }
+    .top10-card .tile {
+      margin: 0;
+      vertical-align: bottom;
+      position: relative;
+      z-index: 1;
+    }
     .skel-title { width: 220px; height: 22px; border-radius: 8px; margin: 0 0 14px; }
     .shimmer {
       background-image: linear-gradient(90deg, #141414 0%, #2a2a2a 45%, #141414 90%);
@@ -484,15 +521,16 @@
     .series-hero .overview {
       font-size: 20px; line-height: 1.4; max-height: 2.8em; overflow: hidden; margin: 0 0 16px;
     }
-    .season-rail, .ep-rail { margin: 0; }
+    .season-rail { margin: 0 0 36px; }
+    .ep-rail { margin: 0; }
     .shell.series.ep-cam .season-rail { padding-top: 88px; }
     .season-rail h2, .ep-rail h2 { font-size: 28px; font-weight: 600; margin: 0 0 8px; padding-left: 64px; }
     .season-scroller, .ep-scroller {
       overflow: hidden;
       white-space: nowrap;
-      padding: 28px 0 32px;
     }
-    .season-scroller { height: 96px; box-sizing: border-box; }
+    .season-scroller { padding: 14px 0 0; }
+    .ep-scroller { padding: 28px 0 32px; }
     .season-chip {
       display: inline-block;
       height: 56px; line-height: 56px;
@@ -1900,8 +1938,9 @@
     var scroller = el('div', railId === 'hist' ? 'scroller hist-scroller' : 'scroller');
     scroller.setAttribute('data-tv-loop', '');
     var strip = el('div', 'rail-strip');
-    var i, item, tile, fid, limit, card, sub, kind;
+    var i, item, tile, fid, limit, card, sub, kind, rank;
     limit = items.length > 20 ? 20 : items.length;
+    if (railId === 'top' && limit > 10) limit = 10;
     for (i = 0; i < limit; i++) {
       item = items[i];
       fid = (i === 0 && railId === 'top') ? 'tile-0' : ('tile-' + railId + '-' + i);
@@ -1923,7 +1962,15 @@
         };
       })(item, fallbackType, railId), i === 0 && railId === 'top');
       decorateTile(tile, item, fallbackType, fid, railId === 'hist');
-      if (railId === 'hist') {
+      if (railId === 'top') {
+        tile.setAttribute('aria-label', (i + 1) + '. ' + itemTitle(item));
+        card = el('div', 'top10-card');
+        rank = el('span', 'top10-rank' + (i === 9 ? ' wide' : ''), String(i + 1));
+        rank.setAttribute('aria-hidden', 'true');
+        card.appendChild(rank);
+        card.appendChild(tile);
+        strip.appendChild(card);
+      } else if (railId === 'hist') {
         tile.appendChild(el('span', 'play-badge', 'Play'));
         card = el('div', 'hist-card');
         card.appendChild(tile);
@@ -3567,12 +3614,17 @@
     var section = parts[2] || '';
     var third = parts[3] || '';
     var fourth = parts[4] || '';
-    if (section !== 'player' && (!householdReady || !catalogShared || !catalogShared.ready)) {
-      bootThen(function () { route(); });
+    if (!section) {
+      if (!householdReady) {
+        renderBoot();
+        whenHousehold(function () { route(); });
+        return;
+      }
+      renderGate();
       return;
     }
-    if (!section) {
-      renderGate();
+    if (section !== 'player' && (!householdReady || !catalogShared || !catalogShared.ready)) {
+      bootThen(function () { route(); });
       return;
     }
     if (section === 'home') return renderBrowse('home');
@@ -3590,6 +3642,9 @@
 
   if (window.addEventListener) {
     window.addEventListener('popstate', function () { route(); }, false);
+  }
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', '/living');
   }
   warmSharedCatalog(function () {});
   route();
