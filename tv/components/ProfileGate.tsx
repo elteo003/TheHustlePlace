@@ -184,8 +184,10 @@ export function ProfileGate() {
                                     key={profile.id}
                                     src={src}
                                     alt=""
+                                    width={768}
+                                    height={768}
                                     className={cn(
-                                        'pointer-events-none absolute left-0 top-0 h-full w-full object-contain object-center transition-opacity duration-[240ms] ease-[cubic-bezier(0.645,0.045,0.355,1)] motion-reduce:transition-none [filter:drop-shadow(0_12px_18px_rgba(0,0,0,.55))]',
+                                        'pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] object-contain object-bottom transition-opacity duration-[240ms] ease-[cubic-bezier(0.645,0.045,0.355,1)] motion-reduce:transition-none',
                                         profile.id === focused.id ? 'opacity-100' : 'opacity-0'
                                     )}
                                 />
