@@ -912,18 +912,18 @@ html {
 .gate-code-btn::before {
     content: '';
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 300px;
-    height: 92px;
-    margin: -46px 0 0 -150px;
-    border-radius: 999px;
+    left: -10px;
+    top: -8px;
+    right: -10px;
+    bottom: -8px;
+    border-radius: 10px;
     background: radial-gradient(
         ellipse at center,
         rgba(255, 255, 255, 0.42) 0%,
         rgba(255, 255, 255, 0.18) 40%,
         rgba(255, 255, 255, 0) 74%
     );
+    box-shadow: 0 0 28px 8px rgba(255, 255, 255, 0.28);
     opacity: 0;
     pointer-events: none;
     z-index: -1;
