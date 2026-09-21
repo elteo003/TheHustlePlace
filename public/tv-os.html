@@ -88,6 +88,11 @@
       -webkit-transition: -webkit-transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
       transition: transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
     }
+    .shell.browse [data-tv-focus],
+    .shell.browse .tile {
+      -webkit-transition: none;
+      transition: none;
+    }
     .shell.browse .hero {
       height: 78vh;
       margin: 0;
@@ -124,7 +129,7 @@
       animation: none;
     }
     @media (prefers-reduced-motion: reduce) {
-      .browse-track, .rail-strip {
+      .browse-track, .rail-strip, .series-track {
         -webkit-transition: none;
         transition: none;
       }
@@ -407,7 +412,6 @@
     .empty { padding: 48px 8px 0; }
     .empty h2 { font-size: 28px; margin: 0 0 10px; }
     .detail { position: relative; min-height: calc(100vh - 72px); border-radius: 22px; overflow: hidden; background: #111 center/cover no-repeat; animation: tvIn .32s ease-out; }
-    .detail-series { min-height: 0; height: 56vh; }
     .detail:after {
       content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(90deg, #000 12%, rgba(0,0,0,.7) 48%, transparent);
@@ -426,68 +430,148 @@
     }
     .detail-meta { font-size: 18px; color: rgba(255,255,255,.55); margin: 0 0 16px; }
     .detail-meta span { margin-right: 14px; }
-    .ep-section { padding: 8px 8px 40px; }
-    .ep-head { margin: 0 0 18px; }
-    .ep-head h2 { display: inline-block; font-size: 26px; margin: 0 16px 0 0; vertical-align: middle; }
-    .season-wrap { position: relative; display: inline-block; vertical-align: middle; }
-    .season-toggle {
-      display: inline-block; height: 44px; line-height: 44px; padding: 0 16px;
-      border: 1px solid rgba(255,255,255,.25); border-radius: 10px; background: transparent;
-      font-size: 18px;
+    .shell.series {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
     }
-    .season-menu {
-      position: absolute; left: 0; top: 100%; margin-top: 8px; min-width: 240px; z-index: 8;
-      background: #09090b; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; overflow: hidden;
+    .shell.series .topnav {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      z-index: 8;
+      height: auto;
+      margin: 0;
+      padding: 28px 56px 48px;
+      box-sizing: border-box;
+      background: linear-gradient(to bottom, rgba(0,0,0,.94) 0%, rgba(0,0,0,.62) 48%, rgba(0,0,0,0) 100%);
     }
-    .season-opt {
-      display: block; width: 100%; text-align: left; padding: 14px 18px; box-sizing: border-box;
-      color: rgba(255,255,255,.72); font-size: 18px; background: transparent;
+    .series-body {
+      height: 100%;
+      overflow: hidden;
+      position: relative;
     }
-    .season-opt.on { background: rgba(255,255,255,.1); color: #fff; }
-    .season-opt span { display: block; font-size: 14px; color: rgba(255,255,255,.4); margin-top: 4px; }
-    .ep-list { border-top: 1px solid rgba(255,255,255,.1); }
-    .ep-row {
-      display: -webkit-box; display: flex; -webkit-box-align: start; align-items: flex-start;
-      width: 100%; padding: 20px 8px; box-sizing: border-box; text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,.1);
+    .series-track {
+      position: relative;
+      padding-bottom: 28vh;
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0;
+      -webkit-transition: -webkit-transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      transition: transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
     }
-    .ep-num { width: 36px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-top: 28px; font-size: 20px; color: rgba(255,255,255,.35); }
-    .episode-watched .ep-num { color: #fff; }
-    .ep-still {
-      position: relative; width: 196px; height: 110px; -webkit-flex-shrink: 0; flex-shrink: 0;
-      border-radius: 8px; overflow: hidden; background: #181818 center/cover no-repeat;
+    .series-hero {
+      position: relative;
+      height: 42vh;
+      min-height: 320px;
+      max-height: 48vh;
+      margin: 0;
+      overflow: hidden;
+      background: #111 center/cover no-repeat;
+      box-sizing: border-box;
     }
-    .episode-watched .ep-still { box-shadow: 0 0 0 1px rgba(255,255,255,.7); }
-    .ep-still:after {
-      content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -10px 0 0 -6px;
-      border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 16px solid #fff;
+    .series-hero:after {
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+      background: linear-gradient(90deg, #000 10%, rgba(0,0,0,.72) 46%, transparent 78%),
+                  linear-gradient(0deg, #000 0%, #000 12%, rgba(0,0,0,.55) 38%, transparent 68%);
     }
-    .ep-still b {
-      position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.2);
+    .series-hero-copy {
+      position: absolute;
+      left: 0; right: 0; bottom: 0; z-index: 1;
+      max-width: 820px;
+      padding: 0 64px 24px;
+      box-sizing: border-box;
     }
-    .ep-still b i { display: block; height: 100%; background: #fff; }
-    .ep-body { -webkit-box-flex: 1; flex: 1; min-width: 0; padding: 0 0 0 18px; }
-    .ep-title { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
-    .ep-runtime { float: right; font-size: 16px; color: rgba(255,255,255,.4); font-weight: 400; }
-    .ep-last { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); margin: 0 0 6px; }
-    .ep-plot { font-size: 18px; line-height: 1.4; color: rgba(255,255,255,.55); max-height: 4.2em; overflow: hidden; margin: 0; }
-    @keyframes episode-light-sweep {
-      from { -webkit-transform: translateX(-80%); transform: translateX(-80%); opacity: .85; }
-      to { -webkit-transform: translateX(180%); transform: translateX(180%); opacity: 0; }
+    .series-hero-copy h1 { font-size: 44px; line-height: 1.08; margin: 0 0 10px; }
+    .series-hero .overview {
+      font-size: 20px; line-height: 1.4; max-height: 2.8em; overflow: hidden; margin: 0 0 16px;
     }
-    .ep-row > * { position: relative; z-index: 1; }
-    .episode-watched { position: relative; overflow: hidden; }
-    .episode-watched:before {
-      content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.09) 36%, rgba(255,255,255,.03) 58%, transparent 82%);
+    .season-rail, .ep-rail { margin: 0; }
+    .shell.series.ep-cam .season-rail { padding-top: 88px; }
+    .season-rail h2, .ep-rail h2 { font-size: 28px; font-weight: 600; margin: 0 0 8px; padding-left: 64px; }
+    .season-scroller, .ep-scroller {
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 28px 0 32px;
     }
-    .episode-watched:after {
-      content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 42%; pointer-events: none;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
-      -webkit-transform: translateX(-100%); transform: translateX(-100%);
-      -webkit-animation: episode-light-sweep 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
-      animation: episode-light-sweep 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+    .season-scroller { height: 96px; box-sizing: border-box; }
+    .season-chip {
+      display: inline-block;
+      height: 56px; line-height: 56px;
+      padding: 0 28px; margin: 0 12px 0 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      font-size: 22px;
+      white-space: nowrap;
+      vertical-align: top;
     }
+    .season-chip.on { background: #fff; color: #111; font-weight: 700; }
+    .ep-card {
+      display: inline-block;
+      width: 32vw;
+      min-width: 420px;
+      max-width: 640px;
+      height: auto;
+      margin: 0 22px 0 0;
+      vertical-align: top;
+      text-align: left;
+      white-space: normal;
+      overflow: visible;
+      background: transparent;
+      border-radius: 14px;
+    }
+    .ep-card-still {
+      position: relative;
+      height: 28vh;
+      min-height: 200px;
+      max-height: 360px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #181818 center/cover no-repeat;
+    }
+    .ep-card-still b {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.2) 12%, rgba(255,255,255,.2) 88%, transparent);
+    }
+    .ep-card-still b i {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, transparent, #fff 10%, #fff 90%, transparent);
+    }
+    .ep-card-body { padding: 14px 6px 0; }
+    .ep-card-kicker {
+      font-size: 14px; letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(255,255,255,.7); margin: 0 0 6px;
+    }
+    .ep-card-title-row {
+      display: -webkit-box; display: flex; -webkit-box-align: baseline; align-items: baseline;
+      margin: 0 0 8px;
+    }
+    .ep-card-title {
+      -webkit-box-flex: 1; flex: 1; min-width: 0;
+      font-size: 28px; font-weight: 700; line-height: 1.15;
+    }
+    .ep-card-runtime {
+      -webkit-flex-shrink: 0; flex-shrink: 0;
+      margin-left: 12px; font-size: 18px; color: rgba(255,255,255,.45); font-weight: 500;
+    }
+    .ep-card-plot {
+      font-size: 22px; line-height: 1.45; color: rgba(255,255,255,.82);
+      max-height: 5.8em; overflow: hidden; margin: 0;
+    }
+    .ep-card.episode-watched { position: relative; overflow: visible; }
+    .ep-card.episode-watched:before {
+      content: "";
+      position: absolute;
+      left: -80px; top: -40px; bottom: -40px; width: 140px;
+      pointer-events: none; z-index: 2;
+      background: radial-gradient(ellipse at left center, rgba(255,255,255,.5) 0%, rgba(255,255,255,.16) 42%, transparent 76%);
+    }
+    .ep-card.episode-watched .ep-card-still:after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0; width: 46%;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,.2), rgba(255,255,255,.05) 55%, transparent);
+    }
+    .ep-card.episode-watched > * { position: relative; z-index: 1; }
     video { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
     .hud {
       position: fixed; left: 40px; right: 40px; top: 32px; z-index: 5;
@@ -526,21 +610,20 @@
       box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 28px rgba(255,255,255,.16), 0 22px 44px rgba(0,0,0,.55);
     }
     .navbtn.is-tv-focused, .who.is-tv-focused, .tab.is-tv-focused, .action.is-tv-focused,
-    .key.is-tv-focused, .key-wide.is-tv-focused, .season-toggle.is-tv-focused {
+    .key.is-tv-focused, .key-wide.is-tv-focused, .season-chip.is-tv-focused {
       -webkit-transform: scale(1.04); transform: scale(1.04);
       box-shadow: 0 0 0 1px rgba(255,255,255,.4), 0 12px 28px rgba(0,0,0,.4);
     }
     .navbtn.is-tv-focused:not(.cur), .tab.is-tv-focused:not(.on), .action.is-tv-focused:not(.main),
-    .key.is-tv-focused, .key-wide.is-tv-focused:not(.main), .who.is-tv-focused, .season-toggle.is-tv-focused {
+    .key.is-tv-focused, .key-wide.is-tv-focused:not(.main), .who.is-tv-focused, .season-chip.is-tv-focused:not(.on) {
       background: rgba(255,255,255,.2);
     }
     .navbtn.cur.is-tv-focused, .action.main.is-tv-focused, .key-wide.main.is-tv-focused, .tab.on.is-tv-focused {
       box-shadow: 0 14px 32px rgba(0,0,0,.45);
     }
-    .ep-row.is-tv-focused, .season-opt.is-tv-focused {
-      -webkit-transform: none; transform: none;
-      box-shadow: none;
-      background: rgba(255,255,255,.08);
+    .ep-card.is-tv-focused {
+      -webkit-transform: scale(1.04); transform: scale(1.04);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 36px rgba(255,255,255,.14), 0 22px 44px rgba(0,0,0,.55);
     }
     .gate-pick .avatar.is-tv-focused, .gate-pick .plus.is-tv-focused {
       -webkit-transform: none; transform: none;
@@ -627,6 +710,7 @@
   var gateRailIndex = 0;
   var gateRailInstant = false;
   var browseCameraInstant = false;
+  var seriesPage = null;
   var peekTimer = null;
   var gateFocusProfile = null;
   var searchQ = '';
@@ -638,6 +722,18 @@
   var searchLoading = false;
   var backHandler = null;
   var cache = { home: null, movies: null, series: null, history: [] };
+  var catalogShared = null;
+  var catalogSharedWaiters = null;
+  var catalogPersonal = { profileId: '', ready: false, history: [], picks: [], affinity: [], treasures: [] };
+  var catalogPersonalWaiters = null;
+  var personalGen = 0;
+  var cameraMoving = false;
+  var cameraMoveGen = 0;
+  var cameraSettleTimer = null;
+  var pendingPeekNode = null;
+  var browseTrackY = 0;
+  var BROWSE_CAMERA_MS = 320;
+  var RAIL_STRIP_MS = 240;
   var heroItem = null;
   var playerHud = null;
 
@@ -933,10 +1029,12 @@
         syncGateRail(gateRailInstant);
         syncGateSide();
         gateRailInstant = false;
-      } else if (!syncBrowseCamera(browseCameraInstant)) {
+      } else if (syncBrowseCamera(browseCameraInstant)) {
+      } else if (syncSeriesCamera(browseCameraInstant)) {
+      } else {
         try { nodes[idx].scrollIntoView(false); } catch (err2) {}
       }
-      requestPeek(nodes[idx], browseCameraInstant);
+      requestPeek(nodes[idx], browseCameraInstant || !cameraMoving);
       browseCameraInstant = false;
     }
   }
@@ -992,8 +1090,12 @@
   function resetBrowseScroll() {
     var stage = root.querySelector('.browse-stage');
     var page = root.querySelector('.shell.browse');
+    var seriesStage = root.querySelector('.series-body');
+    var seriesShell = root.querySelector('.shell.series');
     if (stage) stage.scrollTop = 0;
     if (page) page.scrollTop = 0;
+    if (seriesStage) seriesStage.scrollTop = 0;
+    if (seriesShell) seriesShell.scrollTop = 0;
     root.scrollTop = 0;
     try {
       document.body.scrollTop = 0;
@@ -1082,6 +1184,8 @@
     }
     if (instant || prefersReducedMotion()) track.style.webkitTransitionDuration = track.style.transitionDuration = '0ms';
     else track.style.webkitTransitionDuration = track.style.transitionDuration = '';
+    var yChanged = Math.abs(targetY - browseTrackY) > 1;
+    browseTrackY = targetY;
     setTranslate(track, 0, -targetY);
     if (instant) {
       track.offsetHeight;
@@ -1089,13 +1193,221 @@
     }
     scroller = loopHost(focused);
     if (scroller) syncRailStrip(scroller, focused, instant);
-    syncRailWeights(track, rail);
+    if (instant || prefersReducedMotion()) {
+      cameraMoving = false;
+      syncRailWeights(track, rail);
+      prefetchNeighbor(track, rail);
+    } else if (yChanged) {
+      startCameraMove(BROWSE_CAMERA_MS);
+    } else if (scroller && rail) {
+      startCameraMove(RAIL_STRIP_MS);
+    } else {
+      syncRailWeights(track, rail);
+    }
     resetBrowseScroll();
     return true;
   }
 
+  function startCameraMove(ms) {
+    cameraMoving = true;
+    cameraMoveGen += 1;
+    var gen = cameraMoveGen;
+    if (cameraSettleTimer) {
+      clearTimeout(cameraSettleTimer);
+      cameraSettleTimer = null;
+    }
+    cameraSettleTimer = setTimeout(function () {
+      if (gen !== cameraMoveGen) return;
+      onCameraSettle();
+    }, (ms || BROWSE_CAMERA_MS) + 16);
+  }
+
+  function onCameraSettle() {
+    if (cameraSettleTimer) {
+      clearTimeout(cameraSettleTimer);
+      cameraSettleTimer = null;
+    }
+    if (!cameraMoving) {
+      flushPeek();
+      return;
+    }
+    cameraMoving = false;
+    var track = root.querySelector('.browse-track');
+    var focused = nodes[idx];
+    var rail = focused ? closestClass(focused, 'rail') : null;
+    if (track) {
+      syncRailWeights(track, rail);
+      prefetchNeighbor(track, rail);
+    }
+    flushPeek();
+  }
+
+  function flushPeek() {
+    var node = pendingPeekNode || nodes[idx];
+    pendingPeekNode = null;
+    if (node) peekFrom(node);
+  }
+
+  function prefetchNeighbor(track, focusedRail) {
+    var rails;
+    var focusIdx;
+    var i;
+    var dist;
+    var tiles;
+    var tile;
+    var src;
+    var pic;
+    var t;
+    if (!track) return;
+    rails = track.querySelectorAll('.rail');
+    focusIdx = -1;
+    for (i = 0; i < rails.length; i++) {
+      if (focusedRail && rails[i] === focusedRail) focusIdx = i;
+    }
+    if (focusIdx < 0) focusIdx = 0;
+    for (i = 0; i < rails.length; i++) {
+      dist = i > focusIdx ? i - focusIdx : focusIdx - i;
+      if (dist !== 2) continue;
+      tiles = rails[i].querySelectorAll('[data-kind="tile"]');
+      for (t = 0; t < tiles.length; t++) {
+        tile = tiles[t];
+        src = rails[i].querySelector('.hist-tile')
+          ? (tile.getAttribute('data-back') || tile.getAttribute('data-poster'))
+          : tile.getAttribute('data-poster');
+        if (!src) continue;
+        pic = new Image();
+        pic.src = src;
+      }
+    }
+  }
+
+  function refreshFocusNodes(prefer) {
+    var found = root.querySelectorAll('[data-tv-focus]');
+    var i, fid, pick;
+    nodes = [];
+    for (i = 0; i < found.length; i++) nodes.push(found[i]);
+    fid = prefer || currentFid();
+    pick = idx;
+    if (fid) {
+      for (i = 0; i < nodes.length; i++) {
+        if (nodes[i].getAttribute('data-fid') === fid) {
+          pick = i;
+          break;
+        }
+      }
+    }
+    if (pick < 0 || pick >= nodes.length) pick = 0;
+    idx = pick;
+  }
+
+  function syncSeriesCamera(instant) {
+    var page = root.querySelector('.shell.series');
+    var stage;
+    var track;
+    var focused;
+    var fid;
+    var num;
+    var rail;
+    var scroller;
+    var viewH;
+    var targetY;
+    var maxY;
+    var continueNode;
+    var epScroller;
+    if (!page || !seriesPage) return false;
+    stage = page.querySelector('.series-body');
+    track = page.querySelector('.series-track');
+    focused = nodes[idx];
+    if (!stage || !track || !focused) return true;
+    fid = focused.getAttribute('data-fid') || '';
+    if (fid.indexOf('season-') === 0) {
+      num = Number(fid.slice(7));
+      if (num && num !== seriesPage.selectedSeason) {
+        seriesPage.setSeason(num, true);
+        refreshFocusNodes(fid);
+        focused = nodes[idx] || focused;
+      }
+    } else if (fid.indexOf('ep-') === 0 && seriesPage.rememberEpisode) {
+      seriesPage.rememberEpisode(fid);
+    }
+    resetBrowseScroll();
+    viewH = stage.clientHeight || window.innerHeight || 1080;
+    rail = page.querySelector('.season-rail');
+    if (closestClass(focused, 'ep-rail')) {
+      if (!hasClass(page, 'ep-cam')) page.className += ' ep-cam';
+    } else if (hasClass(page, 'ep-cam')) {
+      page.className = (' ' + page.className + ' ').replace(' ep-cam ', ' ').replace(/^\s+|\s+$/g, '');
+    }
+    if (hasClass(focused, 'navbtn') || hasClass(focused, 'who') || hasClass(focused, 'action')) {
+      targetY = 0;
+    } else if (closestClass(focused, 'ep-rail') && rail) {
+      targetY = rail.offsetTop;
+    } else {
+      targetY = 0;
+    }
+    maxY = Math.max(0, track.offsetHeight - viewH);
+    if (targetY < 0) targetY = 0;
+    if (targetY > maxY) targetY = maxY;
+    if (instant || prefersReducedMotion()) track.style.webkitTransitionDuration = track.style.transitionDuration = '0ms';
+    else track.style.webkitTransitionDuration = track.style.transitionDuration = '';
+    setTranslate(track, 0, -targetY);
+    if (instant) {
+      track.offsetHeight;
+      track.style.webkitTransitionDuration = track.style.transitionDuration = '';
+    }
+    scroller = loopHost(focused);
+    if (scroller) syncRailStrip(scroller, focused, instant);
+    epScroller = document.getElementById('ep-scroller');
+    if (epScroller && fid.indexOf('season-') === 0 && seriesPage.continueFid) {
+      continueNode = root.querySelector('[data-fid="' + seriesPage.continueFid() + '"]');
+      if (continueNode) syncRailStrip(epScroller, continueNode, true);
+    }
+    resetBrowseScroll();
+    return true;
+  }
+
+  function focusFid(fid) {
+    var i;
+    if (!fid) return false;
+    for (i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute('data-fid') === fid) {
+        idx = i;
+        remember();
+        paint();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function moveSeries(dir) {
+    var fid = currentFid();
+    if (!seriesPage || !fid) return false;
+    if (fid.indexOf('ep-') === 0) {
+      if (dir === 'up') return focusFid('season-' + seriesPage.selectedSeason);
+      if (dir === 'down') return true;
+      return false;
+    }
+    if (fid.indexOf('season-') === 0) {
+      if (dir === 'down') return focusFid(seriesPage.continueFid ? seriesPage.continueFid() : '');
+      if (dir === 'up') return focusFid('detail-play');
+      return false;
+    }
+    if (fid === 'detail-play' || fid === 'detail-back') {
+      if (dir === 'down') return focusFid('season-' + seriesPage.selectedSeason);
+      if (dir === 'up') return focusFid('nav-series');
+      return false;
+    }
+    if (hasClass(nodes[idx], 'navbtn') || hasClass(nodes[idx], 'who')) {
+      if (dir === 'down') return focusFid('detail-play');
+      return false;
+    }
+    return false;
+  }
+
   function move(dir) {
     if (!nodes.length) return;
+    if (moveSeries(dir)) return;
     var curNode = nodes[idx];
     var cur = curNode.getBoundingClientRect();
     var host = (dir === 'left' || dir === 'right') ? loopHost(curNode) : null;
@@ -1252,6 +1564,7 @@
     householdWaiters.push(done);
     if (householdLoading) return;
     householdLoading = true;
+    warmSharedCatalog(function () {});
     getJson('/api/household', function (data) {
       if (data && data.profiles && data.profiles.length) {
         applyHousehold(data);
@@ -1340,11 +1653,18 @@
     wantFid = '';
     storeSet('tv.fid', 'hero-play');
     setHistoryProfile(profile.id);
-    cache.home = null;
-    cache.series = null;
+    invalidatePersonal();
     renderBoot();
+    function afterReady() {
+      warmPersonalCatalog(function () {
+        var bag = composeHome();
+        warmupUrls(firstWindowUrls('home', bag), function () {
+          go('/living/home');
+        });
+      });
+    }
     if (profile.id === 'local') {
-      go('/living/home');
+      afterReady();
       return;
     }
     var done = false;
@@ -1352,7 +1672,7 @@
       if (done) return;
       done = true;
       if (data && data.profiles) applyHousehold(data);
-      go('/living/home');
+      afterReady();
     }
     postJson('/api/household/switch', { profileId: profile.id }, afterSwitch);
     setTimeout(function () { afterSwitch(null); }, 4000);
@@ -1388,28 +1708,16 @@
   }
 
   function requestPeek(node, instant) {
-    var hero;
-    var delay;
     if (peekTimer) {
       clearTimeout(peekTimer);
       peekTimer = null;
     }
     if (!node) return;
-    hero = document.getElementById('hero');
-    delay = 0;
-    if (!instant && node.getAttribute('data-kind') === 'tile') {
-      if (!(hero && hero.contains && hero.contains(node)) && !hasClass(node, 'navbtn') && !hasClass(node, 'who')) {
-        delay = prefersReducedMotion() ? 0 : 340;
-      }
-    }
-    if (!delay) {
-      peekFrom(node);
+    if (!instant && cameraMoving) {
+      pendingPeekNode = node;
       return;
     }
-    peekTimer = setTimeout(function () {
-      peekTimer = null;
-      peekFrom(node);
-    }, delay);
+    peekFrom(node);
   }
 
   function setRailHot(rail, hot) {
@@ -1431,6 +1739,7 @@
     var rails = track.querySelectorAll('.rail');
     var focusIdx = -1;
     var i, dist;
+    if (cameraMoving) return;
     for (i = 0; i < rails.length; i++) {
       if (focusedRail && rails[i] === focusedRail) focusIdx = i;
     }
@@ -1442,6 +1751,10 @@
   }
 
   function peekFrom(node) {
+    if (cameraMoving) {
+      pendingPeekNode = node;
+      return;
+    }
     if (!node || node.getAttribute('data-kind') !== 'tile') return;
     heroItem = {
       id: node.getAttribute('data-id'),
@@ -1554,10 +1867,10 @@
     }
   }
 
-  function decorateTile(tile, item, fallbackType, fid, useBack) {
+  function decorateTile(tile, item, fallbackType, fid, useBack, attach) {
     var type = itemType(item, fallbackType);
     var id = itemId(item);
-    var src = useBack ? img(item, 'w780', 'back') : img(item, 'w500', 'poster');
+    var src;
     tile.setAttribute('data-kind', 'tile');
     tile.setAttribute('data-id', String(id || ''));
     tile.setAttribute('data-type', type);
@@ -1567,7 +1880,10 @@
     tile.setAttribute('data-poster', img(item, 'w500', 'poster'));
     tile.setAttribute('data-back', img(item, 'w1280', 'back'));
     tile.setAttribute('data-fid', fid);
-    if (src) tile.style.backgroundImage = 'url(' + src + ')';
+    if (attach) {
+      src = useBack ? (tile.getAttribute('data-back') || tile.getAttribute('data-poster')) : tile.getAttribute('data-poster');
+      if (src) tile.style.backgroundImage = 'url(' + src + ')';
+    }
     if (item.progress) {
       var bar = el('b');
       var fill = el('i');
@@ -2038,19 +2354,262 @@
     return '/living/home';
   }
 
-  function revealBrowse(kind, data) {
+  function runSteps(count, done) {
+    var left = count;
+    return function () {
+      left -= 1;
+      if (left <= 0) done();
+    };
+  }
+
+  function invalidatePersonal() {
+    personalGen += 1;
+    catalogPersonalWaiters = null;
+    catalogPersonal = { profileId: '', ready: false, history: [], picks: [], affinity: [], treasures: [] };
+    cache.home = null;
+    cache.series = null;
+  }
+
+  function flushWaiters(queue) {
+    var list = queue || [];
+    var i;
+    for (i = 0; i < list.length; i++) list[i]();
+  }
+
+  function warmSharedCatalog(done) {
+    if (!done) done = function () {};
+    if (catalogShared && catalogShared.ready) {
+      done();
+      return;
+    }
+    if (catalogSharedWaiters) {
+      catalogSharedWaiters.push(done);
+      return;
+    }
+    catalogSharedWaiters = [done];
+    var bag = {
+      top: [], movies: [], recent: [], tv: [], tvRecent: [],
+      coming: [], war: [], intrigue: [], period: [], ready: false
+    };
+    var step = runSteps(7, function () {
+      bag.ready = true;
+      catalogShared = bag;
+      var queue = catalogSharedWaiters;
+      catalogSharedWaiters = null;
+      flushWaiters(queue);
+    });
+    getJson('/api/catalog/top-10', function (json) { bag.top = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/popular/movies', function (json) { bag.movies = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/latest/movies', function (json) { bag.recent = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/popular/tv', function (json) { bag.tv = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/latest/tv', function (json) { bag.tvRecent = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/coming-soon', function (json) { bag.coming = listOf(json); step(); }, 8000);
+    getJson('/api/catalog/editorial', function (json) {
+      var rails = json && json.data ? json.data : {};
+      bag.war = listOf({ data: rails.warAndPolitics });
+      bag.intrigue = listOf({ data: rails.politicalIntrigue });
+      bag.period = listOf({ data: rails.periodStories });
+      step();
+    }, 8000);
+  }
+
+  function warmPersonalCatalog(done) {
+    var profile = activeProfile();
+    var pid = profile && profile.id ? profile.id : '';
+    var gen = personalGen;
+    if (!done) done = function () {};
+    if (catalogPersonal.ready && catalogPersonal.profileId === pid) {
+      done();
+      return;
+    }
+    if (catalogPersonalWaiters) {
+      catalogPersonalWaiters.push(done);
+      return;
+    }
+    catalogPersonalWaiters = [done];
+    var bag = { profileId: pid, ready: false, history: [], picks: [], affinity: [], treasures: [] };
+    var step = runSteps(2, function () {
+      if (gen !== personalGen) return;
+      bag.ready = true;
+      catalogPersonal = bag;
+      var queue = catalogPersonalWaiters;
+      catalogPersonalWaiters = null;
+      flushWaiters(queue);
+    });
+    getJson('/api/watch-history', function (json) { bag.history = historyItems(json); step(); }, 12000);
+    getJson('/api/catalog/personal', function (json) {
+      var rails = json && json.data ? json.data : {};
+      bag.picks = listOf({ data: rails.picks });
+      bag.affinity = listOf({ data: rails.affinity });
+      bag.treasures = listOf({ data: rails.treasures });
+      step();
+    }, 12000);
+  }
+
+  function composeHome() {
+    var shared = catalogShared || {};
+    var personal = catalogPersonal || {};
+    return {
+      top: shared.top || [],
+      movies: shared.movies || [],
+      recent: shared.recent || [],
+      tv: shared.tv || [],
+      tvRecent: shared.tvRecent || [],
+      coming: shared.coming || [],
+      war: shared.war || [],
+      intrigue: shared.intrigue || [],
+      period: shared.period || [],
+      history: personal.history || [],
+      picks: personal.picks || [],
+      affinity: personal.affinity || [],
+      treasures: personal.treasures || [],
+      railsReady: true
+    };
+  }
+
+  function composeMovies() {
+    var shared = catalogShared || {};
+    return {
+      top: [], movies: shared.movies || [], recent: shared.recent || [],
+      tv: [], tvRecent: [], history: []
+    };
+  }
+
+  function composeSeries() {
+    var shared = catalogShared || {};
+    var personal = catalogPersonal || {};
+    return {
+      top: [], movies: [], recent: [],
+      tv: shared.tv || [], tvRecent: shared.tvRecent || [],
+      history: tvHistory(personal.history)
+    };
+  }
+
+  function railsOf(kind, data) {
+    var rails = [];
+    function add(title, items, type, id) {
+      if (items && items.length) rails.push({ title: title, items: items, type: type, id: id });
+    }
+    if (kind === 'home') {
+      add('Continua a guardare', data.history, 'movie', 'hist');
+      add('Scelti per te oggi', data.picks, 'movie', 'picks');
+      add('Top 10', data.top, 'movie', 'top');
+      add('Pensiamo ti appassioneranno', data.affinity, 'movie', 'aff');
+      add('Film popolari', data.movies, 'movie', 'mov');
+      add('Serie recenti', data.tvRecent, 'tv', 'trec');
+      add('Tesori per te', data.treasures, 'movie', 'tre');
+      add('Guerra e politica', data.war, 'movie', 'war');
+      add('Intrighi politici', data.intrigue, 'tv', 'int');
+      add("Storie di un'epoca passata", data.period, 'movie', 'per');
+      add('In arrivo', data.coming, 'movie', 'soon');
+      add('Aggiunti di recente', data.recent, 'movie', 'mrec');
+      add('Serie popolari', data.tv, 'tv', 'tv');
+    } else if (kind === 'movies') {
+      add('Popolari', data.movies, 'movie', 'mov');
+      add('Aggiunti di recente', data.recent, 'movie', 'mrec');
+    } else if (kind === 'series') {
+      add('Continua a guardare', data.history, 'tv', 'hist');
+      add('Popolari', data.tv, 'tv', 'tv');
+      add('Serie recenti', data.tvRecent, 'tv', 'trec');
+    }
+    return rails;
+  }
+
+  function addRailUrls(rail, urls) {
+    var i;
+    var item;
+    var src;
+    var limit;
+    if (!rail || !rail.items) return;
+    limit = rail.items.length > 20 ? 20 : rail.items.length;
+    for (i = 0; i < limit; i++) {
+      item = rail.items[i];
+      src = rail.id === 'hist'
+        ? (img(item, 'w780', 'back') || img(item, 'w500', 'poster'))
+        : img(item, 'w500', 'poster');
+      if (src) urls.push(src);
+    }
+  }
+
+  function firstWindowUrls(kind, data) {
+    var rails = railsOf(kind, data);
+    var urls = [];
     var first = (data.history && data.history[0]) || data.top[0] || data.movies[0] || data.tv[0];
     var hero = asHero(first, kind === 'series' ? 'tv' : 'movie');
-    var url = hero && (hero.backdrop || hero.poster);
-    whenImageReady(url, function () {
+    if (hero && (hero.backdrop || hero.poster)) urls.push(hero.backdrop || hero.poster);
+    addRailUrls(rails[0], urls);
+    addRailUrls(rails[1], urls);
+    return urls;
+  }
+
+  function warmupUrls(urls, done) {
+    var list = [];
+    var seen = {};
+    var i;
+    var left;
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      done();
+    }
+    for (i = 0; i < (urls || []).length; i++) {
+      if (!urls[i] || seen[urls[i]]) continue;
+      seen[urls[i]] = 1;
+      list.push(urls[i]);
+    }
+    if (!list.length) {
+      finish();
+      return;
+    }
+    left = list.length;
+    function step() {
+      left -= 1;
+      if (left <= 0) finish();
+    }
+    for (i = 0; i < list.length; i++) {
+      (function (src) {
+        var pic = new Image();
+        pic.onload = step;
+        pic.onerror = step;
+        pic.src = src;
+      })(list[i]);
+    }
+    setTimeout(finish, 8000);
+  }
+
+  function ensureSceneData(kind, done) {
+    warmSharedCatalog(function () {
+      if (kind === 'movies') {
+        done(composeMovies());
+        return;
+      }
+      warmPersonalCatalog(function () {
+        done(kind === 'series' ? composeSeries() : composeHome());
+      });
+    });
+  }
+
+  function revealBrowse(kind, data) {
+    warmupUrls(firstWindowUrls(kind, data), function () {
       if (pathNow().indexOf(browsePathOf(kind)) !== 0) return;
       paintBrowse(kind, data);
     });
   }
 
   function paintBrowse(kind, data) {
+    var rails;
+    var i;
+    var rail;
     backHandler = function () { go('/living'); };
     root.innerHTML = '';
+    cameraMoving = false;
+    pendingPeekNode = null;
+    browseTrackY = 0;
+    if (cameraSettleTimer) {
+      clearTimeout(cameraSettleTimer);
+      cameraSettleTimer = null;
+    }
     var page = el('div', 'shell browse');
     page.appendChild(renderNav(kind));
     var stage = el('div', 'browse-stage');
@@ -2061,58 +2620,10 @@
     hero.id = 'hero';
     fillHero(hero, heroItem);
     track.appendChild(hero);
-    var rail;
-    if (kind === 'home') {
-      if (data.history && data.history.length) {
-        rail = renderRail('Continua a guardare', data.history, 'movie', 'hist');
-        if (rail) track.appendChild(rail);
-      }
-      rail = renderRail('Scelti per te oggi', data.picks, 'movie', 'picks');
+    rails = railsOf(kind, data);
+    for (i = 0; i < rails.length; i++) {
+      rail = renderRail(rails[i].title, rails[i].items, rails[i].type, rails[i].id);
       if (rail) track.appendChild(rail);
-      rail = renderRail('Top 10', data.top, 'movie', 'top');
-      if (rail) track.appendChild(rail);
-      rail = renderRail('Pensiamo ti appassioneranno', data.affinity, 'movie', 'aff');
-      if (rail) track.appendChild(rail);
-      rail = renderRail('Film popolari', data.movies, 'movie', 'mov');
-      if (rail) track.appendChild(rail);
-      if (data.tvRecent && data.tvRecent.length) {
-        rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
-        if (rail) track.appendChild(rail);
-      }
-      rail = renderRail('Tesori per te', data.treasures, 'movie', 'tre');
-      if (rail) track.appendChild(rail);
-      rail = renderRail('Guerra e politica', data.war, 'movie', 'war');
-      if (rail) track.appendChild(rail);
-      rail = renderRail('Intrighi politici', data.intrigue, 'tv', 'int');
-      if (rail) track.appendChild(rail);
-      rail = renderRail("Storie di un'epoca passata", data.period, 'movie', 'per');
-      if (rail) track.appendChild(rail);
-      rail = renderRail('In arrivo', data.coming, 'movie', 'soon');
-      if (rail) track.appendChild(rail);
-      if (data.recent && data.recent.length) {
-        rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
-        if (rail) track.appendChild(rail);
-      }
-      rail = renderRail('Serie popolari', data.tv, 'tv', 'tv');
-      if (rail) track.appendChild(rail);
-    } else if (kind === 'movies') {
-      rail = renderRail('Popolari', data.movies, 'movie', 'mov');
-      if (rail) track.appendChild(rail);
-      if (data.recent && data.recent.length) {
-        rail = renderRail('Aggiunti di recente', data.recent, 'movie', 'mrec');
-        if (rail) track.appendChild(rail);
-      }
-    } else if (kind === 'series') {
-      if (data.history && data.history.length) {
-        rail = renderRail('Continua a guardare', data.history, 'tv', 'hist');
-        if (rail) track.appendChild(rail);
-      }
-      rail = renderRail('Popolari', data.tv, 'tv', 'tv');
-      if (rail) track.appendChild(rail);
-      if (data.tvRecent && data.tvRecent.length) {
-        rail = renderRail('Serie recenti', data.tvRecent, 'tv', 'trec');
-        if (rail) track.appendChild(rail);
-      }
     }
     stage.appendChild(track);
     page.appendChild(stage);
@@ -2120,37 +2631,6 @@
     browseCameraInstant = true;
     collect(wantFid || storeGet('tv.fid') || 'hero-play');
     signalReady();
-  }
-
-  function loadHomeRails(bag) {
-    if (!bag || bag.railsReady || bag.railsLoading) return;
-    bag.railsLoading = true;
-    var left = 3;
-    function step() {
-      left -= 1;
-      if (left > 0) return;
-      bag.railsReady = true;
-      bag.railsLoading = false;
-      if (pathNow().indexOf('/living/home') === 0) paintBrowse('home', bag);
-    }
-    getJson('/api/catalog/personal', function (json) {
-      var rails = json && json.data ? json.data : {};
-      bag.picks = listOf({ data: rails.picks });
-      bag.affinity = listOf({ data: rails.affinity });
-      bag.treasures = listOf({ data: rails.treasures });
-      step();
-    }, 25000);
-    getJson('/api/catalog/editorial', function (json) {
-      var rails = json && json.data ? json.data : {};
-      bag.war = listOf({ data: rails.warAndPolitics });
-      bag.intrigue = listOf({ data: rails.politicalIntrigue });
-      bag.period = listOf({ data: rails.periodStories });
-      step();
-    }, 25000);
-    getJson('/api/catalog/coming-soon', function (json) {
-      bag.coming = listOf(json);
-      step();
-    }, 20000);
   }
 
   function historyItems(json) {
@@ -2166,64 +2646,26 @@
     return out;
   }
 
+  function sceneReady(kind) {
+    if (!catalogShared || !catalogShared.ready) return false;
+    if (kind === 'movies') return true;
+    return !!(catalogPersonal && catalogPersonal.ready);
+  }
+
   function renderBrowse(kind) {
-    if (cache[kind] && kind !== 'home' && kind !== 'series') {
-      paintBrowse(kind, cache[kind]);
-      return;
-    }
-    if (cache[kind] && (kind === 'home' || kind === 'series')) {
-      paintBrowse(kind, cache[kind]);
-      if (kind === 'home') loadHomeRails(cache[kind]);
-      getJson('/api/watch-history', function (json) {
-        var hist = historyItems(json);
-        if (kind === 'series') hist = tvHistory(hist);
-        cache[kind].history = hist;
-        if (pathNow().indexOf('/living/' + (kind === 'home' ? 'home' : 'series')) === 0) paintBrowse(kind, cache[kind]);
-      });
+    var data;
+    if (sceneReady(kind)) {
+      data = kind === 'movies' ? composeMovies() : (kind === 'series' ? composeSeries() : composeHome());
+      cache[kind] = data;
+      paintBrowse(kind, data);
       return;
     }
     renderBoot();
-
-    if (kind === 'movies') {
-      getJson('/api/catalog/popular/movies', function (a) {
-        getJson('/api/catalog/latest/movies', function (b) {
-          cache.movies = { top: [], movies: listOf(a), recent: listOf(b), tv: [], tvRecent: [], history: [] };
-          revealBrowse('movies', cache.movies);
-        });
-      });
-      return;
-    }
-    if (kind === 'series') {
-      getJson('/api/catalog/popular/tv', function (a) {
-        getJson('/api/catalog/latest/tv', function (b) {
-          getJson('/api/watch-history', function (h) {
-            cache.series = { top: [], movies: [], recent: [], tv: listOf(a), tvRecent: listOf(b), history: tvHistory(historyItems(h)) };
-            revealBrowse('series', cache.series);
-          });
-        });
-      });
-      return;
-    }
-
-    var bag = {
-      top: [], movies: [], recent: [], tv: [], tvRecent: [], history: [],
-      picks: [], affinity: [], treasures: [], coming: [], war: [], intrigue: [], period: [],
-      railsReady: false
-    };
-    var left = 6;
-    function step() {
-      left -= 1;
-      if (left > 0) return;
-      cache.home = bag;
-      revealBrowse('home', bag);
-      loadHomeRails(bag);
-    }
-    getJson('/api/watch-history', function (json) { bag.history = historyItems(json); step(); });
-    getJson('/api/catalog/top-10', function (json) { bag.top = listOf(json); step(); });
-    getJson('/api/catalog/popular/movies', function (json) { bag.movies = listOf(json); step(); });
-    getJson('/api/catalog/latest/movies', function (json) { bag.recent = listOf(json); step(); });
-    getJson('/api/catalog/popular/tv', function (json) { bag.tv = listOf(json); step(); });
-    getJson('/api/catalog/latest/tv', function (json) { bag.tvRecent = listOf(json); step(); });
+    ensureSceneData(kind, function (bag) {
+      cache[kind] = bag;
+      if (pathNow().indexOf(browsePathOf(kind)) !== 0) return;
+      revealBrowse(kind, bag);
+    });
   }
 
   function renderPosterGrid(host, title, items, fallbackType, railId) {
@@ -2239,7 +2681,7 @@
       tile = focusBtn('tile', '', fid, (function (it, kind) {
         return function () { openDetail(itemType(it, kind), itemId(it)); };
       })(item, fallbackType));
-      decorateTile(tile, item, fallbackType, fid);
+      decorateTile(tile, item, fallbackType, fid, false, true);
       var card = el('div', 'poster-card');
       card.appendChild(tile);
       card.appendChild(el('span', 'tile-title', itemTitle(item)));
@@ -2457,8 +2899,11 @@
     var first = firstEpisode(seasons);
     var selectedSeason;
     var selectedEpisode;
-    var menuOpen = false;
-    var s, season, found = false;
+    var playBtn;
+    var epStrip;
+    var s;
+    var found = false;
+
     if (keepSeason != null) {
       selectedSeason = Number(keepSeason);
       selectedEpisode = (last && Number(last.season) === selectedSeason) ? Number(last.episode) : 1;
@@ -2482,150 +2927,194 @@
       return seasons[0];
     }
 
-    function playSelected() {
+    function continueFid() {
+      if (last && Number(last.season) === Number(selectedSeason)) {
+        return 'ep-' + selectedSeason + '-' + last.episode;
+      }
+      var season = currentSeason();
+      var ep0 = season && season.episodes && season.episodes[0];
+      if (ep0) return 'ep-' + selectedSeason + '-' + ep0.episode_number;
+      return 'season-' + selectedSeason;
+    }
+
+    function playLabelText() {
+      if (last && Number(last.season) === Number(selectedSeason) && Number(last.episode) === Number(selectedEpisode)) {
+        return 'Continua S' + selectedSeason + ' E' + selectedEpisode;
+      }
+      return 'Guarda S' + selectedSeason + ' E' + selectedEpisode;
+    }
+
+    function refreshPlayLabel() {
+      if (!playBtn) return;
+      playBtn.innerHTML = '';
+      playBtn.appendChild(document.createTextNode(playLabelText()));
+    }
+
+    function markSeasonChips() {
+      var chips = root.querySelectorAll('.season-chip');
+      var i, fid, on;
+      for (i = 0; i < chips.length; i++) {
+        fid = chips[i].getAttribute('data-fid') || '';
+        on = fid === ('season-' + selectedSeason);
+        chips[i].className = 'season-chip' + (on ? ' on' : '') + (hasClass(chips[i], 'is-tv-focused') ? ' is-tv-focused' : '');
+      }
+    }
+
+    function playEpisode(en) {
+      selectedEpisode = Number(en);
       var lw = findLastWatched(history, id);
       var start = (lw && lw.season === selectedSeason && lw.episode === selectedEpisode) ? lw.currentTime : 0;
       rememberPlay(item, 'tv', id);
       openPlay('tv', id, selectedSeason, selectedEpisode, start);
     }
 
-    function closeMenu() {
-      menuOpen = false;
-      var tog = root.querySelector('[data-fid="season-toggle"]');
-      if (tog) {
-        tog.innerHTML = '';
-        tog.appendChild(document.createTextNode(toggleLabel(false)));
+    function renderEpisodes() {
+      var season = currentSeason();
+      var episodes = (season && season.episodes) || [];
+      var e, ep, card, still, body, kicker, title, plot, progress, watched, stillUrl, bar, fill;
+      if (!epStrip) return;
+      epStrip.innerHTML = '';
+      for (e = 0; e < episodes.length; e++) {
+        ep = episodes[e];
+        watched = last && Number(last.season) === Number(selectedSeason) && Number(last.episode) === Number(ep.episode_number);
+        progress = episodeProgressOf(history, id, selectedSeason, ep.episode_number);
+        card = focusBtn('ep-card' + (watched ? ' episode-watched' : ''), '', 'ep-' + selectedSeason + '-' + ep.episode_number, (function (en) {
+          return function () { playEpisode(en); };
+        })(ep.episode_number));
+        still = el('div', 'ep-card-still');
+        stillUrl = ep.still_path ? ('https://image.tmdb.org/t/p/w780' + ep.still_path) : img(item, 'w780', 'back');
+        if (stillUrl) still.style.backgroundImage = 'url(' + stillUrl + ')';
+        if (progress > 0) {
+          bar = el('b');
+          fill = el('i');
+          fill.style.width = Math.min(100, progress) + '%';
+          bar.appendChild(fill);
+          still.appendChild(bar);
+        }
+        body = el('div', 'ep-card-body');
+        kicker = el('p', 'ep-card-kicker', watched ? ('Episodio ' + ep.episode_number + ' · Ultima vista') : ('Episodio ' + ep.episode_number));
+        title = el('div', 'ep-card-title-row');
+        title.appendChild(el('div', 'ep-card-title', ep.name || ('Puntata ' + ep.episode_number)));
+        if (ep.runtime) title.appendChild(el('span', 'ep-card-runtime', ep.runtime + ' min'));
+        plot = el('p', 'ep-card-plot', (ep.overview && String(ep.overview).replace(/^\s+|\s+$/g, '')) || 'Nessuna trama disponibile per questo episodio.');
+        body.appendChild(kicker);
+        body.appendChild(title);
+        body.appendChild(plot);
+        card.appendChild(still);
+        card.appendChild(body);
+        epStrip.appendChild(card);
       }
-      var menu = document.getElementById('season-menu');
-      if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
-      collect('season-toggle');
+    }
+
+    function setSeason(num, fromFocus) {
+      num = Number(num);
+      if (!num || num === selectedSeason) {
+        if (seriesPage) seriesPage.selectedSeason = selectedSeason;
+        return;
+      }
+      selectedSeason = num;
+      if (seriesPage) seriesPage.selectedSeason = selectedSeason;
+      if (last && Number(last.season) === selectedSeason) selectedEpisode = Number(last.episode);
+      else {
+        var season = currentSeason();
+        selectedEpisode = Number((season && season.episodes[0] && season.episodes[0].episode_number) || 1);
+      }
+      markSeasonChips();
+      renderEpisodes();
+      refreshPlayLabel();
+      var continueNode = root.querySelector('[data-fid="' + continueFid() + '"]');
+      var epScrollerNow = document.getElementById('ep-scroller');
+      if (epScrollerNow && continueNode) syncRailStrip(epScrollerNow, continueNode, true);
+      if (!fromFocus) collect(continueFid());
+    }
+
+    function rememberEpisode(fid) {
+      var parts = (fid || '').split('-');
+      if (parts.length < 3) return;
+      selectedEpisode = Number(parts[2]);
+      refreshPlayLabel();
+    }
+
+    function playSelected() {
+      playEpisode(selectedEpisode);
     }
 
     backHandler = function () {
-      if (menuOpen) { closeMenu(); return; }
+      seriesPage = null;
       go('/living/home');
     };
 
     root.innerHTML = '';
-    var page = el('div', 'shell');
+    var page = el('div', 'shell series');
     page.appendChild(renderNav('series'));
-    var stage = el('div', 'detail detail-series');
-    if (img(item, 'original', 'back')) stage.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
-    var copy = el('div', 'detail-copy');
-    var head = el('div', 'detail-head');
-    var poster = el('div', 'detail-poster');
-    if (img(item, 'w342', 'poster')) poster.style.backgroundImage = 'url(' + img(item, 'w342', 'poster') + ')';
-    head.appendChild(poster);
-    var info = el('div', '');
-    info.appendChild(el('h1', '', itemTitle(item)));
+    var bodyWrap = el('div', 'series-body');
+    var track = el('div', 'series-track');
+    var hero = el('div', 'series-hero');
+    if (img(item, 'original', 'back')) hero.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
+    var copy = el('div', 'series-hero-copy');
+    copy.appendChild(el('h1', '', itemTitle(item)));
     var meta = el('div', 'detail-meta');
     if (item.vote_average) meta.appendChild(el('span', '', (Math.round(item.vote_average * 10) / 10) + ''));
     if (item.first_air_date) meta.appendChild(el('span', '', String(item.first_air_date).slice(0, 4)));
     meta.appendChild(el('span', '', seasons.length + (seasons.length === 1 ? ' stagione' : ' stagioni')));
-    info.appendChild(meta);
-    info.appendChild(el('p', 'overview', item.overview || ''));
-    var playLabel = (last && last.season === selectedSeason && last.episode === selectedEpisode)
-      ? ('Continua S' + selectedSeason + 'E' + selectedEpisode)
-      : ('Guarda S' + selectedSeason + 'E' + selectedEpisode);
-    info.appendChild(focusBtn('action main', playLabel, 'detail-play', playSelected, true));
-    info.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }));
-    head.appendChild(info);
-    copy.appendChild(head);
-    stage.appendChild(copy);
-    page.appendChild(stage);
-
-    var section = el('div', 'ep-section');
-    var epHead = el('div', 'ep-head');
-    epHead.appendChild(el('h2', '', 'Episodi'));
-    var wrap = el('div', 'season-wrap');
-    wrap.id = 'season-wrap';
-    function toggleLabel(open) { return 'Stagione ' + selectedSeason + (open ? '  ▴' : '  ▾'); }
-    wrap.appendChild(focusBtn('season-toggle', toggleLabel(false), 'season-toggle', function () {
-      if (menuOpen) { closeMenu(); return; }
-      menuOpen = true;
-      var tog = root.querySelector('[data-fid="season-toggle"]');
-      if (tog) {
-        tog.innerHTML = '';
-        tog.appendChild(document.createTextNode(toggleLabel(true)));
-      }
-      var menu = el('div', 'season-menu');
-      menu.id = 'season-menu';
-      var i, opt, sn, count;
-      for (i = 0; i < seasons.length; i++) {
-        season = seasons[i];
-        sn = Number(season.season_number);
-        count = (season.episodes && season.episodes.length) || season.episode_count || 0;
-        opt = focusBtn('season-opt' + (sn === Number(selectedSeason) ? ' on' : ''), '', 'season-' + sn, (function (num) {
-          return function () {
-            wantFid = 'season-toggle';
-            paintSeriesDetail(item, id, seasons, history, num);
-          };
-        })(sn));
-        opt.appendChild(document.createTextNode('Stagione ' + sn));
-        opt.appendChild(el('span', '', count + ' episodi'));
-        menu.appendChild(opt);
-      }
-      wrap.appendChild(menu);
-      collect('season-' + selectedSeason);
+    copy.appendChild(meta);
+    copy.appendChild(el('p', 'overview', item.overview || ''));
+    playBtn = focusBtn('action main', playLabelText(), 'detail-play', playSelected, true);
+    copy.appendChild(playBtn);
+    copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () {
+      seriesPage = null;
+      go('/living/home');
     }));
-    epHead.appendChild(wrap);
-    section.appendChild(epHead);
+    hero.appendChild(copy);
+    track.appendChild(hero);
 
-    var list = el('div', 'ep-list');
-    season = currentSeason();
-    var episodes = (season && season.episodes) || [];
-    var e, ep, row, still, body, num, title, plot, progress, watched, stillUrl, bar, fill, lastTag;
-    var prefer = 'detail-play';
-    for (e = 0; e < episodes.length; e++) {
-      ep = episodes[e];
-      watched = last && Number(last.season) === Number(selectedSeason) && Number(last.episode) === Number(ep.episode_number);
-      progress = episodeProgressOf(history, id, selectedSeason, ep.episode_number);
-      row = focusBtn('ep-row' + (watched ? ' episode-watched' : ''), '', 'ep-' + selectedSeason + '-' + ep.episode_number, (function (en) {
+    var seasonRail = el('div', 'season-rail');
+    seasonRail.appendChild(el('h2', '', 'Stagioni'));
+    var seasonScroller = el('div', 'season-scroller');
+    seasonScroller.id = 'season-scroller';
+    seasonScroller.setAttribute('data-tv-loop', '');
+    var seasonStrip = el('div', 'rail-strip');
+    var i, chip, sn;
+    for (i = 0; i < seasons.length; i++) {
+      sn = Number(seasons[i].season_number);
+      chip = focusBtn('season-chip' + (sn === Number(selectedSeason) ? ' on' : ''), 'Stagione ' + sn, 'season-' + sn, (function (num) {
         return function () {
-          selectedEpisode = en;
-          var lw = findLastWatched(history, id);
-          var start = (lw && lw.season === selectedSeason && lw.episode === en) ? lw.currentTime : 0;
-          rememberPlay(item, 'tv', id);
-          openPlay('tv', id, selectedSeason, en, start);
+          setSeason(num, false);
+          collect(continueFid());
         };
-      })(ep.episode_number));
-      num = el('div', 'ep-num', String(ep.episode_number || e + 1));
-      still = el('div', 'ep-still');
-      stillUrl = ep.still_path ? ('https://image.tmdb.org/t/p/w300' + ep.still_path) : '';
-      if (stillUrl) still.style.backgroundImage = 'url(' + stillUrl + ')';
-      if (progress > 0) {
-        bar = el('b');
-        fill = el('i');
-        fill.style.width = Math.min(100, progress) + '%';
-        bar.appendChild(fill);
-        still.appendChild(bar);
-      }
-      body = el('div', 'ep-body');
-      title = el('div', 'ep-title', ep.name || ('Puntata ' + ep.episode_number));
-      if (ep.runtime) title.appendChild(el('span', 'ep-runtime', ep.runtime + ' min'));
-      body.appendChild(title);
-      if (watched) {
-        lastTag = el('p', 'ep-last', 'Ultima vista');
-        body.appendChild(lastTag);
-      }
-      plot = el('p', 'ep-plot', (ep.overview && String(ep.overview).replace(/^\s+|\s+$/g, '')) || 'Nessuna trama disponibile per questo episodio.');
-      body.appendChild(plot);
-      row.appendChild(num);
-      row.appendChild(still);
-      row.appendChild(body);
-      list.appendChild(row);
-      if (watched) prefer = 'ep-' + selectedSeason + '-' + ep.episode_number;
+      })(sn));
+      seasonStrip.appendChild(chip);
     }
-    section.appendChild(list);
-    page.appendChild(section);
+    seasonScroller.appendChild(seasonStrip);
+    seasonRail.appendChild(seasonScroller);
+    track.appendChild(seasonRail);
+
+    var epRail = el('div', 'ep-rail');
+    epRail.appendChild(el('h2', '', 'Episodi'));
+    var epScroller = el('div', 'ep-scroller');
+    epScroller.id = 'ep-scroller';
+    epScroller.setAttribute('data-tv-loop', '');
+    epStrip = el('div', 'rail-strip');
+    epScroller.appendChild(epStrip);
+    epRail.appendChild(epScroller);
+    track.appendChild(epRail);
+    bodyWrap.appendChild(track);
+    page.appendChild(bodyWrap);
     root.appendChild(page);
-    collect(wantFid || prefer);
-    if (prefer.indexOf('ep-') === 0) {
-      var watchedRow = root.querySelector('[data-fid="' + prefer + '"]');
-      if (watchedRow && watchedRow.scrollIntoView) {
-        try { watchedRow.scrollIntoView(true); } catch (err) {}
-      }
-    }
+
+    seriesPage = {
+      selectedSeason: selectedSeason,
+      setSeason: function (num, fromFocus) {
+        setSeason(num, fromFocus);
+        seriesPage.selectedSeason = selectedSeason;
+      },
+      rememberEpisode: rememberEpisode,
+      continueFid: continueFid
+    };
+
+    renderEpisodes();
+    browseCameraInstant = true;
+    collect(wantFid || continueFid());
   }
 
   function loadScript(src, done) {
@@ -3064,15 +3553,22 @@
     });
   }
 
+  function bootThen(done) {
+    renderBoot();
+    whenHousehold(function () {
+      warmSharedCatalog(function () { done(); });
+    });
+  }
+
   function route() {
+    seriesPage = null;
     if (playerHud && playerHud.dispose) playerHud.dispose();
     var parts = (window.location.pathname || '').split('/');
     var section = parts[2] || '';
     var third = parts[3] || '';
     var fourth = parts[4] || '';
-    if (section !== 'player' && !householdReady) {
-      renderBoot();
-      whenHousehold(function () { route(); });
+    if (section !== 'player' && (!householdReady || !catalogShared || !catalogShared.ready)) {
+      bootThen(function () { route(); });
       return;
     }
     if (!section) {
@@ -3095,6 +3591,7 @@
   if (window.addEventListener) {
     window.addEventListener('popstate', function () { route(); }, false);
   }
+  warmSharedCatalog(function () {});
   route();
 })();
   </script>
