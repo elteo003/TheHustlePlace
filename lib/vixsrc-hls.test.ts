@@ -137,13 +137,34 @@ describe('rewriteM3u8', () => {
         expect(rewritten).not.toContain('spbgc.com')
     })
 
-    it('riscrive anche gli edge con TLD ruotato', () => {
+    it('proxano ancora playlist e chiavi, non i segmenti', () => {
+        const source = 'https://vixsrc.to/playlist/1'
+        const body = [
+            '#EXTM3U',
+            '#EXT-X-KEY:METHOD=AES-128,URI="https://vixsrc.to/storage/enc.key"',
+            '#EXT-X-STREAM-INF:BANDWIDTH=1000',
+            'https://vixsrc.to/playlist/1?type=video',
+            'https://sc-u15-01.blueorca88.xyz/hls/a.m4s',
+        ].join('\n')
+        const rewritten = rewriteM3u8(body, source, '/api/player/hls?u=')
+        expect(rewritten).toContain(
+            `URI="/api/player/hls?u=${encodeURIComponent('https://vixsrc.to/storage/enc.key')}"`
+        )
+        expect(rewritten).toContain(
+            `/api/player/hls?u=${encodeURIComponent('https://vixsrc.to/playlist/1?type=video')}`
+        )
+        expect(rewritten).toContain('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')
+        expect(rewritten).not.toContain(
+            `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')}`
+        )
+    })
+
+    it('lascia i segmenti degli edge ruotati sul CDN, senza passarli dal proxy', () => {
         const source = 'https://vixsrc.to/playlist/1'
         const body = ['#EXTM3U', '#EXTINF:4,', 'https://sc-u15-01.blueorca88.xyz/hls/a.m4s'].join('\n')
         const rewritten = rewriteM3u8(body, source, '/api/player/hls?u=')
-        expect(rewritten).toContain(
-            `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')}`
-        )
+        expect(rewritten).toContain('https://sc-u15-01.blueorca88.xyz/hls/a.m4s')
+        expect(rewritten).not.toContain('/api/player/hls')
     })
 })
 
@@ -214,7 +235,7 @@ describe('hlsStreamLooksPlayable', () => {
 })
 
 describe('rewriteEdgeCdnThroughProxy', () => {
-    it('manda gli edge ruotati al proxy, lascia vix-content.net in diretto', () => {
+    it('non proxano i segmenti: restano sul CDN di origine', () => {
         const body = [
             'https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc',
             'https://sc-u15-01.blueorca88.xyz/hls/0000.m4s?token=abc',
@@ -222,16 +243,11 @@ describe('rewriteEdgeCdnThroughProxy', () => {
         ].join('\n')
 
         const rewritten = rewriteEdgeCdnThroughProxy(body, 'https://the-hustle-place.vercel.app')
-        expect(shouldProxyVixsrcCdn('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html')).toBe(true)
-        expect(shouldProxyVixsrcCdn('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s')).toBe(true)
+        expect(shouldProxyVixsrcCdn('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html')).toBe(false)
+        expect(shouldProxyVixsrcCdn('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s')).toBe(false)
         expect(shouldProxyVixsrcCdn('https://sc-b2-28.vix-content.net/hls/0000.ts')).toBe(false)
-        expect(rewritten).toContain(
-            `/api/player/hls?u=${encodeURIComponent('https://sc-u2-01.swiftsalmon96.fun/hls/0000.html?token=abc')}`
-        )
-        expect(rewritten).toContain(
-            `/api/player/hls?u=${encodeURIComponent('https://sc-u15-01.blueorca88.xyz/hls/0000.m4s?token=abc')}`
-        )
-        expect(rewritten).toContain('https://sc-b2-28.vix-content.net/hls/0000.ts?token=abc')
+        expect(rewritten).toBe(body)
+        expect(rewritten).not.toContain('/api/player/hls')
     })
 })
 

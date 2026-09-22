@@ -25,25 +25,13 @@ export function isAllowedHlsUrl(raw: string): boolean {
     }
 }
 
-export function shouldProxyVixsrcCdn(raw: string): boolean {
-    try {
-        const url = new URL(raw)
-        if (url.protocol !== 'https:') return false
-        const host = url.hostname
-        if (host === 'vix-content.net' || host.endsWith('.vix-content.net')) return false
-        return isVixsrcEdgeCdnHost(host)
-    } catch {
-        return false
-    }
+/** I segmenti restano sul CDN. Vercel proxano solo playlist e chiavi. */
+export function shouldProxyVixsrcCdn(_raw: string): boolean {
+    return false
 }
 
-export function rewriteEdgeCdnThroughProxy(body: string, origin: string): string {
-    if (!origin) return body
-    const base = origin.replace(/\/$/, '')
-    return body.replace(/https:\/\/[^\s"']+/g, (match) => {
-        if (!shouldProxyVixsrcCdn(match)) return match
-        return `${base}/api/player/hls?u=${encodeURIComponent(match)}`
-    })
+export function rewriteEdgeCdnThroughProxy(body: string, _origin: string): string {
+    return body
 }
 
 /** True se c'è almeno una media playlist con EXTINF e URL di segmenti. */
@@ -185,6 +173,13 @@ export function resolvePlaylistRef(ref: string, sourceUrl: string): string | nul
     }
 }
 
+function rewriteHlsRef(absolute: string, proxyPrefix: string): string {
+    const kind = classifyHlsRef(absolute)
+    if (kind === 'drop') return ''
+    if (kind === 'cdn') return absolute
+    return `${proxyPrefix}${encodeURIComponent(absolute)}`
+}
+
 export function rewriteM3u8(body: string, sourceUrl: string, proxyPrefix: string): string {
     return body
         .split(/\r?\n/)
@@ -193,12 +188,16 @@ export function rewriteM3u8(body: string, sourceUrl: string, proxyPrefix: string
             if (!trimmed) return line
             if (trimmed.startsWith('#')) {
                 return line.replace(/URI="([^"]+)"/gi, (_match, uri: string) => {
-                    const absolute = resolvePlaylistRef(uri, sourceUrl)
-                    return absolute ? `URI="${proxyPrefix}${encodeURIComponent(absolute)}"` : 'URI=""'
+                    try {
+                        const rewritten = rewriteHlsRef(new URL(uri, sourceUrl).toString(), proxyPrefix)
+                        return rewritten ? `URI="${rewritten}"` : 'URI=""'
+                    } catch {
+                        return 'URI=""'
+                    }
                 })
             }
             const absolute = resolvePlaylistRef(trimmed, sourceUrl)
-            return absolute ? `${proxyPrefix}${encodeURIComponent(absolute)}` : ''
+            return absolute ? rewriteHlsRef(absolute, proxyPrefix) : ''
         })
         .join('\n')
 }
@@ -295,12 +294,10 @@ export function createVixsrcBrowserSource(input: {
     parts: Record<string, string>
     origin?: string
 }) {
-    const origin = input.origin ?? (typeof window !== 'undefined' ? window.location.origin : '')
     const created: string[] = []
-    let master = rewriteEdgeCdnThroughProxy(input.master, origin)
+    let master = input.master
     for (const [id, text] of Object.entries(input.parts)) {
-        const rewritten = rewriteEdgeCdnThroughProxy(text, origin)
-        const url = URL.createObjectURL(new Blob([rewritten], { type: 'application/vnd.apple.mpegurl' }))
+        const url = URL.createObjectURL(new Blob([text], { type: 'application/vnd.apple.mpegurl' }))
         created.push(url)
         master = master.split(`${VIXSRC_PART_PREFIX}${id}.m3u8`).join(url)
     }

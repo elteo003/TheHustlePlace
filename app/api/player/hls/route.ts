@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAllowedHlsUrl, isHlsManifestBuffer, rewriteM3u8 } from '@/lib/vixsrc-hls'
+import { classifyHlsRef, isAllowedHlsUrl, isHlsManifestBuffer, rewriteM3u8 } from '@/lib/vixsrc-hls'
 import { vixsrcRequestHeaders } from '@/services/vixsrc-hls.service'
 
 export const preferredRegion = ['fra1', 'cdg1']
 export const maxDuration = 60
-
-const PASS_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges'] as const
 
 function playlistResponse(body: string, sourceUrl: string) {
     return new NextResponse(rewriteM3u8(body, sourceUrl, '/api/player/hls?u='), {
@@ -17,28 +15,18 @@ function playlistResponse(body: string, sourceUrl: string) {
     })
 }
 
-function passthroughHeaders(upstream: Response, fallbackType: string) {
-    const headers = new Headers()
-    for (const name of PASS_HEADERS) {
-        const value = upstream.headers.get(name)
-        if (value) headers.set(name, value)
-    }
-    if (!headers.has('content-type')) {
-        headers.set('content-type', fallbackType)
-    }
-    headers.set('Cache-Control', 'private, max-age=60')
-    return headers
-}
-
 export async function GET(request: NextRequest) {
     const target = request.nextUrl.searchParams.get('u')
     if (!target || !isAllowedHlsUrl(target)) {
         return NextResponse.json({ error: 'URL non consentito' }, { status: 400 })
     }
 
-    const range = request.headers.get('range')
+    if (classifyHlsRef(target) === 'cdn') {
+        return NextResponse.redirect(target, 302)
+    }
+
     const upstream = await fetch(target, {
-        headers: vixsrcRequestHeaders(range ? { Range: range } : undefined),
+        headers: vixsrcRequestHeaders(),
         cache: 'no-store',
         redirect: 'follow',
     })
@@ -52,8 +40,15 @@ export async function GET(request: NextRequest) {
         return playlistResponse(buffer.toString('utf8'), upstream.url)
     }
 
+    if (classifyHlsRef(upstream.url) === 'cdn') {
+        return NextResponse.redirect(upstream.url, 302)
+    }
+
     return new NextResponse(buffer, {
         status: upstream.status,
-        headers: passthroughHeaders(upstream, 'application/octet-stream'),
+        headers: {
+            'Content-Type': upstream.headers.get('content-type') || 'application/octet-stream',
+            'Cache-Control': 'private, max-age=60',
+        },
     })
 }
