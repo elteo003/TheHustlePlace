@@ -10,6 +10,7 @@ import {
     occupiedKeys,
     railItemKey,
     scorePicks,
+    scorePicksForDay,
     scoreTreasures,
     takeUnseen,
     toDiscoverGenres,
@@ -143,13 +144,101 @@ describe('personal-rails', () => {
             occupied
         )
 
-        expect(rails.picks.map((entry) => entry.title)).toEqual(['Pick A', 'Pick B'])
+        expect(rails.picks.map((entry) => entry.title).sort()).toEqual(['Pick A', 'Pick B'])
         expect(rails.affinity).toEqual([])
         expect(rails.treasures.map((entry) => entry.title)).toEqual(['Treasure'])
         expect(rails.topGenres?.[0]).toBe(28)
         expect(new Set([...rails.picks, ...rails.treasures].map((entry) => railItemKey(entry.type, entry.id))).size).toBe(
             rails.picks.length + rails.treasures.length
         )
+    })
+
+    it('ruota gli scelti per te a mezzanotte di Roma e li tiene fermi nello stesso giorno', () => {
+        const pool = Array.from({ length: 16 }, (_, index) =>
+            item({
+                id: index + 1,
+                title: `T${index}`,
+                type: 'movie',
+                popularity: 50,
+                genre_ids: [28],
+                release_date: '2024-06-01',
+            })
+        )
+        const taste = buildTasteProfile(
+            [
+                { id: 90, type: 'movie', progress: 100, watchedAt: Date.parse('2026-09-21T12:00:00.000Z') },
+                { id: 91, type: 'movie', progress: 90, watchedAt: Date.parse('2026-09-20T12:00:00.000Z') },
+                { id: 92, type: 'movie', progress: 80, watchedAt: Date.parse('2026-09-19T12:00:00.000Z') },
+            ],
+            [
+                { id: 90, type: 'movie', genreIds: [28], keywordIds: [] },
+                { id: 91, type: 'movie', genreIds: [28], keywordIds: [] },
+                { id: 92, type: 'movie', genreIds: [28], keywordIds: [] },
+            ],
+            Date.parse('2026-09-21T12:00:00.000Z')
+        )
+        const pools = { picks: pool, affinity: [], treasures: [] }
+        const evening = new Date('2026-09-21T21:30:00.000Z')
+        const stillEvening = new Date('2026-09-21T21:45:00.000Z')
+        const afterMidnight = new Date('2026-09-21T22:30:00.000Z')
+
+        const first = composePersonalRails(pools, taste, [], evening, 8)
+        const again = composePersonalRails(pools, taste, [], stillEvening, 8)
+        const nextDay = composePersonalRails(pools, taste, [], afterMidnight, 8)
+
+        expect(first.picks.map((entry) => entry.id)).toEqual(again.picks.map((entry) => entry.id))
+        expect(first.picks.map((entry) => entry.id).join(',')).not.toBe(
+            nextDay.picks.map((entry) => entry.id).join(',')
+        )
+    })
+
+    it('un match netto di gusto resta davanti alla rotazione del giorno', () => {
+        const champion = item({
+            id: 1,
+            title: 'Champ',
+            type: 'movie',
+            popularity: 400,
+            genre_ids: [28],
+            release_date: '2026-08-01',
+            vote_count: 5000,
+        })
+        const weak = Array.from({ length: 10 }, (_, index) =>
+            item({
+                id: 10 + index,
+                title: `W${index}`,
+                type: 'movie',
+                popularity: 4,
+                genre_ids: [99],
+                release_date: '2010-01-01',
+                vote_count: 50,
+            })
+        )
+        const taste = buildTasteProfile(
+            [
+                { id: 90, type: 'movie', progress: 100, watchedAt: Date.parse('2026-09-21T12:00:00.000Z') },
+                { id: 91, type: 'movie', progress: 90, watchedAt: Date.parse('2026-09-20T12:00:00.000Z') },
+                { id: 92, type: 'movie', progress: 80, watchedAt: Date.parse('2026-09-19T12:00:00.000Z') },
+            ],
+            [
+                { id: 90, type: 'movie', genreIds: [28], keywordIds: [] },
+                { id: 91, type: 'movie', genreIds: [28], keywordIds: [] },
+                { id: 92, type: 'movie', genreIds: [28], keywordIds: [] },
+            ]
+        )
+
+        for (const day of ['2026-01-15', '2026-06-15', '2026-12-15']) {
+            const rails = composePersonalRails(
+                { picks: [champion, ...weak], affinity: [], treasures: [] },
+                taste,
+                [],
+                new Date(`${day}T12:00:00.000Z`),
+                6
+            )
+            expect(rails.picks[0]?.id).toBe(1)
+            const lead = scorePicksForDay(champion, [28], 400, new Date(`${day}T12:00:00.000Z`))
+            const trail = scorePicksForDay(weak[0], [28], 400, new Date(`${day}T12:00:00.000Z`))
+            expect(lead).toBeGreaterThan(trail)
+        }
     })
 
     it('takeUnseen marca gli id visti', () => {

@@ -986,7 +986,8 @@ export class CatalogService {
             .slice(0, TASTE_WINDOW)
             .map((entry) => `${entry.type}:${entry.id}:${Math.round((entry.progress || 0) / 10)}`)
             .join(',')
-        const cacheKey = `personal-rails-v2:${fingerprint || 'guest'}:${occupiedKeys(occupied).sort().join(',')}`
+        const now = new Date()
+        const cacheKey = `personal-rails-v3:${romeDayKey(now)}:${fingerprint || 'guest'}:${occupiedKeys(occupied).sort().join(',')}`
         const cached = await cache.get<PersonalRails>(cacheKey)
         if (cached) {
             return this.decoratePersonalRails(cached)
@@ -999,8 +1000,7 @@ export class CatalogService {
             const features = (
                 await Promise.all(recent.map((seed) => this.getTitleFeatures(seed)))
             ).filter((item): item is TitleFeatures => Boolean(item))
-            const taste = buildTasteProfile(history, features)
-            const now = new Date()
+            const taste = buildTasteProfile(history, features, now.getTime())
             const movieGenres = toDiscoverGenres(taste.topGenres, 'movie')
             const tvGenres = toDiscoverGenres(taste.topGenres, 'tv')
             const from5y = yearsAgoIso(5, now)

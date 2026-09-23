@@ -1,5 +1,6 @@
 import { Top10Content } from '@/types'
 import { isoDateOnly } from '@/lib/catalog-rails'
+import { romeDayKey } from '@/lib/platform-top10'
 
 export const PERSONAL_RAIL_SIZE = 24
 export const PERSONAL_OVERFETCH = 50
@@ -7,6 +8,8 @@ export const AFFINITY_MIN_ITEMS = 8
 export const TASTE_MIN_HISTORY = 3
 export const TASTE_WINDOW = 8
 export const TASTE_TAU_DAYS = 21
+/** Quota del punteggio «scelti per te» decisa dal giorno di Roma. Il resto resta gusto. */
+export const PICKS_DAILY_WEIGHT = 0.18
 
 export type HistorySeed = {
     id: number
@@ -268,6 +271,29 @@ export function scorePicks(item: Top10Content, topGenres: number[], maxPop: numb
     return 0.35 * simTaste(item, topGenres) + 0.45 * popNorm(item, maxPop) + 0.2 * newness(item, now)
 }
 
+/** Unità stabile in [0, 1) per un titolo in un dato giorno. Stesso giorno, stesso valore. */
+export function dailyRotationUnit(key: string, day: string): number {
+    let hash = 2166136261
+    const input = `${day}:${key}`
+    for (let index = 0; index < input.length; index += 1) {
+        hash ^= input.charCodeAt(index)
+        hash = Math.imul(hash, 16777619)
+    }
+    return (hash >>> 0) / 4294967296
+}
+
+export function scorePicksForDay(
+    item: Top10Content,
+    topGenres: number[],
+    maxPop: number,
+    now: Date,
+    day = romeDayKey(now)
+): number {
+    const taste = scorePicks(item, topGenres, maxPop, now)
+    const spin = dailyRotationUnit(railItemKey(item.type, item.id), day)
+    return (1 - PICKS_DAILY_WEIGHT) * taste + PICKS_DAILY_WEIGHT * spin
+}
+
 export function scoreAffinity(
     item: Top10Content,
     topGenres: number[],
@@ -378,7 +404,7 @@ export function composePersonalRails(
     const picks = fillRail(
         pools.picks,
         pools.picksRelaxed,
-        (item) => scorePicks(item, taste.topGenres, picksStats.maxPop, now),
+        (item) => scorePicksForDay(item, taste.topGenres, picksStats.maxPop, now),
         seen,
         size
     )
