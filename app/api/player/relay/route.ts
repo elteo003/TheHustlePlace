@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { saveHomeRelayUrl } from '@/lib/db/vixsrc-relay'
+import { getAnnouncedRelayUrl, saveHomeRelayUrl } from '@/lib/db/vixsrc-relay'
 
 export const runtime = 'nodejs'
+
+export async function GET() {
+    const url = await getAnnouncedRelayUrl()
+    return NextResponse.json(
+        { success: true, url },
+        { headers: { 'Cache-Control': 'private, no-store' } }
+    )
+}
 
 export async function POST(request: NextRequest) {
     const token = request.headers.get('x-relay-token') || ''

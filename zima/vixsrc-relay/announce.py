@@ -9,7 +9,7 @@ import urllib.request
 
 URL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 TOKEN = os.environ.get("RELAY_TOKEN", "")
-ANNOUNCE_URL = os.environ.get("ANNOUNCE_URL", "https://the-hustle-place.vercel.app/api/player/relay")
+ANNOUNCE_URL = os.environ.get("ANNOUNCE_URL", "https://the-fplace.vercel.app/api/player/relay")
 CONTAINER = os.environ.get("TUNNEL_CONTAINER", "hustle-vixsrc-tunnel")
 
 

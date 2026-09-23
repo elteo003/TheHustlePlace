@@ -30,6 +30,20 @@ async function ensureTable(sql: ReturnType<typeof postgres>) {
     `
 }
 
+export async function getAnnouncedRelayUrl(): Promise<string | null> {
+    const sql = relaySql()
+    if (sql) {
+        await ensureTable(sql)
+        const rows = await sql<{ url: string }[]>`
+            select url from vixsrc_home_relay where id = 1
+        `
+        const url = rows[0]?.url?.replace(/\/$/, '') ?? ''
+        if (isAllowedRelayPublicUrl(url)) return url
+    }
+    const fromEnv = process.env.VIXSRC_RELAY_URL?.replace(/\/$/, '') ?? ''
+    return isAllowedRelayPublicUrl(fromEnv) ? fromEnv : null
+}
+
 export async function getHomeRelayConfig(): Promise<HomeRelayConfig | null> {
     if (process.env.VIXSRC_RELAY_URL && process.env.VIXSRC_RELAY_TOKEN) {
         const url = process.env.VIXSRC_RELAY_URL.replace(/\/$/, '')

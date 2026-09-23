@@ -41,7 +41,7 @@ cd tv/webos
 node generate-icons.mjs
 ```
 
-In `index.html` l’URL di produzione è `https://the-hustle-place.vercel.app/living`. Per testare in LAN, cambialo con l’IP del PC.
+In `index.html` l’URL di produzione è `https://the-fplace.vercel.app/living`. Per testare in LAN, cambialo con l’IP del PC.
 
 Poi, TV in Developer Mode (stessa rete):
 

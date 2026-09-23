@@ -15,6 +15,7 @@ ALLOWED_HOST = re.compile(r"^(?:[a-z0-9-]+\.)*(?:vixsrc\.to|vix-content\.net)$",
 # Keep in sync with lib/vixsrc-cdn-allowlist.ts
 EDGE_CDN_HOST = re.compile(r"^sc-[a-z0-9]+-\d+\.[a-z0-9.-]+$", re.I)
 ALLOWED_ORIGINS = {
+    "https://the-fplace.vercel.app",
     "https://the-hustle-place.vercel.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -200,21 +201,25 @@ def assemble(master_url: str, video_id: int | None) -> dict:
     return {"master": master, "parts": parts, "videoId": video_id}
 
 
-def resolve_title(tmdb_id: int, kind: str, season: int | None, episode: int | None, lang: str) -> dict:
+def resolve_title(
+    tmdb_id: int, kind: str, season: int | None, episode: int | None, lang: str, fresh: bool = False
+) -> dict:
     cache_key = (tmdb_id, kind, season, episode, lang)
     now = time.time()
-    with CACHE_LOCK:
-        hit = CACHE.get(cache_key)
-        if hit and hit[0] > now:
-            return hit[1]
+    if not fresh:
+        with CACHE_LOCK:
+            hit = CACHE.get(cache_key)
+            if hit and hit[0] > now:
+                return hit[1]
     if not RESOLVE_SEM.acquire(timeout=RESOLVE_WAIT):
         raise RuntimeError("relay occupato")
     global INFLIGHT
     try:
-        with CACHE_LOCK:
-            hit = CACHE.get(cache_key)
-            if hit and hit[0] > time.time():
-                return hit[1]
+        if not fresh:
+            with CACHE_LOCK:
+                hit = CACHE.get(cache_key)
+                if hit and hit[0] > time.time():
+                    return hit[1]
         with INFLIGHT_LOCK:
             INFLIGHT += 1
         try:
@@ -286,7 +291,8 @@ class Handler(BaseHTTPRequestHandler):
                 episode = int((qs.get("episode") or ["0"])[0] or 0) or None
                 if tmdb_id <= 0 or (kind == "tv" and (not season or not episode)):
                     raise ValueError("parametri")
-                data = resolve_title(tmdb_id, kind, season, episode, "it")
+                fresh = (qs.get("fresh") or [""])[0] == "1"
+                data = resolve_title(tmdb_id, kind, season, episode, "it", fresh)
                 self._send(200, json.dumps({"success": True, "data": data}).encode(), "application/json")
             except Exception as error:
                 message = str(error)
