@@ -77,6 +77,7 @@ export type RankerContext = {
     thrilledGenres: number[]
     lovedKeys: Set<string>
     rejectedKeys: Set<string>
+    rewatchNoKeys: Set<string>
     abandonedKeys: Set<string>
     watchedKeys: Set<string>
     completedKeys: Set<string>
@@ -93,12 +94,16 @@ export function buildRankerContext(
 ): RankerContext {
     const lovedKeys = new Set<string>()
     const rejectedKeys = new Set<string>()
+    const rewatchNoKeys = new Set<string>()
     const nowMs = now.getTime()
 
     for (const row of feedbacks) {
         const key = railItemKey(row.type, row.tmdbId)
-        if (row.wouldContinue === 'no' || row.liking === 'skipped') {
+        if (row.liking === 'skipped') {
             rejectedKeys.add(key)
+        }
+        if (row.wouldContinue === 'no') {
+            rewatchNoKeys.add(key)
         }
         if (row.liking === 'thrilled' || row.liking === 'a_lot') {
             lovedKeys.add(key)
@@ -120,6 +125,7 @@ export function buildRankerContext(
         thrilledGenres: [],
         lovedKeys,
         rejectedKeys,
+        rewatchNoKeys,
         abandonedKeys,
         watchedKeys,
         completedKeys,
@@ -163,6 +169,7 @@ export function scoreWithRanker(item: Top10Content, context: RankerContext, maxP
         weights.popularity * popNorm(item, maxPop) +
         weights.explicit * explicitScore(item, context) +
         weights.neighbor * neighborScore(item, context) -
+        weights.continueNo * (context.rewatchNoKeys.has(key) ? 1 : 0) -
         weights.abandon * (context.abandonedKeys.has(key) ? 1 : 0) -
         weights.alreadySeen * (context.completedKeys.has(key) ? 1 : 0)
     )

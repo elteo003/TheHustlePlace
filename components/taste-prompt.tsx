@@ -15,15 +15,26 @@ interface TastePromptProps {
     onSkip: () => void
 }
 
-const LIKING_OPTIONS: Array<{ id: Liking; label: string }> = [
+const MID_LIKING_OPTIONS: Array<{ id: Liking; label: string }> = [
     { id: 'yes', label: 'Sì' },
     { id: 'a_lot', label: 'Parecchio' },
     { id: 'thrilled', label: 'Mi sta entusiasmando' },
 ]
 
+const END_LIKING_OPTIONS: Array<{ id: Liking; label: string }> = [
+    { id: 'yes', label: 'Sì' },
+    { id: 'a_lot', label: 'Parecchio' },
+    { id: 'thrilled', label: 'Mi ha entusiasmato' },
+]
+
+function isClosingMoment(moment: FeedbackMoment) {
+    return moment === 'end_movie' || moment === 'end_season'
+}
+
 export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProps) {
     const [liking, setLiking] = useState<Liking | null>(null)
-    const needsContinue = moment === 'end_season'
+    const closing = isClosingMoment(moment)
+    const likingOptions = closing ? END_LIKING_OPTIONS : MID_LIKING_OPTIONS
 
     function askCopy() {
         if (moment === 'end_movie') return `Ti è piaciuto ${title}?`
@@ -31,8 +42,13 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
         return `Ti sta piacendo ${title}?`
     }
 
+    function rewatchCopy() {
+        if (moment === 'end_season') return 'La riguarderesti?'
+        return 'Lo riguarderesti?'
+    }
+
     function choose(next: Liking) {
-        if (!needsContinue) {
+        if (!closing) {
             onSubmit(next, null)
             return
         }
@@ -46,7 +62,7 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
                 <h3 className="text-2xl font-semibold text-white leading-snug mb-6">{askCopy()}</h3>
                 {!liking && (
                     <div className="flex flex-col gap-2">
-                        {LIKING_OPTIONS.map((option) => (
+                        {likingOptions.map((option) => (
                             <button
                                 key={option.id}
                                 type="button"
@@ -58,9 +74,9 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
                         ))}
                     </div>
                 )}
-                {needsContinue && liking && (
+                {closing && liking && (
                     <div>
-                        <p className="text-white mb-4">Continueresti a vedere questa serie?</p>
+                        <p className="text-white mb-4">{rewatchCopy()}</p>
                         <div className="flex gap-2">
                             <button
                                 type="button"
@@ -81,7 +97,7 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
                 )}
                 <button
                     type="button"
-                    onClick={onSkip}
+                    onClick={() => (liking ? onSubmit(liking, null) : onSkip())}
                     className="mt-4 w-full text-sm text-white/45 hover:text-white py-1"
                 >
                     Salta

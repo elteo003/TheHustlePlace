@@ -37,7 +37,7 @@ describe('taste-ranker', () => {
         expect(promptForPlayback({ type: 'tv', episode: 4, episodeCount: 8 })).toBe('mid_season')
     })
 
-    it('mette in testa il titolo votato entusiasta e in coda quello che non continuerebbe', () => {
+    it('mette in testa il titolo votato entusiasta e abbassa, senza seppellirlo, quello che non riguarderebbe', () => {
         const loved = item({ id: 1, title: 'Amato', type: 'tv', popularity: 10, genre_ids: [18] })
         const rejected = item({ id: 2, title: 'No', type: 'tv', popularity: 90, genre_ids: [18] })
         const other = item({ id: 3, title: 'Altro', type: 'tv', popularity: 50, genre_ids: [35] })
@@ -66,9 +66,41 @@ describe('taste-ranker', () => {
             [18]
         )
         const ranked = rerankWithTaste([rejected, other, loved], context)
+        const onlyRewatchNo = buildRankerContext(
+            [],
+            [
+                {
+                    tmdbId: 2,
+                    type: 'tv',
+                    season: 1,
+                    moment: 'end_movie',
+                    liking: 'yes',
+                    wouldContinue: 'no',
+                    updatedAt: 1,
+                },
+            ],
+            [18]
+        )
+        const withoutRewatchNo = buildRankerContext(
+            [],
+            [
+                {
+                    tmdbId: 2,
+                    type: 'tv',
+                    season: 1,
+                    moment: 'end_movie',
+                    liking: 'yes',
+                    wouldContinue: null,
+                    updatedAt: 1,
+                },
+            ],
+            [18]
+        )
         expect(ranked[0].id).toBe(1)
-        expect(ranked.at(-1)?.id).toBe(2)
-        expect(scoreWithRanker(loved, context, 90)).toBeGreaterThan(scoreWithRanker(rejected, context, 90))
+        expect(scoreWithRanker(rejected, onlyRewatchNo, 90)).toBeCloseTo(
+            scoreWithRanker(rejected, withoutRewatchNo, 90) - RANKER_WEIGHTS_V1.continueNo
+        )
+        expect(scoreWithRanker(rejected, onlyRewatchNo, 90)).toBeGreaterThan(0)
     })
 
     it('tiene i pesi v1 sostituibili senza cambiare il contratto', () => {
