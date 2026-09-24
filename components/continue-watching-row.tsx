@@ -74,7 +74,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                     <button
                                         type="button"
                                         onClick={() => updateContinueEntry(entry.id, 'movie', 'dismiss')}
-                                        className="continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center rounded-full bg-black/75 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                                        className="continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center rounded-full bg-black/75"
                                         aria-label={`Togli ${entry.title} da continua a guardare`}
                                     >
                                         <X className="h-3.5 w-3.5 text-red-500" strokeWidth={2.5} />

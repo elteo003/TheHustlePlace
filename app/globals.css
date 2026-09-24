@@ -655,7 +655,7 @@ html {
     display: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (min-width: 768px) {
     .continue-web-only {
         display: flex;
     }
