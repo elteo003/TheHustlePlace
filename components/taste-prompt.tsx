@@ -59,7 +59,9 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
         <div className="absolute inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-black via-black/70 to-transparent p-8 md:p-12">
             <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-black/80 p-6 backdrop-blur-sm">
                 <p className="text-xs uppercase tracking-[0.18em] text-white/45 mb-3">Un attimo</p>
-                <h3 className="text-2xl font-semibold text-white leading-snug mb-6">{askCopy()}</h3>
+                <h3 className="text-2xl font-semibold text-white leading-snug mb-6">
+                    {liking ? rewatchCopy() : askCopy()}
+                </h3>
                 {!liking && (
                     <div className="flex flex-col gap-2">
                         {likingOptions.map((option) => (
@@ -76,7 +78,6 @@ export function TastePrompt({ title, moment, onSubmit, onSkip }: TastePromptProp
                 )}
                 {closing && liking && (
                     <div>
-                        <p className="text-white mb-4">{rewatchCopy()}</p>
                         <div className="flex gap-2">
                             <button
                                 type="button"
