@@ -97,6 +97,22 @@ describe('taste-ranker', () => {
             [18]
         )
         expect(ranked[0].id).toBe(1)
+        const dropped = buildRankerContext(
+            [],
+            [
+                {
+                    tmdbId: 2,
+                    type: 'tv',
+                    season: 0,
+                    moment: 'dismiss',
+                    liking: 'disliked',
+                    wouldContinue: null,
+                    updatedAt: 1,
+                },
+            ],
+            [18]
+        )
+        expect(dropped.rejectedKeys.has('tv:2')).toBe(true)
         expect(scoreWithRanker(rejected, onlyRewatchNo, 90)).toBeCloseTo(
             scoreWithRanker(rejected, withoutRewatchNo, 90) - RANKER_WEIGHTS_V1.continueNo
         )

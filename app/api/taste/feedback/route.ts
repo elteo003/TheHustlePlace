@@ -11,8 +11,8 @@ const bodySchema = z.object({
     tmdbId: z.number().int().positive(),
     type: z.enum(['movie', 'tv']),
     season: z.number().int().min(0).optional(),
-    moment: z.enum(['mid_season', 'end_season', 'end_movie']),
-    liking: z.enum(['yes', 'a_lot', 'thrilled', 'skipped']),
+    moment: z.enum(['mid_season', 'end_season', 'end_movie', 'dismiss']),
+    liking: z.enum(['yes', 'a_lot', 'thrilled', 'skipped', 'disliked', 'not_interested']),
     wouldContinue: z.enum(['yes', 'no']).nullable().optional(),
 })
 
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     if (!tmdbId || (type !== 'movie' && type !== 'tv') || !moment) {
         return withDeviceCookie(NextResponse.json({ error: 'invalid_query' }, { status: 400 }), deviceId, isNew)
     }
-    if (moment !== 'mid_season' && moment !== 'end_season' && moment !== 'end_movie') {
+    if (moment !== 'mid_season' && moment !== 'end_season' && moment !== 'end_movie' && moment !== 'dismiss') {
         return withDeviceCookie(NextResponse.json({ error: 'invalid_query' }, { status: 400 }), deviceId, isNew)
     }
 

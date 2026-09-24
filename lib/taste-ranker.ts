@@ -3,8 +3,8 @@ import { Top10Content } from '@/types'
 
 export const RANKER_VERSION = 'v1'
 
-export type Liking = 'yes' | 'a_lot' | 'thrilled' | 'skipped'
-export type FeedbackMoment = 'mid_season' | 'end_season' | 'end_movie'
+export type Liking = 'yes' | 'a_lot' | 'thrilled' | 'skipped' | 'disliked' | 'not_interested'
+export type FeedbackMoment = 'mid_season' | 'end_season' | 'end_movie' | 'dismiss'
 export type WouldContinue = 'yes' | 'no'
 
 export type TitleFeedback = {
@@ -99,7 +99,7 @@ export function buildRankerContext(
 
     for (const row of feedbacks) {
         const key = railItemKey(row.type, row.tmdbId)
-        if (row.liking === 'skipped') {
+        if (row.liking === 'skipped' || row.liking === 'disliked' || row.liking === 'not_interested') {
             rejectedKeys.add(key)
         }
         if (row.wouldContinue === 'no') {

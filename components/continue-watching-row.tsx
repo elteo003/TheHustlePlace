@@ -3,12 +3,57 @@
 import Image from 'next/image'
 import { Play, X } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { updateContinueEntry, WatchHistoryEntry } from '@/lib/watch-history'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { getPlayerPath } from '@/lib/content-navigation'
 import { resumeStartAt } from '@/lib/watch-progress'
 import { CustomScrollbar } from '@/components/custom-scrollbar'
+import { TastePrompt } from '@/components/taste-prompt'
+import { FeedbackMoment, Liking, WouldContinue } from '@/lib/taste-ranker'
 import { useRouter } from 'next/navigation'
+
+type ContinueSheet =
+    | { kind: 'dismiss'; entry: WatchHistoryEntry }
+    | { kind: 'seen'; entry: WatchHistoryEntry; moment: FeedbackMoment; season: number }
+
+function closingAsk(entry: WatchHistoryEntry): { moment: FeedbackMoment; season: number } {
+    if (entry.type === 'tv') {
+        return { moment: 'end_season', season: entry.season ?? 0 }
+    }
+    return { moment: 'end_movie', season: 0 }
+}
+
+async function hasClosingFeedback(entry: WatchHistoryEntry): Promise<boolean> {
+    const ask = closingAsk(entry)
+    const response = await fetch(
+        `/api/taste/feedback?tmdbId=${entry.id}&type=${entry.type}&season=${ask.season}&moment=${ask.moment}`
+    )
+    const data = (await response.json()) as { answered?: boolean }
+    return Boolean(data.answered)
+}
+
+async function saveFeedback(input: {
+    entry: WatchHistoryEntry
+    moment: FeedbackMoment
+    season: number
+    liking: Liking
+    wouldContinue?: WouldContinue | null
+}) {
+    await fetch('/api/taste/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            tmdbId: input.entry.id,
+            type: input.entry.type,
+            season: input.season,
+            moment: input.moment,
+            liking: input.liking,
+            wouldContinue: input.wouldContinue ?? null,
+        }),
+    }).catch(() => undefined)
+}
 
 interface ContinueWatchingRowProps {
     entries: WatchHistoryEntry[]
@@ -16,6 +61,13 @@ interface ContinueWatchingRowProps {
 
 export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
     const router = useRouter()
+    const [sheet, setSheet] = useState<ContinueSheet | null>(null)
+
+    function dismissWith(entry: WatchHistoryEntry, liking: 'disliked' | 'not_interested') {
+        void saveFeedback({ entry, moment: 'dismiss', season: 0, liking })
+        updateContinueEntry(entry.id, entry.type, 'dismiss')
+        setSheet(null)
+    }
 
     const visible = entries.filter((entry) => !entry.continueHidden)
     if (visible.length === 0) return null
@@ -74,7 +126,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation()
-                                        updateContinueEntry(entry.id, entry.type, 'dismiss')
+                                        setSheet({ kind: 'dismiss', entry })
                                     }}
                                     className="continue-dismiss h-7 w-7 items-center justify-center"
                                     aria-label={`Togli ${entry.title} da continua a guardare`}
@@ -86,7 +138,16 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 type="button"
                                 onClick={(event) => {
                                     event.stopPropagation()
-                                    updateContinueEntry(entry.id, entry.type, 'seen')
+                                    const ask = closingAsk(entry)
+                                    void hasClosingFeedback(entry)
+                                        .then((answered) => {
+                                            if (answered) {
+                                                updateContinueEntry(entry.id, entry.type, 'seen')
+                                                return
+                                            }
+                                            setSheet({ kind: 'seen', entry, ...ask })
+                                        })
+                                        .catch(() => setSheet({ kind: 'seen', entry, ...ask }))
                                 }}
                                 className="continue-seen continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
                                 aria-label={`Segna ${entry.title} come già visto`}
@@ -112,6 +173,73 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                     </motion.div>
                 )
             })}
+            {sheet &&
+                createPortal(
+                    <div className="fixed inset-0 z-[80]">
+                        {sheet.kind === 'dismiss' ? (
+                            <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black via-black/70 to-transparent p-8 md:p-12">
+                                <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-black/80 p-6 backdrop-blur-sm">
+                                    <p className="text-xs uppercase tracking-[0.18em] text-white/45 mb-3">Un attimo</p>
+                                    <h3 className="text-2xl font-semibold text-white leading-snug mb-6">
+                                        Come mai lo elimini?
+                                    </h3>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => dismissWith(sheet.entry, 'disliked')}
+                                            className="h-12 rounded-md bg-white/10 text-white font-medium hover:bg-white/20 transition-colors"
+                                        >
+                                            Non mi è piaciuto
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => dismissWith(sheet.entry, 'not_interested')}
+                                            className="h-12 rounded-md bg-white/10 text-white font-medium hover:bg-white/20 transition-colors"
+                                        >
+                                            Non mi interessa
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSheet(null)}
+                                            className="h-12 rounded-md bg-white/10 text-white font-medium hover:bg-white/20 transition-colors"
+                                        >
+                                            L&apos;ho cliccato per sbaglio
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <TastePrompt
+                                title={sheet.entry.title}
+                                moment={sheet.moment}
+                                onSubmit={(liking, wouldContinue) => {
+                                    void saveFeedback({
+                                        entry: sheet.entry,
+                                        moment: sheet.moment,
+                                        season: sheet.season,
+                                        liking,
+                                        wouldContinue,
+                                    }).then(() => {
+                                        updateContinueEntry(sheet.entry.id, sheet.entry.type, 'seen')
+                                        setSheet(null)
+                                    })
+                                }}
+                                onSkip={() => {
+                                    void saveFeedback({
+                                        entry: sheet.entry,
+                                        moment: sheet.moment,
+                                        season: sheet.season,
+                                        liking: 'skipped',
+                                    }).then(() => {
+                                        updateContinueEntry(sheet.entry.id, sheet.entry.type, 'seen')
+                                        setSheet(null)
+                                    })
+                                }}
+                            />
+                        )}
+                    </div>,
+                    document.body
+                )}
         </CustomScrollbar>
     )
 }
