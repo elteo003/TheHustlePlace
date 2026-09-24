@@ -36,7 +36,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                        className="group relative flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left rounded-lg"
+                        className="continue-tile group relative flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left rounded-lg"
                     >
                         <div className="relative aspect-video rounded-lg overflow-hidden bg-zinc-900 mb-2">
                             <Image
@@ -69,31 +69,33 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                                 aria-label={`Continua ${entry.title}`}
                             />
-                            {entry.type === 'movie' && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => updateContinueEntry(entry.id, 'movie', 'dismiss')}
-                                        className="continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center rounded-full bg-black/75"
-                                        aria-label={`Togli ${entry.title} da continua a guardare`}
-                                    >
-                                        <X className="h-3.5 w-3.5 text-red-500" strokeWidth={2.5} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => updateContinueEntry(entry.id, 'movie', 'seen')}
-                                        className="continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
-                                        aria-label={`Segna ${entry.title} come già visto`}
-                                    >
-                                        <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/seen:opacity-100">
-                                            <span className="absolute right-0 top-1/2 aspect-square h-[150%] -translate-y-1/2 translate-x-1/2 rounded-full bg-white/80" />
-                                            <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-black">
-                                                Già visto
-                                            </span>
-                                        </span>
-                                    </button>
-                                </>
-                            )}
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation()
+                                    updateContinueEntry(entry.id, entry.type, 'dismiss')
+                                }}
+                                className="continue-dismiss continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center"
+                                aria-label={`Togli ${entry.title} da continua a guardare`}
+                            >
+                                <X className="relative z-10 h-3.5 w-3.5" strokeWidth={2.5} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation()
+                                    updateContinueEntry(entry.id, entry.type, 'seen')
+                                }}
+                                className="continue-seen continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
+                                aria-label={`Segna ${entry.title} come già visto`}
+                            >
+                                <span className="continue-shade pointer-events-none absolute inset-0">
+                                    <span className="continue-shade-glow" />
+                                    <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-white">
+                                        Già visto
+                                    </span>
+                                </span>
+                            </button>
                             <div className="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/20 pointer-events-none">
                                 <div
                                     className="h-full bg-white transition-[width] duration-500"

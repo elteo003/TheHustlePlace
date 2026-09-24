@@ -655,6 +655,63 @@ html {
     display: none;
 }
 
+.continue-dismiss {
+    color: #ef4444;
+    background: transparent;
+    border-radius: 9999px;
+    transition: transform 160ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.continue-dismiss::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.72) 0%, rgba(239, 68, 68, 0.28) 46%, transparent 72%);
+    pointer-events: none;
+}
+
+.continue-dismiss:active {
+    transform: scale(0.86);
+}
+
+.continue-shade {
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+.continue-seen:hover .continue-shade {
+    opacity: 1;
+}
+
+.continue-tile:has(.continue-dismiss:hover) .continue-shade {
+    opacity: 0;
+}
+
+.continue-shade-glow {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    height: 150%;
+    aspect-ratio: 1;
+    transform: translate(50%, -50%);
+    border-radius: 9999px;
+    background: radial-gradient(
+        circle at 38% 50%,
+        rgba(239, 68, 68, 0.62) 0%,
+        rgba(239, 68, 68, 0.28) 42%,
+        transparent 70%
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .continue-dismiss,
+    .continue-dismiss:active {
+        transition: none;
+        transform: none;
+    }
+}
+
 @media (min-width: 768px) {
     .continue-web-only {
         display: flex;
