@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { Play } from 'lucide-react'
+import { Play, X } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { WatchHistoryEntry } from '@/lib/watch-history'
+import { updateContinueEntry, WatchHistoryEntry } from '@/lib/watch-history'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { getPlayerPath } from '@/lib/content-navigation'
 import { resumeStartAt } from '@/lib/watch-progress'
@@ -17,11 +17,12 @@ interface ContinueWatchingRowProps {
 export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
     const router = useRouter()
 
-    if (entries.length === 0) return null
+    const visible = entries.filter((entry) => !entry.continueHidden)
+    if (visible.length === 0) return null
 
     return (
         <CustomScrollbar className="pb-4" containerClassName="gap-3">
-            {entries.map((entry, index) => {
+            {visible.map((entry, index) => {
                 const subtitle =
                     entry.type === 'tv' && entry.season != null && entry.episode != null
                         ? `S${entry.season} E${entry.episode}`
@@ -30,27 +31,12 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                           : 'Film'
 
                 return (
-                    <motion.button
+                    <motion.div
                         key={`${entry.type}-${entry.id}`}
-                        type="button"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                        onClick={() =>
-                            router.push(
-                                getPlayerPath(entry.id, entry.type, {
-                                    season: entry.season,
-                                    episode: entry.episode,
-                                    startAt: resumeStartAt({
-                                        currentTime: entry.currentTime,
-                                        duration: entry.duration,
-                                        progress: entry.progress,
-                                    }),
-                                })
-                            )
-                        }
-                        className="flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
-                        aria-label={`Continua ${entry.title}`}
+                        className="group relative flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left rounded-lg"
                     >
                         <div className="relative aspect-video rounded-lg overflow-hidden bg-zinc-900 mb-2">
                             <Image
@@ -65,7 +51,50 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 <Play className="h-4 w-4 play-mark-pulse" />
                                 Play
                             </span>
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    router.push(
+                                        getPlayerPath(entry.id, entry.type, {
+                                            season: entry.season,
+                                            episode: entry.episode,
+                                            startAt: resumeStartAt({
+                                                currentTime: entry.currentTime,
+                                                duration: entry.duration,
+                                                progress: entry.progress,
+                                            }),
+                                        })
+                                    )
+                                }
+                                className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                                aria-label={`Continua ${entry.title}`}
+                            />
+                            {entry.type === 'movie' && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => updateContinueEntry(entry.id, 'movie', 'dismiss')}
+                                        className="continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center rounded-full bg-black/75 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                                        aria-label={`Togli ${entry.title} da continua a guardare`}
+                                    >
+                                        <X className="h-3.5 w-3.5 text-red-500" strokeWidth={2.5} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updateContinueEntry(entry.id, 'movie', 'seen')}
+                                        className="continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
+                                        aria-label={`Segna ${entry.title} come già visto`}
+                                    >
+                                        <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover/seen:opacity-100">
+                                            <span className="absolute right-0 top-1/2 aspect-square h-[150%] -translate-y-1/2 translate-x-1/2 rounded-full bg-white/80" />
+                                            <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-black">
+                                                Già visto
+                                            </span>
+                                        </span>
+                                    </button>
+                                </>
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/20 pointer-events-none">
                                 <div
                                     className="h-full bg-white transition-[width] duration-500"
                                     style={{ width: `${entry.progress}%` }}
@@ -76,7 +105,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                             {entry.title}
                         </p>
                         <p className="text-xs text-white/50 mt-0.5">{subtitle}</p>
-                    </motion.button>
+                    </motion.div>
                 )
             })}
         </CustomScrollbar>

@@ -1,4 +1,4 @@
-import { bigint, index, integer, jsonb, pgTable, smallint, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, integer, jsonb, pgTable, smallint, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 export const households = pgTable('households', {
     id: uuid().defaultRandom().primaryKey(),
@@ -46,6 +46,7 @@ export const watchHistory = pgTable(
         episode: integer(),
         progress: smallint().notNull().default(0),
         positionSeconds: integer('position_seconds').notNull().default(0),
+        continueHidden: boolean('continue_hidden').notNull().default(false),
         watchedAt: timestamp('watched_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     },
     (table) => [

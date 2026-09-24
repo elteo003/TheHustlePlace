@@ -24,6 +24,8 @@ export interface WatchHistoryEntry {
     duration?: number
     /** Progresso per puntata; la riga principale resta l'ultima vista. */
     episodes?: EpisodeProgress[]
+    /** Fuori da «Continua a guardare». Il progresso resta per l'algoritmo. */
+    continueHidden?: boolean
     watchedAt: number
 }
 
@@ -206,12 +208,16 @@ export function syncWatchHistoryFromRemote(remote: WatchHistoryEntry[]): WatchHi
         const newer = (row.watchedAt ?? 0) >= (prev.watchedAt ?? 0) ? row : prev
         const currentTime = Math.max(prev.currentTime ?? 0, row.currentTime ?? 0)
         const episodes = prev.episodes ?? row.episodes
+        const remoteNewer = (row.watchedAt ?? 0) > (prev.watchedAt ?? 0)
+        const continueHidden =
+            newer.continueHidden === true || (prev.continueHidden === true && !(remoteNewer && row.continueHidden !== true))
         map.set(key, {
             ...newer,
             currentTime: currentTime > 0 ? currentTime : newer.currentTime,
             duration: row.duration && row.duration > 0 ? row.duration : prev.duration,
             progress: Math.max(prev.progress ?? 0, row.progress ?? 0),
             episodes,
+            continueHidden,
         })
     }
 
@@ -270,6 +276,7 @@ export function trackWatchEntry(input: TrackWatchInput): void {
         duration,
         progress,
         episodes,
+        continueHidden: false,
         watchedAt: Date.now(),
     }
 
@@ -294,6 +301,31 @@ export function trackWatchEntry(input: TrackWatchInput): void {
             }),
         }).catch(() => undefined)
     }
+}
+
+export type ContinueListAction = 'dismiss' | 'seen'
+
+export function updateContinueEntry(id: number, type: ContentType, action: ContinueListAction): void {
+    const entries = readAll()
+    const key = `${type}-${id}`
+    const current = entries.find((entry) => `${entry.type}-${entry.id}` === key)
+    if (!current) return
+
+    const next: WatchHistoryEntry = {
+        ...current,
+        continueHidden: true,
+        progress: action === 'seen' ? 100 : current.progress,
+        watchedAt: action === 'seen' ? Date.now() : current.watchedAt,
+    }
+    writeAll(entries.map((entry) => (`${entry.type}-${entry.id}` === key ? next : entry)))
+
+    if (!isBrowser()) return
+    window.dispatchEvent(new CustomEvent('watch-history-updated'))
+    void fetch('/api/watch-history', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, type, action }),
+    }).catch(() => undefined)
 }
 
 export function removeWatchEntry(id: number, type: ContentType): void {

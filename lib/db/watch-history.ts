@@ -18,6 +18,7 @@ export function toWatchHistoryEntry(row: typeof watchHistory.$inferSelect): Watc
         episode: row.episode ?? undefined,
         progress: row.progress,
         currentTime: row.positionSeconds,
+        continueHidden: row.continueHidden,
         watchedAt: row.watchedAt.getTime(),
     }
 }
@@ -105,6 +106,7 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
             episode: input.episode ?? null,
             progress,
             positionSeconds: input.position_seconds ?? 0,
+            continueHidden: false,
             watchedAt: now,
         })
         .onConflictDoUpdate({
@@ -118,11 +120,38 @@ export async function upsertWatchHistory(input: UpsertWatchInput): Promise<numbe
                 episode: input.episode ?? null,
                 progress,
                 positionSeconds: input.position_seconds ?? 0,
+                continueHidden: false,
                 watchedAt: now,
             },
         })
 
     return progress
+}
+
+export async function updateContinueVisibility(
+    deviceId: string,
+    tmdbId: number,
+    type: 'movie' | 'tv',
+    action: 'dismiss' | 'seen'
+): Promise<void> {
+    const db = getDb()
+    const profile = await ensureProfile(deviceId)
+    if (!db || !profile) return
+
+    await db
+        .update(watchHistory)
+        .set(
+            action === 'seen'
+                ? { continueHidden: true, progress: 100, watchedAt: new Date() }
+                : { continueHidden: true }
+        )
+        .where(
+            and(
+                eq(watchHistory.profileId, profile.id),
+                eq(watchHistory.contentType, type),
+                eq(watchHistory.tmdbId, tmdbId)
+            )
+        )
 }
 
 export async function deleteWatchHistory(

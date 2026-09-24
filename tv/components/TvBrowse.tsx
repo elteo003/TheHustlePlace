@@ -29,7 +29,7 @@ export function TvBrowse({ rows, continueWatching = [] }: TvBrowseProps) {
 
     const historyItems = useMemo(
         () =>
-            continueWatching.map((entry) => ({
+            continueWatching.filter((entry) => !entry.continueHidden).map((entry) => ({
                 id: entry.id,
                 tmdb_id: entry.id,
                 title: entry.title,

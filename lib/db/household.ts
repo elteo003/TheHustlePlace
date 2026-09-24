@@ -713,6 +713,7 @@ export async function pairDeviceToCode(
                         episode: row.episode,
                         progress: row.progress,
                         positionSeconds: row.positionSeconds,
+                        continueHidden: row.continueHidden,
                         watchedAt: row.watchedAt,
                     })
                     continue
@@ -730,6 +731,7 @@ export async function pairDeviceToCode(
                             episode: row.episode,
                             progress: row.progress,
                             positionSeconds: row.positionSeconds,
+                            continueHidden: row.continueHidden,
                             watchedAt: row.watchedAt,
                         })
                         .where(eq(watchHistory.id, existing.id))

@@ -61,6 +61,7 @@ export function HomePageClient({
 }: HomePageClientProps) {
     const { play, openDetails } = useContentNavigation()
     const { entries: watchHistory } = useWatchHistory()
+    const continueWatching = watchHistory.filter((entry) => !entry.continueHidden)
     const occupied = useMemo(
         () => occupiedFromRails([...top10, ...comingToCinema, ...comingSoon]),
         [top10, comingToCinema, comingSoon]
@@ -228,10 +229,10 @@ export function HomePageClient({
                 />
 
                 <div className="relative z-10">
-                    {watchHistory.length > 0 && (
+                    {continueWatching.length > 0 && (
                         <section className="content-gutter pb-8 pt-5">
                             <h2 className="section-title">Continua a guardare</h2>
-                            <ContinueWatchingRow entries={watchHistory} />
+                            <ContinueWatchingRow entries={continueWatching} />
                         </section>
                     )}
 

@@ -4,6 +4,7 @@ import {
     deleteWatchHistory,
     isDatabaseConfigured,
     listWatchHistory,
+    updateContinueVisibility,
     upsertWatchHistory,
 } from '@/lib/db/watch-history'
 import { ensureProfile } from '@/lib/db/profiles'
@@ -70,6 +71,37 @@ export async function POST(request: Request) {
             ...parsed.data,
         })
         return withDeviceCookie(NextResponse.json({ configured: true, ok: true, progress }), deviceId, isNew)
+    } catch {
+        return withDeviceCookie(
+            NextResponse.json({ configured: true, error: 'db_error' }, { status: 500 }),
+            deviceId,
+            isNew
+        )
+    }
+}
+
+const continueSchema = z.object({
+    id: z.number().int().positive(),
+    type: z.enum(['movie', 'tv']),
+    action: z.enum(['dismiss', 'seen']),
+})
+
+export async function PATCH(request: Request) {
+    const { id: deviceId, isNew } = await getOrCreateDeviceId()
+    const json = await request.json().catch(() => null)
+    const parsed = continueSchema.safeParse(json)
+
+    if (!parsed.success) {
+        return withDeviceCookie(NextResponse.json({ error: 'invalid_body' }, { status: 400 }), deviceId, isNew)
+    }
+
+    if (!isDatabaseConfigured()) {
+        return withDeviceCookie(NextResponse.json({ configured: false, ok: true }), deviceId, isNew)
+    }
+
+    try {
+        await updateContinueVisibility(deviceId, parsed.data.id, parsed.data.type, parsed.data.action)
+        return withDeviceCookie(NextResponse.json({ configured: true, ok: true }), deviceId, isNew)
     } catch {
         return withDeviceCookie(
             NextResponse.json({ configured: true, error: 'db_error' }, { status: 500 }),

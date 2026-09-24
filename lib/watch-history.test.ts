@@ -8,6 +8,7 @@ import {
     syncWatchHistoryFromRemote,
     trackWatchEntry,
     removeWatchEntry,
+    updateContinueEntry,
     watchHistoryStorageKey,
 } from '@/lib/watch-history'
 import { isNearEnd, nextWatchProgress, progressPercent, resumeStartAt } from '@/lib/watch-progress'
@@ -71,6 +72,27 @@ describe('watch-history', () => {
         trackWatchEntry({ id: 9, type: 'movie', title: 'X' })
         removeWatchEntry(9, 'movie')
         expect(getWatchHistory()).toHaveLength(0)
+    })
+
+    it('la X nasconde il film senza cambiare il progresso', () => {
+        trackWatchEntry({ id: 4, type: 'movie', title: 'Dune', currentTime: 400, duration: 1000 })
+        updateContinueEntry(4, 'movie', 'dismiss')
+        const entry = getWatchHistory()[0]
+        expect(entry.continueHidden).toBe(true)
+        expect(entry.progress).toBe(40)
+        const remote = syncWatchHistoryFromRemote([
+            { ...entry, continueHidden: false, progress: 40, watchedAt: entry.watchedAt },
+        ])
+        expect(remote[0].continueHidden).toBe(true)
+        expect(remote[0].progress).toBe(40)
+    })
+
+    it('già visto porta il progresso a 100 e lo nasconde', () => {
+        trackWatchEntry({ id: 4, type: 'movie', title: 'Dune', currentTime: 400, duration: 1000 })
+        updateContinueEntry(4, 'movie', 'seen')
+        const entry = getWatchHistory()[0]
+        expect(entry.continueHidden).toBe(true)
+        expect(entry.progress).toBe(100)
     })
 
     it('restituisce la puntata TV più recente per id', () => {
