@@ -656,12 +656,27 @@ html {
 }
 
 .continue-dismiss {
-    color: #ef4444;
+    color: rgba(255, 86, 86, 0.92);
     background: transparent;
-    border: 1.5px solid #ef4444;
+    border: 1px solid rgba(255, 120, 120, 0.28);
     border-radius: 9999px;
-    filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.9)) drop-shadow(0 0 8px rgba(239, 68, 68, 0.45));
-    transition: transform 160ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+    pointer-events: none;
+    filter:
+        drop-shadow(0 0 2px rgba(255, 90, 90, 1))
+        drop-shadow(0 0 8px rgba(239, 68, 68, 0.95))
+        drop-shadow(0 0 18px rgba(220, 38, 38, 0.55));
+    transform: scale(0.92);
+    transition:
+        opacity 180ms ease,
+        transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.continue-tile:hover .continue-dismiss,
+.continue-tile:focus-within .continue-dismiss {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
 }
 
 .continue-dismiss:active {
@@ -699,9 +714,11 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
     .continue-dismiss,
+    .continue-tile:hover .continue-dismiss,
+    .continue-tile:focus-within .continue-dismiss,
     .continue-dismiss:active {
-        transition: none;
         transform: none;
+        transition: opacity 180ms ease;
     }
 }
 
