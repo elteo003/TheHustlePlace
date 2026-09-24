@@ -10,7 +10,7 @@ interface PlayerShellProps {
     nextLabel?: string
     title?: string
     chromePaused?: boolean
-    pinChrome?: boolean
+    pinNext?: boolean
     children: ReactNode
     footer?: ReactNode
 }
@@ -22,7 +22,7 @@ export function PlayerShell({
     nextLabel,
     title,
     chromePaused = false,
-    pinChrome = false,
+    pinNext = false,
     children,
     footer,
 }: PlayerShellProps) {
@@ -33,7 +33,7 @@ export function PlayerShell({
 
     return (
         <PlayerChromeProvider
-            value={{ onBack, onNext, nextLabel, title, pinChrome, chromePaused }}
+            value={{ onBack, onNext, nextLabel, title, pinNext, chromePaused }}
         >
             <div className="min-h-screen bg-black text-white">
                 <div className="relative h-dvh w-full bg-black">

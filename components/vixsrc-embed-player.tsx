@@ -376,7 +376,7 @@ export function VixsrcEmbedPlayer({
                     onBack={overlayBack}
                     onNext={shell?.onNext}
                     nextLabel={shell?.nextLabel}
-                    pinChrome={shell?.pinChrome}
+                    pinNext={shell?.pinNext}
                     chromePaused={shell?.chromePaused}
                     resetKey={`${tmdbId}-${season ?? 0}-${episode ?? 0}-${reloadKey}`}
                 />

@@ -26,14 +26,23 @@ export function shouldHidePlayerCursor(opts: {
 
 export function shouldShowPlayerChrome(opts: {
     chromePaused: boolean
-    pinChrome: boolean
     intro: boolean
     hoverTop: boolean
     hoverBottom: boolean
     tapped: boolean
 }) {
     if (opts.chromePaused) return false
-    return opts.pinChrome || opts.intro || opts.hoverTop || opts.hoverBottom || opts.tapped
+    return opts.intro || opts.hoverTop || opts.hoverBottom || opts.tapped
+}
+
+export function shouldShowNextButton(opts: {
+    chromePaused: boolean
+    pinNext: boolean
+    chromeOpen: boolean
+    hasNext: boolean
+}) {
+    if (!opts.hasNext || opts.chromePaused) return false
+    return opts.chromeOpen || opts.pinNext
 }
 
 export function formatMediaTime(total: number) {
@@ -125,7 +134,7 @@ interface CinemaOverlayProps {
     onBack?: () => void
     onNext?: () => void
     nextLabel?: string
-    pinChrome?: boolean
+    pinNext?: boolean
     chromePaused?: boolean
     resetKey: string
 }
@@ -137,7 +146,7 @@ export function CinemaOverlay({
     onBack,
     onNext,
     nextLabel,
-    pinChrome = false,
+    pinNext = false,
     chromePaused = false,
     resetKey,
 }: CinemaOverlayProps) {
@@ -188,11 +197,16 @@ export function CinemaOverlay({
 
     const open = shouldShowPlayerChrome({
         chromePaused,
-        pinChrome,
         intro,
         hoverTop,
         hoverBottom,
         tapped,
+    })
+    const nextShown = shouldShowNextButton({
+        chromePaused,
+        pinNext,
+        chromeOpen: open,
+        hasNext: Boolean(onNext),
     })
     const hideCursor = shouldHidePlayerCursor({
         isTouch,
@@ -367,7 +381,7 @@ export function CinemaOverlay({
                     className="absolute inset-0 z-[15] bg-transparent"
                     aria-label={open ? 'Nascondi controlli' : 'Mostra controlli'}
                     onClick={() => {
-                        if (open && !pinChrome) hideChrome()
+                        if (open) hideChrome()
                         else revealChrome()
                     }}
                 />
@@ -391,6 +405,7 @@ export function CinemaOverlay({
                             background: 'linear-gradient(to bottom, rgb(0 0 0 / 0.72), transparent)',
                             margin: '-1rem -1rem 0',
                             padding: '1rem 1rem 2.5rem',
+                            paddingRight: onNext ? '13rem' : '1rem',
                         }}
                     >
                         {onBack && (
@@ -407,21 +422,30 @@ export function CinemaOverlay({
                         {title && (
                             <p className="min-w-0 flex-1 truncate text-sm text-white/70">{title}</p>
                         )}
-                        {onNext && (
-                            <button
-                                type="button"
-                                onClick={onNext}
-                                className="player-skin-hit ml-auto inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white"
-                                aria-label={nextLabel ? `Prossima ${nextLabel}` : 'Puntata successiva'}
-                            >
-                                Prossima
-                                {nextLabel ? ` ${nextLabel}` : ''}
-                                <SkipForward className="h-4 w-4" />
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
+
+            {onNext && (
+                <div
+                    className="player-skin-chrome player-skin-chrome-top absolute right-4 top-4 z-30"
+                    data-open={nextShown}
+                >
+                    <button
+                        type="button"
+                        onClick={onNext}
+                        className={cn(
+                            'player-skin-hit inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white',
+                            nextShown && !open && 'bg-black/60'
+                        )}
+                        aria-label={nextLabel ? `Prossima ${nextLabel}` : 'Puntata successiva'}
+                    >
+                        Prossima
+                        {nextLabel ? ` ${nextLabel}` : ''}
+                        <SkipForward className="h-4 w-4" />
+                    </button>
+                </div>
+            )}
 
             <div
                 className={cn(

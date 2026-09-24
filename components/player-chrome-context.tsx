@@ -7,7 +7,7 @@ export type PlayerChromeValue = {
     onNext?: () => void
     nextLabel?: string
     title?: string
-    pinChrome: boolean
+    pinNext: boolean
     chromePaused: boolean
 }
 

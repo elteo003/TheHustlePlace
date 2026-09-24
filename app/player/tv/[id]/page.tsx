@@ -277,7 +277,7 @@ export default function TVPlayerPage() {
             onBack={exitPlayer}
             onNext={nextRef ? goToNextEpisode : undefined}
             nextLabel={nextRef ? `S${nextRef.season} E${nextRef.episode}` : undefined}
-            pinChrome={nearEnd}
+            pinNext={nearEnd}
             title={`${tvShow.name} · S${season}E${episode}`}
             chromePaused={offerNext || Boolean(taste.moment)}
             footer={

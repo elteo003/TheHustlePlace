@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
     formatMediaTime,
     shouldHidePlayerCursor,
+    shouldShowNextButton,
     shouldShowPlayerChrome,
 } from '@/components/cinema-overlay'
 
@@ -36,7 +37,6 @@ describe('shouldHidePlayerCursor', () => {
 describe('shouldShowPlayerChrome', () => {
     const hidden = {
         chromePaused: false,
-        pinChrome: false,
         intro: false,
         hoverTop: false,
         hoverBottom: false,
@@ -50,5 +50,65 @@ describe('shouldShowPlayerChrome', () => {
 
     it('si nasconde se c’è l’overlay prossima puntata', () => {
         expect(shouldShowPlayerChrome({ ...hidden, tapped: true, chromePaused: true })).toBe(false)
+    })
+})
+
+describe('shouldShowNextButton', () => {
+    it('negli ultimi minuti resta solo Prossima, a chrome chiuso', () => {
+        expect(
+            shouldShowNextButton({
+                chromePaused: false,
+                pinNext: true,
+                chromeOpen: false,
+                hasNext: true,
+            })
+        ).toBe(true)
+        expect(
+            shouldShowPlayerChrome({
+                chromePaused: false,
+                intro: false,
+                hoverTop: false,
+                hoverBottom: false,
+                tapped: false,
+            })
+        ).toBe(false)
+    })
+
+    it('segue il chrome quando non è ancorata', () => {
+        expect(
+            shouldShowNextButton({
+                chromePaused: false,
+                pinNext: false,
+                chromeOpen: false,
+                hasNext: true,
+            })
+        ).toBe(false)
+        expect(
+            shouldShowNextButton({
+                chromePaused: false,
+                pinNext: false,
+                chromeOpen: true,
+                hasNext: true,
+            })
+        ).toBe(true)
+    })
+
+    it('sparisce con l’overlay di fine puntata o senza episodio successivo', () => {
+        expect(
+            shouldShowNextButton({
+                chromePaused: true,
+                pinNext: true,
+                chromeOpen: false,
+                hasNext: true,
+            })
+        ).toBe(false)
+        expect(
+            shouldShowNextButton({
+                chromePaused: false,
+                pinNext: true,
+                chromeOpen: false,
+                hasNext: false,
+            })
+        ).toBe(false)
     })
 })
