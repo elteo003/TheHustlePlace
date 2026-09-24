@@ -69,17 +69,19 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                                 aria-label={`Continua ${entry.title}`}
                             />
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation()
-                                    updateContinueEntry(entry.id, entry.type, 'dismiss')
-                                }}
-                                className="continue-dismiss continue-web-only absolute right-2 top-2 z-30 h-7 w-7 items-center justify-center"
-                                aria-label={`Togli ${entry.title} da continua a guardare`}
-                            >
-                                <X className="relative z-10 h-3.5 w-3.5" strokeWidth={2.5} />
-                            </button>
+                            <div className="continue-dismiss-zone continue-web-only absolute right-0 top-0 z-30 h-16 w-16 items-start justify-end p-2">
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation()
+                                        updateContinueEntry(entry.id, entry.type, 'dismiss')
+                                    }}
+                                    className="continue-dismiss h-7 w-7 items-center justify-center"
+                                    aria-label={`Togli ${entry.title} da continua a guardare`}
+                                >
+                                    <X className="relative z-10 h-3.5 w-3.5" strokeWidth={2.5} />
+                                </button>
+                            </div>
                             <button
                                 type="button"
                                 onClick={(event) => {

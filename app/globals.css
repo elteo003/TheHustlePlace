@@ -656,6 +656,7 @@ html {
 }
 
 .continue-dismiss {
+    display: flex;
     color: rgba(255, 86, 86, 0.92);
     background: transparent;
     border: 1px solid rgba(255, 120, 120, 0.28);
@@ -672,8 +673,8 @@ html {
         transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.continue-tile:hover .continue-dismiss,
-.continue-tile:focus-within .continue-dismiss {
+.continue-dismiss-zone:hover .continue-dismiss,
+.continue-dismiss-zone:focus-within .continue-dismiss {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
@@ -692,7 +693,7 @@ html {
     opacity: 1;
 }
 
-.continue-tile:has(.continue-dismiss:hover) .continue-shade {
+.continue-tile:has(.continue-dismiss-zone:hover) .continue-shade {
     opacity: 0;
 }
 
@@ -714,8 +715,8 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
     .continue-dismiss,
-    .continue-tile:hover .continue-dismiss,
-    .continue-tile:focus-within .continue-dismiss,
+    .continue-dismiss-zone:hover .continue-dismiss,
+    .continue-dismiss-zone:focus-within .continue-dismiss,
     .continue-dismiss:active {
         transform: none;
         transition: opacity 180ms ease;
