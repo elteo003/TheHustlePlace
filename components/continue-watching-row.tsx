@@ -91,7 +91,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                             >
                                 <span className="continue-shade pointer-events-none absolute inset-0">
                                     <span className="continue-shade-glow" />
-                                    <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-white">
+                                    <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-black">
                                         Già visto
                                     </span>
                                 </span>
