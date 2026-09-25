@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, type Transition, type Variants } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink } from 'lucide-react'
 import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { dockEase, sheetEase } from '@/lib/motion'
@@ -25,7 +25,7 @@ interface ApiKeyErrorProps {
 
 const enterEase = [0.16, 1, 0.3, 1] as const
 
-function panelVariants(reduce: boolean): Variants {
+function panelVariants(reduce: boolean) {
     const center = { x: '-50%', y: '-50%' }
     if (reduce) {
         return {
@@ -61,7 +61,7 @@ function panelVariants(reduce: boolean): Variants {
     }
 }
 
-function lineVariants(reduce: boolean): Variants {
+function lineVariants(reduce: boolean) {
     if (reduce) {
         return {
             hidden: { opacity: 0 },
@@ -103,7 +103,7 @@ export function ApiKeyError({ open = true, preview = false, onClose }: ApiKeyErr
 
     const panel = panelVariants(reduceMotion)
     const line = lineVariants(reduceMotion)
-    const backdropTransition: Transition = reduceMotion
+    const backdropTransition = reduceMotion
         ? { duration: 0.12 }
         : { duration: 0.2, ease: dockEase }
 
