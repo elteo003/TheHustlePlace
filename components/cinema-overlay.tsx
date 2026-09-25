@@ -424,28 +424,27 @@ export function CinemaOverlay({
                         )}
                     </div>
                 </div>
-            </div>
-
-            {onNext && (
-                <div
-                    className="player-skin-chrome player-skin-chrome-top absolute right-4 top-4 z-30"
-                    data-open={nextShown}
-                >
-                    <button
-                        type="button"
-                        onClick={onNext}
-                        className={cn(
-                            'player-skin-hit inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white',
-                            nextShown && !open && 'bg-black/60'
-                        )}
-                        aria-label={nextLabel ? `Prossima ${nextLabel}` : 'Puntata successiva'}
+                {onNext && (
+                    <div
+                        className="player-skin-chrome player-skin-chrome-top absolute right-4 top-4 z-30"
+                        data-open={nextShown}
                     >
-                        Prossima
-                        {nextLabel ? ` ${nextLabel}` : ''}
-                        <SkipForward className="h-4 w-4" />
-                    </button>
-                </div>
-            )}
+                        <button
+                            type="button"
+                            onClick={onNext}
+                            className={cn(
+                                'player-skin-hit inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-white',
+                                nextShown && !open && 'bg-black/60'
+                            )}
+                            aria-label={nextLabel ? `Prossima ${nextLabel}` : 'Puntata successiva'}
+                        >
+                            Prossima
+                            {nextLabel ? ` ${nextLabel}` : ''}
+                            <SkipForward className="h-4 w-4" />
+                        </button>
+                    </div>
+                )}
+            </div>
 
             <div
                 className={cn(
