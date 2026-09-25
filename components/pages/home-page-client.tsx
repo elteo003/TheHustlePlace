@@ -212,9 +212,7 @@ export function HomePageClient({
             .finally(() => setIsCheckingApi(false))
     }, [])
 
-    if (!hasApiKey && !isCheckingApi) {
-        return <ApiKeyError />
-    }
+    const showApiError = !hasApiKey && !isCheckingApi
 
     return (
         <MovieProvider>
@@ -254,6 +252,7 @@ export function HomePageClient({
                     ))}
                 </div>
             </main>
+            <ApiKeyError open={showApiError} />
         </MovieProvider>
     )
 }
