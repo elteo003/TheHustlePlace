@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { selectAiredEpisodes } from '@/lib/aired-episodes'
 import { logger } from '@/lib/utils'
 import { findMainTrailer, type TMDBVideo } from '@/lib/tmdb'
 
@@ -254,15 +255,8 @@ export class TMDBMoviesService {
                         const seasonDetails = await this.getTVShowSeasonDetails(tvShowId, season.season_number)
                         
                         if (seasonDetails && seasonDetails.episodes) {
-                            return {
-                                id: season.id,
-                                season_number: season.season_number,
-                                name: seasonDetails.name || season.name || `Stagione ${season.season_number}`,
-                                overview: seasonDetails.overview || season.overview || '',
-                                air_date: seasonDetails.air_date || season.air_date || '',
-                                poster_path: seasonDetails.poster_path || season.poster_path || null,
-                                episode_count: seasonDetails.episodes.length,
-                                episodes: seasonDetails.episodes.map((ep: any) => ({
+                            const episodes = selectAiredEpisodes(
+                                seasonDetails.episodes.map((ep: any) => ({
                                     id: ep.id,
                                     episode_number: ep.episode_number,
                                     name: ep.name,
@@ -271,8 +265,19 @@ export class TMDBMoviesService {
                                     still_path: ep.still_path || undefined,
                                     runtime: ep.runtime || 0,
                                     vote_average: ep.vote_average || 0,
-                                    season_number: season.season_number
+                                    season_number: season.season_number,
                                 }))
+                            )
+                            if (episodes.length === 0) return null
+                            return {
+                                id: season.id,
+                                season_number: season.season_number,
+                                name: seasonDetails.name || season.name || `Stagione ${season.season_number}`,
+                                overview: seasonDetails.overview || season.overview || '',
+                                air_date: seasonDetails.air_date || season.air_date || '',
+                                poster_path: seasonDetails.poster_path || season.poster_path || null,
+                                episode_count: episodes.length,
+                                episodes,
                             }
                         }
                         
@@ -304,7 +309,7 @@ export class TMDBMoviesService {
                 })
             )
 
-            return seasonsWithEpisodes
+            return seasonsWithEpisodes.filter((season): season is NonNullable<typeof season> => season != null)
         } catch (error) {
             logger.error('Errore nel recupero tutte le stagioni', { tvShowId, error })
             return []

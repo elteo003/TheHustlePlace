@@ -1,6 +1,8 @@
 import { firstFulfilled } from '@/lib/first-fulfilled'
 import { getHomeRelayConfig } from '@/lib/db/vixsrc-relay'
 import { HOME_RELAY_TIMEOUT_MS, homeRelayCircuit, interpretHomeRelayResponse } from '@/lib/vixsrc-home-relay'
+import { rememberVixsrcEpisodeAvailability } from '@/lib/vixsrc-episode-cache'
+import { isConfirmedVixsrcMiss } from '@/lib/vixsrc-episode-status'
 import { cache } from '@/utils/cache'
 import { logger } from '@/utils/logger'
 import {
@@ -180,6 +182,9 @@ export async function resolveVixsrcHls(input: {
             videoId: stream.videoId,
         }
         await cache.set(cacheKey, value, { ttl: CACHE_TTL_SECONDS })
+        if (input.type === 'tv' && input.season && input.episode) {
+            void rememberVixsrcEpisodeAvailability(input.tmdbId, input.season, input.episode, true)
+        }
         logger.info('Playlist VixSrc risolta', {
             tmdbId: input.tmdbId,
             type: input.type,
@@ -192,6 +197,7 @@ export async function resolveVixsrcHls(input: {
     const homeAbort = new AbortController()
     const publicAbort = new AbortController()
     let lastError = 'API VixSrc non disponibile (403)'
+    let confirmedMissing = false
 
     const homeTask = (async () => {
         const home = await resolveViaHomeRelay(input, lang, homeAbort.signal)
@@ -204,6 +210,7 @@ export async function resolveVixsrcHls(input: {
     const publicTask = (async () => {
         const stream = await resolveViaPublicTransports(input, lang, publicAbort.signal, (mode, error) => {
             lastError = error
+            if (isConfirmedVixsrcMiss(error)) confirmedMissing = true
             logger.warn('Transport VixSrc fallito', { mode, error, tmdbId: input.tmdbId })
         })
         return persist(stream, stream.mode)
@@ -218,6 +225,9 @@ export async function resolveVixsrcHls(input: {
         publicAbort.abort()
         return stream
     } catch {
+        if (confirmedMissing && input.type === 'tv' && input.season && input.episode) {
+            void rememberVixsrcEpisodeAvailability(input.tmdbId, input.season, input.episode, false)
+        }
         throw new Error(lastError)
     }
 }

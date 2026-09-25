@@ -30,7 +30,7 @@ export async function GET(
             })
         }
 
-        console.log('✅ Stagioni trovate:', seasonsWithEpisodes.length)
+        console.log('✅ Stagioni trovate:', seasonsWithEpisodes.length, seasonsWithEpisodes.map((season) => season.episode_count))
 
         return NextResponse.json({
             success: true,

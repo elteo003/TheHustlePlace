@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'TMDB ID non valido' }, { status: 400 })
         }
 
-        if (!Array.isArray(episodes) || episodes.length === 0) {
+        if (!Array.isArray(episodes)) {
             return NextResponse.json({ success: false, error: 'Lista episodi mancante' }, { status: 400 })
         }
 
@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const availability = await checkEpisodesAvailability(tmdbId, episodes)
+        const result = await checkEpisodesAvailability(tmdbId, episodes)
 
         return NextResponse.json({
             success: true,
-            data: { tmdbId, availability },
+            data: { tmdbId, showListed: result.showListed, availability: result.availability },
         })
     } catch (error) {
         return NextResponse.json(

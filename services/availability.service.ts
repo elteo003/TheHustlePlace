@@ -1,15 +1,16 @@
 import { logger } from '@/utils/logger'
+import { checkTailAvailability, EpisodeRef } from './episode-availability.service'
 import { isOnVixsrc } from './vixsrc-ids.service'
 
-const BATCH_CONCURRENCY = 8
-
-export interface EpisodeRef {
-    season: number
-    episode: number
-}
+export type { EpisodeRef }
 
 export interface EpisodeAvailability extends EpisodeRef {
     available: boolean
+}
+
+export interface EpisodeAvailabilityBatch {
+    showListed: boolean | null
+    availability: EpisodeAvailability[]
 }
 
 export async function checkVixsrcAvailability(
@@ -29,20 +30,6 @@ export async function checkVixsrcAvailability(
 export async function checkEpisodesAvailability(
     tmdbId: number,
     episodes: EpisodeRef[]
-): Promise<EpisodeAvailability[]> {
-    const results: EpisodeAvailability[] = []
-
-    for (let i = 0; i < episodes.length; i += BATCH_CONCURRENCY) {
-        const batch = episodes.slice(i, i + BATCH_CONCURRENCY)
-        const batchResults = await Promise.all(
-            batch.map(async ({ season, episode }) => ({
-                season,
-                episode,
-                available: await checkVixsrcAvailability(tmdbId, 'tv', season, episode),
-            }))
-        )
-        results.push(...batchResults)
-    }
-
-    return results
+): Promise<EpisodeAvailabilityBatch> {
+    return checkTailAvailability(tmdbId, episodes)
 }

@@ -29,14 +29,21 @@ async function fetchIdList(type: VixsrcListType): Promise<number[]> {
     return ids
 }
 
-export async function getVixsrcIdSet(type: VixsrcListType): Promise<Set<number>> {
+export async function getVixsrcListStatus(
+    type: VixsrcListType
+): Promise<{ loaded: false } | { loaded: true; ids: Set<number> }> {
     try {
         const ids = await fetchIdList(type)
-        return new Set(ids)
+        return { loaded: true, ids: new Set(ids) }
     } catch (error) {
         logger.warn('Impossibile caricare la lista VixSrc, nessun filtro disponibilità', { type, error })
-        return new Set()
+        return { loaded: false }
     }
+}
+
+export async function getVixsrcIdSet(type: VixsrcListType): Promise<Set<number>> {
+    const status = await getVixsrcListStatus(type)
+    return status.loaded ? status.ids : new Set()
 }
 
 export async function isOnVixsrc(tmdbId: number, type: VixsrcListType): Promise<boolean> {

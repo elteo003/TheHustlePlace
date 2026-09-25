@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { SeriesPlayer } from '@/components/series-player'
 import { Season, TVShowDetails } from '@/types'
@@ -9,6 +9,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { getLastWatchedEpisode, getResumeStartAt, getSeriesEpisodeProgress } from '@/lib/watch-history'
 import { resolveSeriesResume } from '@/lib/series-resume'
 import { getPlayerPath, isWatchableSearchParam } from '@/lib/content-navigation'
+import { refineSeasonAvailability } from '@/lib/refine-season-availability'
 
 export default function SeriesPage() {
     const params = useParams()
@@ -30,6 +31,12 @@ export default function SeriesPage() {
     >([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const requestRef = useRef(0)
+    const selectionRef = useRef({ season: 1, episode: 1 })
+
+    useEffect(() => {
+        selectionRef.current = { season: currentSeason, episode: currentEpisode }
+    }, [currentSeason, currentEpisode])
 
     useEffect(() => {
         fetchSeriesDetails()
@@ -58,7 +65,7 @@ export default function SeriesPage() {
             if (data.success && data.data) {
                 const seriesData = data.data
 
-                const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId, watchable)
+                const seasonsWithEpisodes = await loadSeasonsWithEpisodes(seriesId)
 
                 const actualNumberOfSeasons = seasonsWithEpisodes.length
                 const actualNumberOfEpisodes = seasonsWithEpisodes.reduce(
@@ -92,6 +99,37 @@ export default function SeriesPage() {
                 })
                 setCurrentSeason(resume.season)
                 setCurrentEpisode(resume.episode)
+                selectionRef.current = resume
+
+                if (watchable) {
+                    const requestId = ++requestRef.current
+                    const numericSeriesId = parseInt(seriesId, 10)
+                    void refineSeasonAvailability(numericSeriesId, seasonsWithEpisodes).then((refined) => {
+                        if (requestRef.current !== requestId) return
+                        const totalEpisodes = refined.reduce(
+                            (total, season) => total + (season.episodes?.length || 0),
+                            0
+                        )
+                        setTVShow((prev) =>
+                            prev
+                                ? {
+                                      ...prev,
+                                      seasons: refined,
+                                      number_of_seasons: refined.length,
+                                      number_of_episodes: totalEpisodes,
+                                  }
+                                : prev
+                        )
+                        const selected = selectionRef.current
+                        const next = resolveSeriesResume({
+                            querySeason: selected.season,
+                            queryEpisode: selected.episode,
+                            seasons: refined,
+                        })
+                        setCurrentSeason(next.season)
+                        setCurrentEpisode(next.episode)
+                    })
+                }
             } else {
                 throw new Error('Serie TV non trovata')
             }
@@ -103,66 +141,18 @@ export default function SeriesPage() {
         }
     }
 
-    const loadSeasonsWithEpisodes = async (id: string, canWatch: boolean): Promise<Season[]> => {
+    const loadSeasonsWithEpisodes = async (id: string): Promise<Season[]> => {
         try {
             const response = await fetch(`/api/tmdb/tv/${id}/seasons`)
             const data = await response.json()
 
             if (data.success && data.data) {
-                return canWatch ? filterAvailableEpisodes(id, data.data) : data.data
+                return data.data
             }
 
             return []
         } catch {
             return []
-        }
-    }
-
-    const filterAvailableEpisodes = async (id: string, seasons: Season[]): Promise<Season[]> => {
-        const episodes = seasons.flatMap((season) =>
-            (season.episodes || []).map((episode) => ({
-                season: season.season_number,
-                episode: episode.episode_number,
-            }))
-        )
-
-        if (episodes.length === 0) {
-            return seasons
-        }
-
-        try {
-            const response = await fetch('/api/player/check-availability/batch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tmdbId: parseInt(id, 10), episodes }),
-            })
-            const data = await response.json()
-
-            if (!data.success || !Array.isArray(data.data?.availability)) {
-                return seasons
-            }
-
-            const availableSet = new Set(
-                data.data.availability
-                    .filter((item: { available: boolean }) => item.available)
-                    .map((item: { season: number; episode: number }) => `${item.season}-${item.episode}`)
-            )
-
-            return seasons
-                .map((season) => {
-                    const availableEpisodes = (season.episodes || []).filter((episode) =>
-                        availableSet.has(`${season.season_number}-${episode.episode_number}`)
-                    )
-
-                    return {
-                        ...season,
-                        episodes: availableEpisodes,
-                        episode_count: availableEpisodes.length,
-                    }
-                })
-                .filter((season) => season.episodes.length > 0)
-        } catch {
-            return seasons
         }
     }
 

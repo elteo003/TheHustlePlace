@@ -157,6 +157,7 @@ export interface Episode {
     runtime?: number;
     vote_average: number;
     season_number: number;
+    needsProbe?: boolean;
 }
 
 export interface Season {
