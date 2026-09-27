@@ -9,7 +9,6 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { getLastWatchedEpisode, getResumeStartAt, getSeriesEpisodeProgress } from '@/lib/watch-history'
 import { resolveSeriesResume } from '@/lib/series-resume'
 import { getPlayerPath, isWatchableSearchParam } from '@/lib/content-navigation'
-import { refineSeasonAvailability } from '@/lib/refine-season-availability'
 
 export default function SeriesPage() {
     const params = useParams()
@@ -100,36 +99,6 @@ export default function SeriesPage() {
                 setCurrentSeason(resume.season)
                 setCurrentEpisode(resume.episode)
                 selectionRef.current = resume
-
-                if (watchable) {
-                    const requestId = ++requestRef.current
-                    const numericSeriesId = parseInt(seriesId, 10)
-                    void refineSeasonAvailability(numericSeriesId, seasonsWithEpisodes).then((refined) => {
-                        if (requestRef.current !== requestId) return
-                        const totalEpisodes = refined.reduce(
-                            (total, season) => total + (season.episodes?.length || 0),
-                            0
-                        )
-                        setTVShow((prev) =>
-                            prev
-                                ? {
-                                      ...prev,
-                                      seasons: refined,
-                                      number_of_seasons: refined.length,
-                                      number_of_episodes: totalEpisodes,
-                                  }
-                                : prev
-                        )
-                        const selected = selectionRef.current
-                        const next = resolveSeriesResume({
-                            querySeason: selected.season,
-                            queryEpisode: selected.episode,
-                            seasons: refined,
-                        })
-                        setCurrentSeason(next.season)
-                        setCurrentEpisode(next.episode)
-                    })
-                }
             } else {
                 throw new Error('Serie TV non trovata')
             }

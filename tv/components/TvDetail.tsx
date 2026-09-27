@@ -9,7 +9,6 @@ import { getTMDBImageUrl } from '@/lib/tmdb'
 import { livingHomePath, livingPlayerPath } from '@/tv/lib/paths'
 import { TvFocus } from '@/tv/components/TvFocus'
 import { TvNav } from '@/tv/components/TvNav'
-import { refineSeasonAvailability } from '@/lib/refine-season-availability'
 import { Season } from '@/types'
 import { resolvePlayerStartAt } from '@/lib/watch-history'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
@@ -61,15 +60,6 @@ export function TvDetail({ id, type }: TvDetailProps) {
                         const list = (seasonsData.data as Season[]).filter((item) => item.season_number > 0)
                         setSeasons(list)
                         if (list[0]) setSeason(list[0].season_number)
-                        void refineSeasonAvailability(id, list).then((refined) => {
-                            if (cancelled) return
-                            setSeasons(refined)
-                            setSeason((current) =>
-                                refined.some((item) => item.season_number === current)
-                                    ? current
-                                    : (refined[0]?.season_number ?? 1)
-                            )
-                        })
                     }
                 }
             } catch {

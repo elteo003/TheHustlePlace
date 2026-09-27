@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tmdbWrapperService } from '@/services/tmdb-wrapper.service'
+import { checkEpisodesAvailability } from '@/services/availability.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,11 +31,49 @@ export async function GET(
             })
         }
 
-        console.log('✅ Stagioni trovate:', seasonsWithEpisodes.length, seasonsWithEpisodes.map((season) => season.episode_count))
+        let refinedSeasons = seasonsWithEpisodes
+
+        const episodesToProbe = seasonsWithEpisodes.flatMap((season) =>
+            (season.episodes || [])
+                .filter((episode: any) => episode.needsProbe)
+                .map((episode: any) => ({
+                    season: season.season_number,
+                    episode: episode.episode_number,
+                }))
+        )
+
+        if (episodesToProbe.length > 0) {
+            try {
+                const result = await checkEpisodesAvailability(tvId, episodesToProbe)
+                if (result.showListed === false) {
+                    refinedSeasons = []
+                } else {
+                    const missing = new Set(
+                        (result.availability || [])
+                            .filter((item) => item.available === false)
+                            .map((item) => `${item.season}-${item.episode}`)
+                    )
+                    refinedSeasons = seasonsWithEpisodes.map((season) => {
+                        const availableEpisodes = season.episodes.filter(
+                            (episode: any) => !missing.has(`${season.season_number}-${episode.episode_number}`)
+                        )
+                        return {
+                            ...season,
+                            episodes: availableEpisodes,
+                            episode_count: availableEpisodes.length,
+                        }
+                    }).filter((season) => season.episodes.length > 0)
+                }
+            } catch (error) {
+                console.error('❌ Errore nel controllo disponibilità VixSrc per', tvId, error)
+            }
+        }
+
+        console.log('✅ Stagioni trovate:', refinedSeasons.length, refinedSeasons.map((season) => season.episode_count))
 
         return NextResponse.json({
             success: true,
-            data: seasonsWithEpisodes
+            data: refinedSeasons
         })
 
     } catch (error) {
