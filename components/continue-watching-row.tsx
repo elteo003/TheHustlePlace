@@ -142,20 +142,33 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                     isLaunching && 'bg-black/55 backdrop-blur-[1px]'
                                 )}
                             />
-                            <div className="continue-play-pill">
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation()
+                                    handleLaunch(entry)
+                                }}
+                                className="continue-play-btn"
+                                aria-label={`Riproduci ${entry.title}`}
+                            >
                                 <div className="continue-play-icon">
                                     <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
                                 </div>
                                 <div className="continue-play-script" aria-hidden="true">
-                                    <svg viewBox="0 0 68 26" className="w-[68px] h-[26px]">
+                                    <svg viewBox="0 0 72 26" className="w-[72px] h-[26px]">
                                         <path
-                                            className="continue-apple-stroke"
+                                            className="continue-apple-stroke-p"
                                             pathLength={100}
-                                            d="M 4 14.5 C 6 11.5 8 8 9 8 L 7 24 M 7 13 C 9.5 8.5 17 8.5 17 13 C 17 17.5 10.5 18 8 17.5 C 11 17.5 18 18 21 18 C 23.5 18 24.5 7.5 27 4 C 28.2 2.5 29.2 3 28.5 6.5 L 26 18 C 28 18 31 16.5 33.5 12.5 C 31 10.5 27.5 12 27.5 15 C 27.5 18 31.5 18.2 33.5 17.5 L 34.5 11.5 L 34.5 18 C 36.5 18 39.5 16.5 41 12.5 L 42 18 C 42 21.5 40.5 25.5 36.5 25.5 C 33.5 25.5 33.5 22 37.5 19.5 L 46 16"
+                                            d="M 5 20.5 L 5 5 C 8 3 16 3 16.5 7.5 C 17 12 9.5 13.5 5 13"
+                                        />
+                                        <path
+                                            className="continue-apple-stroke-lay"
+                                            pathLength={100}
+                                            d="M 17 17 C 19 17 21 10.5 23.5 4.5 C 24.8 3 25.8 3.5 25 6.5 L 22.5 17 C 24.5 17 27.5 15.5 30 11.5 C 27.5 9.5 24.2 11.5 24.2 14 C 24.2 16.8 28 17 30 16.5 L 31.5 10.5 L 31.5 17 C 33.5 17 36.5 15.5 38 11.5 L 39 17 C 39 20 37.5 24.5 33.5 24.5 C 31 24.5 31 21.5 34.5 19 L 43.5 15.5"
                                         />
                                     </svg>
                                 </div>
-                            </div>
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => handleLaunch(entry)}

@@ -734,30 +734,34 @@ html {
 }
 
 /* Continue Watching Play Button - Mobile vs Desktop & Apple handwriting effect */
-.continue-play-pill {
+.continue-play-btn {
     position: absolute;
     bottom: 0.75rem;
     left: 0.625rem;
-    z-index: 10;
+    z-index: 20;
     display: inline-flex;
     align-items: center;
     height: 2.125rem; /* 34px */
-    width: 2.125rem;  /* 34px - compact icon on mobile */
-    border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    width: 2.125rem;  /* 34px - compact icon on mobile / rest */
+    border-radius: 0.5rem; /* PREVIOUS SHAPE: rounded-lg */
+    border: 1px solid rgba(255, 255, 255, 0.30); /* PREVIOUS BORDER */
+    background: rgba(255, 255, 255, 0.20); /* PREVIOUS BACKGROUND */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     overflow: hidden;
     color: #ffffff;
-    pointer-events: none;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     transition:
-        width 340ms cubic-bezier(0.16, 1, 0.3, 1),
-        background-color 220ms ease,
-        border-color 220ms ease,
-        box-shadow 220ms ease,
-        transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        width 320ms cubic-bezier(0.16, 1, 0.3, 1),
+        background-color 200ms ease,
+        border-color 200ms ease,
+        box-shadow 200ms ease,
+        transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.continue-play-btn:active {
+    transform: scale(0.96);
 }
 
 .continue-play-icon {
@@ -775,29 +779,38 @@ html {
     left: 2.125rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 68px;
+    width: 72px;
     height: 26px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 120ms ease;
+    transition: opacity 140ms ease;
 }
 
-.continue-apple-stroke {
+.continue-apple-stroke-p,
+.continue-apple-stroke-lay {
     fill: none;
     stroke: #ffffff;
-    stroke-width: 2.2;
+    stroke-width: 2.1;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-dasharray: 100;
     stroke-dashoffset: 100;
+}
+
+.continue-apple-stroke-p {
     transition: stroke-dashoffset 160ms ease;
 }
 
-/* Desktop hover: expands smoothly rightwards & writes "play" with Apple line-drawing */
+.continue-apple-stroke-lay {
+    transition: stroke-dashoffset 160ms ease;
+}
+
+/* Desktop hover: ONLY when cursor is directly over the play button! */
 @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
-    .continue-play-pill {
+    .continue-play-btn {
         height: 2.25rem; /* 36px */
         width: 2.25rem;
+        border-radius: 0.5rem; /* rounded-lg */
     }
 
     .continue-play-icon {
@@ -807,50 +820,65 @@ html {
 
     .continue-play-script {
         display: block;
-        left: 2.18rem;
+        left: 2.25rem;
     }
 
-    .continue-tile:hover .continue-play-pill,
-    .continue-tile:focus-within .continue-play-pill {
-        width: 7.125rem; /* 114px: expands towards right */
-        background: rgba(255, 255, 255, 0.22);
-        border-color: rgba(255, 255, 255, 0.45);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 255, 255, 0.12);
+    /* DIRECT HOVER ON BUTTON ONLY (not the whole tile) */
+    .continue-play-btn:hover,
+    .continue-play-btn:focus-visible {
+        width: 7.25rem; /* 116px: expands rightwards maintaining rounded-lg */
+        background: rgba(255, 255, 255, 0.28);
+        border-color: rgba(255, 255, 255, 0.48);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 16px rgba(255, 255, 255, 0.15);
     }
 
-    .continue-tile:hover .continue-play-script,
-    .continue-tile:focus-within .continue-play-script {
+    .continue-play-btn:hover .continue-play-script,
+    .continue-play-btn:focus-visible .continue-play-script {
         opacity: 1;
         transition: opacity 180ms ease 60ms;
     }
 
-    .continue-tile:hover .continue-apple-stroke,
-    .continue-tile:focus-within .continue-apple-stroke {
+    /* Emil Kowalski choreography:
+       - 0ms-320ms: button expands rightwards
+       - 100ms-380ms: capital P is drawn
+       - 340ms-820ms: cursive ligature 'lay' flows seamlessly
+       Total perceived handwriting time ~720ms - matches human calligraphy physics!
+    */
+    .continue-play-btn:hover .continue-apple-stroke-p,
+    .continue-play-btn:focus-visible .continue-apple-stroke-p {
         stroke-dashoffset: 0;
-        transition: stroke-dashoffset 440ms cubic-bezier(0.16, 1, 0.3, 1) 110ms;
+        transition: stroke-dashoffset 280ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
+    }
+
+    .continue-play-btn:hover .continue-apple-stroke-lay,
+    .continue-play-btn:focus-visible .continue-apple-stroke-lay {
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 480ms cubic-bezier(0.16, 1, 0.3, 1) 340ms;
     }
 }
 
 /* Launching / Click transition */
-.continue-tile.is-launching .continue-play-pill {
+.continue-tile.is-launching .continue-play-btn {
     background: #ffffff;
     color: #000000;
     border-color: #ffffff;
-    box-shadow: 0 0 24px rgba(255, 255, 255, 0.65);
-    transform: scale(1.06);
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.7);
+    transform: scale(1.05);
 }
 
-.continue-tile.is-launching .continue-apple-stroke {
+.continue-tile.is-launching .continue-apple-stroke-p,
+.continue-tile.is-launching .continue-apple-stroke-lay {
     stroke: #000000;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .continue-play-pill,
-    .continue-tile:hover .continue-play-pill {
+    .continue-play-btn,
+    .continue-play-btn:hover {
         transition: none;
         width: 2.25rem;
     }
-    .continue-apple-stroke {
+    .continue-apple-stroke-p,
+    .continue-apple-stroke-lay {
         stroke-dashoffset: 0;
         transition: none;
     }
