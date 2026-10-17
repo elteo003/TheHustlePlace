@@ -13,6 +13,7 @@ import { CustomScrollbar } from '@/components/custom-scrollbar'
 import { TastePrompt } from '@/components/taste-prompt'
 import { FeedbackMoment, Liking, WouldContinue } from '@/lib/taste-ranker'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 type ContinueSheet =
     | { kind: 'dismiss'; entry: WatchHistoryEntry }
@@ -62,11 +63,38 @@ interface ContinueWatchingRowProps {
 export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
     const router = useRouter()
     const [sheet, setSheet] = useState<ContinueSheet | null>(null)
+    const [launchingId, setLaunchingId] = useState<string | null>(null)
 
     function dismissWith(entry: WatchHistoryEntry, liking: 'disliked' | 'not_interested') {
         void saveFeedback({ entry, moment: 'dismiss', season: 0, liking })
         updateContinueEntry(entry.id, entry.type, 'dismiss')
         setSheet(null)
+    }
+
+    function handleLaunch(entry: WatchHistoryEntry) {
+        const tileKey = `${entry.type}-${entry.id}`
+        if (launchingId) return
+        setLaunchingId(tileKey)
+
+        const targetUrl = getPlayerPath(entry.id, entry.type, {
+            season: entry.season,
+            episode: entry.episode,
+            startAt: resumeStartAt({
+                currentTime: entry.currentTime,
+                duration: entry.duration,
+                progress: entry.progress,
+            }),
+        })
+
+        if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+            document.startViewTransition(() => {
+                router.push(targetUrl)
+            })
+        } else {
+            router.push(targetUrl)
+        }
+
+        setTimeout(() => setLaunchingId(null), 3000)
     }
 
     const visible = entries.filter((entry) => !entry.continueHidden)
@@ -82,42 +110,55 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                           ? 'Serie TV'
                           : 'Film'
 
+                const tileKey = `${entry.type}-${entry.id}`
+                const isLaunching = launchingId === tileKey
+
                 return (
                     <motion.div
-                        key={`${entry.type}-${entry.id}`}
+                        key={tileKey}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                        className="continue-tile group relative flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left rounded-lg"
+                        whileTap={{ scale: 0.985 }}
+                        className={cn(
+                            'continue-tile group relative flex-shrink-0 w-[clamp(12.5rem,18vw,22rem)] text-left rounded-lg cursor-pointer select-none transition-transform duration-150',
+                            isLaunching && 'is-launching'
+                        )}
                     >
                         <div className="relative aspect-video rounded-lg overflow-hidden bg-zinc-900 mb-2">
                             <Image
                                 src={getContentPosterUrl(entry.backdrop_path || entry.poster_path, 'w780')}
                                 alt={entry.title}
                                 fill
-                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                className={cn(
+                                    'object-cover transition-all duration-300 group-hover:scale-105',
+                                    isLaunching && 'scale-105 brightness-[0.7]'
+                                )}
                                 sizes="(max-width: 1536px) 220px, 352px"
                             />
-                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
-                            <span className="absolute bottom-3 left-2 z-10 inline-flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/20 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-                                <Play className="h-4 w-4 play-mark-pulse" />
-                                Play
-                            </span>
+                            <div
+                                className={cn(
+                                    'absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-all duration-300',
+                                    isLaunching && 'bg-black/55 backdrop-blur-[1px]'
+                                )}
+                            />
+                            <div className="continue-play-pill">
+                                <div className="continue-play-icon">
+                                    <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                                </div>
+                                <div className="continue-play-script" aria-hidden="true">
+                                    <svg viewBox="0 0 68 26" className="w-[68px] h-[26px]">
+                                        <path
+                                            className="continue-apple-stroke"
+                                            pathLength={100}
+                                            d="M 4 14.5 C 6 11.5 8 8 9 8 L 7 24 M 7 13 C 9.5 8.5 17 8.5 17 13 C 17 17.5 10.5 18 8 17.5 C 11 17.5 18 18 21 18 C 23.5 18 24.5 7.5 27 4 C 28.2 2.5 29.2 3 28.5 6.5 L 26 18 C 28 18 31 16.5 33.5 12.5 C 31 10.5 27.5 12 27.5 15 C 27.5 18 31.5 18.2 33.5 17.5 L 34.5 11.5 L 34.5 18 C 36.5 18 39.5 16.5 41 12.5 L 42 18 C 42 21.5 40.5 25.5 36.5 25.5 C 33.5 25.5 33.5 22 37.5 19.5 L 46 16"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
                             <button
                                 type="button"
-                                onClick={() =>
-                                    router.push(
-                                        getPlayerPath(entry.id, entry.type, {
-                                            season: entry.season,
-                                            episode: entry.episode,
-                                            startAt: resumeStartAt({
-                                                currentTime: entry.currentTime,
-                                                duration: entry.duration,
-                                                progress: entry.progress,
-                                            }),
-                                        })
-                                    )
-                                }
+                                onClick={() => handleLaunch(entry)}
                                 className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                                 aria-label={`Continua ${entry.title}`}
                             />
@@ -169,7 +210,9 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                         <p className="text-sm font-medium text-white line-clamp-1 group-hover:text-white/90">
                             {entry.title}
                         </p>
-                        <p className="text-xs text-white/50 mt-0.5">{subtitle}</p>
+                        <p className="text-xs text-white/50 mt-0.5">
+                            {isLaunching ? 'Avvio in corso...' : subtitle}
+                        </p>
                     </motion.div>
                 )
             })}

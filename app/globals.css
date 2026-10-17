@@ -733,6 +733,130 @@ html {
     }
 }
 
+/* Continue Watching Play Button - Mobile vs Desktop & Apple handwriting effect */
+.continue-play-pill {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.625rem;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    height: 2.125rem; /* 34px */
+    width: 2.125rem;  /* 34px - compact icon on mobile */
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    overflow: hidden;
+    color: #ffffff;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    transition:
+        width 340ms cubic-bezier(0.16, 1, 0.3, 1),
+        background-color 220ms ease,
+        border-color 220ms ease,
+        box-shadow 220ms ease,
+        transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.continue-play-icon {
+    flex-shrink: 0;
+    width: 2.125rem;
+    height: 2.125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.continue-play-script {
+    display: none; /* hidden on mobile / touch */
+    position: absolute;
+    left: 2.125rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 68px;
+    height: 26px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.continue-apple-stroke {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset 160ms ease;
+}
+
+/* Desktop hover: expands smoothly rightwards & writes "play" with Apple line-drawing */
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+    .continue-play-pill {
+        height: 2.25rem; /* 36px */
+        width: 2.25rem;
+    }
+
+    .continue-play-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .continue-play-script {
+        display: block;
+        left: 2.18rem;
+    }
+
+    .continue-tile:hover .continue-play-pill,
+    .continue-tile:focus-within .continue-play-pill {
+        width: 7.125rem; /* 114px: expands towards right */
+        background: rgba(255, 255, 255, 0.22);
+        border-color: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 255, 255, 0.12);
+    }
+
+    .continue-tile:hover .continue-play-script,
+    .continue-tile:focus-within .continue-play-script {
+        opacity: 1;
+        transition: opacity 180ms ease 60ms;
+    }
+
+    .continue-tile:hover .continue-apple-stroke,
+    .continue-tile:focus-within .continue-apple-stroke {
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 440ms cubic-bezier(0.16, 1, 0.3, 1) 110ms;
+    }
+}
+
+/* Launching / Click transition */
+.continue-tile.is-launching .continue-play-pill {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.65);
+    transform: scale(1.06);
+}
+
+.continue-tile.is-launching .continue-apple-stroke {
+    stroke: #000000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .continue-play-pill,
+    .continue-tile:hover .continue-play-pill {
+        transition: none;
+        width: 2.25rem;
+    }
+    .continue-apple-stroke {
+        stroke-dashoffset: 0;
+        transition: none;
+    }
+}
+
+
 .player-skin-hit:active {
     transform: scale(0.97);
 }

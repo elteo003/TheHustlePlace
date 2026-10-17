@@ -4,7 +4,7 @@ import { classifyVixsrcEpisodeProbe, isConfirmedVixsrcMiss } from './vixsrc-epis
 describe('classifyVixsrcEpisodeProbe', () => {
     it('distingue file presente, assente e risposta inutilizzabile', () => {
         expect(classifyVixsrcEpisodeProbe(200, '{"src":"/embed/1?token=a"}')).toBe('available')
-        expect(classifyVixsrcEpisodeProbe(403, '')).toBe('missing')
+        expect(classifyVixsrcEpisodeProbe(403, '')).toBe('unknown')
         expect(classifyVixsrcEpisodeProbe(404, '')).toBe('missing')
         expect(classifyVixsrcEpisodeProbe(200, '<html></html>')).toBe('unknown')
         expect(classifyVixsrcEpisodeProbe(503, '')).toBe('unknown')
