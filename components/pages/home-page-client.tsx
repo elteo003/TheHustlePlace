@@ -273,30 +273,39 @@ export function HomePageClient({
                         </section>
                     )}
 
-                    {upcomingTV.length > 0 && (
-                        <UpcomingTVSection
-                            items={upcomingTV}
-                            onPlay={play}
-                            onDetails={(id, type) => openDetails(id, type)}
-                        />
-                    )}
+                    {shelves.map((shelf, index) => {
+                        const hasAffinity = shelves.some((s) => s.id === 'affinity')
+                        const shouldShowUpcomingHere =
+                            (shelf.id === 'affinity' || (!hasAffinity && index === Math.min(2, shelves.length - 1))) &&
+                            upcomingTV.length > 0
 
-                    {shelves.map((shelf) => (
-                        <HomeRail key={shelf.id} title={shelf.title}>
-                            <MovieGridIntegrated
-                                type={shelf.type}
-                                section={shelf.section}
-                                limit={shelf.limit}
-                                onPlay={shelf.playable === false ? undefined : play}
-                                onDetails={(id, type) =>
-                                    openDetails(id, type, {
-                                        watchable: shelf.playable !== false,
-                                    })
-                                }
-                                initialData={shelf.items}
-                            />
-                        </HomeRail>
-                    ))}
+                        return (
+                            <div key={shelf.id}>
+                                <HomeRail title={shelf.title}>
+                                    <MovieGridIntegrated
+                                        type={shelf.type}
+                                        section={shelf.section}
+                                        limit={shelf.limit}
+                                        onPlay={shelf.playable === false ? undefined : play}
+                                        onDetails={(id, type) =>
+                                            openDetails(id, type, {
+                                                watchable: shelf.playable !== false,
+                                            })
+                                        }
+                                        initialData={shelf.items}
+                                    />
+                                </HomeRail>
+
+                                {shouldShowUpcomingHere && (
+                                    <UpcomingTVSection
+                                        items={upcomingTV}
+                                        onPlay={play}
+                                        onDetails={(id, type) => openDetails(id, type)}
+                                    />
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             </main>
             <ApiKeyError open={showApiError} />

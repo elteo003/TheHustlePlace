@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Play, X, Sparkles } from 'lucide-react'
+import { Play, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
@@ -150,16 +150,6 @@ export function ContinueWatchingRow({ entries, upcomingSeriesIds }: ContinueWatc
                                 )}
                             />
 
-                            {/* Badge for series with upcoming episodes */}
-                            {isProtected && (
-                                <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-black/85 border border-cyan-400/60 px-2 py-0.5 text-[10px] font-bold text-cyan-300 backdrop-blur-md shadow-[0_0_12px_rgba(6,182,212,0.3)]">
-                                        <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
-                                        Nuovi episodi in arrivo
-                                    </span>
-                                </div>
-                            )}
-
                             <button
                                 type="button"
                                 onClick={(event) => {
@@ -248,13 +238,8 @@ export function ContinueWatchingRow({ entries, upcomingSeriesIds }: ContinueWatc
                         <p className="text-sm font-medium text-white line-clamp-1 group-hover:text-white/90">
                             {entry.title}
                         </p>
-                        <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
-                            <span>{isLaunching ? 'Avvio in corso...' : subtitle}</span>
-                            {isProtected && !isLaunching && (
-                                <span className="text-[10px] text-cyan-400 font-medium">
-                                    • In arrivo
-                                </span>
-                            )}
+                        <p className="text-xs text-white/50 mt-0.5">
+                            {isLaunching ? 'Avvio in corso...' : subtitle}
                         </p>
                     </motion.div>
                 )
