@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { Play, X } from 'lucide-react'
+import { Play, X, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { updateContinueEntry, WatchHistoryEntry } from '@/lib/watch-history'
 import { getContentPosterUrl } from '@/lib/content-display'
@@ -58,12 +58,18 @@ async function saveFeedback(input: {
 
 interface ContinueWatchingRowProps {
     entries: WatchHistoryEntry[]
+    upcomingSeriesIds?: Set<number> | number[]
 }
 
-export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
+export function ContinueWatchingRow({ entries, upcomingSeriesIds }: ContinueWatchingRowProps) {
     const router = useRouter()
     const [sheet, setSheet] = useState<ContinueSheet | null>(null)
     const [launchingId, setLaunchingId] = useState<string | null>(null)
+
+    const upcomingIdsSet = useMemo(() => {
+        if (!upcomingSeriesIds) return new Set<number>()
+        return upcomingSeriesIds instanceof Set ? upcomingSeriesIds : new Set(upcomingSeriesIds)
+    }, [upcomingSeriesIds])
 
     function dismissWith(entry: WatchHistoryEntry, liking: 'disliked' | 'not_interested') {
         void saveFeedback({ entry, moment: 'dismiss', season: 0, liking })
@@ -112,6 +118,7 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
 
                 const tileKey = `${entry.type}-${entry.id}`
                 const isLaunching = launchingId === tileKey
+                const isProtected = entry.type === 'tv' && upcomingIdsSet.has(entry.id)
 
                 return (
                     <motion.div
@@ -142,6 +149,17 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                     isLaunching && 'bg-black/55 backdrop-blur-[1px]'
                                 )}
                             />
+
+                            {/* Badge for series with upcoming episodes */}
+                            {isProtected && (
+                                <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-black/85 border border-cyan-400/60 px-2 py-0.5 text-[10px] font-bold text-cyan-300 backdrop-blur-md shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                                        <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
+                                        Nuovi episodi in arrivo
+                                    </span>
+                                </div>
+                            )}
+
                             <button
                                 type="button"
                                 onClick={(event) => {
@@ -175,44 +193,51 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                                 className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                                 aria-label={`Continua ${entry.title}`}
                             />
-                            <div className="continue-dismiss-zone continue-web-only absolute right-0 top-0 z-30 h-16 w-16 items-start justify-end p-2">
-                                <button
-                                    type="button"
-                                    onClick={(event) => {
-                                        event.stopPropagation()
-                                        setSheet({ kind: 'dismiss', entry })
-                                    }}
-                                    className="continue-dismiss h-7 w-7 items-center justify-center"
-                                    aria-label={`Togli ${entry.title} da continua a guardare`}
-                                >
-                                    <X className="relative z-10 h-3.5 w-3.5" strokeWidth={2.5} />
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation()
-                                    const ask = closingAsk(entry)
-                                    void hasClosingFeedback(entry)
-                                        .then((answered) => {
-                                            if (answered) {
-                                                updateContinueEntry(entry.id, entry.type, 'seen')
-                                                return
-                                            }
-                                            setSheet({ kind: 'seen', entry, ...ask })
-                                        })
-                                        .catch(() => setSheet({ kind: 'seen', entry, ...ask }))
-                                }}
-                                className="continue-seen continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
-                                aria-label={`Segna ${entry.title} come già visto`}
-                            >
-                                <span className="continue-shade pointer-events-none absolute inset-0">
-                                    <span className="continue-shade-glow" />
-                                    <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-black">
-                                        Già visto
-                                    </span>
-                                </span>
-                            </button>
+
+                            {/* Dismiss and Seen buttons are hidden for protected series with upcoming episodes */}
+                            {!isProtected && (
+                                <>
+                                    <div className="continue-dismiss-zone continue-web-only absolute right-0 top-0 z-30 h-16 w-16 items-start justify-end p-2">
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.stopPropagation()
+                                                setSheet({ kind: 'dismiss', entry })
+                                            }}
+                                            className="continue-dismiss h-7 w-7 items-center justify-center"
+                                            aria-label={`Togli ${entry.title} da continua a guardare`}
+                                        >
+                                            <X className="relative z-10 h-3.5 w-3.5" strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation()
+                                            const ask = closingAsk(entry)
+                                            void hasClosingFeedback(entry)
+                                                .then((answered) => {
+                                                    if (answered) {
+                                                        updateContinueEntry(entry.id, entry.type, 'seen')
+                                                        return
+                                                    }
+                                                    setSheet({ kind: 'seen', entry, ...ask })
+                                                })
+                                                .catch(() => setSheet({ kind: 'seen', entry, ...ask }))
+                                        }}
+                                        className="continue-seen continue-web-hit group/seen absolute inset-y-0 right-0 z-20 w-[46%]"
+                                        aria-label={`Segna ${entry.title} come già visto`}
+                                    >
+                                        <span className="continue-shade pointer-events-none absolute inset-0">
+                                            <span className="continue-shade-glow" />
+                                            <span className="absolute inset-y-0 right-2 flex items-center text-[11px] font-semibold text-black">
+                                                Già visto
+                                            </span>
+                                        </span>
+                                    </button>
+                                </>
+                            )}
+
                             <div className="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/20 pointer-events-none">
                                 <div
                                     className="h-full bg-white transition-[width] duration-500"
@@ -223,8 +248,13 @@ export function ContinueWatchingRow({ entries }: ContinueWatchingRowProps) {
                         <p className="text-sm font-medium text-white line-clamp-1 group-hover:text-white/90">
                             {entry.title}
                         </p>
-                        <p className="text-xs text-white/50 mt-0.5">
-                            {isLaunching ? 'Avvio in corso...' : subtitle}
+                        <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
+                            <span>{isLaunching ? 'Avvio in corso...' : subtitle}</span>
+                            {isProtected && !isLaunching && (
+                                <span className="text-[10px] text-cyan-400 font-medium">
+                                    • In arrivo
+                                </span>
+                            )}
                         </p>
                     </motion.div>
                 )

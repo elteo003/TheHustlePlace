@@ -242,5 +242,49 @@ export function extractYouTubeVideoId(trailerKey: string): string | null {
     return null
 }
 
+export interface TMDBTVDetails extends TMDBTVShow {
+    next_episode_to_air?: {
+        id: number
+        name: string
+        overview: string
+        vote_average: number
+        vote_count: number
+        air_date: string | null
+        episode_number: number
+        episode_type?: string
+        season_number: number
+        show_id: number
+        still_path: string | null
+    } | null
+    last_episode_to_air?: {
+        id: number
+        name: string
+        overview: string
+        vote_average: number
+        air_date: string | null
+        episode_number: number
+        season_number: number
+        show_id: number
+        still_path: string | null
+    } | null
+    status: string
+    number_of_seasons: number
+    number_of_episodes: number
+    genres: Array<{ id: number; name: string }>
+}
+
+export async function getTVDetails(tvId: number): Promise<TMDBTVDetails> {
+    return fetchFromTMDB<TMDBTVDetails>(`tv/${tvId}`)
+}
+
+export async function getTVVideos(tvId: number): Promise<TMDBVideosResponse> {
+    return fetchFromTMDB<TMDBVideosResponse>(`tv/${tvId}/videos`)
+}
+
+export async function getOnTheAirTV(): Promise<TMDBResponse<TMDBTVShow>> {
+    return fetchFromTMDB<TMDBResponse<TMDBTVShow>>('tv/on_the_air')
+}
+
+
 
 

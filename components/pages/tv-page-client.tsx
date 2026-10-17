@@ -1,16 +1,19 @@
 'use client'
 
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
+import { UpcomingTVSection } from '@/components/upcoming-tv-section'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { TVShow } from '@/types'
+import { UpcomingTVShowItem } from '@/lib/tv-upcoming'
 
 interface TVPageClientProps {
     popular: TVShow[]
     recent: TVShow[]
     topRated: TVShow[]
+    upcoming?: UpcomingTVShowItem[]
 }
 
-export function TVPageClient({ popular, recent, topRated }: TVPageClientProps) {
+export function TVPageClient({ popular, recent, topRated, upcoming }: TVPageClientProps) {
     const { play, openDetails } = useContentNavigation()
 
     return (
@@ -18,6 +21,16 @@ export function TVPageClient({ popular, recent, topRated }: TVPageClientProps) {
             <main className="pt-8 pb-16">
                 <div className="content-gutter">
                     <h1 className="text-3xl font-bold text-white mb-8">Serie TV</h1>
+
+                    {upcoming && upcoming.length > 0 && (
+                        <div className="mb-12">
+                            <UpcomingTVSection
+                                items={upcoming}
+                                onPlay={play}
+                                onDetails={(id, type) => openDetails(id, type)}
+                            />
+                        </div>
+                    )}
 
                     <div className="mb-12">
                         <h2 className="text-2xl font-bold text-white mb-6">Serie TV Popolari</h2>

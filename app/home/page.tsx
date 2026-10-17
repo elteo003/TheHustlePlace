@@ -1,12 +1,18 @@
-import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails, fetchPlatformTop10 } from '@/lib/server/catalog'
+import { fetchCatalogSection, fetchEditorialRails, fetchPersonalRails, fetchPlatformTop10, fetchServerWatchHistory } from '@/lib/server/catalog'
 import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE } from '@/lib/catalog-types'
 import { HomePageClient } from '@/components/pages/home-page-client'
 import { Movie, TVShow, Top10Content } from '@/types'
+import { fetchUpcomingTVCatalog } from '@/lib/tv-upcoming'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-    const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10] =
+    const serverHistory = await fetchServerWatchHistory()
+    const followedTV = serverHistory
+        .filter((entry) => entry.type === 'tv')
+        .map((entry) => ({ id: entry.id }))
+
+    const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10, upcomingTV] =
         await Promise.all([
             fetchCatalogSection('movie', 'trending', TOP10_SIZE),
             fetchCatalogSection('movie', 'upcoming', HOME_RAIL_SIZE),
@@ -16,6 +22,7 @@ export default async function HomePage() {
             fetchCatalogSection('tv', 'popular', HOME_RAIL_SIZE),
             fetchCatalogSection('tv', 'recent', HOME_RAIL_SIZE),
             fetchPlatformTop10(),
+            fetchUpcomingTVCatalog(followedTV).catch(() => []),
         ])
 
     const occupiedBase = [
@@ -38,6 +45,7 @@ export default async function HomePage() {
             popularTV={popularTV as TVShow[]}
             recentTV={recentTV as TVShow[]}
             platformTop10={platformTop10}
+            initialUpcomingTV={upcomingTV}
         />
     )
 }

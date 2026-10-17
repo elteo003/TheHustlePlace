@@ -6,6 +6,8 @@ import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { ApiKeyError } from '@/components/api-key-error'
 import { MovieProvider } from '@/contexts/MovieContext'
 import { ContinueWatchingRow } from '@/components/continue-watching-row'
+import { UpcomingTVSection } from '@/components/upcoming-tv-section'
+import { UpcomingTVShowItem } from '@/lib/tv-upcoming'
 import { useWatchHistory } from '@/hooks/useWatchHistory'
 import { useContentNavigation } from '@/hooks/useContentNavigation'
 import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
@@ -35,6 +37,7 @@ interface HomePageClientProps {
     popularTV: TVShow[]
     recentTV: TVShow[]
     platformTop10: PlatformTop10
+    initialUpcomingTV?: UpcomingTVShowItem[]
 }
 
 type HomeShelf = {
@@ -58,6 +61,7 @@ export function HomePageClient({
     popularTV,
     recentTV,
     platformTop10,
+    initialUpcomingTV = [],
 }: HomePageClientProps) {
     const { play, openDetails } = useContentNavigation()
     const { entries: watchHistory } = useWatchHistory()
@@ -71,6 +75,38 @@ export function HomePageClient({
     const [isCheckingApi, setIsCheckingApi] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
+
+    const [upcomingTV, setUpcomingTV] = useState<UpcomingTVShowItem[]>(initialUpcomingTV)
+    const [protectedSeriesIds, setProtectedSeriesIds] = useState<number[]>(() =>
+        initialUpcomingTV.filter((item) => item.isFollowed).map((item) => item.id)
+    )
+
+    const followedTvIds = useMemo(() => {
+        return watchHistory
+            .filter((entry) => entry.type === 'tv')
+            .map((entry) => entry.id)
+    }, [watchHistory])
+
+    useEffect(() => {
+        if (followedTvIds.length === 0) return
+        let cancelled = false
+        fetch(`/api/catalog/tv-upcoming?followed=${followedTvIds.join(',')}`)
+            .then((res) => res.json())
+            .then((data: { items?: UpcomingTVShowItem[]; protectedIds?: number[] }) => {
+                if (cancelled) return
+                if (data.items && data.items.length > 0) {
+                    setUpcomingTV(data.items)
+                }
+                if (data.protectedIds) {
+                    setProtectedSeriesIds(data.protectedIds)
+                }
+            })
+            .catch(() => undefined)
+        return () => {
+            cancelled = true
+        }
+    }, [followedTvIds])
+
     const shelves = useMemo(() => {
         const next: HomeShelf[] = []
         const push = (shelf: HomeShelf) => {
@@ -230,8 +266,19 @@ export function HomePageClient({
                     {continueWatching.length > 0 && (
                         <section className="content-gutter pb-8 pt-5">
                             <h2 className="section-title">Continua a guardare</h2>
-                            <ContinueWatchingRow entries={continueWatching} />
+                            <ContinueWatchingRow
+                                entries={continueWatching}
+                                upcomingSeriesIds={protectedSeriesIds}
+                            />
                         </section>
+                    )}
+
+                    {upcomingTV.length > 0 && (
+                        <UpcomingTVSection
+                            items={upcomingTV}
+                            onPlay={play}
+                            onDetails={(id, type) => openDetails(id, type)}
+                        />
                     )}
 
                     {shelves.map((shelf) => (
