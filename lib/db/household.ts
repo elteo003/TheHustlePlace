@@ -1,4 +1,4 @@
-import { and, count, eq, isNotNull, ne } from 'drizzle-orm'
+import { and, count, eq } from 'drizzle-orm'
 import { formatPairCode, generatePairCode, normalizePairCode } from '@/lib/pair-code'
 import {
     canAddHouseholdProfile,
@@ -8,7 +8,6 @@ import {
     isPlaceholderProfile,
     PLACEHOLDER_PROFILE_NAME,
     sanitizeProfileName,
-    shouldJoinCanonicalHousehold,
 } from '@/tv/lib/household-rules'
 import { getDb } from './index'
 import { ensureProfile } from './profiles'
@@ -108,42 +107,6 @@ function namedProfileCount(profiles: Array<{ name: string }>): number {
     return profiles.filter((profile) => !isPlaceholderProfile({ name: profile.name })).length
 }
 
-async function findCanonicalHousehold(excludeId?: string | null): Promise<string | null> {
-    const db = getDb()
-    if (!db) return null
-    const rows = await db
-        .select({
-            householdId: watchProfiles.householdId,
-            name: watchProfiles.name,
-        })
-        .from(watchProfiles)
-        .where(and(isNotNull(watchProfiles.householdId), ne(watchProfiles.name, PLACEHOLDER_PROFILE_NAME)))
-
-    const scores = new Map<string, { named: number; total: number }>()
-    for (const row of rows) {
-        if (!row.householdId || row.householdId === excludeId) continue
-        const current = scores.get(row.householdId) ?? { named: 0, total: 0 }
-        current.total += 1
-        if (!isPlaceholderProfile({ name: row.name?.trim() || PLACEHOLDER_PROFILE_NAME })) {
-            current.named += 1
-        }
-        scores.set(row.householdId, current)
-    }
-
-    let bestId: string | null = null
-    let bestNamed = 0
-    let bestTotal = 0
-    scores.forEach((score, id) => {
-        if (score.named === 0) return
-        if (score.named > bestNamed || (score.named === bestNamed && score.total > bestTotal)) {
-            bestId = id
-            bestNamed = score.named
-            bestTotal = score.total
-        }
-    })
-    return bestId
-}
-
 async function attachDeviceToHousehold(
     deviceId: string,
     householdId: string
@@ -181,20 +144,6 @@ async function attachDeviceToHousehold(
         activeProfileId: active.id,
         profiles,
     }
-}
-
-async function adoptCanonicalIfNeeded(
-    deviceId: string,
-    currentHouseholdId: string | null | undefined,
-    profiles: HouseholdMember[]
-): Promise<HouseholdSnapshot | null> {
-    const currentNamed = namedProfileCount(profiles)
-    const canonId = await findCanonicalHousehold(currentHouseholdId)
-    if (!canonId) return null
-    const canonProfiles = await listMembers(canonId)
-    const canonNamed = namedProfileCount(canonProfiles)
-    if (!shouldJoinCanonicalHousehold(currentNamed, canonNamed)) return null
-    return attachDeviceToHousehold(deviceId, canonId)
 }
 
 async function deleteHouseholdIfEmpty(householdId: string | null | undefined) {
@@ -276,8 +225,6 @@ export async function ensureHousehold(deviceId: string): Promise<HouseholdSnapsh
             const activeId = row.activeProfileId ?? row.id
             if (row.householdId && row.deviceHouseholdId) {
                 const profiles = await listMembers(row.householdId)
-                const adopted = await adoptCanonicalIfNeeded(deviceId, row.householdId, profiles)
-                if (adopted) return adopted
                 const active = profiles.find((item) => item.id === activeId) ?? profiles[0]
                 if (!active) {
                     return backfillHousehold(deviceId, row)
@@ -294,13 +241,8 @@ export async function ensureHousehold(deviceId: string): Promise<HouseholdSnapsh
                     profiles,
                 }
             }
-            const adopted = await adoptCanonicalIfNeeded(deviceId, row.householdId, [])
-            if (adopted) return adopted
             return backfillHousehold(deviceId, row)
         }
-
-        const joined = await adoptCanonicalIfNeeded(deviceId, null, [])
-        if (joined) return joined
 
         for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt += 1) {
             try {
