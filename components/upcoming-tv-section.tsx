@@ -83,11 +83,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
     }
 
     return (
-        <section
-            className="content-gutter py-8"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-        >
+        <section className="content-gutter py-8">
             <style>{`
                 @keyframes thpProgress {
                     from { width: 0%; }
@@ -107,7 +103,11 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                         hasGrid ? 'lg:col-span-7 xl:col-span-7' : 'lg:col-span-12'
                     )}
                 >
-                    <div className="relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[16/10] lg:aspect-auto lg:h-full min-h-[360px] sm:min-h-[440px] bg-zinc-950 border border-white/10 shadow-2xl select-none group/hero">
+                    <div
+                        className="relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[16/10] lg:aspect-auto lg:h-full min-h-[360px] sm:min-h-[440px] bg-zinc-950 border border-white/10 shadow-2xl select-none group/hero"
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                    >
                         {/* Backdrop Crossfade with micro-drift */}
                         <AnimatePresence initial={false}>
                             <motion.div
@@ -186,8 +186,8 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                             </AnimatePresence>
                         </div>
 
-                        {/* Bottom subtle progress line - tracks the 6-second auto cycle, freezes on hover */}
-                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 overflow-hidden z-20">
+                        {/* Bottom progress line - same luminous pure white as lateral scrollbar, freezes only when hovering the card */}
+                        <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-white/15 overflow-hidden z-20">
                             {items.length > 1 && (
                                 <div
                                     key={`progress-${cycleKey}`}
@@ -195,7 +195,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                         animation: `thpProgress ${CYCLE_MS}ms linear forwards`,
                                         animationPlayState: isPaused ? 'paused' : 'running',
                                     }}
-                                    className="h-full bg-white/60"
+                                    className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.45)]"
                                 />
                             )}
                         </div>
@@ -214,6 +214,8 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
                                     onClick={() => {
                                         const originalIndex = items.findIndex((it) => it.id === item.id)
                                         if (originalIndex !== -1) {
