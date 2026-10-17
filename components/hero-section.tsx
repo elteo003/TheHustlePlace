@@ -43,15 +43,22 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const showMeta = isTouch || metaHovered || introVisible
 
     useEffect(() => {
+        let rafId: number | null = null
         const sync = () => {
-            const node = heroRef.current
-            if (!node) return
-            setPastHero(node.getBoundingClientRect().bottom <= 72)
+            if (rafId !== null) return
+            rafId = requestAnimationFrame(() => {
+                rafId = null
+                const node = heroRef.current
+                if (!node) return
+                const isPast = node.getBoundingClientRect().bottom <= 72
+                setPastHero((prev) => (prev === isPast ? prev : isPast))
+            })
         }
         sync()
         window.addEventListener('scroll', sync, { passive: true })
-        window.addEventListener('resize', sync)
+        window.addEventListener('resize', sync, { passive: true })
         return () => {
+            if (rafId !== null) cancelAnimationFrame(rafId)
             window.removeEventListener('scroll', sync)
             window.removeEventListener('resize', sync)
         }

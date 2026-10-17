@@ -209,7 +209,6 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                 <motion.button
                                     key={item.id}
                                     type="button"
-                                    whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                                     onMouseEnter={() => setIsPaused(true)}
@@ -230,7 +229,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                         )}
                                         alt={item.name}
                                         fill
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        className="object-cover"
                                         sizes="(max-width: 1024px) 50vw, 20vw"
                                     />
                                     {/* Pure gradient without muddy gray coloring */}
@@ -238,7 +237,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
 
                                     {/* Content bottom: at rest ONLY the title, on hover the extra info smoothly expands */}
                                     <div className="absolute inset-x-0 bottom-0 p-3.5 z-10 flex flex-col justify-end">
-                                        <p className="text-xs sm:text-sm font-black uppercase tracking-tight text-white line-clamp-1 drop-shadow-md transition-transform duration-200 group-hover:-translate-y-0.5">
+                                        <p className="text-xs sm:text-sm font-black uppercase tracking-tight text-white line-clamp-1 drop-shadow-md">
                                             {item.name}
                                         </p>
 

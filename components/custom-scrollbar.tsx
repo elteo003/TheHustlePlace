@@ -47,7 +47,7 @@ export function CustomScrollbar({
         ro.observe(scroller)
 
         const mo = new MutationObserver(() => updateBounds())
-        mo.observe(content, { childList: true, subtree: true, attributes: true })
+        mo.observe(content, { childList: true })
 
         window.addEventListener('resize', updateBounds, { passive: true })
 

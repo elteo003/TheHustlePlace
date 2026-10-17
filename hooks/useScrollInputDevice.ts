@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 export type ScrollInputDevice = 'mouse' | 'touchpad' | 'touch'
 
@@ -54,79 +54,92 @@ export function detectScrollDeviceType(input: {
     return 'touchpad'
 }
 
-export function useScrollInputDevice() {
-    // Default a 'touchpad' per evitare che su portatili compaiano le frecce all'avvio prima di aver rilevato una rotella.
-    const [device, setDevice] = useState<ScrollInputDevice>(() => {
-        if (typeof window !== 'undefined') {
+let cachedDevice: ScrollInputDevice = 'touchpad'
+let isInitialized = false
+const subscribers = new Set<() => void>()
+
+let lastWheelTime = 0
+let recentWheelCount = 0
+let wheelResetTimer: ReturnType<typeof setTimeout> | null = null
+
+function getSnapshot(): ScrollInputDevice {
+    return cachedDevice
+}
+
+function getServerSnapshot(): ScrollInputDevice {
+    return 'touchpad'
+}
+
+function notifySubscribers() {
+    subscribers.forEach((callback) => callback())
+}
+
+function initGlobalDeviceListener() {
+    if (typeof window === 'undefined' || isInitialized) return
+    isInitialized = true
+
+    try {
+        const saved = sessionStorage.getItem(STORAGE_KEY)
+        if (saved === 'mouse' || saved === 'touchpad' || saved === 'touch') {
+            cachedDevice = saved
+        }
+    } catch {
+        // Ignore storage errors
+    }
+
+    const isTouchScreen =
+        window.matchMedia('(pointer: coarse)').matches &&
+        !window.matchMedia('(pointer: fine)').matches
+
+    if (isTouchScreen) {
+        cachedDevice = 'touch'
+        notifySubscribers()
+        return
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+        const now = performance.now()
+        const timeDiff = lastWheelTime === 0 ? 0 : now - lastWheelTime
+        lastWheelTime = now
+
+        recentWheelCount += 1
+        if (wheelResetTimer) clearTimeout(wheelResetTimer)
+        wheelResetTimer = setTimeout(() => {
+            recentWheelCount = 0
+        }, 120)
+
+        const detected = detectScrollDeviceType({
+            deltaMode: event.deltaMode,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            timeDiff,
+            recentCount: recentWheelCount,
+        })
+
+        if (detected !== cachedDevice) {
+            cachedDevice = detected
             try {
-                const saved = sessionStorage.getItem(STORAGE_KEY)
-                if (saved === 'mouse' || saved === 'touchpad' || saved === 'touch') {
-                    return saved
-                }
+                sessionStorage.setItem(STORAGE_KEY, detected)
             } catch {
-                // Ignore storage errors
+                // Ignore storage error
             }
+            notifySubscribers()
         }
-        return 'touchpad'
-    })
+    }
 
-    const stateRef = useRef({
-        lastTime: 0,
-        recentCount: 0,
-        resetTimer: null as ReturnType<typeof setTimeout> | null,
-    })
+    window.addEventListener('wheel', handleWheel, { passive: true })
+}
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return
+function subscribe(callback: () => void) {
+    initGlobalDeviceListener()
+    subscribers.add(callback)
+    return () => {
+        subscribers.delete(callback)
+    }
+}
 
-        // Rileva touch screen puro (smartphone/tablet)
-        const isTouchScreen =
-            window.matchMedia('(pointer: coarse)').matches &&
-            !window.matchMedia('(pointer: fine)').matches
-
-        if (isTouchScreen) {
-            setDevice('touch')
-            return
-        }
-
-        const handleWheel = (event: WheelEvent) => {
-            const now = performance.now()
-            const timeDiff = stateRef.current.lastTime === 0 ? 0 : now - stateRef.current.lastTime
-            stateRef.current.lastTime = now
-
-            stateRef.current.recentCount += 1
-            if (stateRef.current.resetTimer) clearTimeout(stateRef.current.resetTimer)
-            stateRef.current.resetTimer = setTimeout(() => {
-                stateRef.current.recentCount = 0
-            }, 120)
-
-            const detected = detectScrollDeviceType({
-                deltaMode: event.deltaMode,
-                deltaX: event.deltaX,
-                deltaY: event.deltaY,
-                timeDiff,
-                recentCount: stateRef.current.recentCount,
-            })
-
-            setDevice((current) => {
-                if (current !== detected) {
-                    try {
-                        sessionStorage.setItem(STORAGE_KEY, detected)
-                    } catch {
-                        // Ignore storage error
-                    }
-                    return detected
-                }
-                return current
-            })
-        }
-
-        window.addEventListener('wheel', handleWheel, { passive: true })
-        return () => {
-            window.removeEventListener('wheel', handleWheel)
-            if (stateRef.current.resetTimer) clearTimeout(stateRef.current.resetTimer)
-        }
-    }, [])
+export function useScrollInputDevice() {
+    const device = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
     return {
         device,
