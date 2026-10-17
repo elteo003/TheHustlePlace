@@ -60,6 +60,7 @@ export default function TVPlayerPage() {
     const [nearEnd, setNearEnd] = useState(false)
     const [ended, setEnded] = useState(false)
     const fetchedId = useRef<string | null>(null)
+    const handledEndedEpRef = useRef<string | null>(null)
 
     useEffect(() => {
         if (fetchedId.current === tvId) return
@@ -154,6 +155,7 @@ export default function TVPlayerPage() {
         setOfferNext(false)
         setNearEnd(false)
         setEnded(false)
+        handledEndedEpRef.current = null
     }, [season, episode])
 
     const findEpisode = useCallback(
@@ -218,6 +220,7 @@ export default function TVPlayerPage() {
             exitPlayer()
             return
         }
+        setEnded(false)
         setOfferNext(false)
         setNearEnd(false)
         router.replace(getPlayerPath(parseInt(tvId, 10), 'tv', next))
@@ -246,7 +249,10 @@ export default function TVPlayerPage() {
     })
 
     useEffect(() => {
-        if (!ended || taste.pending) return
+        const epKey = `${season}-${episode}`
+        if (!ended || taste.pending || handledEndedEpRef.current === epKey) return
+        handledEndedEpRef.current = epKey
+
         const next = findNextEpisode(season, episode)
         if (next) {
             setOfferNext(true)
@@ -304,6 +310,7 @@ export default function TVPlayerPage() {
         >
             <div className="relative w-full h-full">
                 <VixsrcEmbedPlayer
+                    key={`${tvId}-${season}-${episode}`}
                     tmdbId={tvShow.tmdb_id || tvShow.id}
                     type="tv"
                     season={season}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Play } from 'lucide-react'
 
@@ -26,17 +26,22 @@ export function NextEpisodeOverlay({
     onCancel,
 }: NextEpisodeOverlayProps) {
     const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_S)
+    const onPlayNowRef = useRef(onPlayNow)
+    onPlayNowRef.current = onPlayNow
 
     useEffect(() => {
+        setSecondsLeft(COUNTDOWN_S)
         const tick = setInterval(() => {
             setSecondsLeft((prev) => Math.max(prev - 1, 0))
         }, 1000)
-        const go = setTimeout(onPlayNow, COUNTDOWN_S * 1000)
+        const go = setTimeout(() => {
+            onPlayNowRef.current()
+        }, COUNTDOWN_S * 1000)
         return () => {
             clearInterval(tick)
             clearTimeout(go)
         }
-    }, [onPlayNow])
+    }, [season, episode])
 
     return (
         <div className="absolute inset-0 z-30 flex items-end justify-end bg-gradient-to-t from-black via-black/50 to-transparent p-8 md:p-12">
