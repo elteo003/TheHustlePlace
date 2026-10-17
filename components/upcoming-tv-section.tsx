@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Calendar } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { UpcomingTVShowItem } from '@/lib/tv-upcoming'
 import { getContentPosterUrl } from '@/lib/content-display'
 import { getPlayerPath } from '@/lib/content-navigation'
@@ -108,14 +108,14 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                         onMouseEnter={() => setIsPaused(true)}
                         onMouseLeave={() => setIsPaused(false)}
                     >
-                        {/* Backdrop Crossfade with micro-drift */}
+                        {/* Backdrop Crossfade with Emil Kowalski 2px blur bridge */}
                         <AnimatePresence initial={false}>
                             <motion.div
                                 key={featured.id}
-                                initial={{ opacity: 0, scale: 0.985 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.01 }}
-                                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                                initial={{ opacity: 0, scale: 0.985, filter: 'blur(3px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 1.01, filter: 'blur(3px)' }}
+                                transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
                                 className="absolute inset-0 cursor-pointer"
                                 onClick={() => handleWatch(featured)}
                             >
@@ -130,13 +130,13 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                     className="object-cover"
                                     sizes="(max-width: 1024px) 100vw, 60vw"
                                 />
-                                {/* Cinematic gradient vignettes for pristine text legibility without mud */}
+                                {/* Cinematic gradient vignettes for pristine text legibility */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/25 to-transparent hidden sm:block" />
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* On-Card Content: Zero descriptions, zero stars, pure cinematic typography */}
+                        {/* On-Card Content: Pure typographical hierarchy, no AI-slop boxes */}
                         <div className="absolute inset-0 p-5 sm:p-7 flex flex-col justify-end pointer-events-none">
                             <AnimatePresence mode="popLayout" initial={false}>
                                 <motion.div
@@ -147,14 +147,13 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                     className="pointer-events-auto"
                                 >
-                                    {/* Eyebrow: Season, Episode & Countdown */}
-                                    <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-white/70 mb-2 flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md text-white/95 font-medium">
-                                            <Calendar className="w-3 h-3 text-white/70" />
+                                    {/* Eyebrow: Season, Episode & Countdown - Pure typography, no rounded box */}
+                                    <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-white/75 mb-2.5 flex flex-wrap items-center gap-2 drop-shadow">
+                                        <span className="text-white font-black tracking-wider">
                                             {featured.nextEpisode.countdownBadge}
                                         </span>
                                         <span className="text-white/40">•</span>
-                                        <span>
+                                        <span className="text-white/80 font-semibold tracking-wide">
                                             S{featured.nextEpisode.season} E{featured.nextEpisode.episode}
                                             {featured.nextEpisode.name ? ` • "${featured.nextEpisode.name}"` : ''}
                                         </span>
@@ -209,7 +208,6 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                             {gridItems.map((item) => (
                                 <motion.button
                                     key={item.id}
-                                    layout
                                     type="button"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -222,7 +220,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                             selectItem(originalIndex)
                                         }
                                     }}
-                                    className="group relative flex flex-col rounded-2xl overflow-hidden aspect-[16/10] bg-zinc-900 text-left border border-white/10 hover:border-white/40 cursor-pointer shadow-lg transition-colors"
+                                    className="group relative flex flex-col rounded-2xl overflow-hidden aspect-[16/10] bg-zinc-950 text-left border border-white/10 hover:border-white hover:shadow-[0_0_18px_rgba(255,255,255,0.4),0_20px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer transition-all duration-200"
                                     aria-label={`Visualizza ${item.name}`}
                                 >
                                     <Image
@@ -235,23 +233,25 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                                         sizes="(max-width: 1024px) 50vw, 20vw"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                    {/* Pure gradient without muddy gray coloring */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
 
-                                    {/* Status badge top-left */}
-                                    <div className="absolute top-2 left-2 z-10">
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-black/75 border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-md">
-                                            {item.nextEpisode.countdownBadge}
-                                        </span>
-                                    </div>
-
-                                    {/* Title & Episode info bottom - no star ratings, no genre pills */}
-                                    <div className="absolute inset-x-0 bottom-0 p-3 z-10">
-                                        <p className="text-xs sm:text-sm font-bold uppercase tracking-tight text-white line-clamp-1 group-hover:text-white/95 transition-colors">
+                                    {/* Content bottom: at rest ONLY the title, on hover the extra info smoothly expands */}
+                                    <div className="absolute inset-x-0 bottom-0 p-3.5 z-10 flex flex-col justify-end">
+                                        <p className="text-xs sm:text-sm font-black uppercase tracking-tight text-white line-clamp-1 drop-shadow-md transition-transform duration-200 group-hover:-translate-y-0.5">
                                             {item.name}
                                         </p>
-                                        <p className="text-[11px] text-white/60 mt-0.5 line-clamp-1 font-medium">
-                                            S{item.nextEpisode.season} • Episodio {item.nextEpisode.episode}
-                                        </p>
+
+                                        {/* Expandable info on hover */}
+                                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] opacity-0 group-hover:opacity-100">
+                                            <div className="overflow-hidden pt-1">
+                                                <p className="text-[11px] font-semibold text-white/90 line-clamp-1 flex items-center gap-1.5 drop-shadow">
+                                                    <span className="text-white font-bold">{item.nextEpisode.countdownBadge}</span>
+                                                    <span className="text-white/40">•</span>
+                                                    <span className="text-white/70">S{item.nextEpisode.season} E{item.nextEpisode.episode}</span>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </motion.button>
                             ))}
