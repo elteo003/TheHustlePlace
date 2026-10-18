@@ -14,7 +14,7 @@ import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
-import { weavePlatformTop10s, type PlatformTop10, type PlatformChart } from '@/lib/platform-top10'
+import { weavePlatformTop10s, pinTailRails, type PlatformTop10, type PlatformChart } from '@/lib/platform-top10'
 import { StudiosAndPlatformsRow } from '@/components/studios-and-platforms-row'
 import { Movie, TVShow, Top10Content } from '@/types'
 
@@ -163,14 +163,37 @@ export function HomePageClient({
             items: rails.picks,
             limit: HOME_RAIL_SIZE,
         })
-        push({
-            id: 'top',
-            title: 'Top 10 Titoli Oggi',
-            type: 'movie',
-            section: 'trending',
-            items: top10,
-            limit: TOP10_SIZE,
-        })
+        if (selectedPlatformSlug) {
+            if (activePlatformTop10.series.length > 0) {
+                push({
+                    id: 'platform-top10-tv',
+                    title: activePlatformTop10.seriesTitle,
+                    type: 'tv',
+                    section: 'platform-top10-tv',
+                    items: activePlatformTop10.series,
+                    limit: TOP10_SIZE,
+                })
+            }
+            if (activePlatformTop10.movies.length > 0) {
+                push({
+                    id: 'platform-top10-movie',
+                    title: activePlatformTop10.moviesTitle,
+                    type: 'movie',
+                    section: 'platform-top10-movie',
+                    items: activePlatformTop10.movies,
+                    limit: TOP10_SIZE,
+                })
+            }
+        } else {
+            push({
+                id: 'top',
+                title: 'Top 10 Titoli Oggi',
+                type: 'movie',
+                section: 'trending',
+                items: top10,
+                limit: TOP10_SIZE,
+            })
+        }
         push({
             id: 'affinity',
             title: 'Pensiamo ti appassioneranno',
@@ -247,6 +270,10 @@ export function HomePageClient({
             limit: HOME_RAIL_SIZE,
             playable: false,
         })
+
+        if (selectedPlatformSlug) {
+            return pinTailRails(next)
+        }
 
         return weavePlatformTop10s(next, [
             {

@@ -122,12 +122,6 @@ export function StudiosAndPlatformsRow({
                     <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                         Studios & Platforms
                     </h2>
-                    {selectedSlug && (
-                        <span className="text-xs uppercase font-semibold tracking-wider px-2.5 py-1 rounded-full bg-white/10 text-white/80 border border-white/10 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Filtro attivo
-                        </span>
-                    )}
                 </div>
             </div>
 
@@ -141,21 +135,15 @@ export function StudiosAndPlatformsRow({
                                 key="the-hustle-place-reset"
                                 type="button"
                                 onClick={onResetToHome}
-                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex flex-col items-center justify-center text-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-blue-500/50 bg-gradient-to-b from-[#181a24] via-[#10121a] to-[#0a0b10] shadow-[0_4px_24px_rgba(37,99,235,0.25)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.4)]"
+                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/20 hover:border-white/40 bg-gradient-to-br from-[#1c1c24] via-[#121218] to-[#0a0a0f] hover:shadow-xl overflow-hidden"
                             >
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                                <div className="flex items-center gap-2">
                                     <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center shadow-sm">
                                         <span className="text-black font-black text-xs">H</span>
                                     </div>
-                                    <span className="text-xs font-bold text-white tracking-tight">TheHustlePlace</span>
+                                    <span className="font-bold text-sm sm:text-base text-white tracking-tight">TheHustlePlace</span>
                                 </div>
-                                <span className="text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 transition-colors">
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                    </svg>
-                                    Torna a Tutti
-                                </span>
                             </button>
                         )
                     }
