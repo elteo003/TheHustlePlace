@@ -1,7 +1,6 @@
 'use client'
 
 import { FunnelStage, DropOffReason } from '@/lib/admin-ml-metrics'
-import { AlertTriangle, Filter, Layers, ArrowDown, Info } from 'lucide-react'
 
 interface FunnelChartProps {
     stages: FunnelStage[]
@@ -14,81 +13,68 @@ export function FunnelChart({ stages, dropOffs }: FunnelChartProps) {
     return (
         <div className="space-y-6">
             {/* Top overview card */}
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
-                <div className="flex items-center justify-between mb-4">
+            <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-white/[0.06] pb-4">
                     <div>
-                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-cyan-400" />
-                            Multi-Stage Recommendation Funnel
-                        </h3>
-                        <p className="text-xs text-white/50 mt-0.5">
-                            Visualizza il tasso di conservazione e caduta dei titoli attraverso i 5 stadi del motore di raccomandazione.
+                        <h2 className="text-base font-semibold text-white">
+                            Funnel di selezione dei candidati
+                        </h2>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                            Tracciamento della sopravvivenza dei titoli attraverso i 5 stadi della pipeline
                         </p>
                     </div>
-                    <span className="text-xs font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 px-2.5 py-1 rounded-full font-semibold">
-                        Overall Conversion: {( (stages[stages.length - 1].count / stages[0].count) * 100 ).toFixed(2)}%
-                    </span>
+                    <div className="text-xs font-mono text-zinc-300">
+                        Conversione totale: <span className="font-semibold text-white">{((stages[stages.length - 1].count / stages[0].count) * 100).toFixed(2)}%</span>
+                    </div>
                 </div>
 
                 {/* Funnel Bars */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-4">
                     {stages.map((stage, idx) => {
                         const widthPct = Math.max(14, (stage.count / maxCount) * 100)
                         const dropFromPrev =
                             idx > 0
-                                ? (( (stages[idx - 1].count - stage.count) / stages[idx - 1].count ) * 100).toFixed(1)
+                                ? (((stages[idx - 1].count - stage.count) / stages[idx - 1].count) * 100).toFixed(1)
                                 : null
 
                         return (
-                            <div key={stage.name} className="group relative">
-                                <div className="flex items-center justify-between text-xs mb-1.5 font-medium">
+                            <div key={stage.name} className="space-y-1.5">
+                                <div className="flex items-center justify-between text-xs">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/80">
-                                            {idx + 1}
+                                        <span className="font-mono text-zinc-500 font-medium">
+                                            0{idx + 1}
                                         </span>
-                                        <span className="text-white font-semibold">{stage.name}</span>
+                                        <span className="text-white font-medium">{stage.name}</span>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 font-mono text-xs">
                                         {dropFromPrev && (
-                                            <span className="text-[11px] text-red-400 font-mono">
-                                                -{dropFromPrev}% drop
+                                            <span className="text-zinc-500">
+                                                -{dropFromPrev}%
                                             </span>
                                         )}
-                                        <span className="font-mono font-bold text-white">
+                                        <span className="text-white font-semibold tabular-nums">
                                             {stage.count.toLocaleString()} titoli
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Bar */}
-                                <div className="h-8 w-full bg-white/5 rounded-xl overflow-hidden p-0.5 relative">
+                                {/* Clean Solid Bar with systematic tone */}
+                                <div className="h-6 w-full bg-white/[0.04] rounded-lg overflow-hidden flex items-center p-0.5">
                                     <div
                                         style={{ width: `${widthPct}%` }}
-                                        className={`h-full rounded-lg transition-all duration-500 relative flex items-center px-3 ${
-                                            idx === 0
-                                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
-                                                : idx === 1
-                                                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600'
-                                                : idx === 2
-                                                ? 'bg-gradient-to-r from-cyan-600 to-emerald-600'
-                                                : idx === 3
-                                                ? 'bg-gradient-to-r from-emerald-600 to-amber-600'
-                                                : 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
-                                        }`}
+                                        className="h-full rounded-md bg-zinc-200 text-zinc-950 flex items-center px-2.5 transition-all duration-300"
                                     >
-                                        <span className="text-[11px] font-bold text-white drop-shadow font-mono">
-                                            {stage.retainedPct}% pool
+                                        <span className="text-[11px] font-mono font-bold">
+                                            {stage.retainedPct}%
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Detail Tooltip/Caption on hover */}
-                                <div className="mt-1 flex items-center justify-between text-[11px] text-white/40">
+                                <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-0.5">
                                     <span>{stage.description}</span>
-                                    <div className="flex items-center gap-1.5 text-amber-300/80">
-                                        <AlertTriangle className="w-3 h-3" />
-                                        <span>Rischio: {stage.errorRisks[0]}</span>
-                                    </div>
+                                    <span className="text-zinc-500">
+                                        Rischio: {stage.errorRisks[0]}
+                                    </span>
                                 </div>
                             </div>
                         )
@@ -97,40 +83,40 @@ export function FunnelChart({ stages, dropOffs }: FunnelChartProps) {
             </div>
 
             {/* Drop-off Root Causes Breakdown */}
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="text-base font-bold text-white flex items-center gap-2">
-                            <Filter className="w-4 h-4 text-amber-400" />
-                            Cause Principali di Scarto Candidati (Drop-off Taxonomy)
-                        </h3>
-                        <p className="text-xs text-white/50 mt-0.5">
-                            Dove l&apos;algoritmo elimina i titoli prima che raggiungano lo schermo dell&apos;utente.
-                        </p>
-                    </div>
+            <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-4">
+                <div className="border-b border-white/[0.06] pb-3">
+                    <h3 className="text-sm font-semibold text-white">
+                        Cause di esclusione dei titoli
+                    </h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Distribuzione degli scarti e diagnosi algoritmica
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {dropOffs.map((drop) => (
+                <div className="space-y-3">
+                    {dropOffs.map((d) => (
                         <div
-                            key={drop.reason}
-                            className="p-3.5 rounded-xl bg-zinc-950/80 border border-white/5 hover:border-white/15 transition-all"
+                            key={d.stage}
+                            className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                         >
-                            <div className="flex items-start justify-between gap-2">
-                                <span className="text-xs font-semibold text-white/90 leading-snug">
-                                    {drop.reason}
-                                </span>
-                                <span className="text-xs font-mono font-bold text-amber-400 shrink-0">
-                                    {drop.percentage}%
-                                </span>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-white">{d.stage}</span>
+                                    <span className="font-mono text-zinc-500">
+                                        ({d.count.toLocaleString()} esclusi)
+                                    </span>
+                                </div>
+                                <p className="text-zinc-400 leading-relaxed">
+                                    {d.reason}
+                                </p>
                             </div>
 
-                            <div className="mt-2.5 flex items-center justify-between text-[10px] text-white/40 pt-2 border-t border-white/5">
-                                <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/60">
-                                    Stadio: {drop.stage}
+                            <div className="text-right shrink-0">
+                                <span className="font-mono text-sm font-semibold text-zinc-200">
+                                    {d.percentage}%
                                 </span>
-                                <span className="text-emerald-400/90 font-medium">
-                                    Mitigazione: {drop.mitigation}
+                                <span className="block text-[11px] text-zinc-500">
+                                    perdita pool
                                 </span>
                             </div>
                         </div>

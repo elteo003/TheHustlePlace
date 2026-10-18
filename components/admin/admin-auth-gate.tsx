@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, ShieldAlert, KeyRound, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react'
-import { MASTER_ADMIN_CODE_RAW, MASTER_ADMIN_CODE_FORMATTED } from '@/lib/admin-auth'
+import { ArrowRight, Lock } from 'lucide-react'
+import { MASTER_ADMIN_CODE_FORMATTED } from '@/lib/admin-auth'
 
 interface AdminAuthGateProps {
     onAuthenticated: () => void
@@ -22,11 +22,9 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
 
     const handleInput = (val: string) => {
         setError(null)
-        // Keep only alphanumeric uppercase
         const clean = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
         setCode(clean)
 
-        // Auto submit when 8 characters typed
         if (clean.length === 8) {
             submitCode(clean)
         }
@@ -48,11 +46,11 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
             if (data.ok) {
                 onAuthenticated()
             } else {
-                setError(data.error || 'Codice non autorizzato')
+                setError(data.error || 'Codice di sicurezza non autorizzato')
                 setShake((s) => s + 1)
             }
         } catch {
-            setError('Errore di connessione durante la verifica')
+            setError('Impossibile verificare il codice. Riprova.')
             setShake((s) => s + 1)
         } finally {
             setIsSubmitting(false)
@@ -64,93 +62,91 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
         submitCode(code)
     }
 
-    // Split code for display in 8 individual boxes
     const slots = Array.from({ length: 8 }).map((_, i) => code[i] || '')
 
     return (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden select-none">
-            {/* Ambient background glows */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[350px] bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-cyan-600/10 blur-[140px] rounded-full pointer-events-none" />
-
+        <div className="min-h-screen bg-[#090a0f] text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none relative">
             <motion.div
                 key={shake}
-                animate={shake > 0 ? { x: [-10, 10, -8, 8, -4, 4, 0] } : {}}
-                transition={{ duration: 0.4 }}
-                className="w-full max-w-md bg-zinc-950/90 border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] relative z-10"
+                animate={shake > 0 ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                className="w-full max-w-md bg-[#11131a] rounded-2xl p-7 sm:p-9 shadow-2xl border border-white/[0.08]"
             >
-                {/* Header Icon */}
-                <div className="flex items-center justify-center mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-zinc-900 border border-red-500/30 flex items-center justify-center text-red-400 shadow-lg shadow-red-500/10">
-                        <Lock className="w-7 h-7" />
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-300">
+                        <Lock className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-semibold text-white tracking-tight">
+                            Accesso diagnostica ML
+                        </h1>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                            Pannello di controllo raccomandazioni
+                        </p>
                     </div>
                 </div>
 
-                {/* Title */}
-                <div className="text-center mb-6">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-2">
-                        <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                        Area Riservata Algoritmi ML
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                        ML Evaluation Console
-                    </h1>
-                    <p className="text-xs sm:text-sm text-white/50 mt-1.5 leading-relaxed">
-                        Inserisci il codice di sicurezza del dispositivo amministratore per accedere al pannello diagnostico.
-                    </p>
-                </div>
+                {/* Description */}
+                <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                    Inserisci il codice di sicurezza a 8 caratteri del dispositivo autorizzato per accedere alle metriche di ranking e all&apos;analisi degli errori.
+                </p>
 
                 {/* Form */}
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                    {/* Visual Segmented 8-character Slots */}
+                <form onSubmit={handleFormSubmit} className="space-y-5">
+                    {/* Segmented character slots */}
                     <div
                         onClick={() => inputRef.current?.focus()}
-                        className="cursor-pointer group flex items-center justify-center gap-1.5 sm:gap-2"
+                        className="cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 py-2"
                     >
                         {/* First 4 slots */}
-                        <div className="flex gap-1 sm:gap-1.5">
-                            {slots.slice(0, 4).map((char, idx) => (
-                                <div
-                                    key={`slot-${idx}`}
-                                    className={`w-9 sm:w-11 h-12 sm:h-14 rounded-xl border flex items-center justify-center font-mono text-lg sm:text-xl font-bold transition-all ${
-                                        char
-                                            ? 'border-white/40 bg-white/10 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]'
-                                            : idx === code.length
-                                            ? 'border-red-500/60 bg-red-500/5 text-white animate-pulse ring-2 ring-red-500/20'
-                                            : 'border-white/10 bg-zinc-900/60 text-white/30'
-                                    }`}
-                                >
-                                    {char || '·'}
-                                </div>
-                            ))}
+                        <div className="flex gap-1.5 sm:gap-2">
+                            {slots.slice(0, 4).map((char, idx) => {
+                                const isCurrent = idx === code.length
+                                return (
+                                    <div
+                                        key={`slot-${idx}`}
+                                        className={`w-9 sm:w-11 h-12 sm:h-13 rounded-lg border flex items-center justify-center font-mono text-base sm:text-lg font-semibold transition-colors ${
+                                            char
+                                                ? 'border-white/30 bg-white/[0.08] text-white'
+                                                : isCurrent
+                                                ? 'border-zinc-300 bg-white/[0.04] text-white ring-1 ring-white/20'
+                                                : 'border-white/[0.06] bg-black/30 text-zinc-600'
+                                        }`}
+                                    >
+                                        {char || ''}
+                                    </div>
+                                )
+                            })}
                         </div>
 
-                        {/* Separator */}
-                        <span className="text-white/30 font-bold text-lg px-0.5">-</span>
+                        {/* Divider */}
+                        <span className="text-zinc-600 font-mono text-sm px-0.5">—</span>
 
                         {/* Last 4 slots */}
-                        <div className="flex gap-1 sm:gap-1.5">
+                        <div className="flex gap-1.5 sm:gap-2">
                             {slots.slice(4, 8).map((char, idx) => {
                                 const realIdx = idx + 4
+                                const isCurrent = realIdx === code.length
                                 return (
                                     <div
                                         key={`slot-${realIdx}`}
-                                        className={`w-9 sm:w-11 h-12 sm:h-14 rounded-xl border flex items-center justify-center font-mono text-lg sm:text-xl font-bold transition-all ${
+                                        className={`w-9 sm:w-11 h-12 sm:h-13 rounded-lg border flex items-center justify-center font-mono text-base sm:text-lg font-semibold transition-colors ${
                                             char
-                                                ? 'border-white/40 bg-white/10 text-white shadow-[0_0_12px_rgba(255,255,255,0.15)]'
-                                                : realIdx === code.length
-                                                ? 'border-red-500/60 bg-red-500/5 text-white animate-pulse ring-2 ring-red-500/20'
-                                                : 'border-white/10 bg-zinc-900/60 text-white/30'
+                                                ? 'border-white/30 bg-white/[0.08] text-white'
+                                                : isCurrent
+                                                ? 'border-zinc-300 bg-white/[0.04] text-white ring-1 ring-white/20'
+                                                : 'border-white/[0.06] bg-black/30 text-zinc-600'
                                         }`}
                                     >
-                                        {char || '·'}
+                                        {char || ''}
                                     </div>
                                 )
                             })}
                         </div>
                     </div>
 
-                    {/* Hidden Actual Input */}
+                    {/* Hidden input */}
                     <input
                         ref={inputRef}
                         type="text"
@@ -162,44 +158,44 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
                         className="opacity-0 absolute -z-10 pointer-events-none"
                     />
 
-                    {/* Error display */}
+                    {/* Error message */}
                     <AnimatePresence>
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, y: -6 }}
+                                initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -6 }}
-                                className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs text-center font-medium"
+                                exit={{ opacity: 0, y: -4 }}
+                                className="py-2 px-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs text-center font-medium"
                             >
                                 {error}
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Submit Button */}
+                    {/* Submit button */}
                     <button
                         type="submit"
                         disabled={code.length !== 8 || isSubmitting}
-                        className="w-full h-11 rounded-xl bg-white text-black font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-lg shadow-white/10"
+                        className="w-full h-11 rounded-xl bg-white text-zinc-950 font-medium text-sm hover:bg-zinc-200 active:scale-[0.99] transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-2"
                     >
                         {isSubmitting ? (
                             <span>Verifica in corso...</span>
                         ) : (
                             <>
-                                <span>Verifica Codice & Accedi</span>
-                                <ChevronRight className="w-4 h-4" />
+                                <span>Verifica e accedi</span>
+                                <ArrowRight className="w-4 h-4" />
                             </>
                         )}
                     </button>
                 </form>
 
                 {/* Helper info */}
-                <div className="mt-6 pt-5 border-t border-white/5 flex flex-col items-center gap-2 text-center">
-                    <p className="text-[11px] text-white/40">
-                        Codice autorizzato visualizzato sul dispositivo principale:{' '}
-                        <code className="text-white/70 font-mono font-bold bg-white/5 px-1.5 py-0.5 rounded">
+                <div className="mt-7 pt-5 border-t border-white/[0.06] text-center">
+                    <p className="text-[11px] text-zinc-500">
+                        Codice autorizzato per questo terminale:{' '}
+                        <span className="font-mono text-zinc-300 font-medium">
                             {MASTER_ADMIN_CODE_FORMATTED}
-                        </code>
+                        </span>
                     </p>
                 </div>
             </motion.div>

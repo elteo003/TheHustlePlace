@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { AlgorithmicFailureCase } from '@/lib/admin-ml-metrics'
 import { getContentPosterUrl } from '@/lib/content-display'
-import { AlertOctagon, Bug, Wrench, CheckCircle, ArrowRight, Filter } from 'lucide-react'
 
 interface FailureCasesTableProps {
     cases: AlgorithmicFailureCase[]
@@ -17,15 +16,14 @@ export function FailureCasesTable({ cases }: FailureCasesTableProps) {
     const filtered = filterStage === 'ALL' ? cases : cases.filter((c) => c.failureStage === filterStage)
 
     return (
-        <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-white/[0.06] pb-4">
                 <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        <AlertOctagon className="w-4 h-4 text-rose-400" />
-                        Diagnostica degli Errori per Fase (Algorithmic Failure Analysis)
-                    </h3>
-                    <p className="text-xs text-white/50 mt-0.5">
-                        Individua esattamente in quale fase (Retrieval, Deduplicazione, Scoring) l&apos;algoritmo ha generato una raccomandazione errata.
+                    <h2 className="text-base font-semibold text-white">
+                        Diagnostica degli errori per stadio della pipeline
+                    </h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Individuazione dello stadio responsabile dello scarto o della raccomandazione fallita
                     </p>
                 </div>
 
@@ -36,28 +34,28 @@ export function FailureCasesTable({ cases }: FailureCasesTableProps) {
                             key={st}
                             type="button"
                             onClick={() => setFilterStage(st)}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                            className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                                 filterStage === st
-                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                                    : 'bg-white/5 text-white/60 hover:text-white border border-white/5'
+                                    ? 'bg-white text-zinc-950 font-semibold'
+                                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                             }`}
                         >
-                            {st === 'ALL' ? 'Tutte le fasi' : st}
+                            {st === 'ALL' ? 'Tutti gli stadi' : st}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Cases Grid */}
+            {/* Cases List */}
             <div className="space-y-3">
                 {filtered.map((item) => (
                     <div
                         key={item.id}
-                        className="p-4 rounded-xl bg-zinc-950/80 border border-white/10 hover:border-white/20 transition-all flex flex-col md:flex-row md:items-start justify-between gap-4"
+                        className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.1] transition-all flex flex-col md:flex-row md:items-start justify-between gap-4"
                     >
                         {/* Poster + Info */}
-                        <div className="flex items-start gap-3 min-w-0">
-                            <div className="relative w-14 h-20 rounded-lg overflow-hidden bg-zinc-900 border border-white/10 shrink-0">
+                        <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="relative w-12 h-18 rounded-lg overflow-hidden bg-zinc-900 border border-white/[0.08] shrink-0">
                                 <Image
                                     src={getContentPosterUrl(item.posterPath, 'w500')}
                                     alt={item.title}
@@ -66,44 +64,41 @@ export function FailureCasesTable({ cases }: FailureCasesTableProps) {
                                 />
                             </div>
 
-                            <div className="space-y-1 min-w-0">
+                            <div className="space-y-1.5 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-sm font-bold text-white tracking-tight">
+                                    <span className="text-sm font-semibold text-white tracking-tight">
                                         {item.title}
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider bg-rose-950/60 border border-rose-500/30 text-rose-300">
-                                        Fase: {item.failureStage}
+                                    <span className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-white/[0.06] text-zinc-300">
+                                        Stadio: {item.failureStage}
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-white/5 text-white/60">
+                                    <span className="text-[11px] text-zinc-400">
                                         {item.failureCategory}
                                     </span>
                                 </div>
 
-                                <div className="text-xs text-white/50 flex flex-wrap items-center gap-3 pt-0.5">
+                                <div className="text-xs text-zinc-400 flex flex-wrap items-center gap-3">
                                     <span>
-                                        Punteggio Previsto:{' '}
-                                        <b className="text-amber-400 font-mono">{item.predictedScore}</b>
+                                        Punteggio previsto: <strong className="text-zinc-200 font-mono font-normal">{item.predictedScore}</strong>
                                     </span>
                                     <span>•</span>
                                     <span>
-                                        Comportamento Reale:{' '}
-                                        <b className="text-rose-400 font-medium">{item.actualFeedback}</b>
+                                        Esito reale: <strong className="text-zinc-200 font-normal">{item.actualFeedback}</strong>
                                     </span>
                                 </div>
 
-                                <p className="text-xs text-white/70 pt-1 leading-relaxed">
-                                    <b className="text-white/90">Diagnosi ML:</b> {item.explanation}
+                                <p className="text-xs text-zinc-400 leading-relaxed pt-0.5">
+                                    <span className="text-zinc-300 font-medium">Diagnosi:</span> {item.explanation}
                                 </p>
                             </div>
                         </div>
 
                         {/* Actionable ML Fix */}
-                        <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs md:max-w-xs shrink-0 self-stretch flex flex-col justify-between">
-                            <div className="flex items-center gap-1.5 text-emerald-400 font-semibold mb-1">
-                                <Wrench className="w-3.5 h-3.5" />
-                                <span>Soluzione Suggerita:</span>
-                            </div>
-                            <p className="text-[11px] text-emerald-200/80 leading-relaxed">
+                        <div className="md:w-72 shrink-0 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05] text-xs space-y-1">
+                            <span className="text-[11px] font-medium text-zinc-300 block">
+                                Azione correttiva consigliata
+                            </span>
+                            <p className="text-zinc-400 text-[11px] leading-relaxed">
                                 {item.suggestedWeightFix}
                             </p>
                         </div>

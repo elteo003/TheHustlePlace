@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { RankerWeights, RANKER_WEIGHTS_V1 } from '@/lib/taste-ranker'
-import { Sliders, RotateCcw, Play, CheckCircle2, Sparkles } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 
 interface HyperparameterSandboxProps {
     weights: RankerWeights
@@ -33,48 +33,48 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
     const sliders = [
         {
             key: 'simTaste' as const,
-            label: 'w_simTaste (Affinità Gusti Personale)',
-            desc: 'Peso della similarità vettoriale tra i generi visti dall’utente e i candidati.',
+            label: 'w_simTaste — Affinità di genere',
+            desc: 'Similarità vettoriale tra i generi guardati dall’utente e i candidati.',
             min: 0.05,
             max: 0.6,
             step: 0.01,
         },
         {
             key: 'explicit' as const,
-            label: 'w_explicit (Feedback Esplicito)',
-            desc: 'Boost per i titoli valutati "Entusiasta/Molto" e penalità per "Non mi interessa/Dislike".',
+            label: 'w_explicit — Feedback esplicito',
+            desc: 'Boost per i titoli valutati positivamente e penalità per i dislike.',
             min: 0.1,
             max: 0.6,
             step: 0.01,
         },
         {
             key: 'popularity' as const,
-            label: 'w_popularity (Popolarità Globale TMDB)',
-            desc: 'Rischio Popularity Bias: se troppo alto soffoca i titoli di nicchia d’autore.',
+            label: 'w_popularity — Popolarità globale TMDB',
+            desc: 'Incidenza della popolarità generale: valori elevati penalizzano la nicchia.',
             min: 0.01,
             max: 0.3,
             step: 0.01,
         },
         {
             key: 'newness' as const,
-            label: 'w_newness (Freschezza & Recency)',
-            desc: 'Incentiva le uscite del mese corrente rispetto a titoli più datati.',
+            label: 'w_newness — Freschezza dell’uscita',
+            desc: 'Incentiva i titoli usciti nel mese corrente rispetto a quelli di catalogo.',
             min: 0.02,
             max: 0.3,
             step: 0.01,
         },
         {
             key: 'neighbor' as const,
-            label: 'w_neighbor (Keyword Neighbor Graph)',
-            desc: 'Propagazione della preferenza sui film con le stesse parole chiave/tematiche.',
+            label: 'w_neighbor — Grafo tematico delle keyword',
+            desc: 'Propagazione della preferenza sui titoli con keyword condivise.',
             min: 0.02,
             max: 0.3,
             step: 0.01,
         },
         {
             key: 'abandon' as const,
-            label: 'w_abandon (Penalità Abbandono Precoce)',
-            desc: 'Penalità inflitta ai titoli iniziati ma interrotti dopo pochi minuti.',
+            label: 'w_abandon — Penalità abbandono precoce',
+            desc: 'Penalità inflitta ai titoli interrotti nei primi minuti di riproduzione.',
             min: 0.01,
             max: 0.3,
             step: 0.01,
@@ -82,15 +82,14 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
     ]
 
     return (
-        <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-white/[0.06] pb-4">
                 <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-cyan-400" />
-                        Hyperparameter Sandbox & Ranker Tuning (Live Simulation)
-                    </h3>
-                    <p className="text-xs text-white/50 mt-0.5">
-                        Regola i pesi dei singoli obiettivi del Ranker V1 per ricalcolare istantaneamente le curve di NDCG e il tasso di errore.
+                    <h2 className="text-base font-semibold text-white">
+                        Sandbox degli iperparametri del ranker
+                    </h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Modifica in tempo reale i pesi della funzione obiettivo per simulare l&apos;impatto su ranking e recall
                     </p>
                 </div>
 
@@ -98,20 +97,19 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="btn-ghost-outline h-8 px-3 text-xs flex items-center gap-1.5 rounded-lg border border-white/10 text-white/70 hover:text-white"
+                        className="h-8 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.06] transition-all"
                     >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        Ripristina Default
+                        Ripristina
                     </button>
 
                     <button
                         type="button"
                         onClick={handleSimulate}
                         disabled={!isModified}
-                        className="h-8 px-4 text-xs font-semibold rounded-lg bg-cyan-500 text-black hover:bg-cyan-400 active:scale-95 transition-all disabled:opacity-40 flex items-center gap-1.5 shadow-lg shadow-cyan-500/20"
+                        className="h-8 px-4 text-xs font-semibold rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
                     >
-                        <Play className="w-3 h-3 fill-current" />
-                        Simula Impatto Grafici
+                        Applica simulazione
                     </button>
                 </div>
             </div>
@@ -124,11 +122,11 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
                     return (
                         <div
                             key={s.key}
-                            className="p-3.5 rounded-xl bg-zinc-950/70 border border-white/5 space-y-2"
+                            className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] space-y-2.5"
                         >
                             <div className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-white/90">{s.label}</span>
-                                <span className="font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
+                                <span className="font-medium text-white">{s.label}</span>
+                                <span className="font-mono font-semibold text-white bg-white/[0.06] px-2 py-0.5 rounded tabular-nums">
                                     {val.toFixed(2)}
                                 </span>
                             </div>
@@ -140,10 +138,10 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
                                 step={s.step}
                                 value={val}
                                 onChange={(e) => handleChange(s.key, parseFloat(e.target.value))}
-                                className="w-full accent-cyan-400 cursor-pointer h-1.5 bg-white/10 rounded-lg"
+                                className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg"
                             />
 
-                            <p className="text-[10px] text-white/40 leading-tight">{s.desc}</p>
+                            <p className="text-[11px] text-zinc-500 leading-relaxed">{s.desc}</p>
                         </div>
                     )
                 })}

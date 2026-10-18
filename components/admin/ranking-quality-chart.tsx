@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { MetricAtK } from '@/lib/admin-ml-metrics'
-import { TrendingUp, HelpCircle, Target } from 'lucide-react'
 
 interface RankingQualityChartProps {
     metricsAtK: MetricAtK[]
@@ -17,16 +16,14 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
     // Chart dimensions
     const width = 640
     const height = 260
-    const padding = { top: 20, right: 30, bottom: 40, left: 45 }
+    const padding = { top: 25, right: 30, bottom: 40, left: 45 }
 
     const chartWidth = width - padding.left - padding.right
     const chartHeight = height - padding.top - padding.bottom
 
-    // Points calculation (K on X-axis from 1 to 20, Value on Y-axis from 0 to 1)
     const getX = (k: number) => padding.left + ((k - 1) / (20 - 1)) * chartWidth
     const getY = (val: number) => padding.top + (1 - val) * chartHeight
 
-    // SVG path builders
     const ndcgPath = metricsAtK
         .map((m, i) => `${i === 0 ? 'M' : 'L'} ${getX(m.k)} ${getY(m.ndcg)}`)
         .join(' ')
@@ -39,62 +36,61 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
         .map((m, i) => `${i === 0 ? 'M' : 'L'} ${getX(m.k)} ${getY(m.recall)}`)
         .join(' ')
 
-    const activeMetric = hoveredK ? metricsAtK.find((m) => m.k === hoveredK) : metricsAtK[2] // default to K=5
+    const activeMetric = hoveredK ? metricsAtK.find((m) => m.k === hoveredK) : metricsAtK[4] // default to K=5
 
     return (
-        <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md space-y-5">
+        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
             {/* Header with KPI cards */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-white/[0.06] pb-4">
                 <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
-                        Curva di Ranking Quality: NDCG@K, Precision@K & Recall@K
-                    </h3>
-                    <p className="text-xs text-white/50 mt-0.5">
-                        Misura l&apos;accuratezza posizionale delle raccomandazioni e il bilanciamento tra precisione e copertura.
+                    <h2 className="text-base font-semibold text-white">
+                        Curve di qualità del ranking (NDCG, Precision, Recall)
+                    </h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Valutazione dell&apos;ordinamento posizionale su un raggio da K=1 a K=20
                     </p>
                 </div>
 
                 {/* Badges */}
-                <div className="flex items-center gap-2 font-mono text-xs">
-                    <div className="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-                        <span className="text-white/40 text-[10px] block">MRR</span>
-                        <span className="font-bold">{mrr}</span>
+                <div className="flex items-center gap-3 font-mono text-xs">
+                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                        <span className="text-zinc-500 text-[10px] block">MRR</span>
+                        <span className="font-semibold text-white">{mrr}</span>
                     </div>
-                    <div className="px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">
-                        <span className="text-white/40 text-[10px] block">MAP</span>
-                        <span className="font-bold">{map}</span>
+                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                        <span className="text-zinc-500 text-[10px] block">MAP</span>
+                        <span className="font-semibold text-white">{map}</span>
                     </div>
-                    <div className="px-2.5 py-1 rounded-lg bg-purple-950/60 border border-purple-500/30 text-purple-300">
-                        <span className="text-white/40 text-[10px] block">Diversità ILD</span>
-                        <span className="font-bold">{ild}</span>
+                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                        <span className="text-zinc-500 text-[10px] block">ILD (Diversità)</span>
+                        <span className="font-semibold text-white">{ild}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Interactive Legend & Current Values */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl bg-zinc-950/60 border border-white/5 text-xs">
-                <div className="flex items-center gap-4">
+            {/* Interactive Legend & Active Values */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-xs">
+                <div className="flex items-center gap-5">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                        <span className="text-white/80 font-medium">NDCG@K</span>
+                        <div className="w-3 h-0.5 bg-white" />
+                        <span className="text-zinc-300 font-medium">NDCG@K</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                        <span className="text-white/80 font-medium">Precision@K</span>
+                        <div className="w-3 h-0.5 bg-zinc-400" />
+                        <span className="text-zinc-300 font-medium">Precision@K</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                        <span className="text-white/80 font-medium">Recall@K</span>
+                        <div className="w-3 h-0.5 bg-zinc-600" />
+                        <span className="text-zinc-300 font-medium">Recall@K</span>
                     </div>
                 </div>
 
                 {activeMetric && (
-                    <div className="flex items-center gap-3 font-mono font-bold text-[11px] text-white">
-                        <span className="text-white/50 font-normal">A K = {activeMetric.k}:</span>
-                        <span className="text-emerald-400">NDCG: {activeMetric.ndcg}</span>
-                        <span className="text-cyan-400">P@{activeMetric.k}: {activeMetric.precision}</span>
-                        <span className="text-amber-400">R@{activeMetric.k}: {activeMetric.recall}</span>
+                    <div className="flex items-center gap-3 font-mono text-xs">
+                        <span className="text-zinc-500">K = {activeMetric.k}:</span>
+                        <span className="text-white font-semibold">NDCG {activeMetric.ndcg}</span>
+                        <span className="text-zinc-300">P@{activeMetric.k} {activeMetric.precision}</span>
+                        <span className="text-zinc-400">R@{activeMetric.k} {activeMetric.recall}</span>
                     </div>
                 )}
             </div>
@@ -115,14 +111,14 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
                                     y1={y}
                                     x2={width - padding.right}
                                     y2={y}
-                                    stroke="rgba(255,255,255,0.08)"
-                                    strokeDasharray="4 4"
+                                    stroke="rgba(255,255,255,0.06)"
+                                    strokeDasharray="2 2"
                                 />
                                 <text
                                     x={padding.left - 8}
-                                    y={y + 4}
+                                    y={y + 3}
                                     textAnchor="end"
-                                    className="text-[10px] fill-white/40 font-mono"
+                                    className="text-[9px] fill-zinc-500 font-mono"
                                 >
                                     {val.toFixed(2)}
                                 </text>
@@ -130,73 +126,72 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
                         )
                     })}
 
-                    {/* X-axis labels */}
-                    {metricsAtK.map((m) => {
-                        const x = getX(m.k)
+                    {/* X-axis ticks */}
+                    {[1, 3, 5, 8, 10, 15, 20].map((k) => {
+                        const x = getX(k)
                         return (
-                            <g key={`x-axis-${m.k}`}>
+                            <g key={`x-tick-${k}`}>
                                 <line
                                     x1={x}
                                     y1={height - padding.bottom}
                                     x2={x}
-                                    y2={height - padding.bottom + 5}
+                                    y2={height - padding.bottom + 4}
                                     stroke="rgba(255,255,255,0.2)"
                                 />
                                 <text
                                     x={x}
-                                    y={height - padding.bottom + 18}
+                                    y={height - padding.bottom + 16}
                                     textAnchor="middle"
-                                    className="text-[10px] fill-white/40 font-mono"
+                                    className="text-[9px] fill-zinc-500 font-mono"
                                 >
-                                    K={m.k}
+                                    K={k}
                                 </text>
                             </g>
                         )
                     })}
 
-                    {/* Metric Paths */}
-                    <path
-                        d={ndcgPath}
-                        fill="none"
-                        stroke="#34d399"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                    />
-                    <path
-                        d={precisionPath}
-                        fill="none"
-                        stroke="#22d3ee"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                    />
+                    {/* Paths */}
                     <path
                         d={recallPath}
                         fill="none"
-                        stroke="#fbbf24"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
+                        stroke="#52525b"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 3"
                     />
 
-                    {/* Interactive points & vertical ruler */}
+                    <path
+                        d={precisionPath}
+                        fill="none"
+                        stroke="#a1a1aa"
+                        strokeWidth="2"
+                    />
+
+                    <path
+                        d={ndcgPath}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeWidth="2.5"
+                    />
+
+                    {/* Interactive hover points */}
                     {metricsAtK.map((m) => {
                         const x = getX(m.k)
-                        const isHovered = hoveredK === m.k
+                        const isHovered = activeMetric?.k === m.k
 
                         return (
                             <g
-                                key={`points-${m.k}`}
+                                key={`point-${m.k}`}
                                 onMouseEnter={() => setHoveredK(m.k)}
-                                onMouseLeave={() => setHoveredK(null)}
                                 className="cursor-pointer"
                             >
+                                {/* Vertical guideline when active */}
                                 {isHovered && (
                                     <line
                                         x1={x}
                                         y1={padding.top}
                                         x2={x}
                                         y2={height - padding.bottom}
-                                        stroke="rgba(255,255,255,0.3)"
-                                        strokeWidth={1}
+                                        stroke="rgba(255,255,255,0.2)"
                                         strokeDasharray="2 2"
                                     />
                                 )}
@@ -205,33 +200,19 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
                                 <circle
                                     cx={x}
                                     cy={getY(m.ndcg)}
-                                    r={isHovered ? 6 : 4}
-                                    fill="#34d399"
-                                    stroke="#000"
-                                    strokeWidth={2}
+                                    r={isHovered ? 4 : 2.5}
+                                    fill="#ffffff"
                                 />
 
                                 {/* Precision Dot */}
                                 <circle
                                     cx={x}
                                     cy={getY(m.precision)}
-                                    r={isHovered ? 6 : 4}
-                                    fill="#22d3ee"
-                                    stroke="#000"
-                                    strokeWidth={2}
+                                    r={isHovered ? 3.5 : 2}
+                                    fill="#a1a1aa"
                                 />
 
-                                {/* Recall Dot */}
-                                <circle
-                                    cx={x}
-                                    cy={getY(m.recall)}
-                                    r={isHovered ? 6 : 4}
-                                    fill="#fbbf24"
-                                    stroke="#000"
-                                    strokeWidth={2}
-                                />
-
-                                {/* Hit zone */}
+                                {/* Hover trigger column */}
                                 <rect
                                     x={x - 12}
                                     y={padding.top}

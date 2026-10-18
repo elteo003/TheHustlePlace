@@ -1,7 +1,6 @@
 'use client'
 
 import { LorenzPoint } from '@/lib/admin-ml-metrics'
-import { PieChart, Sparkles, Scale, Info } from 'lucide-react'
 
 interface LorenzGiniChartProps {
     points: LorenzPoint[]
@@ -27,26 +26,25 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
         .map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(p.catalogPercentile)} ${getY(p.impressionShare)}`)
         .join(' ')
 
-    // Closed path for shading the area between ideal and actual (Gini area)
+    // Closed path for shading Gini area
     const giniAreaPath = `${lorenzPath} L ${getX(100)} ${getY(100)} L ${getX(0)} ${getY(0)} Z`
 
     return (
-        <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-white/[0.06] pb-4">
                 <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        <Scale className="w-4 h-4 text-purple-400" />
-                        Curva di Lorenz & Indice di Gini (Catalog Exposure)
-                    </h3>
-                    <p className="text-xs text-white/50 mt-0.5">
-                        Misura se l&apos;algoritmo soffre di Popularity Bias (raccomanda solo i soliti 20 film) o esplora la coda lunga del catalogo.
+                    <h2 className="text-base font-semibold text-white">
+                        Curva di Lorenz ed esposizione del catalogo (Indice di Gini)
+                    </h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Verifica della distribuzione delle raccomandazioni per prevenire il popularity bias
                     </p>
                 </div>
 
-                <div className="px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/30 text-purple-300 font-mono text-xs flex items-center gap-2 shrink-0">
-                    <span className="text-white/60">Gini:</span>
-                    <span className="font-bold text-sm text-purple-200">{gini}</span>
-                    <span className="text-[10px] text-emerald-400 font-semibold">(Bilanciato)</span>
+                <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] font-mono text-xs flex items-center gap-2 shrink-0">
+                    <span className="text-zinc-500">Gini:</span>
+                    <span className="font-semibold text-white text-sm">{gini}</span>
+                    <span className="text-zinc-400 text-[11px]">(bilanciato)</span>
                 </div>
             </div>
 
@@ -67,13 +65,13 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                                     x2={width - padding.right}
                                     y2={y}
                                     stroke="rgba(255,255,255,0.06)"
-                                    strokeDasharray="3 3"
+                                    strokeDasharray="2 2"
                                 />
                                 <text
-                                    x={padding.left - 6}
+                                    x={padding.left - 8}
                                     y={y + 3}
                                     textAnchor="end"
-                                    className="text-[9px] fill-white/40 font-mono"
+                                    className="text-[9px] fill-zinc-500 font-mono"
                                 >
                                     {val}%
                                 </text>
@@ -90,7 +88,7 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                                     x={x}
                                     y={height - padding.bottom + 15}
                                     textAnchor="middle"
-                                    className="text-[9px] fill-white/40 font-mono"
+                                    className="text-[9px] fill-zinc-500 font-mono"
                                 >
                                     {val}%
                                 </text>
@@ -98,78 +96,55 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                         )
                     })}
 
-                    {/* Area between ideal and Lorenz (Inequality Area) */}
-                    <path d={giniAreaPath} fill="rgba(168,85,247,0.12)" />
+                    {/* Shaded Gini Area */}
+                    <path
+                        d={giniAreaPath}
+                        fill="rgba(255, 255, 255, 0.04)"
+                    />
 
-                    {/* Ideal 45-degree diagonal line */}
+                    {/* 45 degree perfect equality line */}
                     <path
                         d={idealPath}
                         fill="none"
-                        stroke="rgba(255,255,255,0.3)"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
+                        stroke="#52525b"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 3"
                     />
 
-                    {/* Actual Lorenz curve */}
+                    {/* Empirical Lorenz curve */}
                     <path
                         d={lorenzPath}
                         fill="none"
-                        stroke="#c084fc"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
+                        stroke="#ffffff"
+                        strokeWidth="2.5"
                     />
 
-                    {/* Dots */}
+                    {/* Points on Lorenz curve */}
                     {points.map((p) => (
                         <circle
                             key={`pt-${p.catalogPercentile}`}
                             cx={getX(p.catalogPercentile)}
                             cy={getY(p.impressionShare)}
                             r={3}
-                            fill="#c084fc"
-                            stroke="#000"
-                            strokeWidth={1.5}
+                            fill="#ffffff"
                         />
                     ))}
                 </svg>
             </div>
 
-            {/* Insight explanation */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5">
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider block font-semibold">
-                        Top 10% Titoli (Head)
-                    </span>
-                    <span className="text-sm font-mono font-bold text-white mt-1 block">
-                        36.2% Impression
-                    </span>
-                    <p className="text-[10px] text-white/50 mt-1">
-                        Blockbuster e rilasci di punta che trainano l&apos;engagement immediato.
-                    </p>
+            <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/[0.04]">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-zinc-500" />
+                        <span>Distribuzione uniforme ideale</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-white" />
+                        <span>Curva reale catalogo</span>
+                    </div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5">
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider block font-semibold">
-                        Mid-Tail (10% - 60%)
-                    </span>
-                    <span className="text-sm font-mono font-bold text-purple-300 mt-1 block">
-                        46.8% Impression
-                    </span>
-                    <p className="text-[10px] text-white/50 mt-1">
-                        Titoli di genere specifico che creano affinità personalizzata per l&apos;utente.
-                    </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-950/70 border border-white/5">
-                    <span className="text-[10px] text-white/40 uppercase tracking-wider block font-semibold">
-                        Coda Lunga (&gt;60%)
-                    </span>
-                    <span className="text-sm font-mono font-bold text-emerald-400 mt-1 block">
-                        17.0% Impression
-                    </span>
-                    <p className="text-[10px] text-white/50 mt-1">
-                        Tesori Nascosti ed esplorazione non ovvia che prevengono la noia algoritmica.
-                    </p>
+                <div className="text-[11px] text-zinc-500">
+                    Un indice compreso tra 0.35 e 0.45 offre una scoperta ideale dei titoli di nicchia.
                 </div>
             </div>
         </div>
