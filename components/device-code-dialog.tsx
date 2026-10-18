@@ -5,10 +5,9 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { CopyButton } from '@/components/copy-button'
-import { fadeUp, sheetEase, springTransition } from '@/lib/motion'
+import { fadeUp } from '@/lib/motion'
 import { formatPairCode, isValidPairCode, normalizePairCode, splitPairCode } from '@/lib/pair-code'
-import { useMediaQuery, useReducedMotion } from '@/hooks/useMediaQuery'
-import { shouldDismissSheet } from '@/lib/sheet-gesture'
+import { useReducedMotion } from '@/hooks/useMediaQuery'
 
 interface DeviceCodeDialogProps {
     open: boolean
@@ -22,7 +21,6 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
     const [error, setError] = useState<string | null>(null)
     const [portalReady, setPortalReady] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
-    const isPhone = useMediaQuery('(max-width: 639px)')
     const reduceMotion = useReducedMotion()
     const groups = code ? splitPairCode(code) : { left: '····', right: '····' }
 
@@ -176,76 +174,46 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
         </>
     )
 
-    const phoneTransition = reduceMotion
-        ? { duration: 0.15, ease: 'easeOut' as const }
-        : { duration: 0.2, ease: sheetEase }
-    const phoneExit = reduceMotion
-        ? { duration: 0.1 }
-        : { duration: 0.16, ease: sheetEase }
-
     const overlay = (
         <AnimatePresence>
             {open && (
-                <motion.button
-                    key="device-code-backdrop"
-                    type="button"
-                    aria-label="Chiudi"
-                    className="fixed inset-0 z-[60] bg-black/50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18, ease: sheetEase }}
-                    onClick={onClose}
-                />
-            )}
-            {open && (
-                <motion.div
-                    key="device-code-sheet"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="device-code-title"
-                    className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(90dvh,640px)] flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[min(92vw,360px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:p-6"
-                    style={{ maxHeight: 'min(90dvh, 640px)' }}
-                    initial={
-                        isPhone
-                            ? reduceMotion
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <motion.div
+                        key="device-code-backdrop"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                        onClick={onClose}
+                    />
+
+                    <motion.div
+                        key="device-code-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="device-code-title"
+                        className="relative z-10 w-full max-w-[380px] overflow-hidden rounded-2xl border border-white/12 bg-zinc-950 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.7)]"
+                        initial={
+                            reduceMotion
                                 ? { opacity: 0 }
-                                : { y: '100%' }
-                            : { opacity: 0, y: 10, scale: 0.98 }
-                    }
-                    animate={
-                        isPhone
-                            ? reduceMotion
-                                ? { opacity: 1 }
-                                : { y: 0 }
-                            : { opacity: 1, y: 0, scale: 1 }
-                    }
-                    exit={
-                        isPhone
-                            ? reduceMotion
-                                ? { opacity: 0, transition: phoneExit }
-                                : { y: '100%', transition: phoneExit }
-                            : { opacity: 0, y: 6, scale: 0.98 }
-                    }
-                    transition={isPhone ? phoneTransition : springTransition}
-                    drag={isPhone && !reduceMotion ? 'y' : false}
-                    dragConstraints={{ top: 0, bottom: 0 }}
-                    dragElastic={0.18}
-                    onDragEnd={(_event: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-                        if (isPhone && shouldDismissSheet(info.offset.y, info.velocity.y)) {
-                            onClose()
+                                : { opacity: 0, scale: 0.94, y: 10 }
                         }
-                    }}
-                >
-                    {isPhone ? (
-                        <div className="min-h-0 overflow-y-auto px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
-                            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/25" aria-hidden />
-                            {body}
-                        </div>
-                    ) : (
-                        body
-                    )}
-                </motion.div>
+                        animate={
+                            reduceMotion
+                                ? { opacity: 1 }
+                                : { opacity: 1, scale: 1, y: 0 }
+                        }
+                        exit={
+                            reduceMotion
+                                ? { opacity: 0 }
+                                : { opacity: 0, scale: 0.96, y: 6 }
+                        }
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                        {body}
+                    </motion.div>
+                </div>
             )}
         </AnimatePresence>
     )
