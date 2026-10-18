@@ -23,10 +23,10 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
     ]
 
     return (
-        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-white/[0.06] pb-4">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-3 border-b border-white/[0.08]">
                 <div>
-                    <h2 className="text-base font-semibold text-white">
+                    <h2 className="text-base font-semibold text-white tracking-tight">
                         Scomposizione dei pesi per titolo (SHAP Waterfall)
                     </h2>
                     <p className="text-xs text-zinc-400 mt-0.5">
@@ -35,7 +35,7 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
                 </div>
 
                 {/* Title selector pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
                     {items.map((it, i) => (
                         <button
                             key={it.id}
@@ -43,8 +43,8 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
                             onClick={() => setSelectedIdx(i)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                                 selectedIdx === i
-                                    ? 'bg-white text-zinc-950 font-semibold'
-                                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                                    ? 'bg-white text-zinc-950 font-semibold shadow-sm'
+                                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
                             }`}
                         >
                             {it.title}
@@ -53,26 +53,26 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
                 </div>
             </div>
 
-            {/* Total score banner */}
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+            {/* Total score row */}
+            <div className="py-4 border-b border-white/[0.08] flex items-center justify-between">
                 <div>
-                    <span className="text-xs text-zinc-500 block">
-                        Punteggio finale calcolato
+                    <span className="text-xs text-zinc-400 block">
+                        Punteggio finale calcolato per
                     </span>
-                    <span className="text-base font-semibold text-white mt-0.5 block">
+                    <span className="text-xl font-bold text-white mt-0.5 block tracking-tight">
                         {current.title}
                     </span>
                 </div>
                 <div className="text-right">
-                    <span className="text-xs text-zinc-500 block">Score aggregato</span>
-                    <span className="text-2xl font-mono tabular-nums font-semibold text-white">
+                    <span className="text-xs text-zinc-400 block">Score aggregato</span>
+                    <span className={`text-3xl font-mono tabular-nums font-bold ${current.totalScore >= 0.5 ? 'text-emerald-400' : current.totalScore >= 0 ? 'text-amber-400' : 'text-rose-400'}`}>
                         {current.totalScore > 0 ? `+${current.totalScore.toFixed(3)}` : current.totalScore.toFixed(3)}
                     </span>
                 </div>
             </div>
 
             {/* Waterfall bars */}
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3.5 pt-2">
                 {features.map((feat) => {
                     const isZero = feat.value === 0
                     const isPos = feat.value > 0
@@ -80,19 +80,19 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
                     const widthPct = Math.min(100, (absVal / 0.3) * 100)
 
                     return (
-                        <div key={feat.name} className="flex items-center gap-3 text-xs">
-                            <span className="w-56 shrink-0 text-zinc-400 font-medium truncate">
+                        <div key={feat.name} className="flex items-center gap-4 text-xs">
+                            <span className="w-64 shrink-0 text-zinc-300 font-medium truncate">
                                 {feat.name}
                             </span>
 
-                            <div className="flex-1 h-5 bg-white/[0.03] rounded-md overflow-hidden flex items-center p-0.5">
+                            <div className="flex-1 h-6 bg-white/[0.04] rounded-md overflow-hidden flex items-center p-0.5">
                                 {!isZero && (
                                     <div
                                         style={{ width: `${Math.max(6, widthPct)}%` }}
                                         className={`h-full rounded transition-all duration-300 ${
                                             isPos
-                                                ? 'bg-zinc-200'
-                                                : 'bg-rose-500/80'
+                                                ? 'bg-emerald-500'
+                                                : 'bg-rose-500'
                                         }`}
                                     />
                                 )}
@@ -102,9 +102,9 @@ export function FeatureAttributionWaterfall({ items }: FeatureAttributionWaterfa
                                 {isZero ? (
                                     <span className="text-zinc-600">0.000</span>
                                 ) : isPos ? (
-                                    <span className="text-white">+{feat.value.toFixed(3)}</span>
+                                    <span className="text-emerald-400 font-semibold">+{feat.value.toFixed(3)}</span>
                                 ) : (
-                                    <span className="text-rose-400">{feat.value.toFixed(3)}</span>
+                                    <span className="text-rose-400 font-semibold">{feat.value.toFixed(3)}</span>
                                 )}
                             </div>
                         </div>

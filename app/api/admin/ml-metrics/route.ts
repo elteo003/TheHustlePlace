@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateMLDiagnosticReport } from '@/lib/admin-ml-metrics'
+import { generateLiveMLDiagnosticReport } from '@/lib/admin-ml-metrics'
 import { RANKER_WEIGHTS_V1, RankerWeights } from '@/lib/taste-ranker'
 import { isDatabaseConfigured } from '@/lib/db'
-import { loadRankerWeights } from '@/lib/db/title-feedback'
+import { loadRankerWeights, saveRankerWeights } from '@/lib/db/title-feedback'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams
-        const personaId = searchParams.get('persona') || 'cinephile'
+        const personaId = searchParams.get('persona') || 'real_community'
 
         let baseWeights: RankerWeights = RANKER_WEIGHTS_V1
         if (isDatabaseConfigured()) {
@@ -38,10 +38,31 @@ export async function GET(request: NextRequest) {
             abandon: abandon ? Number(abandon) : baseWeights.abandon,
         }
 
-        const report = generateMLDiagnosticReport(effectiveWeights, personaId)
+        const report = await generateLiveMLDiagnosticReport(effectiveWeights, personaId)
         return NextResponse.json(report)
     } catch (error) {
         console.error('Errore /api/admin/ml-metrics:', error)
         return NextResponse.json({ error: 'Errore generazione metriche ML' }, { status: 500 })
     }
 }
+
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json()
+        if (!body || !body.weights) {
+            return NextResponse.json({ error: 'Pesi non validi forniti' }, { status: 400 })
+        }
+
+        const saved = await saveRankerWeights(body.weights)
+        if (!saved) {
+            return NextResponse.json({ error: 'Impossibile salvare i pesi nel database' }, { status: 500 })
+        }
+
+        const updatedReport = await generateLiveMLDiagnosticReport(body.weights)
+        return NextResponse.json({ success: true, report: updatedReport })
+    } catch (error) {
+        console.error('Errore POST /api/admin/ml-metrics:', error)
+        return NextResponse.json({ error: 'Errore durante il salvataggio dei pesi' }, { status: 500 })
+    }
+}
+

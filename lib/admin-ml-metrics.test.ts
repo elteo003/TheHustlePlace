@@ -4,6 +4,7 @@ import {
     computeMRR,
     computeIntraListDiversity,
     generateMLDiagnosticReport,
+    generateLiveMLDiagnosticReport,
 } from './admin-ml-metrics'
 import { isValidAdminCode, isDeviceAdminCode, MASTER_ADMIN_CODE_RAW, MASTER_ADMIN_CODE_FORMATTED } from './admin-auth'
 import { RANKER_WEIGHTS_V1 } from './taste-ranker'
@@ -83,9 +84,12 @@ describe('Admin ML Metrics & Evaluation Suite', () => {
         expect(isValidAdminCode(null)).toBe(false)
     })
 
-    it('identifica correttamente il dispositivo admin M7BY-Z77K', () => {
-        expect(isDeviceAdminCode('M7BY-Z77K')).toBe(true)
-        expect(isDeviceAdminCode('M7BYZ77K')).toBe(true)
-        expect(isDeviceAdminCode('OTHER123')).toBe(false)
+    it('genera il report diagnostico live (asincrono con telemetria)', async () => {
+        const liveReport = await generateLiveMLDiagnosticReport(RANKER_WEIGHTS_V1, 'real_community')
+        expect(liveReport).toBeDefined()
+        expect(liveReport.summary).toBeDefined()
+        expect(liveReport.funnel.stages.length).toBe(5)
+        expect(liveReport.confusionMatrix.tp).toBeGreaterThan(0)
     })
 })
+

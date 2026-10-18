@@ -30,10 +30,10 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
     const giniAreaPath = `${lorenzPath} L ${getX(100)} ${getY(100)} L ${getX(0)} ${getY(0)} Z`
 
     return (
-        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-white/[0.06] pb-4">
+        <div className="space-y-6 pt-6 border-t border-white/[0.08]">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-3 border-b border-white/[0.08]">
                 <div>
-                    <h2 className="text-base font-semibold text-white">
+                    <h2 className="text-base font-semibold text-white tracking-tight">
                         Curva di Lorenz ed esposizione del catalogo (Indice di Gini)
                     </h2>
                     <p className="text-xs text-zinc-400 mt-0.5">
@@ -41,10 +41,10 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                     </p>
                 </div>
 
-                <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] font-mono text-xs flex items-center gap-2 shrink-0">
+                <div className="font-mono text-xs flex items-center gap-2 shrink-0">
                     <span className="text-zinc-500">Gini:</span>
-                    <span className="font-semibold text-white text-sm">{gini}</span>
-                    <span className="text-zinc-400 text-[11px]">(bilanciato)</span>
+                    <span className="font-bold text-cyan-400 text-lg">{gini}</span>
+                    <span className="text-emerald-400 text-xs font-sans">(bilanciato)</span>
                 </div>
             </div>
 
@@ -99,23 +99,23 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                     {/* Shaded Gini Area */}
                     <path
                         d={giniAreaPath}
-                        fill="rgba(255, 255, 255, 0.04)"
+                        fill="rgba(6, 182, 212, 0.08)"
                     />
 
                     {/* 45 degree perfect equality line */}
                     <path
                         d={idealPath}
                         fill="none"
-                        stroke="#52525b"
+                        stroke="#71717a"
                         strokeWidth="1.5"
                         strokeDasharray="4 3"
                     />
 
-                    {/* Empirical Lorenz curve */}
+                    {/* Empirical Lorenz curve in Cyan */}
                     <path
                         d={lorenzPath}
                         fill="none"
-                        stroke="#ffffff"
+                        stroke="#06b6d4"
                         strokeWidth="2.5"
                     />
 
@@ -126,21 +126,21 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
                             cx={getX(p.catalogPercentile)}
                             cy={getY(p.impressionShare)}
                             r={3}
-                            fill="#ffffff"
+                            fill="#06b6d4"
                         />
                     ))}
                 </svg>
             </div>
 
             <div className="flex flex-wrap items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/[0.04]">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-zinc-500" />
+                        <div className="w-3.5 h-1 bg-zinc-500 rounded-full" />
                         <span>Distribuzione uniforme ideale</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-white" />
-                        <span>Curva reale catalogo</span>
+                        <div className="w-3.5 h-1 bg-cyan-400 rounded-full" />
+                        <span className="text-white">Curva reale catalogo</span>
                     </div>
                 </div>
                 <div className="text-[11px] text-zinc-500">

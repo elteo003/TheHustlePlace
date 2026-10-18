@@ -39,58 +39,58 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
     const activeMetric = hoveredK ? metricsAtK.find((m) => m.k === hoveredK) : metricsAtK[4] // default to K=5
 
     return (
-        <div className="bg-[#11131a] border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-5">
-            {/* Header with KPI cards */}
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-white/[0.06] pb-4">
+        <div className="space-y-6">
+            {/* Header - Borderless */}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-3 border-b border-white/[0.08]">
                 <div>
-                    <h2 className="text-base font-semibold text-white">
+                    <h2 className="text-base font-semibold text-white tracking-tight">
                         Curve di qualità del ranking (NDCG, Precision, Recall)
                     </h2>
                     <p className="text-xs text-zinc-400 mt-0.5">
-                        Valutazione dell&apos;ordinamento posizionale su un raggio da K=1 a K=20
+                        Valutazione dell&apos;ordinamento posizionale con K da 1 a 20
                     </p>
                 </div>
 
                 {/* Badges */}
-                <div className="flex items-center gap-3 font-mono text-xs">
-                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                <div className="flex items-center gap-4 font-mono text-xs">
+                    <div>
                         <span className="text-zinc-500 text-[10px] block">MRR</span>
-                        <span className="font-semibold text-white">{mrr}</span>
+                        <span className="font-bold text-white text-base">{mrr}</span>
                     </div>
-                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                    <div>
                         <span className="text-zinc-500 text-[10px] block">MAP</span>
-                        <span className="font-semibold text-white">{map}</span>
+                        <span className="font-bold text-cyan-400 text-base">{map}</span>
                     </div>
-                    <div className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+                    <div>
                         <span className="text-zinc-500 text-[10px] block">ILD (Diversità)</span>
-                        <span className="font-semibold text-white">{ild}</span>
+                        <span className="font-bold text-amber-400 text-base">{ild}</span>
                     </div>
                 </div>
             </div>
 
             {/* Interactive Legend & Active Values */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 py-2 text-xs">
                 <div className="flex items-center gap-5">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-white" />
+                        <div className="w-3.5 h-1 bg-emerald-400 rounded-full" />
                         <span className="text-zinc-300 font-medium">NDCG@K</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-zinc-400" />
+                        <div className="w-3.5 h-1 bg-cyan-400 rounded-full" />
                         <span className="text-zinc-300 font-medium">Precision@K</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-0.5 bg-zinc-600" />
+                        <div className="w-3.5 h-1 bg-amber-400 rounded-full" />
                         <span className="text-zinc-300 font-medium">Recall@K</span>
                     </div>
                 </div>
 
                 {activeMetric && (
-                    <div className="flex items-center gap-3 font-mono text-xs">
+                    <div className="flex items-center gap-4 font-mono text-xs">
                         <span className="text-zinc-500">K = {activeMetric.k}:</span>
-                        <span className="text-white font-semibold">NDCG {activeMetric.ndcg}</span>
-                        <span className="text-zinc-300">P@{activeMetric.k} {activeMetric.precision}</span>
-                        <span className="text-zinc-400">R@{activeMetric.k} {activeMetric.recall}</span>
+                        <span className="text-emerald-400 font-semibold">NDCG {activeMetric.ndcg}</span>
+                        <span className="text-cyan-400 font-semibold">P@{activeMetric.k} {activeMetric.precision}</span>
+                        <span className="text-amber-400 font-semibold">R@{activeMetric.k} {activeMetric.recall}</span>
                     </div>
                 )}
             </div>
@@ -150,26 +150,28 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
                         )
                     })}
 
-                    {/* Paths */}
+                    {/* Recall Path (Amber) */}
                     <path
                         d={recallPath}
                         fill="none"
-                        stroke="#52525b"
-                        strokeWidth="1.5"
+                        stroke="#f59e0b"
+                        strokeWidth="2"
                         strokeDasharray="4 3"
                     />
 
+                    {/* Precision Path (Cyan) */}
                     <path
                         d={precisionPath}
                         fill="none"
-                        stroke="#a1a1aa"
+                        stroke="#06b6d4"
                         strokeWidth="2"
                     />
 
+                    {/* NDCG Path (Emerald) */}
                     <path
                         d={ndcgPath}
                         fill="none"
-                        stroke="#ffffff"
+                        stroke="#10b981"
                         strokeWidth="2.5"
                     />
 
@@ -191,25 +193,25 @@ export function RankingQualityChart({ metricsAtK, mrr, map, ild }: RankingQualit
                                         y1={padding.top}
                                         x2={x}
                                         y2={height - padding.bottom}
-                                        stroke="rgba(255,255,255,0.2)"
+                                        stroke="rgba(255,255,255,0.25)"
                                         strokeDasharray="2 2"
                                     />
                                 )}
 
-                                {/* NDCG Dot */}
+                                {/* NDCG Dot (Emerald) */}
                                 <circle
                                     cx={x}
                                     cy={getY(m.ndcg)}
-                                    r={isHovered ? 4 : 2.5}
-                                    fill="#ffffff"
+                                    r={isHovered ? 4.5 : 3}
+                                    fill="#10b981"
                                 />
 
-                                {/* Precision Dot */}
+                                {/* Precision Dot (Cyan) */}
                                 <circle
                                     cx={x}
                                     cy={getY(m.precision)}
-                                    r={isHovered ? 3.5 : 2}
-                                    fill="#a1a1aa"
+                                    r={isHovered ? 4 : 2.5}
+                                    fill="#06b6d4"
                                 />
 
                                 {/* Hover trigger column */}

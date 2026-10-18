@@ -28,10 +28,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
     const isPlayerPage = pathname?.startsWith('/player/')
     const isDevPreview = pathname?.startsWith('/dev/')
+    const isAdmin = pathname?.startsWith('/admin')
     const isSplash = pathname === '/'
     const isHome = pathname === '/home'
     const isLiving = isLivingPath(pathname)
-    const showNavbar = !isPlayerPage && !isSplash && !isLiving && !isDevPreview
+    const showNavbar = !isPlayerPage && !isSplash && !isLiving && !isDevPreview && !isAdmin
     const needsTopPadding = showNavbar && !isHome
 
     if (!isClient && !isLiving) {

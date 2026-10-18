@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { generateMLDiagnosticReport } from '@/lib/admin-ml-metrics'
+import { generateLiveMLDiagnosticReport } from '@/lib/admin-ml-metrics'
 import { AdminPageClient } from './admin-page-client'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 }
 
 export default async function AdminPage() {
-    const initialReport = generateMLDiagnosticReport()
+    const initialReport = await generateLiveMLDiagnosticReport()
 
     return <AdminPageClient initialReport={initialReport} />
 }
+

@@ -67,26 +67,35 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
     const slots = Array.from({ length: 8 }).map((_, i) => code[i] || '')
 
     return (
-        <div className="min-h-screen bg-[#090a0f] text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none relative">
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 sm:p-6 select-none relative">
             <motion.div
                 key={shake}
                 animate={shake > 0 ? (shouldReduceMotion ? { opacity: [1, 0.5, 1] } : { x: [-8, 8, -6, 6, -3, 3, 0] }) : {}}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
-                className="w-full max-w-md bg-[#11131a] rounded-2xl p-7 sm:p-9 shadow-2xl border border-white/[0.08]"
+                className="w-full max-w-md bg-zinc-950/90 rounded-2xl p-7 sm:p-9 shadow-2xl border border-white/10"
             >
-                {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-300">
-                        <Lock className="w-4 h-4" />
+                {/* Brand Header */}
+                <div className="flex items-center justify-between gap-3 mb-6 pb-5 border-b border-white/[0.08]">
+                    <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-white text-black font-bold flex items-center justify-center text-sm shadow-sm">
+                            H
+                        </div>
+                        <span className="text-lg font-semibold text-white tracking-tight">
+                            TheHustlePlace
+                        </span>
                     </div>
-                    <div>
-                        <h1 className="text-lg font-semibold text-white tracking-tight">
-                            Accesso diagnostica ML
-                        </h1>
-                        <p className="text-xs text-zinc-400 mt-0.5">
-                            Pannello di controllo raccomandazioni
-                        </p>
-                    </div>
+                    <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Admin Security
+                    </span>
+                </div>
+
+                <div>
+                    <h1 className="text-base font-semibold text-white tracking-tight">
+                        Accesso diagnostica ML
+                    </h1>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                        Pannello di controllo raccomandazioni
+                    </p>
                 </div>
 
                 {/* Description */}
