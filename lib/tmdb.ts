@@ -296,19 +296,26 @@ export async function getOnTheAirTV(): Promise<TMDBResponse<TMDBTVShow>> {
 
 export async function discoverUpcomingTV(params: {
     withGenres?: string
+    withoutGenres?: string
     airDateGte?: string
+    firstAirDateGte?: string
     page?: number
 }): Promise<TMDBResponse<TMDBTVShow>> {
     const searchParams = new URLSearchParams({
         sort_by: 'popularity.desc',
         include_adult: 'false',
-        'vote_count.gte': '10',
     })
     if (params.withGenres) {
         searchParams.set('with_genres', params.withGenres)
     }
+    if (params.withoutGenres) {
+        searchParams.set('without_genres', params.withoutGenres)
+    }
     if (params.airDateGte) {
         searchParams.set('air_date.gte', params.airDateGte)
+    }
+    if (params.firstAirDateGte) {
+        searchParams.set('first_air_date.gte', params.firstAirDateGte)
     }
     if (params.page) {
         searchParams.set('page', String(params.page))

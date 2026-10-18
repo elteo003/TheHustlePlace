@@ -10,7 +10,17 @@ export default async function TVPage() {
     const serverHistory = await fetchServerWatchHistory()
     const followedTV = serverHistory
         .filter((entry) => entry.type === 'tv')
-        .map((entry) => ({ id: entry.id }))
+        .filter((entry) => {
+            if (entry.continueHidden) {
+                return (entry.progress ?? 0) < 90
+            }
+            return true
+        })
+        .map((entry) => ({
+            id: entry.id,
+            season: entry.season,
+            episode: entry.episode,
+        }))
 
     const personal = await fetchPersonalRails([], serverHistory)
 

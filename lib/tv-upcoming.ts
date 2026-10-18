@@ -37,10 +37,13 @@ export interface UpcomingTVShowItem {
 
 export interface FetchUpcomingTVOptions {
     topGenres?: number[]
+    rejectedIds?: number[]
+    lovedIds?: number[]
     today?: string
 }
 
-const EXCLUDED_GENRES = new Set(['Talk', 'News', 'Reality'])
+const EXCLUDED_GENRES = new Set(['Talk', 'News', 'Reality', 'Soap'])
+const EXCLUDED_GENRE_IDS = '10767,10763,10764,10766'
 
 export function formatItalianAirDate(isoDate: string): string {
     const parts = isoDate.split('-').map(Number)
@@ -70,7 +73,7 @@ export function formatCountdownBadge(daysUntil: number, formattedDate: string): 
     return 'Disponibile ora'
 }
 
-function mapDetailsToUpcomingItem(
+export function mapDetailsToUpcomingItem(
     details: TMDBTVDetails,
     isFollowed: boolean,
     userProgress?: { season?: number; episode?: number },
@@ -88,12 +91,17 @@ function mapDetailsToUpcomingItem(
     let episodeOverview = ''
 
     if (details.next_episode_to_air?.air_date) {
-        airDate = details.next_episode_to_air.air_date
-        seasonNum = details.next_episode_to_air.season_number
-        episodeNum = details.next_episode_to_air.episode_number
-        episodeName = details.next_episode_to_air.name || `Episodio ${episodeNum}`
-        episodeOverview = details.next_episode_to_air.overview || ''
-    } else if (details.seasons?.length) {
+        const nextAir = details.next_episode_to_air.air_date
+        if (nextAir >= today) {
+            airDate = nextAir
+            seasonNum = details.next_episode_to_air.season_number
+            episodeNum = details.next_episode_to_air.episode_number
+            episodeName = details.next_episode_to_air.name || `Episodio ${episodeNum}`
+            episodeOverview = details.next_episode_to_air.overview || ''
+        }
+    }
+
+    if (!airDate && details.seasons?.length) {
         const futureSeasons = details.seasons
             .filter((s) => s.season_number > 0 && s.air_date && s.air_date >= today)
             .sort((a, b) => (a.air_date! > b.air_date! ? 1 : -1))
@@ -107,20 +115,26 @@ function mapDetailsToUpcomingItem(
         }
     }
 
-    // Se seguita e confermata per il ritorno, accetta anche con data da annunciare
-    const isReturning = details.status === 'Returning Series' || details.status === 'In Production'
-    if (!airDate) {
-        if (!isFollowed || !isReturning) {
-            return null
-        }
-        seasonNum = (details.number_of_seasons || 1) + 1
+    if (!airDate && details.first_air_date && details.first_air_date >= today) {
+        airDate = details.first_air_date
+        seasonNum = 1
         episodeNum = 1
-        episodeName = 'Nuova stagione'
-        episodeOverview = 'Nuova stagione confermata in arrivo prossimamente.'
+        episodeName = 'Episodio 1'
+        episodeOverview = details.overview || ''
     }
 
-    const daysUntil = airDate ? computeDaysUntil(airDate, today) : 999
-    const formattedDate = airDate ? formatItalianAirDate(airDate) : 'Data da annunciare'
+    // Se non ci sono episodi o stagioni con data certa >= today, NON mostrare.
+    // Non vengono più mostrate serie generiche "confermate" senza una data di uscita programmata.
+    if (!airDate) {
+        return null
+    }
+
+    const daysUntil = computeDaysUntil(airDate, today)
+    if (daysUntil < 0) {
+        return null
+    }
+
+    const formattedDate = formatItalianAirDate(airDate)
     const countdownBadge = formatCountdownBadge(daysUntil, formattedDate)
 
     return {
@@ -138,11 +152,11 @@ function mapDetailsToUpcomingItem(
             episode: episodeNum,
             name: episodeName,
             overview: episodeOverview,
-            airDate: airDate || '',
+            airDate,
             daysUntil,
             formattedDate,
             countdownBadge,
-            isAvailable: airDate ? daysUntil <= 0 : false,
+            isAvailable: daysUntil <= 0,
         },
     }
 }
@@ -154,10 +168,11 @@ export async function fetchUpcomingTVCatalog(
     const today = options?.today ?? romeToday()
     const collected: UpcomingTVShowItem[] = []
     const seenIds = new Set<number>()
+    const rejectedSet = new Set(options?.rejectedIds || [])
 
-    // 1. Elabora prima le serie seguite dall'utente
+    // 1. Elabora prima le serie seguite/iniziate dall'utente con nuove puntate in uscita
     for (const followed of followedSeries) {
-        if (seenIds.has(followed.id)) continue
+        if (seenIds.has(followed.id) || rejectedSet.has(followed.id)) continue
         try {
             const details = await getTVDetails(followed.id)
             const item = mapDetailsToUpcomingItem(details, true, {
@@ -181,38 +196,57 @@ export async function fetchUpcomingTVCatalog(
         const userGenreSet = new Set(targetGenres)
         const candidateMap = new Map<number, { id: number; affinityScore: number }>()
 
-        // 2a. Cerca serie in arrivo con i generi preferiti dell'utente
-        if (targetGenres.length > 0) {
-            try {
-                const discovered = await discoverUpcomingTV({
-                    withGenres: genrePipe(targetGenres),
-                    airDateGte: today,
-                })
-                for (const show of discovered.results || []) {
-                    if (seenIds.has(show.id)) continue
-                    let score = (show.vote_average || 7) * 2
-                    const matching = (show.genre_ids || []).filter((g) => userGenreSet.has(g)).length
-                    score += matching * 15
+        const addCandidates = (shows: any[], isUserGenreTargeted: boolean) => {
+            for (const show of shows || []) {
+                if (seenIds.has(show.id) || rejectedSet.has(show.id)) continue
+                let score = (show.vote_average || 7) * 2 + Math.log10((show.popularity || 1) + 1) * 3
+                const matching = (show.genre_ids || []).filter((g: number) => userGenreSet.has(g)).length
+                score += matching * 25
+                if (isUserGenreTargeted) score += 20
+                if (options?.lovedIds?.includes(show.id)) score += 50
+                const existing = candidateMap.get(show.id)
+                if (!existing || score > existing.affinityScore) {
                     candidateMap.set(show.id, { id: show.id, affinityScore: score })
                 }
+            }
+        }
+
+        // 2a. Se l'utente ha generi preferiti, cerca serie nuove ed episodi in arrivo con i suoi generi
+        if (targetGenres.length > 0) {
+            try {
+                const [newDebuts, upcomingEpisodes] = await Promise.all([
+                    discoverUpcomingTV({
+                        withGenres: genrePipe(targetGenres),
+                        withoutGenres: EXCLUDED_GENRE_IDS,
+                        firstAirDateGte: today,
+                    }),
+                    discoverUpcomingTV({
+                        withGenres: genrePipe(targetGenres),
+                        withoutGenres: EXCLUDED_GENRE_IDS,
+                        airDateGte: today,
+                    }),
+                ])
+                addCandidates(newDebuts.results, true)
+                addCandidates(upcomingEpisodes.results, true)
             } catch {
                 // ignore
             }
         }
 
-        // 2b. Pool on_the_air generale (anch'esso ordinato e pesato per affinità)
+        // 2b. Pool generale serie in arrivo (nuovi debutti e nuovi episodi) per completare con affinità
         try {
-            const onTheAir = await getOnTheAirTV()
-            for (const show of onTheAir.results || []) {
-                if (seenIds.has(show.id)) continue
-                const existing = candidateMap.get(show.id)
-                let score = (show.vote_average || 7) * 2
-                const matching = (show.genre_ids || []).filter((g) => userGenreSet.has(g)).length
-                score += matching * 15
-                if (!existing || score > existing.affinityScore) {
-                    candidateMap.set(show.id, { id: show.id, affinityScore: score })
-                }
-            }
+            const [generalDebuts, generalUpcoming] = await Promise.all([
+                discoverUpcomingTV({
+                    withoutGenres: EXCLUDED_GENRE_IDS,
+                    firstAirDateGte: today,
+                }),
+                discoverUpcomingTV({
+                    withoutGenres: EXCLUDED_GENRE_IDS,
+                    airDateGte: today,
+                }),
+            ])
+            addCandidates(generalDebuts.results, false)
+            addCandidates(generalUpcoming.results, false)
         } catch {
             // ignore
         }

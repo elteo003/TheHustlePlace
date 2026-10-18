@@ -84,6 +84,12 @@ export function HomePageClient({
     const followedTvIds = useMemo(() => {
         return watchHistory
             .filter((entry) => entry.type === 'tv')
+            .filter((entry) => {
+                if (entry.continueHidden) {
+                    return (entry.progress ?? 0) < 90
+                }
+                return true
+            })
             .map((entry) => entry.id)
     }, [watchHistory])
 

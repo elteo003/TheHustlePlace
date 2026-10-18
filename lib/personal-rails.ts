@@ -16,6 +16,9 @@ export type HistorySeed = {
     type: 'movie' | 'tv'
     progress: number
     watchedAt: number
+    continueHidden?: boolean
+    season?: number
+    episode?: number
 }
 
 export type TitleFeatures = {

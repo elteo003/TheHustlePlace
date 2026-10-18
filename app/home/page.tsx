@@ -10,7 +10,17 @@ export default async function HomePage() {
     const serverHistory = await fetchServerWatchHistory()
     const followedTV = serverHistory
         .filter((entry) => entry.type === 'tv')
-        .map((entry) => ({ id: entry.id }))
+        .filter((entry) => {
+            if (entry.continueHidden) {
+                return (entry.progress ?? 0) < 90
+            }
+            return true
+        })
+        .map((entry) => ({
+            id: entry.id,
+            season: entry.season,
+            episode: entry.episode,
+        }))
 
     const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10] =
         await Promise.all([

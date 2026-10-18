@@ -4,18 +4,18 @@ import { isPlayerFullscreen, togglePlayerFullscreen } from '@/lib/player-fullscr
 describe('isPlayerFullscreen', () => {
     it('legge fullscreenElement, webkit e il video iOS', () => {
         const box = {} as Element
-        expect(isPlayerFullscreen(null, { fullscreenElement: null } as Document)).toBe(false)
-        expect(isPlayerFullscreen(null, { fullscreenElement: box } as Document)).toBe(true)
+        expect(isPlayerFullscreen(null, { fullscreenElement: null } as unknown as Document)).toBe(false)
+        expect(isPlayerFullscreen(null, { fullscreenElement: box } as unknown as Document)).toBe(true)
         expect(
             isPlayerFullscreen(null, {
                 fullscreenElement: null,
                 webkitFullscreenElement: box,
-            } as Document)
+            } as unknown as Document)
         ).toBe(true)
         expect(
-            isPlayerFullscreen({ webkitDisplayingFullscreen: true } as HTMLVideoElement, {
+            isPlayerFullscreen({ webkitDisplayingFullscreen: true } as unknown as HTMLVideoElement, {
                 fullscreenElement: null,
-            } as Document)
+            } as unknown as Document)
         ).toBe(true)
     })
 })

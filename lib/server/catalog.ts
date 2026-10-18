@@ -28,6 +28,9 @@ export async function fetchServerWatchHistory(): Promise<HistorySeed[]> {
             type: entry.type,
             progress: entry.progress,
             watchedAt: entry.watchedAt,
+            continueHidden: entry.continueHidden,
+            season: entry.season,
+            episode: entry.episode,
         }))
     } catch {
         return []
