@@ -3,20 +3,25 @@
 import { useState } from 'react'
 import { RankerWeights, RANKER_WEIGHTS_V1 } from '@/lib/taste-ranker'
 import { RotateCcw, Play, Save, Check, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface HyperparameterSandboxProps {
     weights: RankerWeights
-    onApplyWeights: (weights: RankerWeights) => void
+    onApplyWeights: (weights: RankerWeights) => Promise<void> | void
     onSaveToDatabase?: (weights: RankerWeights) => Promise<boolean>
+    onScrollToChart?: () => void
 }
 
 export function HyperparameterSandbox({
     weights,
     onApplyWeights,
     onSaveToDatabase,
+    onScrollToChart,
 }: HyperparameterSandboxProps) {
     const [local, setLocal] = useState<RankerWeights>(weights)
     const [isModified, setIsModified] = useState(false)
+    const [isSimulating, setIsSimulating] = useState(false)
+    const [justApplied, setJustApplied] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [isSaved, setIsSaved] = useState(false)
 
@@ -25,18 +30,46 @@ export function HyperparameterSandbox({
         setLocal(next)
         setIsModified(true)
         setIsSaved(false)
+        setJustApplied(false)
     }
 
-    const handleReset = () => {
+    const handleReset = async () => {
         setLocal(RANKER_WEIGHTS_V1)
-        onApplyWeights(RANKER_WEIGHTS_V1)
         setIsModified(false)
         setIsSaved(false)
+        setJustApplied(false)
+        setIsSimulating(true)
+        try {
+            await onApplyWeights(RANKER_WEIGHTS_V1)
+            toast.info('Pesi di default ripristinati', {
+                description: 'Le curve del ranker sono state reimpostate ai valori base v1.',
+            })
+            if (onScrollToChart) {
+                setTimeout(onScrollToChart, 150)
+            }
+        } finally {
+            setIsSimulating(false)
+        }
     }
 
-    const handleSimulate = () => {
-        onApplyWeights(local)
-        setIsModified(false)
+    const handleSimulate = async () => {
+        setIsSimulating(true)
+        try {
+            await onApplyWeights(local)
+            setIsModified(false)
+            setJustApplied(true)
+            toast.success('Simulazione applicata con successo', {
+                description: 'Curve NDCG@K e metriche di ranking ricalcolate in tempo reale.',
+            })
+            if (onScrollToChart) {
+                setTimeout(onScrollToChart, 150)
+            }
+            setTimeout(() => setJustApplied(false), 3000)
+        } catch {
+            toast.error('Errore durante la simulazione dei pesi')
+        } finally {
+            setIsSimulating(false)
+        }
     }
 
     const handleSaveToDb = async () => {
@@ -47,13 +80,17 @@ export function HyperparameterSandbox({
             if (success) {
                 setIsSaved(true)
                 setIsModified(false)
+                toast.success('Pesi salvati in produzione', {
+                    description: 'I nuovi pesi del ranker sono ora persistiti nel database PostgreSQL.',
+                })
                 setTimeout(() => setIsSaved(false), 3000)
+            } else {
+                toast.error('Impossibile salvare i pesi nel database')
             }
         } finally {
             setIsSaving(false)
         }
     }
-
 
     const sliders = [
         {
@@ -122,7 +159,8 @@ export function HyperparameterSandbox({
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="h-8 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 transition-all"
+                        disabled={isSimulating}
+                        className="h-8 px-3 text-xs font-medium flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 transition-all disabled:opacity-40"
                     >
                         <RotateCcw className="w-3.5 h-3.5" />
                         Ripristina
@@ -131,11 +169,25 @@ export function HyperparameterSandbox({
                     <button
                         type="button"
                         onClick={handleSimulate}
-                        disabled={!isModified}
-                        className="h-8 px-4 text-xs font-semibold rounded-lg bg-emerald-400 text-black hover:bg-emerald-300 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5"
+                        disabled={(!isModified && !justApplied) || isSimulating}
+                        className="h-8 px-4 text-xs font-semibold rounded-lg bg-emerald-400 text-black hover:bg-emerald-300 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1.5 shadow-sm"
                     >
-                        <Play className="w-3 h-3 fill-current" />
-                        Applica simulazione
+                        {isSimulating ? (
+                            <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-black" />
+                                <span>Simulazione in corso...</span>
+                            </>
+                        ) : justApplied ? (
+                            <>
+                                <Check className="w-3.5 h-3.5 text-black" />
+                                <span>Simulazione applicata!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Play className="w-3 h-3 fill-current" />
+                                <span>Applica simulazione</span>
+                            </>
+                        )}
                     </button>
 
                     {onSaveToDatabase && (
@@ -153,7 +205,7 @@ export function HyperparameterSandbox({
                             ) : (
                                 <Save className="w-3.5 h-3.5" />
                             )}
-                            <span>{isSaved ? 'Pesi salvati nel DB!' : 'Salva in produzione'}</span>
+                            <span>{isSaved ? 'Salvato!' : 'Salva in produzione'}</span>
                         </button>
                     )}
                 </div>
@@ -167,11 +219,11 @@ export function HyperparameterSandbox({
                     return (
                         <div
                             key={s.key}
-                            className="p-4 rounded-xl bg-zinc-900/60 border border-white/10 space-y-2.5"
+                            className="p-4 rounded-xl bg-zinc-950/70 border border-white/[0.08] space-y-2.5 hover:border-white/20 transition-colors"
                         >
                             <div className="flex items-center justify-between text-xs">
                                 <span className="font-medium text-white">{s.label}</span>
-                                <span className="font-mono font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-500/20 px-2 py-0.5 rounded tabular-nums">
+                                <span className="font-mono font-bold text-white bg-white/10 border border-white/15 px-2 py-0.5 rounded tabular-nums">
                                     {val.toFixed(2)}
                                 </span>
                             </div>
@@ -183,7 +235,7 @@ export function HyperparameterSandbox({
                                 step={s.step}
                                 value={val}
                                 onChange={(e) => handleChange(s.key, parseFloat(e.target.value))}
-                                className="w-full accent-cyan-400 cursor-pointer h-1.5 bg-white/10 rounded-lg"
+                                className="w-full accent-white cursor-pointer h-1.5 bg-white/15 rounded-lg"
                             />
 
                             <p className="text-[11px] text-zinc-400 leading-relaxed">{s.desc}</p>

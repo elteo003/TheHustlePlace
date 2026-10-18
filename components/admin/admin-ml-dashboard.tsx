@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -69,8 +69,14 @@ export function AdminMLDashboard({ initialReport, onLogout }: AdminMLDashboardPr
         fetchUpdatedReport(id)
     }
 
-    const handleApplyWeights = (newWeights: RankerWeights) => {
-        fetchUpdatedReport(activePersona, newWeights)
+    const chartSectionRef = useRef<HTMLDivElement>(null)
+
+    const handleScrollToChart = () => {
+        chartSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    const handleApplyWeights = async (newWeights: RankerWeights) => {
+        await fetchUpdatedReport(activePersona, newWeights)
     }
 
     const handleSaveProductionWeights = async (newWeights: RankerWeights): Promise<boolean> => {
@@ -410,13 +416,28 @@ export function AdminMLDashboard({ initialReport, onLogout }: AdminMLDashboardPr
                             <HyperparameterSandbox
                                 weights={weights}
                                 onApplyWeights={handleApplyWeights}
+                                onSaveToDatabase={handleSaveProductionWeights}
+                                onScrollToChart={handleScrollToChart}
                             />
-                            <RankingQualityChart
-                                metricsAtK={report.curves.metricsAtK}
-                                mrr={report.summary.mrr}
-                                map={report.summary.map}
-                                ild={report.summary.intraListDiversity}
-                            />
+                            <div ref={chartSectionRef} className="scroll-mt-8 space-y-3 pt-6 border-t border-white/[0.08]">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                                            Risultato simulazione in tempo reale
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-zinc-400 font-mono">
+                                        NDCG@10 ricalcolato: <b className="text-emerald-400 font-bold">{report.summary.ndcg10}</b>
+                                    </span>
+                                </div>
+                                <RankingQualityChart
+                                    metricsAtK={report.curves.metricsAtK}
+                                    mrr={report.summary.mrr}
+                                    map={report.summary.map}
+                                    ild={report.summary.intraListDiversity}
+                                />
+                            </div>
                         </div>
                     )}
                 </motion.div>
