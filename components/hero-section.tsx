@@ -38,6 +38,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const reduceMotion = useReducedMotion()
     const heroRef = useRef<HTMLDivElement>(null)
     const [pastHero, setPastHero] = useState(false)
+    const [isScrolled, setIsScrolled] = useState(false)
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
     const showMeta = isTouch || metaHovered || introVisible
@@ -50,7 +51,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 rafId = null
                 const node = heroRef.current
                 if (!node) return
+                const scrolled = window.scrollY > 20
                 const isPast = node.getBoundingClientRect().bottom <= 72
+                setIsScrolled((prev) => (prev === scrolled ? prev : scrolled))
                 setPastHero((prev) => (prev === isPast ? prev : isPast))
             })
         }
@@ -65,14 +68,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }, [])
 
     useEffect(() => {
-        setNavbarVisible(pastHero || showMeta)
+        setNavbarVisible(isScrolled || pastHero || showMeta)
         return () => setNavbarVisible(true)
-    }, [pastHero, setNavbarVisible, showMeta])
+    }, [isScrolled, pastHero, setNavbarVisible, showMeta])
 
     useEffect(() => {
         setIntroVisible(true)
         if (isTouch) return
-        const timer = setTimeout(() => setIntroVisible(false), 1800)
+        const timer = setTimeout(() => setIntroVisible(false), 5000)
         return () => clearTimeout(timer)
     }, [featuredMovie?.id, isTouch])
 
@@ -252,7 +255,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
     const showUpcoming = trailerEnded || showUpcomingTrailers
-    const metaVisible = showMeta && !showUpcoming
+    const metaVisible = (showMeta || isScrolled) && !showUpcoming
 
     return (
         <>
@@ -265,10 +268,8 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                             backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
-                            filter: showMeta ? 'brightness(0.8) saturate(1.1) contrast(1.1)' : 'brightness(0.55) saturate(0.95) contrast(1)',
-                            backgroundPosition: showMeta ? 'center 45%' : 'center 50%',
-                            transform: showMeta ? 'scale(1.02)' : 'scale(1)',
-                            transition: 'transform 0.7s cubic-bezier(0.32, 0.72, 0, 1), filter 0.7s cubic-bezier(0.32, 0.72, 0, 1)'
+                            backgroundPosition: 'center 45%',
+                            filter: 'brightness(0.7) saturate(1.05)',
                         }}
                     />
                     {trailer && !showUpcoming && (

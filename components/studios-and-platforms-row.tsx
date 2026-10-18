@@ -125,7 +125,7 @@ export function StudiosAndPlatformsRow({
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 md:gap-4 overflow-x-auto py-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-3 md:gap-4 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {STUDIOS_AND_PLATFORMS.map((platform) => {
                     const isCurrent = selectedSlug === platform.slug
 
@@ -135,7 +135,7 @@ export function StudiosAndPlatformsRow({
                                 key="the-hustle-place-reset"
                                 type="button"
                                 onClick={onResetToHome}
-                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/20 hover:border-white/40 bg-gradient-to-br from-[#1c1c24] via-[#121218] to-[#0a0a0f] hover:shadow-xl overflow-hidden"
+                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center transition-[transform,border-color,box-shadow] duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/20 hover:border-white/40 bg-gradient-to-br from-[#1c1c24] via-[#121218] to-[#0a0a0f] hover:shadow-xl overflow-hidden"
                             >
                                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                                 <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export function StudiosAndPlatformsRow({
                             key={platform.slug}
                             type="button"
                             onClick={() => onSelectPlatform(platform)}
-                            className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/10 hover:border-white/30 bg-[#141418] hover:shadow-xl overflow-hidden"
+                            className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center transition-[transform,border-color,box-shadow] duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/10 hover:border-white/30 bg-[#141418] hover:shadow-xl overflow-hidden"
                             style={{
                                 background: `linear-gradient(145deg, ${platform.accentColor || '#1c1c24'}44 0%, #0d0d12 100%)`,
                             }}
