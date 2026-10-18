@@ -14,7 +14,7 @@ import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
-import { weavePlatformTop10s, pinTailRails, type PlatformTop10, type PlatformChart } from '@/lib/platform-top10'
+import { weavePlatformTop10s, pinTailRails, type PlatformTop10, type PlatformChart, type PlatformHubData } from '@/lib/platform-top10'
 import { StudiosAndPlatformsRow } from '@/components/studios-and-platforms-row'
 import { Movie, TVShow, Top10Content } from '@/types'
 
@@ -66,7 +66,6 @@ export function HomePageClient({
 }: HomePageClientProps) {
     const { play, openDetails } = useContentNavigation()
     const { entries: watchHistory } = useWatchHistory()
-    const continueWatching = watchHistory.filter((entry) => !entry.continueHidden)
     const occupied = useMemo(
         () => occupiedFromRails([...top10, ...comingToCinema, ...comingSoon]),
         [top10, comingToCinema, comingSoon]
@@ -79,27 +78,53 @@ export function HomePageClient({
 
     const isFree = platformTop10.isFreeDay || !platformTop10.platform
     const [activePlatformTop10, setActivePlatformTop10] = useState<PlatformTop10>(platformTop10)
-    const [selectedPlatformSlug, setSelectedPlatformSlug] = useState<string | null>(platformTop10.platform?.slug ?? null)
+    const [selectedPlatformSlug, setSelectedPlatformSlug] = useState<string | null>(null)
+    const [platformHubData, setPlatformHubData] = useState<PlatformHubData | null>(null)
     const [isLoadingPlatform, setIsLoadingPlatform] = useState(false)
 
-    const handleSelectPlatform = useCallback(async (platform: PlatformChart) => {
-        setSelectedPlatformSlug(platform.slug)
-        setIsLoadingPlatform(true)
-        try {
-            const res = await fetch(`/api/catalog/platform-top10?platform=${platform.slug}`)
-            const json = await res.json()
-            if (json?.data) {
-                setActivePlatformTop10(json.data)
-            }
-        } catch (error) {
-            console.error('Errore nel recupero della piattaforma', error)
-        } finally {
-            setIsLoadingPlatform(false)
+    const continueWatching = useMemo(() => {
+        const unhidden = watchHistory.filter((entry) => !entry.continueHidden)
+        if (!selectedPlatformSlug) {
+            return unhidden
         }
-    }, [])
+        if (!platformHubData) {
+            return []
+        }
+        const matchingSet = new Set(platformHubData.matchingHistoryIds)
+        return unhidden.filter((entry) => matchingSet.has(entry.id))
+    }, [watchHistory, selectedPlatformSlug, platformHubData])
+
+    const handleSelectPlatform = useCallback(
+        async (platform: PlatformChart) => {
+            if (platform.slug === selectedPlatformSlug) return
+            setSelectedPlatformSlug(platform.slug)
+            setPlatformHubData(null)
+            setIsLoadingPlatform(true)
+            try {
+                const historyParam = watchHistory
+                    .map((entry) => `${entry.id}:${entry.type}`)
+                    .join(',')
+                const query = historyParam
+                    ? `?platform=${encodeURIComponent(platform.slug)}&history=${encodeURIComponent(historyParam)}`
+                    : `?platform=${encodeURIComponent(platform.slug)}`
+
+                const res = await fetch(`/api/catalog/platform-hub${query}`)
+                const json = await res.json()
+                if (json?.data) {
+                    setPlatformHubData(json.data)
+                }
+            } catch (error) {
+                console.error('Errore nel recupero della piattaforma', error)
+            } finally {
+                setIsLoadingPlatform(false)
+            }
+        },
+        [selectedPlatformSlug, watchHistory]
+    )
 
     const handleResetToHome = useCallback(() => {
         setSelectedPlatformSlug(null)
+        setPlatformHubData(null)
         setActivePlatformTop10(platformTop10)
     }, [platformTop10])
 
@@ -155,6 +180,52 @@ export function HomePageClient({
             if (shelf.items.length) next.push(shelf)
         }
 
+        if (selectedPlatformSlug) {
+            if (!platformHubData) return []
+
+            push({
+                id: 'platform-top10-tv',
+                title: `Top 10 serie TV da ${platformHubData.platform.label}`,
+                type: 'tv',
+                section: 'platform-top10-tv',
+                items: platformHubData.seriesTop10,
+                limit: TOP10_SIZE,
+            })
+            push({
+                id: 'platform-popular-tv',
+                title: `Serie TV popolari su ${platformHubData.platform.label}`,
+                type: 'tv',
+                section: 'popular',
+                items: platformHubData.popularSeries,
+                limit: HOME_RAIL_SIZE,
+            })
+            push({
+                id: 'platform-popular-movies',
+                title: `Film popolari su ${platformHubData.platform.label}`,
+                type: 'movie',
+                section: 'popular',
+                items: platformHubData.popularMovies,
+                limit: HOME_RAIL_SIZE,
+            })
+            push({
+                id: 'platform-recent',
+                title: `Nuove uscite su ${platformHubData.platform.label}`,
+                type: 'movie',
+                section: 'recent',
+                items: platformHubData.recentTitles,
+                limit: HOME_RAIL_SIZE,
+            })
+            push({
+                id: 'platform-top10-movie',
+                title: `Top 10 film da ${platformHubData.platform.label}`,
+                type: 'movie',
+                section: 'platform-top10-movie',
+                items: platformHubData.moviesTop10,
+                limit: TOP10_SIZE,
+            })
+            return next
+        }
+
         push({
             id: 'picks',
             title: 'Scelti per te oggi',
@@ -163,37 +234,14 @@ export function HomePageClient({
             items: rails.picks,
             limit: HOME_RAIL_SIZE,
         })
-        if (selectedPlatformSlug) {
-            if (activePlatformTop10.series.length > 0) {
-                push({
-                    id: 'platform-top10-tv',
-                    title: activePlatformTop10.seriesTitle,
-                    type: 'tv',
-                    section: 'platform-top10-tv',
-                    items: activePlatformTop10.series,
-                    limit: TOP10_SIZE,
-                })
-            }
-            if (activePlatformTop10.movies.length > 0) {
-                push({
-                    id: 'platform-top10-movie',
-                    title: activePlatformTop10.moviesTitle,
-                    type: 'movie',
-                    section: 'platform-top10-movie',
-                    items: activePlatformTop10.movies,
-                    limit: TOP10_SIZE,
-                })
-            }
-        } else {
-            push({
-                id: 'top',
-                title: 'Top 10 Titoli Oggi',
-                type: 'movie',
-                section: 'trending',
-                items: top10,
-                limit: TOP10_SIZE,
-            })
-        }
+        push({
+            id: 'top',
+            title: 'Top 10 Titoli Oggi',
+            type: 'movie',
+            section: 'trending',
+            items: top10,
+            limit: TOP10_SIZE,
+        })
         push({
             id: 'affinity',
             title: 'Pensiamo ti appassioneranno',
@@ -271,10 +319,6 @@ export function HomePageClient({
             playable: false,
         })
 
-        if (selectedPlatformSlug) {
-            return pinTailRails(next)
-        }
-
         return weavePlatformTop10s(next, [
             {
                 id: 'platform-top10-tv',
@@ -298,6 +342,7 @@ export function HomePageClient({
         comingSoon,
         comingToCinema,
         editorial,
+        platformHubData,
         popularMovies,
         popularTV,
         rails.affinity,
@@ -343,7 +388,7 @@ export function HomePageClient({
                         </section>
                     )}
 
-                    {isFree && (
+                    {(isFree || Boolean(selectedPlatformSlug)) && (
                         <StudiosAndPlatformsRow
                             selectedSlug={selectedPlatformSlug}
                             onSelectPlatform={handleSelectPlatform}
@@ -352,9 +397,37 @@ export function HomePageClient({
                         />
                     )}
 
+                    {isLoadingPlatform && !platformHubData && (
+                        <div className="content-gutter py-8 space-y-8 animate-pulse">
+                            <div>
+                                <div className="h-6 w-48 bg-white/10 rounded-md mb-4" />
+                                <div className="flex gap-4 overflow-hidden">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="w-[160px] md:w-[190px] aspect-[2/3] rounded-xl bg-white/5 shrink-0"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="h-6 w-40 bg-white/10 rounded-md mb-4" />
+                                <div className="flex gap-4 overflow-hidden">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="w-[160px] md:w-[190px] aspect-[2/3] rounded-xl bg-white/5 shrink-0"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {shelves.map((shelf, index) => {
                         const hasAffinity = shelves.some((s) => s.id === 'affinity')
                         const shouldShowUpcomingHere =
+                            !selectedPlatformSlug &&
                             (shelf.id === 'affinity' || (!hasAffinity && index === Math.min(2, shelves.length - 1))) &&
                             upcomingTV.length > 0
 

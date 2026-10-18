@@ -353,6 +353,42 @@ export class CatalogController {
         }
     }
 
+    async getPlatformHub(request: NextRequest): Promise<NextResponse> {
+        try {
+            const platformSlug = request.nextUrl.searchParams.get('platform')
+            if (!platformSlug) {
+                return NextResponse.json({ success: false, error: 'Piattaforma mancante' }, { status: 400 })
+            }
+
+            const historyParam = request.nextUrl.searchParams.get('history') || ''
+            const historyEntries = historyParam
+                .split(',')
+                .map((pair) => {
+                    const [idStr, type] = pair.split(':')
+                    const id = Number(idStr)
+                    return id && (type === 'movie' || type === 'tv') ? { id, type: type as 'movie' | 'tv' } : null
+                })
+                .filter(Boolean) as { id: number; type: 'movie' | 'tv' }[]
+
+            const hub = await this.catalogService.getPlatformHub(platformSlug, historyEntries)
+            if (!hub) {
+                return NextResponse.json({ success: false, error: 'Piattaforma non trovata' }, { status: 404 })
+            }
+
+            return NextResponse.json({
+                success: true,
+                data: hub,
+                message: 'Platform hub recuperato con successo',
+            })
+        } catch (error) {
+            logger.error('Errore nel recupero platform hub', { error })
+            return NextResponse.json(
+                { success: false, error: error instanceof Error ? error.message : 'Errore interno' },
+                { status: 500 }
+            )
+        }
+    }
+
     async getComingSoon(request: NextRequest): Promise<NextResponse> {
         try {
             const comingSoon = await this.catalogService.getComingSoon()
@@ -458,5 +494,6 @@ export const searchTVShowsHandler = catalogController.searchTVShows.bind(catalog
 export const getGenresHandler = catalogController.getGenres.bind(catalogController)
 export const getTop10MixedHandler = catalogController.getTop10Mixed.bind(catalogController)
 export const getPlatformTop10Handler = catalogController.getPlatformTop10.bind(catalogController)
+export const getPlatformHubHandler = catalogController.getPlatformHub.bind(catalogController)
 export const getComingSoonHandler = catalogController.getComingSoon.bind(catalogController)
 export const getComingToCinemaHandler = catalogController.getComingToCinema.bind(catalogController)

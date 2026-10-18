@@ -51,6 +51,7 @@ import {
     romeDayKey,
     seriesTitleFor,
     type PlatformTop10,
+    type PlatformHubData,
 } from '@/lib/platform-top10'
 import {
     CRIME_LORDS_EXCLUDE_KEYWORDS,
@@ -412,6 +413,179 @@ export class CatalogService {
         } catch (error) {
             logger.error('Errore nella costruzione top 10 di piattaforma', { error })
             return empty
+        }
+    }
+
+    async filterHistoryByPlatform(
+        entries: { id: number; type: 'movie' | 'tv' }[],
+        targetProviderId: number,
+        region: 'IT' | 'US' = 'IT'
+    ): Promise<number[]> {
+        if (!entries.length) return []
+
+        const matches = await Promise.all(
+            entries.map(async (entry) => {
+                try {
+                    const cacheKey = `title-providers-v1:${entry.type}:${entry.id}`
+                    let providersData = await cache.get<Record<string, { flatrate?: { provider_id: number }[] }>>(cacheKey)
+                    if (!providersData) {
+                        const url = `https://api.themoviedb.org/3/${entry.type}/${entry.id}/watch/providers?api_key=${process.env.TMDB_API_KEY || '0bb900c0ff6e6fdce7c1c898fbae1b8f'}`
+                        const res = await axios.get(url, { timeout: 3000 })
+                        providersData = res.data?.results || {}
+                        await cache.set(cacheKey, providersData, { ttl: 24 * 3600 })
+                    }
+
+                    const data = providersData || {}
+                    const flatrate = [
+                        ...(data[region]?.flatrate || []),
+                        ...(data.IT?.flatrate || []),
+                        ...(data.US?.flatrate || []),
+                    ]
+                    const hasProvider = flatrate.some((p) => p.provider_id === targetProviderId)
+                    return hasProvider ? entry.id : null
+                } catch {
+                    return null
+                }
+            })
+        )
+
+        return matches.filter((id): id is number => id !== null)
+    }
+
+    async getPlatformHub(
+        platformSlug: string,
+        historyEntries: { id: number; type: 'movie' | 'tv' }[] = []
+    ): Promise<PlatformHubData | null> {
+        const platform = findPlatformBySlug(platformSlug)
+        if (!platform) return null
+
+        const cacheKey = `platform-hub-v2:${platform.slug}:${romeDayKey()}`
+        let hubContent = await cache.get<{
+            seriesTop10: Top10Content[]
+            moviesTop10: Top10Content[]
+            popularSeries: Top10Content[]
+            popularMovies: Top10Content[]
+            recentTitles: Top10Content[]
+        }>(cacheKey)
+
+        if (!hubContent) {
+            try {
+                const provider = String(platform.tmdbProviderId)
+                const region = platform.region || 'IT'
+                const today = new Date().toISOString().slice(0, 10)
+
+                const [
+                    seriesTop10Pool,
+                    seriesPopPool,
+                    moviesTop10Pool,
+                    moviesPopPool,
+                    recentTvPool,
+                    recentMoviePool,
+                ] = await Promise.all([
+                    this.discoverPages('tv', {
+                        sort_by: 'popularity.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        'vote_count.gte': 10,
+                        page: 1,
+                    }, 1),
+                    this.discoverPages('tv', {
+                        sort_by: 'popularity.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        'vote_count.gte': 10,
+                        page: 2,
+                    }, 2),
+                    this.discoverPages('movie', {
+                        sort_by: 'popularity.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        include_adult: false,
+                        'vote_count.gte': 10,
+                        page: 1,
+                    }, 1),
+                    this.discoverPages('movie', {
+                        sort_by: 'popularity.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        include_adult: false,
+                        'vote_count.gte': 10,
+                        page: 2,
+                    }, 2),
+                    this.discoverPages('tv', {
+                        sort_by: 'first_air_date.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        'first_air_date.lte': today,
+                        'vote_count.gte': 5,
+                        page: 1,
+                    }, 1),
+                    this.discoverPages('movie', {
+                        sort_by: 'primary_release_date.desc',
+                        watch_region: region,
+                        with_watch_providers: provider,
+                        with_watch_monetization_types: 'flatrate',
+                        'primary_release_date.lte': today,
+                        include_adult: false,
+                        'vote_count.gte': 5,
+                        page: 1,
+                    }, 1),
+                ])
+
+                const [
+                    seriesTop10Avail,
+                    seriesPopAvail,
+                    moviesTop10Avail,
+                    moviesPopAvail,
+                    recentTvAvail,
+                    recentMovieAvail,
+                ] = await Promise.all([
+                    this.filterAvailableMixed(seriesTop10Pool),
+                    this.filterAvailableMixed(seriesPopPool),
+                    this.filterAvailableMixed(moviesTop10Pool),
+                    this.filterAvailableMixed(moviesPopPool),
+                    this.filterAvailableMixed(recentTvPool),
+                    this.filterAvailableMixed(recentMoviePool),
+                ])
+
+                const recentCombined = [...recentTvAvail, ...recentMovieAvail].sort(
+                    (a, b) => (b.popularity || 0) - (a.popularity || 0)
+                )
+
+                hubContent = {
+                    seriesTop10: this.decorateRailItems(seriesTop10Avail.slice(0, 10)),
+                    moviesTop10: this.decorateRailItems(moviesTop10Avail.slice(0, 10)),
+                    popularSeries: this.decorateRailItems(seriesPopAvail.slice(0, 20)),
+                    popularMovies: this.decorateRailItems(moviesPopAvail.slice(0, 20)),
+                    recentTitles: this.decorateRailItems(recentCombined.slice(0, 20)),
+                }
+
+                await cache.set(cacheKey, hubContent, { ttl: 60 * 60 })
+            } catch (error) {
+                logger.error('Errore nella generazione platform hub', { error, platform: platform.slug })
+                return null
+            }
+        }
+
+        const matchingHistoryIds = await this.filterHistoryByPlatform(
+            historyEntries,
+            platform.tmdbProviderId,
+            platform.region || 'IT'
+        )
+
+        return {
+            platform,
+            seriesTop10: hubContent.seriesTop10,
+            moviesTop10: hubContent.moviesTop10,
+            popularSeries: hubContent.popularSeries,
+            popularMovies: hubContent.popularMovies,
+            recentTitles: hubContent.recentTitles,
+            matchingHistoryIds,
         }
     }
 

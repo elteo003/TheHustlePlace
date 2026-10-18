@@ -49,6 +49,16 @@ export type PlatformTop10 = {
     movies: Top10Content[]
 }
 
+export type PlatformHubData = {
+    platform: PlatformChart
+    seriesTop10: Top10Content[]
+    moviesTop10: Top10Content[]
+    popularSeries: Top10Content[]
+    popularMovies: Top10Content[]
+    recentTitles: Top10Content[]
+    matchingHistoryIds: number[]
+}
+
 export type WeavableRail = {
     id?: string
     title: string
