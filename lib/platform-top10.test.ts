@@ -17,11 +17,11 @@ describe('platform-top10', () => {
         const sameMonday = new Date('2026-09-21T18:00:00.000Z')
 
         expect(platformOn(monday)).toEqual(platformOn(sameMonday))
-        expect(platformOn(tuesday).slug).not.toBe(platformOn(monday).slug)
+        expect(platformOn(tuesday)!.slug).not.toBe(platformOn(monday)!.slug)
         expect(PLATFORM_CHARTS).toHaveLength(7)
         expect(new Set(PLATFORM_CHARTS.map((platform) => platform.tmdbProviderId)).size).toBe(7)
-        expect(seriesTitleFor(platformOn(monday))).toMatch(/^Top 10 serie TV da /)
-        expect(moviesTitleFor(platformOn(monday))).toMatch(/^Top 10 film da /)
+        expect(seriesTitleFor(platformOn(monday)!)).toMatch(/^Top 10 serie TV da /)
+        expect(moviesTitleFor(platformOn(monday)!)).toMatch(/^Top 10 film da /)
     })
 
     it('inserisce le top 10 di piattaforma dopo 4 scaffali visibili, poi dopo altri 4, con In arrivo in coda', () => {

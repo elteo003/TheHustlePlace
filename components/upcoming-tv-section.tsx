@@ -83,7 +83,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
     }
 
     return (
-        <section className="content-gutter py-8">
+        <section className="content-gutter py-4 sm:py-8">
             <style>{`
                 @keyframes thpProgress {
                     from { width: 0%; }
@@ -91,11 +91,11 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                 }
             `}</style>
 
-            <h2 className="section-title mb-5">
+            <h2 className="section-title mb-3 sm:mb-5">
                 Serie TV In Arrivo
             </h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 items-stretch">
                 {/* Featured Hero Card (Left ~60% or 100% if no grid) */}
                 <div
                     className={cn(
@@ -104,7 +104,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                     )}
                 >
                     <div
-                        className="relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[16/10] lg:aspect-auto lg:h-full min-h-[360px] sm:min-h-[440px] bg-zinc-950 border border-white/10 shadow-2xl select-none group/hero"
+                        className="relative rounded-xl sm:rounded-2xl overflow-hidden aspect-[16/10] sm:aspect-[16/9] lg:aspect-auto lg:h-full min-h-[220px] sm:min-h-[360px] lg:min-h-[440px] bg-zinc-950 border border-white/10 shadow-2xl select-none group/hero"
                         onMouseEnter={() => setIsPaused(true)}
                         onMouseLeave={() => setIsPaused(false)}
                     >
@@ -136,8 +136,8 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* On-Card Content: Pure typographical hierarchy, no AI-slop boxes */}
-                        <div className="absolute inset-0 p-5 sm:p-7 flex flex-col justify-end pointer-events-none">
+                        {/* On-Card Content */}
+                        <div className="absolute inset-0 p-3.5 sm:p-6 lg:p-7 flex flex-col justify-end pointer-events-none">
                             <AnimatePresence mode="popLayout" initial={false}>
                                 <motion.div
                                     key={featured.id}
@@ -147,35 +147,35 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                     className="pointer-events-auto"
                                 >
-                                    {/* Eyebrow: Season, Episode & Countdown - Pure typography, no rounded box */}
-                                    <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-white/75 mb-2.5 flex flex-wrap items-center gap-2 drop-shadow">
-                                        <span className="text-white font-black tracking-wider">
+                                    {/* Eyebrow: Season, Episode & Countdown */}
+                                    <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/75 mb-1.5 sm:mb-2.5 flex flex-wrap items-center gap-1.5 sm:gap-2 drop-shadow">
+                                        <span className="text-white font-black tracking-wide">
                                             {featured.nextEpisode.countdownBadge}
                                         </span>
                                         <span className="text-white/40">•</span>
-                                        <span className="text-white/80 font-semibold tracking-wide">
+                                        <span className="text-white/80 font-semibold tracking-wide line-clamp-1">
                                             S{featured.nextEpisode.season} E{featured.nextEpisode.episode}
                                             {featured.nextEpisode.name ? ` • "${featured.nextEpisode.name}"` : ''}
                                         </span>
                                     </div>
 
-                                    {/* Big Bold Uppercase Title */}
-                                    <h3 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white leading-none drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
+                                    {/* Bold Title */}
+                                    <h3 className="text-xl sm:text-3xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight sm:leading-none line-clamp-2 drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
                                         {featured.name}
                                     </h3>
 
-                                    {/* Primary Action Button */}
-                                    <div className="mt-4 sm:mt-5 flex items-center gap-3">
+                                    {/* Primary Action Button & Air Date */}
+                                    <div className="mt-2.5 sm:mt-5 flex flex-wrap items-center gap-2 sm:gap-3">
                                         <button
                                             type="button"
                                             onClick={() => handleWatch(featured)}
-                                            className="btn-play inline-flex items-center justify-center gap-2 h-10 sm:h-11 px-6 text-xs sm:text-sm font-semibold active:scale-[0.97] transition-all shadow-xl"
+                                            className="btn-play inline-flex items-center justify-center gap-1.5 sm:gap-2 h-8 sm:h-11 px-3.5 sm:px-6 text-xs sm:text-sm font-semibold active:scale-[0.97] transition-all shadow-xl"
                                         >
-                                            <Play className="w-3.5 h-3.5 fill-current play-mark-pulse" />
+                                            <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current play-mark-pulse" />
                                             {featured.nextEpisode.isAvailable ? 'Guarda ora' : 'Guarda serie'}
                                         </button>
 
-                                        <span className="text-xs font-medium text-white/60 drop-shadow">
+                                        <span className="text-[11px] sm:text-xs font-medium text-white/70 drop-shadow">
                                             {featured.nextEpisode.isAvailable
                                                 ? 'Disponibile ora'
                                                 : `Uscita: ${featured.nextEpisode.formattedDate}`}
@@ -185,7 +185,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                             </AnimatePresence>
                         </div>
 
-                        {/* Bottom progress line - same luminous pure white as lateral scrollbar, freezes only when hovering the card */}
+                        {/* Bottom progress line */}
                         <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-white/15 overflow-hidden z-20">
                             {items.length > 1 && (
                                 <div
@@ -204,7 +204,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                 {/* 2x2 Grid of Upcoming Shows (Right ~40%) */}
                 {hasGrid && (
                     <div className="lg:col-span-5 xl:col-span-5">
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4 h-full">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 h-full">
                             {gridItems.map((item) => (
                                 <motion.button
                                     key={item.id}
@@ -219,7 +219,7 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                             selectItem(originalIndex)
                                         }
                                     }}
-                                    className="group relative flex flex-col rounded-2xl overflow-hidden aspect-[16/10] bg-zinc-950 text-left border border-white/10 hover:border-white hover:shadow-[0_0_18px_rgba(255,255,255,0.4),0_20px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer transition-all duration-200"
+                                    className="group relative flex flex-col rounded-xl sm:rounded-2xl overflow-hidden aspect-[16/10] bg-zinc-950 text-left border border-white/10 hover:border-white hover:shadow-[0_0_18px_rgba(255,255,255,0.4),0_20px_35px_-10px_rgba(0,0,0,0.9)] cursor-pointer transition-all duration-200"
                                     aria-label={`Visualizza ${item.name}`}
                                 >
                                     <Image
@@ -233,18 +233,18 @@ export function UpcomingTVSection({ items, onPlay }: UpcomingTVSectionProps) {
                                         sizes="(max-width: 1024px) 50vw, 20vw"
                                     />
                                     {/* Pure gradient without muddy gray coloring */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
 
-                                    {/* Content bottom: at rest ONLY the title, on hover the extra info smoothly expands */}
-                                    <div className="absolute inset-x-0 bottom-0 p-3.5 z-10 flex flex-col justify-end">
-                                        <p className="text-xs sm:text-sm font-black uppercase tracking-tight text-white line-clamp-1 drop-shadow-md">
+                                    {/* Content bottom */}
+                                    <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3.5 z-10 flex flex-col justify-end">
+                                        <p className="text-[11px] sm:text-sm font-black uppercase tracking-tight text-white line-clamp-1 drop-shadow-md">
                                             {item.name}
                                         </p>
 
-                                        {/* Expandable info on hover */}
-                                        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] opacity-0 group-hover:opacity-100">
-                                            <div className="overflow-hidden pt-1">
-                                                <p className="text-[11px] font-semibold text-white/90 line-clamp-1 flex items-center gap-1.5 drop-shadow">
+                                        {/* Info: always visible in compact form on mobile, expandable on desktop hover */}
+                                        <div className="grid grid-rows-[1fr] sm:grid-rows-[0fr] sm:group-hover:grid-rows-[1fr] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                                            <div className="overflow-hidden pt-0.5 sm:pt-1">
+                                                <p className="text-[9px] sm:text-[11px] font-semibold text-white/90 line-clamp-1 flex items-center gap-1 sm:gap-1.5 drop-shadow">
                                                     <span className="text-white font-bold">{item.nextEpisode.countdownBadge}</span>
                                                     <span className="text-white/40">•</span>
                                                     <span className="text-white/70">S{item.nextEpisode.season} E{item.nextEpisode.episode}</span>
