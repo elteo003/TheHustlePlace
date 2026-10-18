@@ -45,6 +45,7 @@ import {
 } from '@/lib/top10-moment'
 import {
     emptyPlatformTop10,
+    findPlatformBySlug,
     platformOn,
     moviesTitleFor,
     romeDayKey,
@@ -338,10 +339,18 @@ export class CatalogService {
         }
     }
 
-    async getPlatformTop10(now = new Date()): Promise<PlatformTop10> {
+    async getPlatformTop10(now = new Date(), customSlug?: string): Promise<PlatformTop10> {
         const empty = emptyPlatformTop10(now)
-        const platform = platformOn(now)
-        const cacheKey = `platform-top10-tmdb-v1:${platform.slug}:${romeDayKey(now)}`
+        const platform = customSlug ? findPlatformBySlug(customSlug) : platformOn(now)
+        if (!platform) {
+            return {
+                ...empty,
+                platform: null,
+                isFreeDay: true,
+            }
+        }
+
+        const cacheKey = `platform-top10-tmdb-v2:${platform.slug}:${romeDayKey(now)}`
         const cached = await cache.get<PlatformTop10>(cacheKey)
         if (cached) {
             return {
@@ -353,15 +362,16 @@ export class CatalogService {
 
         try {
             const provider = String(platform.tmdbProviderId)
+            const region = platform.region || 'IT'
             const [seriesPool, moviesPool] = await Promise.all([
                 this.discoverPages(
                     'tv',
                     {
                         sort_by: 'popularity.desc',
-                        watch_region: 'IT',
+                        watch_region: region,
                         with_watch_providers: provider,
                         with_watch_monetization_types: 'flatrate',
-                        'vote_count.gte': 20,
+                        'vote_count.gte': 10,
                     },
                     3
                 ),
@@ -369,11 +379,11 @@ export class CatalogService {
                     'movie',
                     {
                         sort_by: 'popularity.desc',
-                        watch_region: 'IT',
+                        watch_region: region,
                         with_watch_providers: provider,
                         with_watch_monetization_types: 'flatrate',
                         include_adult: false,
-                        'vote_count.gte': 20,
+                        'vote_count.gte': 10,
                     },
                     3
                 ),
@@ -384,6 +394,7 @@ export class CatalogService {
             ])
             const result: PlatformTop10 = {
                 platform,
+                isFreeDay: false,
                 chartDate: romeDayKey(now),
                 seriesTitle: seriesTitleFor(platform),
                 moviesTitle: moviesTitleFor(platform),

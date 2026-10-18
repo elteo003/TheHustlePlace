@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { HeroSection } from '@/components/hero-section'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { ApiKeyError } from '@/components/api-key-error'
@@ -14,7 +14,8 @@ import { occupiedFromRails, usePersonalRails } from '@/hooks/usePersonalRails'
 import { CINEMA_RAIL_SIZE, HOME_RAIL_SIZE, TOP10_SIZE, CatalogSection } from '@/lib/catalog-types'
 import { EDITORIAL_HOME_RAILS, EDITORIAL_RAIL_SIZE, EDITORIAL_RAIL_TITLES, EditorialRails } from '@/lib/editorial-rails'
 import { PersonalRails } from '@/lib/personal-rails'
-import { weavePlatformTop10s, type PlatformTop10 } from '@/lib/platform-top10'
+import { weavePlatformTop10s, type PlatformTop10, type PlatformChart } from '@/lib/platform-top10'
+import { StudiosAndPlatformsRow } from '@/components/studios-and-platforms-row'
 import { Movie, TVShow, Top10Content } from '@/types'
 
 function HomeRail({ title, children }: { title: string; children: ReactNode }) {
@@ -75,6 +76,32 @@ export function HomePageClient({
     const [isCheckingApi, setIsCheckingApi] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
+
+    const isFree = platformTop10.isFreeDay || !platformTop10.platform
+    const [activePlatformTop10, setActivePlatformTop10] = useState<PlatformTop10>(platformTop10)
+    const [selectedPlatformSlug, setSelectedPlatformSlug] = useState<string | null>(platformTop10.platform?.slug ?? null)
+    const [isLoadingPlatform, setIsLoadingPlatform] = useState(false)
+
+    const handleSelectPlatform = useCallback(async (platform: PlatformChart) => {
+        setSelectedPlatformSlug(platform.slug)
+        setIsLoadingPlatform(true)
+        try {
+            const res = await fetch(`/api/catalog/platform-top10?platform=${platform.slug}`)
+            const json = await res.json()
+            if (json?.data) {
+                setActivePlatformTop10(json.data)
+            }
+        } catch (error) {
+            console.error('Errore nel recupero della piattaforma', error)
+        } finally {
+            setIsLoadingPlatform(false)
+        }
+    }, [])
+
+    const handleResetToHome = useCallback(() => {
+        setSelectedPlatformSlug(null)
+        setActivePlatformTop10(platformTop10)
+    }, [platformTop10])
 
     const [upcomingTV, setUpcomingTV] = useState<UpcomingTVShowItem[]>(initialUpcomingTV)
     const [protectedSeriesIds, setProtectedSeriesIds] = useState<number[]>(() =>
@@ -221,29 +248,34 @@ export function HomePageClient({
             playable: false,
         })
 
-        return weavePlatformTop10s(next, [
-            {
-                id: 'platform-top10-tv',
-                title: platformTop10.seriesTitle,
-                type: 'tv',
-                section: 'platform-top10-tv',
-                items: platformTop10.series,
-                limit: TOP10_SIZE,
-            },
-            {
-                id: 'platform-top10-movie',
-                title: platformTop10.moviesTitle,
-                type: 'movie',
-                section: 'platform-top10-movie',
-                items: platformTop10.movies,
-                limit: TOP10_SIZE,
-            },
-        ])
+        const gap = selectedPlatformSlug ? 1 : undefined
+        return weavePlatformTop10s(
+            next,
+            [
+                {
+                    id: 'platform-top10-tv',
+                    title: activePlatformTop10.seriesTitle,
+                    type: 'tv',
+                    section: 'platform-top10-tv',
+                    items: activePlatformTop10.series,
+                    limit: TOP10_SIZE,
+                },
+                {
+                    id: 'platform-top10-movie',
+                    title: activePlatformTop10.moviesTitle,
+                    type: 'movie',
+                    section: 'platform-top10-movie',
+                    items: activePlatformTop10.movies,
+                    limit: TOP10_SIZE,
+                },
+            ],
+            gap
+        )
     }, [
+        activePlatformTop10,
         comingSoon,
         comingToCinema,
         editorial,
-        platformTop10,
         popularMovies,
         popularTV,
         rails.affinity,
@@ -251,6 +283,7 @@ export function HomePageClient({
         rails.treasures,
         recentMovies,
         recentTV,
+        selectedPlatformSlug,
         top10,
     ])
 
@@ -286,6 +319,15 @@ export function HomePageClient({
                                 upcomingSeriesIds={protectedSeriesIds}
                             />
                         </section>
+                    )}
+
+                    {isFree && (
+                        <StudiosAndPlatformsRow
+                            selectedSlug={selectedPlatformSlug}
+                            onSelectPlatform={handleSelectPlatform}
+                            onResetToHome={handleResetToHome}
+                            isLoading={isLoadingPlatform}
+                        />
                     )}
 
                     {shelves.map((shelf, index) => {

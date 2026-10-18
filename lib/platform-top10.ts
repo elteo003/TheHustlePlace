@@ -6,20 +6,42 @@ export type PlatformChart = {
     slug: string
     label: string
     tmdbProviderId: number
+    region?: 'IT' | 'US'
+    brandColor?: string
+    accentColor?: string
+}
+
+export const STUDIOS_AND_PLATFORMS: PlatformChart[] = [
+    { slug: 'netflix', label: 'Netflix', tmdbProviderId: 8, region: 'IT', brandColor: '#E50914', accentColor: '#B20710' },
+    { slug: 'amazon', label: 'Prime Video', tmdbProviderId: 119, region: 'IT', brandColor: '#00A8E1', accentColor: '#007eb9' },
+    { slug: 'apple-tv', label: 'Apple TV+', tmdbProviderId: 350, region: 'IT', brandColor: '#FFFFFF', accentColor: '#2b2b2b' },
+    { slug: 'crunchyroll', label: 'Crunchyroll', tmdbProviderId: 283, region: 'IT', brandColor: '#F47521', accentColor: '#d65b0b' },
+    { slug: 'disney', label: 'Disney+', tmdbProviderId: 337, region: 'IT', brandColor: '#113CCF', accentColor: '#0c2889' },
+    { slug: 'hulu', label: 'Hulu', tmdbProviderId: 15, region: 'US', brandColor: '#1CE783', accentColor: '#00ed82' },
+    { slug: 'hbo', label: 'HBO Max', tmdbProviderId: 1899, region: 'US', brandColor: '#9933FF', accentColor: '#5822b4' },
+    { slug: 'paramount-plus', label: 'Paramount+', tmdbProviderId: 531, region: 'IT', brandColor: '#0064FF', accentColor: '#0047b3' },
+    { slug: 'peacock', label: 'Peacock', tmdbProviderId: 386, region: 'US', brandColor: '#00A859', accentColor: '#006b38' },
+    { slug: 'discovery-plus', label: 'Discovery+', tmdbProviderId: 546, region: 'IT', brandColor: '#003B64', accentColor: '#002540' },
+    { slug: 'now', label: 'Now', tmdbProviderId: 39, region: 'IT', brandColor: '#00887A', accentColor: '#005f55' },
+]
+
+export function findPlatformBySlug(slug: string): PlatformChart | undefined {
+    return STUDIOS_AND_PLATFORMS.find((p) => p.slug === slug)
 }
 
 export const PLATFORM_CHARTS: PlatformChart[] = [
-    { slug: 'netflix', label: 'Netflix', tmdbProviderId: 8 },
-    { slug: 'amazon', label: 'Amazon Prime', tmdbProviderId: 119 },
-    { slug: 'disney', label: 'Disney+', tmdbProviderId: 337 },
-    { slug: 'hbo', label: 'Max', tmdbProviderId: 384 },
-    { slug: 'apple-tv', label: 'Apple TV+', tmdbProviderId: 350 },
-    { slug: 'paramount-plus', label: 'Paramount+', tmdbProviderId: 531 },
-    { slug: 'now', label: 'Now', tmdbProviderId: 39 },
+    { slug: 'netflix', label: 'Netflix', tmdbProviderId: 8, region: 'IT' },
+    { slug: 'amazon', label: 'Amazon Prime', tmdbProviderId: 119, region: 'IT' },
+    { slug: 'disney', label: 'Disney+', tmdbProviderId: 337, region: 'IT' },
+    { slug: 'hbo', label: 'Max', tmdbProviderId: 1899, region: 'US' },
+    { slug: 'apple-tv', label: 'Apple TV+', tmdbProviderId: 350, region: 'IT' },
+    { slug: 'paramount-plus', label: 'Paramount+', tmdbProviderId: 531, region: 'IT' },
+    { slug: 'now', label: 'Now', tmdbProviderId: 39, region: 'IT' },
 ]
 
 export type PlatformTop10 = {
-    platform: PlatformChart
+    platform: PlatformChart | null
+    isFreeDay?: boolean
     chartDate: string | null
     seriesTitle: string
     moviesTitle: string
@@ -42,7 +64,17 @@ export function romeDayKey(now = new Date()): string {
     }).format(now)
 }
 
-export function platformOn(now = new Date()): PlatformChart {
+export function isFreeDay(now = new Date()): boolean {
+    const key = romeDayKey(now)
+    const [year, month, day] = key.split('-').map(Number)
+    const index = Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
+    return (Math.abs(index) % 7) === 3
+}
+
+export function platformOn(now = new Date()): PlatformChart | null {
+    if (isFreeDay(now)) {
+        return null
+    }
     const key = romeDayKey(now)
     const [year, month, day] = key.split('-').map(Number)
     const index = Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
@@ -61,9 +93,10 @@ export function emptyPlatformTop10(now = new Date()): PlatformTop10 {
     const platform = platformOn(now)
     return {
         platform,
+        isFreeDay: platform === null,
         chartDate: null,
-        seriesTitle: seriesTitleFor(platform),
-        moviesTitle: moviesTitleFor(platform),
+        seriesTitle: platform ? seriesTitleFor(platform) : '',
+        moviesTitle: platform ? moviesTitleFor(platform) : '',
         series: [],
         movies: [],
     }

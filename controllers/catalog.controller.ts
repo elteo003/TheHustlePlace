@@ -329,7 +329,11 @@ export class CatalogController {
 
     async getPlatformTop10(request: NextRequest): Promise<NextResponse> {
         try {
-            const platformTop10 = await this.catalogService.getPlatformTop10()
+            const platformParam = request.nextUrl.searchParams.get('platform')
+            const platformTop10 = await this.catalogService.getPlatformTop10(
+                new Date(),
+                platformParam || undefined
+            )
 
             return NextResponse.json({
                 success: true,

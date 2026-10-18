@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
     PLATFORM_CHARTS,
+    STUDIOS_AND_PLATFORMS,
+    findPlatformBySlug,
+    isFreeDay,
     moviesTitleFor,
     platformOn,
     seriesTitleFor,
@@ -79,5 +82,26 @@ describe('platform-top10', () => {
             'cine',
             'soon',
         ])
+    })
+
+    it('riconosce la domenica come giorno libero senza piattaforma automatica', () => {
+        const sunday = new Date('2026-10-18T10:00:00.000Z')
+        const monday = new Date('2026-10-19T10:00:00.000Z')
+
+        expect(isFreeDay(sunday)).toBe(true)
+        expect(platformOn(sunday)).toBeNull()
+        expect(isFreeDay(monday)).toBe(false)
+        expect(platformOn(monday)).not.toBeNull()
+    })
+
+    it('contiene la lista completa di Studios & Platforms con supporto per ricerca per slug', () => {
+        expect(STUDIOS_AND_PLATFORMS.length).toBeGreaterThanOrEqual(10)
+        const netflix = findPlatformBySlug('netflix')
+        expect(netflix?.label).toBe('Netflix')
+        expect(netflix?.tmdbProviderId).toBe(8)
+
+        const hbo = findPlatformBySlug('hbo')
+        expect(hbo?.label).toBe('HBO Max')
+        expect(hbo?.region).toBe('US')
     })
 })
