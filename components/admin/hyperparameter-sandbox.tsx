@@ -33,7 +33,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
     const sliders = [
         {
             key: 'simTaste' as const,
-            label: 'w_simTaste — Affinità di genere',
+            label: 'w_simTaste - Affinità di genere',
             desc: 'Similarità vettoriale tra i generi guardati dall’utente e i candidati.',
             min: 0.05,
             max: 0.6,
@@ -41,7 +41,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
         },
         {
             key: 'explicit' as const,
-            label: 'w_explicit — Feedback esplicito',
+            label: 'w_explicit - Feedback esplicito',
             desc: 'Boost per i titoli valutati positivamente e penalità per i dislike.',
             min: 0.1,
             max: 0.6,
@@ -49,7 +49,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
         },
         {
             key: 'popularity' as const,
-            label: 'w_popularity — Popolarità globale TMDB',
+            label: 'w_popularity - Popolarità globale TMDB',
             desc: 'Incidenza della popolarità generale: valori elevati penalizzano la nicchia.',
             min: 0.01,
             max: 0.3,
@@ -57,7 +57,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
         },
         {
             key: 'newness' as const,
-            label: 'w_newness — Freschezza dell’uscita',
+            label: 'w_newness - Freschezza dell’uscita',
             desc: 'Incentiva i titoli usciti nel mese corrente rispetto a quelli di catalogo.',
             min: 0.02,
             max: 0.3,
@@ -65,7 +65,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
         },
         {
             key: 'neighbor' as const,
-            label: 'w_neighbor — Grafo tematico delle keyword',
+            label: 'w_neighbor - Grafo tematico delle keyword',
             desc: 'Propagazione della preferenza sui titoli con keyword condivise.',
             min: 0.02,
             max: 0.3,
@@ -73,7 +73,7 @@ export function HyperparameterSandbox({ weights, onApplyWeights }: Hyperparamete
         },
         {
             key: 'abandon' as const,
-            label: 'w_abandon — Penalità abbandono precoce',
+            label: 'w_abandon - Penalità abbandono precoce',
             desc: 'Penalità inflitta ai titoli interrotti nei primi minuti di riproduzione.',
             min: 0.01,
             max: 0.3,

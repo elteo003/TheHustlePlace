@@ -49,7 +49,7 @@ export function LorenzGiniChart({ points, gini }: LorenzGiniChartProps) {
             </div>
 
             {/* SVG Chart */}
-            <div className="relative w-full overflow-x-auto">
+            <div className="relative w-full overflow-x-auto [scrollbar-width:none]">
                 <svg
                     viewBox={`0 0 ${width} ${height}`}
                     className="w-full h-auto min-w-[420px] overflow-visible"

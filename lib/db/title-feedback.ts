@@ -141,3 +141,35 @@ export async function loadRankerWeights(): Promise<RankerWeights> {
         return RANKER_WEIGHTS_V1
     }
 }
+
+export async function saveRankerWeights(weights: RankerWeights): Promise<boolean> {
+    const db = getDb()
+    if (!db) return false
+
+    try {
+        const now = new Date()
+        const payload = {
+            ...weights,
+            version: 'v1',
+        }
+        await db
+            .insert(rankerWeights)
+            .values({
+                version: 'v1',
+                weights: payload as unknown as Record<string, number | string>,
+                updatedAt: now,
+            })
+            .onConflictDoUpdate({
+                target: rankerWeights.version,
+                set: {
+                    weights: payload as unknown as Record<string, number | string>,
+                    updatedAt: now,
+                },
+            })
+        return true
+    } catch (e) {
+        console.error('Errore salvataggio ranker weights:', e)
+        return false
+    }
+}
+

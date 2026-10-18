@@ -146,8 +146,8 @@ export function AdminMLDashboard({ initialReport, onLogout }: AdminMLDashboardPr
             </div>
 
             {/* Top KPI Row - Clean, High-Contrast Tabular Figures */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="p-4 rounded-xl bg-[#11131a] border border-white/[0.06]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+                <div className="p-3.5 sm:p-4 rounded-xl bg-[#11131a] border border-white/[0.06]">
                     <span className="text-xs text-zinc-400 block font-normal">
                         NDCG@10
                     </span>

@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Lock } from 'lucide-react'
 import { MASTER_ADMIN_CODE_FORMATTED } from '@/lib/admin-auth'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 interface AdminAuthGateProps {
     onAuthenticated: () => void
 }
 
 export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
+    const shouldReduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
     const [code, setCode] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -68,7 +70,7 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
         <div className="min-h-screen bg-[#090a0f] text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-6 select-none relative">
             <motion.div
                 key={shake}
-                animate={shake > 0 ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
+                animate={shake > 0 ? (shouldReduceMotion ? { opacity: [1, 0.5, 1] } : { x: [-8, 8, -6, 6, -3, 3, 0] }) : {}}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
                 className="w-full max-w-md bg-[#11131a] rounded-2xl p-7 sm:p-9 shadow-2xl border border-white/[0.08]"
             >
@@ -121,7 +123,7 @@ export function AdminAuthGate({ onAuthenticated }: AdminAuthGateProps) {
                         </div>
 
                         {/* Divider */}
-                        <span className="text-zinc-600 font-mono text-sm px-0.5">—</span>
+                        <span className="text-zinc-600 font-mono text-sm px-0.5">-</span>
 
                         {/* Last 4 slots */}
                         <div className="flex gap-1.5 sm:gap-2">
