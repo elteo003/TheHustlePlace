@@ -23,7 +23,7 @@ export function toWatchHistoryEntry(row: typeof watchHistory.$inferSelect): Watc
     }
 }
 
-export async function listWatchHistory(deviceId: string): Promise<WatchHistoryEntry[]> {
+export async function listWatchHistory(deviceId: string, limit = 60): Promise<WatchHistoryEntry[]> {
     const db = getDb()
     const profile = await ensureProfile(deviceId)
     if (!db || !profile) {
@@ -35,7 +35,7 @@ export async function listWatchHistory(deviceId: string): Promise<WatchHistoryEn
         .from(watchHistory)
         .where(eq(watchHistory.profileId, profile.id))
         .orderBy(desc(watchHistory.watchedAt))
-        .limit(12)
+        .limit(limit)
 
     return rows.map(toWatchHistoryEntry)
 }

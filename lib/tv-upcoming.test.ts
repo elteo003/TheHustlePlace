@@ -25,5 +25,10 @@ describe('tv-upcoming helpers', () => {
         expect(formatCountdownBadge(4, '24 Ottobre')).toBe('Tra 4 giorni')
         expect(formatCountdownBadge(12, '1 Novembre')).toBe('In arrivo il 1 Novembre')
         expect(formatCountdownBadge(-2, '18 Ottobre')).toBe('Disponibile ora')
+        expect(formatCountdownBadge(999, 'Data da annunciare')).toBe('Nuova stagione confermata')
+    })
+
+    it('returns 999 for pending air date in computeDaysUntil', () => {
+        expect(computeDaysUntil('', '2026-10-20')).toBe(999)
     })
 })

@@ -88,9 +88,18 @@ export function HomePageClient({
     }, [watchHistory])
 
     useEffect(() => {
-        if (followedTvIds.length === 0) return
         let cancelled = false
-        fetch(`/api/catalog/tv-upcoming?followed=${followedTvIds.join(',')}`)
+        const params = new URLSearchParams()
+        if (followedTvIds.length > 0) {
+            params.set('followed', followedTvIds.join(','))
+        }
+        if (personal?.topGenres?.length) {
+            params.set('topGenres', personal.topGenres.join(','))
+        }
+        const query = params.toString()
+        if (!query) return
+
+        fetch(`/api/catalog/tv-upcoming?${query}`)
             .then((res) => res.json())
             .then((data: { items?: UpcomingTVShowItem[]; protectedIds?: number[] }) => {
                 if (cancelled) return
@@ -105,7 +114,7 @@ export function HomePageClient({
         return () => {
             cancelled = true
         }
-    }, [followedTvIds])
+    }, [followedTvIds, personal?.topGenres])
 
     const shelves = useMemo(() => {
         const next: HomeShelf[] = []

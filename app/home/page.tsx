@@ -12,7 +12,7 @@ export default async function HomePage() {
         .filter((entry) => entry.type === 'tv')
         .map((entry) => ({ id: entry.id }))
 
-    const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10, upcomingTV] =
+    const [top10, comingSoon, cinema, popularMovies, recentMovies, popularTV, recentTV, platformTop10] =
         await Promise.all([
             fetchCatalogSection('movie', 'trending', TOP10_SIZE),
             fetchCatalogSection('movie', 'upcoming', HOME_RAIL_SIZE),
@@ -22,7 +22,6 @@ export default async function HomePage() {
             fetchCatalogSection('tv', 'popular', HOME_RAIL_SIZE),
             fetchCatalogSection('tv', 'recent', HOME_RAIL_SIZE),
             fetchPlatformTop10(),
-            fetchUpcomingTVCatalog(followedTV).catch(() => []),
         ])
 
     const occupiedBase = [
@@ -30,8 +29,11 @@ export default async function HomePage() {
         ...(cinema as Top10Content[]),
         ...(comingSoon as Top10Content[]),
     ]
-    const personal = await fetchPersonalRails(occupiedBase)
-    const editorial = await fetchEditorialRails(occupiedBase, personal.topGenres)
+    const personal = await fetchPersonalRails(occupiedBase, serverHistory)
+    const [editorial, upcomingTV] = await Promise.all([
+        fetchEditorialRails(occupiedBase, personal.topGenres),
+        fetchUpcomingTVCatalog(followedTV, { topGenres: personal.topGenres }).catch(() => []),
+    ])
 
     return (
         <HomePageClient

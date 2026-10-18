@@ -25,7 +25,16 @@ export async function GET(request: NextRequest) {
                 .map((entry) => ({ id: entry.id }))
         }
 
-        const items = await fetchUpcomingTVCatalog(followed)
+        const topGenresQuery = searchParams.get('topGenres')
+        let topGenres: number[] | undefined
+        if (topGenresQuery) {
+            topGenres = topGenresQuery
+                .split(',')
+                .map((g) => Number(g.trim()))
+                .filter((g) => Number.isFinite(g) && g > 0)
+        }
+
+        const items = await fetchUpcomingTVCatalog(followed, { topGenres })
         const protectedIds = items.filter((item) => item.isFollowed).map((item) => item.id)
         return NextResponse.json({ items, protectedIds })
     } catch (error) {

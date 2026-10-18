@@ -68,7 +68,7 @@ function upsertEpisodeProgress(
 }
 
 const STORAGE_KEY = 'thp_watch_history'
-const MAX_ENTRIES = 12
+const MAX_ENTRIES = 60
 
 let activeProfileId: string | null = null
 

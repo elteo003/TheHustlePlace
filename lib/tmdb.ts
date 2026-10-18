@@ -271,6 +271,15 @@ export interface TMDBTVDetails extends TMDBTVShow {
     number_of_seasons: number
     number_of_episodes: number
     genres: Array<{ id: number; name: string }>
+    seasons?: Array<{
+        id: number
+        name: string
+        overview?: string
+        air_date: string | null
+        episode_count: number
+        season_number: number
+        poster_path?: string | null
+    }>
 }
 
 export async function getTVDetails(tvId: number): Promise<TMDBTVDetails> {
@@ -283,6 +292,28 @@ export async function getTVVideos(tvId: number): Promise<TMDBVideosResponse> {
 
 export async function getOnTheAirTV(): Promise<TMDBResponse<TMDBTVShow>> {
     return fetchFromTMDB<TMDBResponse<TMDBTVShow>>('tv/on_the_air')
+}
+
+export async function discoverUpcomingTV(params: {
+    withGenres?: string
+    airDateGte?: string
+    page?: number
+}): Promise<TMDBResponse<TMDBTVShow>> {
+    const searchParams = new URLSearchParams({
+        sort_by: 'popularity.desc',
+        include_adult: 'false',
+        'vote_count.gte': '10',
+    })
+    if (params.withGenres) {
+        searchParams.set('with_genres', params.withGenres)
+    }
+    if (params.airDateGte) {
+        searchParams.set('air_date.gte', params.airDateGte)
+    }
+    if (params.page) {
+        searchParams.set('page', String(params.page))
+    }
+    return fetchFromTMDB<TMDBResponse<TMDBTVShow>>(`discover/tv?${searchParams.toString()}`)
 }
 
 
