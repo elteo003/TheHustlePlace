@@ -248,29 +248,24 @@ export function HomePageClient({
             playable: false,
         })
 
-        const gap = selectedPlatformSlug ? 1 : undefined
-        return weavePlatformTop10s(
-            next,
-            [
-                {
-                    id: 'platform-top10-tv',
-                    title: activePlatformTop10.seriesTitle,
-                    type: 'tv',
-                    section: 'platform-top10-tv',
-                    items: activePlatformTop10.series,
-                    limit: TOP10_SIZE,
-                },
-                {
-                    id: 'platform-top10-movie',
-                    title: activePlatformTop10.moviesTitle,
-                    type: 'movie',
-                    section: 'platform-top10-movie',
-                    items: activePlatformTop10.movies,
-                    limit: TOP10_SIZE,
-                },
-            ],
-            gap
-        )
+        return weavePlatformTop10s(next, [
+            {
+                id: 'platform-top10-tv',
+                title: activePlatformTop10.seriesTitle,
+                type: 'tv',
+                section: 'platform-top10-tv',
+                items: activePlatformTop10.series,
+                limit: TOP10_SIZE,
+            },
+            {
+                id: 'platform-top10-movie',
+                title: activePlatformTop10.moviesTitle,
+                type: 'movie',
+                section: 'platform-top10-movie',
+                items: activePlatformTop10.movies,
+                limit: TOP10_SIZE,
+            },
+        ])
     }, [
         activePlatformTop10,
         comingSoon,

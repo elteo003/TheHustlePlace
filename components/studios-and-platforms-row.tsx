@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
 import { PlatformChart, STUDIOS_AND_PLATFORMS } from '@/lib/platform-top10'
 
 interface StudiosAndPlatformsRowProps {
@@ -116,17 +115,9 @@ export function StudiosAndPlatformsRow({
     onResetToHome,
     isLoading = false,
 }: StudiosAndPlatformsRowProps) {
-    const scrollContainerRef = useRef<HTMLDivElement>(null)
-
-    const scroll = useCallback((direction: 'left' | 'right') => {
-        if (!scrollContainerRef.current) return
-        const amount = direction === 'left' ? -340 : 340
-        scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' })
-    }, [])
-
     return (
-        <section className="content-gutter py-6 select-none">
-            <div className="flex items-center justify-between mb-3.5">
+        <section className="content-gutter py-5 select-none">
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                     <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                         Studios & Platforms
@@ -138,35 +129,9 @@ export function StudiosAndPlatformsRow({
                         </span>
                     )}
                 </div>
-
-                <div className="hidden sm:flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => scroll('left')}
-                        aria-label="Scorri indietro"
-                        className="w-8 h-8 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all duration-200 active:scale-95"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => scroll('right')}
-                        aria-label="Scorri avanti"
-                        className="w-8 h-8 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all duration-200 active:scale-95"
-                    >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
             </div>
 
-            <div
-                ref={scrollContainerRef}
-                className="flex items-center gap-3 md:gap-4 overflow-x-auto pb-2 pt-1 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
+            <div className="flex items-center gap-3 md:gap-4 overflow-x-auto py-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {STUDIOS_AND_PLATFORMS.map((platform) => {
                     const isCurrent = selectedSlug === platform.slug
 
@@ -176,7 +141,7 @@ export function StudiosAndPlatformsRow({
                                 key="the-hustle-place-reset"
                                 type="button"
                                 onClick={onResetToHome}
-                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex flex-col items-center justify-center text-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-blue-500/40 bg-gradient-to-b from-[#181a24] via-[#10121a] to-[#0a0b10] shadow-[0_4px_24px_rgba(37,99,235,0.25)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.4)]"
+                                className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex flex-col items-center justify-center text-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-blue-500/50 bg-gradient-to-b from-[#181a24] via-[#10121a] to-[#0a0b10] shadow-[0_4px_24px_rgba(37,99,235,0.25)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.4)]"
                             >
                                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
                                 <div className="flex items-center gap-2 mb-1">
@@ -200,17 +165,17 @@ export function StudiosAndPlatformsRow({
                             key={platform.slug}
                             type="button"
                             onClick={() => onSelectPlatform(platform)}
-                            className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/10 hover:border-white/30 bg-[#141418] hover:shadow-xl overflow-hidden"
+                            className="group relative shrink-0 w-[140px] sm:w-[160px] md:w-[176px] h-[78px] sm:h-[86px] md:h-[94px] rounded-2xl p-3 flex items-center justify-center will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black border border-white/10 hover:border-white/30 bg-[#141418] hover:shadow-xl overflow-hidden"
                             style={{
                                 background: `linear-gradient(145deg, ${platform.accentColor || '#1c1c24'}44 0%, #0d0d12 100%)`,
                             }}
                         >
                             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                             <div
-                                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none"
+                                className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-200 pointer-events-none"
                                 style={{ backgroundColor: platform.brandColor }}
                             />
-                            <div className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105">
+                            <div className="relative z-10">
                                 <PlatformLogo slug={platform.slug} />
                             </div>
                         </button>
