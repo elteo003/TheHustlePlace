@@ -167,7 +167,7 @@ export function ContinueWatchingRow({ entries, upcomingSeriesIds }: ContinueWatc
                                         <path
                                             className="continue-apple-stroke-p"
                                             pathLength={100}
-                                            d="M 5 20.5 L 5 5 C 8 3 16 3 16.5 7.5 C 17 12 9.5 13.5 5 13"
+                                            d="M 5 5 L 5 20.5 L 5 5 C 8 3 16 3 16.5 7.5 C 17 12 9.5 13.5 5 13"
                                         />
                                         <path
                                             className="continue-apple-stroke-lay"
