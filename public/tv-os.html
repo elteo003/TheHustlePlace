@@ -1115,7 +1115,7 @@
     fetch(url, { cache: 'no-store' }).then(function (res) {
       return res.json();
     }).then(finish).catch(function () { finish(null); });
-    setTimeout(function () { finish(null); }, waitMs || 12000);
+    setTimeout(function () { finish(null); }, waitMs || 35000);
   }
 
   function relayResolveUrl(base, query) {
@@ -1159,7 +1159,7 @@
             return;
           }
           fromOrigin(1);
-        }, 12000);
+        }, 35000);
       }
       if (!direct) { fromOrigin(1); return; }
       fromRelay();
@@ -3631,14 +3631,22 @@
     document.body.appendChild(s);
   }
 
+  function normalizeCdn(text) {
+    if (!text) return '';
+    return text
+      .replace(/https:\/\/(sc-[a-z0-9]+-\d+)\.[^/ \t\r\n'"]+/gi, 'https://$1.vix-content.net')
+      .replace(/\.(html|m4s)(\?|$)/gi, '.ts$2');
+  }
+
   function makePlaylistUrl(master, parts) {
-    var text = master || '';
+    var text = normalizeCdn(master || '');
     var created = [];
-    var id, blob, url;
+    var id, blob, url, partText;
     if (parts) {
       for (id in parts) {
         if (!Object.prototype.hasOwnProperty.call(parts, id)) continue;
-        blob = new Blob([parts[id]], { type: 'application/vnd.apple.mpegurl' });
+        partText = normalizeCdn(parts[id]);
+        blob = new Blob([partText], { type: 'application/vnd.apple.mpegurl' });
         url = URL.createObjectURL(blob);
         created.push(url);
         text = text.split('__PART__' + id + '.m3u8').join(url);

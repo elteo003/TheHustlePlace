@@ -173,10 +173,32 @@ export function resolvePlaylistRef(ref: string, sourceUrl: string): string | nul
     }
 }
 
+export function normalizeVixsrcCdnUrl(rawUrl: string): string {
+    try {
+        const url = new URL(rawUrl)
+        const match = url.hostname.match(/^(sc-[a-z0-9]+-\d+)\.[a-z0-9.-]+$/i)
+        if (match) {
+            url.hostname = `${match[1]}.vix-content.net`
+            url.pathname = url.pathname.replace(/\.(html|m4s)$/i, '.ts')
+            return url.toString()
+        }
+        return rawUrl
+    } catch {
+        return rawUrl
+    }
+}
+
+export function normalizeVixsrcCdnInManifest(manifestText: string): string {
+    if (!manifestText) return ''
+    return manifestText
+        .replace(/https:\/\/(sc-[a-z0-9]+-\d+)\.[a-z0-9.-]+/gi, 'https://$1.vix-content.net')
+        .replace(/\.(html|m4s)(\?|$)/gi, '.ts$2')
+}
+
 function rewriteHlsRef(absolute: string, proxyPrefix: string): string {
     const kind = classifyHlsRef(absolute)
     if (kind === 'drop') return ''
-    if (kind === 'cdn') return absolute
+    if (kind === 'cdn') return normalizeVixsrcCdnUrl(absolute)
     return `${proxyPrefix}${encodeURIComponent(absolute)}`
 }
 
@@ -295,9 +317,10 @@ export function createVixsrcBrowserSource(input: {
     origin?: string
 }) {
     const created: string[] = []
-    let master = input.master
+    let master = normalizeVixsrcCdnInManifest(input.master)
     for (const [id, text] of Object.entries(input.parts)) {
-        const url = URL.createObjectURL(new Blob([text], { type: 'application/vnd.apple.mpegurl' }))
+        const normalized = normalizeVixsrcCdnInManifest(text)
+        const url = URL.createObjectURL(new Blob([normalized], { type: 'application/vnd.apple.mpegurl' }))
         created.push(url)
         master = master.split(`${VIXSRC_PART_PREFIX}${id}.m3u8`).join(url)
     }

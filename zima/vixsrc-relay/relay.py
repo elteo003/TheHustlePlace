@@ -150,6 +150,22 @@ def rewrite(body: str, source: str, resolve_ref) -> str:
     return "\n".join(lines)
 
 
+def normalize_cdn(raw: str) -> str:
+    try:
+        parsed = urlparse(raw)
+        host = parsed.hostname or ""
+        match = re.match(r"^(sc-[a-z0-9]+-\d+)\.[a-z0-9.-]+$", host, re.I)
+        if match:
+            new_host = f"{match.group(1)}.vix-content.net"
+            new_path = re.sub(r"\.(html|m4s)$", ".ts", parsed.path, flags=re.I)
+            port = f":{parsed.port}" if parsed.port else ""
+            netloc = f"{new_host}{port}"
+            return urlunparse(parsed._replace(netloc=netloc, path=new_path))
+        return raw
+    except Exception:
+        return raw
+
+
 def assemble(master_url: str, video_id: int | None) -> dict:
     part_ids: dict[str, str] = {}
     pending = [master_url]
@@ -167,7 +183,7 @@ def assemble(master_url: str, video_id: int | None) -> dict:
 
     def resolve_ref(absolute: str, kind: str) -> str:
         if kind == "cdn":
-            return absolute
+            return normalize_cdn(absolute)
         if kind == "key":
             return key_uri or absolute
         return f"{PART_PREFIX}{part_id_for(absolute)}.m3u8"

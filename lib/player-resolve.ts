@@ -4,7 +4,7 @@ export const PLAYER_RESOLVE_ATTEMPTS = 3
 export const PLAYER_RESOLVE_RETRY_MS = 600
 export const RELAY_CONFIG_PATH = '/api/player/relay'
 const RELAY_RESOLVE_ATTEMPTS = 2
-const RELAY_RESOLVE_TIMEOUT_MS = 12_000
+const RELAY_RESOLVE_TIMEOUT_MS = 35_000
 
 export type ResolvedPlayback = {
     master: string

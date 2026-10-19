@@ -1,4 +1,4 @@
-export const HOME_RELAY_TIMEOUT_MS = 20_000
+export const HOME_RELAY_TIMEOUT_MS = 30_000
 export const HOME_RELAY_COOLDOWN_MS = 60_000
 
 export interface HomeRelayStream {

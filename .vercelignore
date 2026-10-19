@@ -1,0 +1,6 @@
+tmp-*
+tmp-*/
+test-results
+public/lab
+tv/webos/*.ipk
+zima/vixsrc-relay/__pycache__

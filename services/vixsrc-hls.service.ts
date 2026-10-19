@@ -14,6 +14,7 @@ import {
     collectDroppedHlsHosts,
     hlsStreamLooksPlayable,
     isAllowedHlsUrl,
+    normalizeVixsrcCdnUrl,
     parseVixsrcApiSrc,
     parseVixsrcEmbedHtml,
     rewriteM3u8Browser,
@@ -361,7 +362,7 @@ async function assembleBrowserStream(
     }
 
     const resolveRef = (absolute: string, kind: 'cdn' | 'playlist' | 'key') => {
-        if (kind === 'cdn') return absolute
+        if (kind === 'cdn') return normalizeVixsrcCdnUrl(absolute)
         if (kind === 'key') return keyUri ?? absolute
         return `${VIXSRC_PART_PREFIX}${partIdFor(absolute)}.m3u8`
     }

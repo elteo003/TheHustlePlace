@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lab YouTube tendina</title>
+  <style>
+    html, body { margin: 0; background: #0b0b0b; color: #eee; font-family: Inter, sans-serif; }
+    body { padding: 20px 24px 40px; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    .note { color: #aaa; font-size: 14px; max-width: 920px; line-height: 1.45; margin: 0 0 18px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .cell { background: #000; border: 1px solid #333; border-radius: 12px; overflow: hidden; }
+    .cell h2 { font-size: 14px; margin: 0; padding: 10px 12px; background: #171717; }
+    .stage {
+      position: relative;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      background: #111;
+    }
+    .stage iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      pointer-events: none;
+      transform: scale(1.22);
+      transform-origin: center center;
+    }
+    .cover {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      background: #111 center / cover no-repeat;
+      transition: opacity .45s ease;
+    }
+    .stage.is-live .cover { opacity: 0; pointer-events: none; }
+    .stamp {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      z-index: 5;
+      font-size: 12px;
+      background: rgba(0,0,0,.65);
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+    .log { margin-top: 14px; font-size: 12px; color: #9ae6b4; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Lab tendina trailer</h1>
+  <p class="note">
+    YouTube non ha un parametro per spegnere i tasti di avvio: <code>controls=0</code> nasconde la barra, non la pausa/condividi dei primi secondi.
+    A destra il player resta sotto la locandina per 7 secondi di video (i tasti di YouTube durano più di quelli di avvio), poi dissolve; al loop la tendina torna prima del seek.
+  </p>
+  <div class="row">
+    <div class="cell">
+      <h2>Nudo — tasti visibili all’avvio</h2>
+      <div class="stage is-live" id="naked"></div>
+    </div>
+    <div class="cell">
+      <h2>Tendina — video solo dopo lo chrome</h2>
+      <div class="stage" id="curtain">
+        <div class="cover" id="cover"></div>
+        <div class="stamp" id="stamp">coperta</div>
+      </div>
+    </div>
+  </div>
+  <pre class="log" id="log"></pre>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    var VIDEO = 'M7lc1UVf-VE';
+    var CHROME_S = 7;
+    var startedAt = Date.now();
+    var logEl = document.getElementById('log');
+    var stampEl = document.getElementById('stamp');
+
+    function log(msg) {
+      logEl.textContent += (Math.round((Date.now() - startedAt) / 100) / 10) + 's  ' + msg + '\n';
+    }
+
+    document.getElementById('cover').style.backgroundImage =
+      'url(https://i.ytimg.com/vi/' + VIDEO + '/maxresdefault.jpg)';
+
+    function vars() {
+      return {
+        autoplay: 1,
+        mute: 1,
+        controls: 0,
+        rel: 0,
+        fs: 0,
+        disablekb: 1,
+        playsinline: 1,
+        iv_load_policy: 3,
+        cc_load_policy: 0,
+        origin: location.origin
+      };
+    }
+
+    function killCaptions(player) {
+      try { player.unloadModule('captions'); } catch (e) {}
+      try { player.unloadModule('cc'); } catch (e) {}
+    }
+
+    function mount(hostId) {
+      var host = document.getElementById(hostId);
+      var box = document.createElement('div');
+      box.id = 'yt-' + hostId;
+      host.insertBefore(box, host.firstChild);
+      return new YT.Player('yt-' + hostId, {
+        videoId: VIDEO,
+        playerVars: vars(),
+        events: {
+          onReady: function (ev) {
+            try { ev.target.mute(); ev.target.playVideo(); } catch (e) {}
+            log(hostId + ' ready');
+          },
+          onApiChange: function (ev) { killCaptions(ev.target); }
+        }
+      });
+    }
+
+    function bindCurtain(player, stage) {
+      var hidden = true;
+      var lastMark = -1;
+      var playingAt = 0;
+
+      function cover(reason) {
+        if (hidden) return;
+        hidden = true;
+        playingAt = 0;
+        stage.classList.remove('is-live');
+        stampEl.textContent = 'coperta';
+        log('curtain COVER (' + reason + ')');
+      }
+
+      function reveal() {
+        if (!hidden) return;
+        hidden = false;
+        stage.classList.add('is-live');
+        stampEl.textContent = 'video';
+        log('curtain REVEAL t=' + (player.getCurrentTime() || 0).toFixed(2));
+      }
+
+      setInterval(function () {
+        var state, t, dur;
+        try {
+          killCaptions(player);
+          state = player.getPlayerState();
+          t = player.getCurrentTime() || 0;
+          dur = player.getDuration() || 0;
+        } catch (e) {
+          return;
+        }
+
+        var ending = dur > 1 && t >= dur - 0.45;
+        if (state === 0 || ending) {
+          cover(state === 0 ? 'ended' : 'loop');
+          if (state === 0) {
+            try { player.seekTo(0, true); player.playVideo(); } catch (e) {}
+          }
+          return;
+        }
+
+        if (hidden && state === 1) {
+          if (!playingAt) playingAt = Date.now();
+          var gate = CHROME_S;
+          if (dur > 0 && dur < CHROME_S + 0.8) gate = Math.max(0.6, dur - 0.5);
+          var waited = (Date.now() - playingAt) / 1000;
+          if (t >= gate && waited >= gate) reveal();
+        }
+
+        var mark = Math.floor(t);
+        if (mark !== lastMark && mark >= 0 && mark <= 12) {
+          lastMark = mark;
+          log('curtain t=' + t.toFixed(2) + ' state=' + state + (hidden ? ' coperta' : ' video'));
+        }
+      }, 80);
+    }
+
+    window.onYouTubeIframeAPIReady = function () {
+      mount('naked');
+      bindCurtain(mount('curtain'), document.getElementById('curtain'));
+    };
+  </script>
+</body>
+</html>
