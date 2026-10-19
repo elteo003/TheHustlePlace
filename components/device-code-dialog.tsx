@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Cpu } from 'lucide-react'
+import { X } from 'lucide-react'
 import { CopyButton } from '@/components/copy-button'
 import { fadeUp } from '@/lib/motion'
 import { formatPairCode, isValidPairCode, normalizePairCode, splitPairCode } from '@/lib/pair-code'
@@ -172,19 +171,6 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
                     Unisci
                 </button>
             </form>
-
-            {((code && normalizePairCode(code) === 'M7BYZ77K') || normalizePairCode(paste) === 'M7BYZ77K') && (
-                <div className="mt-4 pt-3.5 border-t border-white/[0.08] flex justify-center">
-                    <Link
-                        href="/admin"
-                        onClick={onClose}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-semibold hover:bg-cyan-900/60 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]"
-                    >
-                        <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Pannello Admin ML [Apri ➔]</span>
-                    </Link>
-                </div>
-            )}
         </>
     )
 
@@ -207,7 +193,7 @@ export function DeviceCodeDialog({ open, onClose }: DeviceCodeDialogProps) {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="device-code-title"
-                        className="relative z-10 w-full max-w-[380px] overflow-hidden rounded-2xl border border-white/12 bg-zinc-950 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.7)]"
+                        className="relative z-10 w-full max-w-[380px] overflow-hidden rounded-2xl border border-white/20 bg-zinc-950 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.7)]"
                         initial={
                             reduceMotion
                                 ? { opacity: 0 }
