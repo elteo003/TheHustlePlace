@@ -3701,15 +3701,19 @@
     return 'HQ';
   }
 
-  function attachStream(video, playlist, onFail, onLevels) {
+  function attachStream(video, playlist, onFail, onLevels, startPosition) {
     if (window.Hls && Hls.isSupported()) {
-      var hls = new Hls({
+      var hlsConfig = {
         enableWorker: false,
         maxBufferLength: 30,
         testBandwidth: false,
         capLevelToPlayerSize: false,
         abrEwmaDefaultEstimate: 8000000
-      });
+      };
+      if (startPosition && startPosition > 5) {
+        hlsConfig.startPosition = startPosition;
+      }
+      var hls = new Hls(hlsConfig);
       video._tvHls = hls;
       hls.loadSource(playlist);
       hls.attachMedia(video);
@@ -3737,8 +3741,18 @@
         if (onLevels) onLevels(hls, levels, best, lockLevel);
         playWhenReady(video);
       });
+      var recoveries = 0;
       hls.on(Hls.Events.ERROR, function (_evt, data) {
-        if (data && data.fatal && onFail) onFail();
+        if (!data || !data.fatal) return;
+        if (recoveries < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          recoveries += 1;
+          try { hls.recoverMediaError(); return; } catch (e) {}
+        }
+        if (recoveries < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          recoveries += 1;
+          try { hls.startLoad(); return; } catch (e) {}
+        }
+        if (onFail) onFail();
       });
       return;
     }
@@ -3962,6 +3976,10 @@
       sendProgress(false);
     });
     function applyResume() {
+      if (video._tvHls) {
+        resumeAt = 0;
+        return;
+      }
       if (resumeAt > 5) {
         try { video.currentTime = resumeAt; } catch (err) {}
         resumeAt = 0;
@@ -4049,7 +4067,7 @@
           if (playerHud) playerHud.show();
         };
         collect(currentFid() || 'player-back');
-      });
+      }, resumeAt);
       function hideStatus() {
         if (statusWrap && statusWrap.parentNode) statusWrap.parentNode.removeChild(statusWrap);
         if (userHud) return;
@@ -4059,7 +4077,20 @@
       }
       video.addEventListener('loadeddata', hideStatus);
       video.addEventListener('playing', hideStatus);
+      var resumeRetried = false;
       video.addEventListener('error', function () {
+        if (!resumeRetried && (resumeAt > 0 || (qs('startAt') && parseInt(qs('startAt'), 10) > 0))) {
+          resumeRetried = true;
+          resumeAt = 0;
+          try {
+            video.currentTime = 0;
+            if (video._tvHls && video._tvHls.startLoad) {
+              video._tvHls.startLoad(0);
+              playWhenReady(video);
+              return;
+            }
+          } catch (e) {}
+        }
         showFail('Il film non parte. Torna indietro e riprova.');
       });
     }
