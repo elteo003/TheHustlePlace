@@ -85,11 +85,16 @@
       padding-bottom: 34vh;
       -webkit-transform-origin: 0 0;
       transform-origin: 0 0;
-      -webkit-transition: -webkit-transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
-      transition: transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      will-change: transform;
+      -webkit-transition: -webkit-transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
     }
     .shell.browse [data-tv-focus],
-    .shell.browse .tile {
+    .shell.browse .tile,
+    .shell.series [data-tv-focus],
+    .shell.series .tile,
+    .shell.series .ep-card,
+    .shell.series .season-chip {
       -webkit-transition: none;
       transition: none;
     }
@@ -116,8 +121,9 @@
       padding: 8px 80px 8px 64px;
       -webkit-transform-origin: 0 0;
       transform-origin: 0 0;
-      -webkit-transition: -webkit-transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
-      transition: transform 240ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      will-change: transform;
+      -webkit-transition: -webkit-transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
     }
     .shell.browse .scroller {
       height: auto;
@@ -529,8 +535,9 @@
       padding-bottom: 28vh;
       -webkit-transform-origin: 0 0;
       transform-origin: 0 0;
-      -webkit-transition: -webkit-transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
-      transition: transform 320ms cubic-bezier(0.645, 0.045, 0.355, 1);
+      will-change: transform;
+      -webkit-transition: -webkit-transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
     }
     .series-hero {
       position: relative;
@@ -560,7 +567,6 @@
     }
     .season-rail { margin: 0 0 36px; }
     .ep-rail { margin: 0; }
-    .shell.series.ep-cam .season-rail { padding-top: 88px; }
     .season-rail h2, .ep-rail h2 { font-size: 28px; font-weight: 600; margin: 0 0 8px; padding-left: 64px; }
     .season-scroller, .ep-scroller {
       overflow: hidden;
@@ -695,17 +701,17 @@
     .is-tv-focused {
       outline: none;
       z-index: 3;
-      -webkit-transform: scale(1.08); transform: scale(1.08);
-      box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 28px rgba(255,255,255,.16), 0 22px 44px rgba(0,0,0,.55);
+      -webkit-transform: scale(1.06); transform: scale(1.06);
+      box-shadow: 0 0 0 3px #fff, 0 8px 24px rgba(0,0,0,.6);
     }
     .tile.is-tv-focused, .avatar.is-tv-focused, .plus.is-tv-focused, .swatch.is-tv-focused {
-      -webkit-transform: scale(1.08); transform: scale(1.08);
-      box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 28px rgba(255,255,255,.16), 0 22px 44px rgba(0,0,0,.55);
+      -webkit-transform: scale(1.06); transform: scale(1.06);
+      box-shadow: 0 0 0 3px #fff, 0 8px 24px rgba(0,0,0,.6);
     }
     .navbtn.is-tv-focused, .who.is-tv-focused, .tab.is-tv-focused, .action.is-tv-focused,
     .key.is-tv-focused, .key-wide.is-tv-focused, .season-chip.is-tv-focused {
-      -webkit-transform: scale(1.04); transform: scale(1.04);
-      box-shadow: 0 0 0 1px rgba(255,255,255,.4), 0 12px 28px rgba(0,0,0,.4);
+      -webkit-transform: scale(1.03); transform: scale(1.03);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.9), 0 6px 16px rgba(0,0,0,.45);
     }
     .navbtn.is-tv-focused:not(.cur), .tab.is-tv-focused:not(.on), .action.is-tv-focused:not(.main),
     .key.is-tv-focused, .key-wide.is-tv-focused:not(.main), .who.is-tv-focused, .season-chip.is-tv-focused:not(.on) {
@@ -715,8 +721,8 @@
       box-shadow: 0 14px 32px rgba(0,0,0,.45);
     }
     .ep-card.is-tv-focused {
-      -webkit-transform: scale(1.04); transform: scale(1.04);
-      box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 36px rgba(255,255,255,.14), 0 22px 44px rgba(0,0,0,.55);
+      -webkit-transform: scale(1.03); transform: scale(1.03);
+      box-shadow: 0 0 0 3px #fff, 0 8px 24px rgba(0,0,0,.6);
     }
     .gate-pick .avatar.is-tv-focused, .gate-pick .plus.is-tv-focused {
       -webkit-transform: none; transform: none;
@@ -827,8 +833,8 @@
   var cameraSettleTimer = null;
   var pendingPeekNode = null;
   var browseTrackY = 0;
-  var BROWSE_CAMERA_MS = 320;
-  var RAIL_STRIP_MS = 240;
+  var BROWSE_CAMERA_MS = 220;
+  var RAIL_STRIP_MS = 200;
   var heroItem = null;
   var playerHud = null;
 
@@ -1207,14 +1213,25 @@
     }
   }
 
+  var lastFocusedEl = null;
+
   function paint() {
-    var i, el, cls;
-    for (i = 0; i < nodes.length; i++) {
-      el = nodes[i];
-      cls = (' ' + el.className + ' ').replace(' is-tv-focused ', ' ');
-      if (i === idx) cls += 'is-tv-focused';
-      el.className = cls.replace(/^\s+|\s+$/g, '');
+    var cur = nodes[idx] || null;
+    if (lastFocusedEl && lastFocusedEl !== cur) {
+      if (lastFocusedEl.classList) {
+        lastFocusedEl.classList.remove('is-tv-focused');
+      } else {
+        lastFocusedEl.className = (' ' + lastFocusedEl.className + ' ').replace(' is-tv-focused ', ' ').replace(/^\s+|\s+$/g, '');
+      }
     }
+    if (cur) {
+      if (cur.classList) {
+        cur.classList.add('is-tv-focused');
+      } else if (cur.className.indexOf('is-tv-focused') < 0) {
+        cur.className = (cur.className + ' is-tv-focused').replace(/^\s+|\s+$/g, '');
+      }
+    }
+    lastFocusedEl = cur;
     if (nodes[idx]) {
       try {
         if (nodes[idx].focus) nodes[idx].focus({ preventScroll: true });
@@ -1237,6 +1254,12 @@
   }
 
   function collect(prefer) {
+    lastFocusedEl = null;
+    var prev = root.querySelectorAll('.is-tv-focused');
+    for (var p = 0; p < prev.length; p++) {
+      if (prev[p].classList) prev[p].classList.remove('is-tv-focused');
+      else prev[p].className = (' ' + prev[p].className + ' ').replace(' is-tv-focused ', ' ').replace(/^\s+|\s+$/g, '');
+    }
     var found = root.querySelectorAll('[data-tv-focus]');
     nodes = [];
     var i, fid, pick, def;
@@ -1530,15 +1553,10 @@
     resetBrowseScroll();
     viewH = stage.clientHeight || window.innerHeight || 1080;
     rail = page.querySelector('.season-rail');
-    if (closestClass(focused, 'ep-rail')) {
-      if (!hasClass(page, 'ep-cam')) page.className += ' ep-cam';
-    } else if (hasClass(page, 'ep-cam')) {
-      page.className = (' ' + page.className + ' ').replace(' ep-cam ', ' ').replace(/^\s+|\s+$/g, '');
-    }
     if (hasClass(focused, 'navbtn') || hasClass(focused, 'who') || hasClass(focused, 'action')) {
       targetY = 0;
     } else if (closestClass(focused, 'ep-rail') && rail) {
-      targetY = rail.offsetTop;
+      targetY = Math.max(0, rail.offsetTop - 88);
     } else {
       targetY = 0;
     }
@@ -1615,10 +1633,10 @@
     var i, next, dx, dy, primary, side, score, inHost, edge;
     for (i = 0; i < nodes.length; i++) {
       if (i === idx) continue;
-      next = nodes[i].getBoundingClientRect();
-      if (next.width < 2 || next.height < 2) continue;
       inHost = !host || (host.contains && host.contains(nodes[i]));
       if (!inHost) continue;
+      next = nodes[i].getBoundingClientRect();
+      if (next.width < 2 || next.height < 2) continue;
       if (host) {
         edge = dir === 'right' ? next.left : (next.left + next.width);
         if (dir === 'right') {
