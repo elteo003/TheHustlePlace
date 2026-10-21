@@ -14,6 +14,8 @@ doc/
 │   ├── 📄 README.md
 │   ├── 📄 tv-splash-cache-camera.md
 │   └── 📄 hero-trailer-audio-visibility.md
+├── 📁 investigations/            # Analisi tecniche e Root Cause Analysis
+│   └── 📄 continue-watching-dismiss-analysis.md
 ├── 📄 recent-updates.md            # Ultimi aggiornamenti
 ├── 📄 architecture-diagrams.md     # Diagrammi Mermaid
 ├── 📄 troubleshooting.md           # Guida risoluzione problemi
@@ -85,6 +87,7 @@ doc/
 - **[API Film](API-film.md)** - API specifiche film
 - **[Trakt Integration](trakt-integration.md)** - Integrazione Trakt.tv
 - **[Trakt Integration Fix](trakt-integration-fix.md)** - Fix integrazione Trakt
+- **[Continue Watching Dismiss Analysis](investigations/continue-watching-dismiss-analysis.md)** - Analisi mancata rimozione film da Continua a guardare
 - **[Trakt-TMDB-VixSrc Integration](trakt-tmdb-vixsrc-integration.md)** - Integrazione completa
 
 ### 🎨 **UI e UX**
