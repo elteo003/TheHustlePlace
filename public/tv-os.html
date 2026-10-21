@@ -771,6 +771,83 @@
       position: absolute; left: 12%; right: 12%; top: 46%;
       text-align: center; font-size: 28px; color: rgba(255,255,255,.78);
     }
+    /* Resume Modal - Emil Kowalski Animations on the Web craft bar */
+    .resume-modal-backdrop {
+      position: fixed; left: 0; top: 0; right: 0; bottom: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,.82);
+      display: -webkit-box; display: flex;
+      -webkit-box-align: center; align-items: center;
+      -webkit-box-pack: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      -webkit-transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .resume-modal-backdrop.is-open {
+      opacity: 1; pointer-events: auto;
+    }
+    .resume-modal {
+      position: relative;
+      width: 580px; max-width: 90vw;
+      background: #141414;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 24px;
+      padding: 40px 44px;
+      box-sizing: border-box;
+      text-align: center;
+      -webkit-transform: scale(0.95);
+      transform: scale(0.95);
+      opacity: 0;
+      will-change: transform, opacity;
+      -webkit-transition: -webkit-transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 24px 64px rgba(0,0,0,.85);
+    }
+    .resume-modal-backdrop.is-open .resume-modal {
+      -webkit-transform: scale(1);
+      transform: scale(1);
+      opacity: 1;
+    }
+    .resume-modal h2 {
+      font-size: 32px; font-weight: 700; margin: 0 0 12px;
+      letter-spacing: -.02em; color: #fff;
+    }
+    .resume-modal p {
+      font-size: 19px; line-height: 1.45;
+      color: rgba(255,255,255,.68); margin: 0 0 30px;
+    }
+    .resume-modal-actions {
+      display: -webkit-box; display: flex;
+      -webkit-box-orient: vertical; -webkit-box-direction: normal;
+      flex-direction: column; gap: 12px;
+    }
+    .resume-modal .action {
+      display: block; width: 100%; height: 52px; line-height: 52px;
+      font-size: 20px; font-weight: 600; border-radius: 14px;
+      margin: 0; box-sizing: border-box; text-align: center;
+      -webkit-transition: -webkit-transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94), background 150ms ease, box-shadow 150ms ease;
+      transition: transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94), background 150ms ease, box-shadow 150ms ease;
+    }
+    .resume-modal .action:active {
+      -webkit-transform: scale(0.97);
+      transform: scale(0.97);
+    }
+    .resume-modal .action.main {
+      background: #fff; color: #111; font-weight: 700;
+    }
+    .resume-modal .action.sub {
+      background: rgba(255,255,255,.08); color: rgba(255,255,255,.88);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .resume-modal-backdrop,
+      .resume-modal,
+      .resume-modal .action {
+        -webkit-transition: opacity 150ms ease !important;
+        transition: opacity 150ms ease !important;
+        -webkit-transform: none !important;
+        transform: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1260,7 +1337,8 @@
       if (prev[p].classList) prev[p].classList.remove('is-tv-focused');
       else prev[p].className = (' ' + prev[p].className + ' ').replace(' is-tv-focused ', ' ').replace(/^\s+|\s+$/g, '');
     }
-    var found = root.querySelectorAll('[data-tv-focus]');
+    var activeModal = document.querySelector('.resume-modal-backdrop.is-open');
+    var found = activeModal ? activeModal.querySelectorAll('[data-tv-focus]') : root.querySelectorAll('[data-tv-focus]');
     nodes = [];
     var i, fid, pick, def;
     for (i = 0; i < found.length; i++) nodes.push(found[i]);
@@ -1502,7 +1580,8 @@
   }
 
   function refreshFocusNodes(prefer) {
-    var found = root.querySelectorAll('[data-tv-focus]');
+    var activeModal = document.querySelector('.resume-modal-backdrop.is-open');
+    var found = activeModal ? activeModal.querySelectorAll('[data-tv-focus]') : root.querySelectorAll('[data-tv-focus]');
     var i, fid, pick;
     nodes = [];
     for (i = 0; i < found.length; i++) nodes.push(found[i]);
@@ -1714,6 +1793,77 @@
       onClick();
     };
     return node;
+  }
+
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    var h = Math.floor(sec / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    var s = sec % 60;
+    function z(n) { return (n < 10 ? '0' : '') + n; }
+    if (h) return h + ':' + z(m) + ':' + z(s);
+    return z(m) + ':' + z(s);
+  }
+
+  var activeResumeModal = null;
+  function showResumeModal(opts) {
+    if (activeResumeModal) return;
+    var startAt = opts.startAt || 0;
+    var onResume = opts.onResume;
+    var onRestart = opts.onRestart;
+    var prevFid = currentFid();
+    var prevBack = backHandler;
+
+    var backdrop = el('div', 'resume-modal-backdrop');
+    var modal = el('div', 'resume-modal');
+    var title = el('h2', '', 'Riprendi la visione');
+    var desc = el('p', '', 'Vuoi riprendere da ' + fmtTime(startAt) + ' oppure ricominciare dall\'inizio?');
+    var actions = el('div', 'resume-modal-actions');
+
+    var closing = false;
+    function closeModal(cb) {
+      if (closing) return;
+      closing = true;
+      backdrop.className = 'resume-modal-backdrop';
+      backHandler = prevBack;
+      window.setTimeout(function () {
+        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        activeResumeModal = null;
+        if (cb) cb();
+        else collect(prevFid);
+      }, 220);
+    }
+
+    var btnResume = focusBtn('action main', 'Riprendi (' + fmtTime(startAt) + ')', 'resume-btn-resume', function () {
+      closeModal(function () {
+        if (onResume) onResume();
+      });
+    }, true);
+
+    var btnRestart = focusBtn('action sub', 'Ricomincia dall\'inizio', 'resume-btn-restart', function () {
+      closeModal(function () {
+        if (onRestart) onRestart();
+      });
+    });
+
+    actions.appendChild(btnResume);
+    actions.appendChild(btnRestart);
+    modal.appendChild(title);
+    modal.appendChild(desc);
+    modal.appendChild(actions);
+    backdrop.appendChild(modal);
+
+    document.body.appendChild(backdrop);
+    activeResumeModal = backdrop;
+
+    backHandler = function () {
+      closeModal();
+    };
+
+    window.requestAnimationFrame(function () {
+      backdrop.className = 'resume-modal-backdrop is-open';
+      collect('resume-btn-resume');
+    });
   }
 
   function gateSlotIndex() {
@@ -2153,16 +2303,33 @@
     return null;
   }
 
-  function openPlay(type, id, season, episode, startAt) {
+  function doOpenPlay(type, id, season, episode, startAt) {
     if (type === 'tv') {
       if (!season || !episode) {
         openDetail('tv', id);
         return;
       }
-      go('/living/player/tv/' + id + '?season=' + season + '&episode=' + episode + (startAt ? '&startAt=' + Math.floor(startAt) : ''));
+      go('/living/player/tv/' + id + '?season=' + season + '&episode=' + episode + (startAt && startAt > 0 ? '&startAt=' + Math.floor(startAt) : ''));
     } else {
-      go('/living/player/movie/' + id + (startAt ? '?startAt=' + Math.floor(startAt) : ''));
+      go('/living/player/movie/' + id + (startAt && startAt > 0 ? '?startAt=' + Math.floor(startAt) : ''));
     }
+  }
+
+  function openPlay(type, id, season, episode, startAt, skipPrompt) {
+    var pos = Math.floor(startAt || 0);
+    if (pos > 30 && !skipPrompt) {
+      showResumeModal({
+        startAt: pos,
+        onResume: function () {
+          doOpenPlay(type, id, season, episode, pos);
+        },
+        onRestart: function () {
+          doOpenPlay(type, id, season, episode, 0);
+        }
+      });
+      return;
+    }
+    doOpenPlay(type, id, season, episode, pos);
   }
 
   function decorateTile(tile, item, fallbackType, fid, useBack, attach) {
@@ -3383,26 +3550,32 @@
         });
         return;
       }
-      rememberPlay(item, 'movie', id);
-      root.innerHTML = '';
-      page = el('div', 'shell');
-      page.appendChild(renderNav('movies'));
-      var stage = el('div', 'detail');
-      if (img(item, 'original', 'back')) stage.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
-      var copy = el('div', 'detail-copy');
-      copy.appendChild(el('h1', '', itemTitle(item)));
-      copy.appendChild(el('p', 'overview', item.overview || ''));
-      if (!noWatch) {
-        copy.appendChild(focusBtn('action main', 'Riproduci', 'detail-play', function () {
-          rememberPlay(item, 'movie', id);
-          openPlay('movie', id);
-        }, true));
-      }
-      copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }, noWatch));
-      stage.appendChild(copy);
-      page.appendChild(stage);
-      root.appendChild(page);
-      collect(noWatch ? 'detail-back' : 'detail-play');
+      getJson('/api/watch-history', function (histJson) {
+        var hist = mergeHistory(histJson);
+        var lw = findLastWatched(hist, id);
+        var movieStart = (lw && lw.currentTime) ? lw.currentTime : 0;
+        rememberPlay(item, 'movie', id);
+        root.innerHTML = '';
+        page = el('div', 'shell');
+        page.appendChild(renderNav('movies'));
+        var stage = el('div', 'detail');
+        if (img(item, 'original', 'back')) stage.style.backgroundImage = 'url(' + img(item, 'original', 'back') + ')';
+        var copy = el('div', 'detail-copy');
+        copy.appendChild(el('h1', '', itemTitle(item)));
+        copy.appendChild(el('p', 'overview', item.overview || ''));
+        if (!noWatch) {
+          var playLabel = (movieStart > 30) ? ('Continua (' + fmtTime(movieStart) + ')') : 'Riproduci';
+          copy.appendChild(focusBtn('action main', playLabel, 'detail-play', function () {
+            rememberPlay(item, 'movie', id);
+            openPlay('movie', id, null, null, movieStart);
+          }, true));
+        }
+        copy.appendChild(focusBtn('action', 'Indietro', 'detail-back', function () { go('/living/home'); }, noWatch));
+        stage.appendChild(copy);
+        page.appendChild(stage);
+        root.appendChild(page);
+        collect(noWatch ? 'detail-back' : 'detail-play');
+      });
     });
   }
 
@@ -3701,7 +3874,7 @@
     return 'HQ';
   }
 
-  function attachStream(video, playlist, onFail, onLevels, startPosition) {
+  function attachStream(video, playlist, onFail, onLevels) {
     if (window.Hls && Hls.isSupported()) {
       var hlsConfig = {
         enableWorker: false,
@@ -3710,9 +3883,6 @@
         capLevelToPlayerSize: false,
         abrEwmaDefaultEstimate: 8000000
       };
-      if (startPosition && startPosition > 5) {
-        hlsConfig.startPosition = startPosition;
-      }
       var hls = new Hls(hlsConfig);
       video._tvHls = hls;
       hls.loadSource(playlist);
@@ -3783,11 +3953,13 @@
       go('/living/' + (type === 'tv' ? 'series/' : 'movie/') + id);
     };
     root.innerHTML = '';
-    var video = document.createElement('video');
-    video.setAttribute('autoplay', 'autoplay');
-    video.setAttribute('playsinline', 'playsinline');
-    video.setAttribute('webkit-playsinline', 'true');
-    root.appendChild(video);
+    var video = null;
+    var pendingResumeSec = resumeAt;
+    var resumeRetried = false;
+    var deferredSeekDone = false;
+    var liveSource = null;
+    var activeLevelsCallback = null;
+
     var hud = el('div', 'hud');
     var hudLeft = el('div', 'hud-side');
     hudLeft.appendChild(focusBtn('action', 'Indietro', 'player-back', backHandler, true));
@@ -3836,16 +4008,8 @@
     var barTimer = null;
     var zone = 'hud';
     var userHud = false;
-    function fmtTime(sec) {
-      sec = Math.max(0, Math.floor(sec || 0));
-      var h = Math.floor(sec / 3600);
-      var m = Math.floor((sec % 3600) / 60);
-      var s = sec % 60;
-      function z(n) { return (n < 10 ? '0' : '') + n; }
-      if (h) return h + ':' + z(m) + ':' + z(s);
-      return z(m) + ':' + z(s);
-    }
     function syncBar() {
+      if (!video) return;
       var d = video.duration;
       var t = video.currentTime || 0;
       if (d && isFinite(d) && d > 0) fill.style.width = Math.min(100, (t / d) * 100) + '%';
@@ -3858,20 +4022,21 @@
       cue.className = 'cue';
       if (cueTimer) window.clearTimeout(cueTimer);
       cueTimer = window.setTimeout(function () {
-        if (!video.paused) cue.className = 'cue cue-hide';
-      }, 900);
+        if (video && !video.paused) cue.className = 'cue cue-hide';
+      }, 1200);
     }
     function showBar() {
       transport.className = 'transport';
       syncBar();
       if (barTimer) window.clearTimeout(barTimer);
-      if (!video.paused) {
+      if (video && !video.paused) {
         barTimer = window.setTimeout(function () {
-          if (!video.paused) transport.className = 'transport transport-hide';
+          if (video && !video.paused) transport.className = 'transport transport-hide';
         }, 2800);
       }
     }
     function togglePause() {
+      if (!video) return;
       if (video.paused) {
         var p = video.play();
         if (p && p.catch) p.catch(function () {});
@@ -3883,6 +4048,7 @@
       showBar();
     }
     function seekBy(delta) {
+      if (!video) return;
       var d = video.duration;
       var t = video.currentTime || 0;
       var next = t + delta;
@@ -3935,8 +4101,8 @@
       var pauseKey = c === 179 || c === 10252 || key === ' ' || key === 'MediaPlayPause';
       var up = c === 38 || key === 'ArrowUp' || key === 'Up';
       var down = c === 40 || key === 'ArrowDown' || key === 'Down';
-      if (c === 19 || key === 'MediaPause') { if (!video.paused) togglePause(); else showBar(); return true; }
-      if (c === 415 || key === 'MediaPlay') { if (video.paused) togglePause(); else showBar(); return true; }
+      if (c === 19 || key === 'MediaPause') { if (video && !video.paused) togglePause(); else showBar(); return true; }
+      if (c === 415 || key === 'MediaPlay') { if (video && video.paused) togglePause(); else showBar(); return true; }
       if (skipBack) { seekBy(-10); return true; }
       if (skipFwd) { seekBy(10); return true; }
       if (hudOnButtons()) {
@@ -3954,39 +4120,15 @@
       if (ok || pauseKey) { togglePause(); return true; }
       return false;
     }
-    video.addEventListener('timeupdate', syncBar);
-    video.addEventListener('seeked', syncBar);
-    video.addEventListener('pause', function () {
-      showCue('Pausa');
+    function hideStatus() {
+      if (statusWrap && statusWrap.parentNode) statusWrap.parentNode.removeChild(statusWrap);
+      if (userHud) return;
+      zone = 'watch';
+      hideHud();
       showBar();
-      sendProgress(false);
-    });
-    video.addEventListener('play', function () {
-      if (cue.textContent === 'Pausa') cue.className = 'cue cue-hide';
-      showBar();
-    });
-    video.addEventListener('ended', function () {
-      sendProgress(true);
-      if (type === 'tv' && document.querySelector('[data-fid="player-next"]')) showHud();
-    });
-    video.addEventListener('timeupdate', function () {
-      var now = new Date().getTime();
-      if (now - lastTrack < 8000) return;
-      lastTrack = now;
-      sendProgress(false);
-    });
-    function applyResume() {
-      if (video._tvHls) {
-        resumeAt = 0;
-        return;
-      }
-      if (resumeAt > 5) {
-        try { video.currentTime = resumeAt; } catch (err) {}
-        resumeAt = 0;
-      }
     }
-    video.addEventListener('loadeddata', applyResume);
     function sendProgress(ended) {
+      if (!video) return;
       var d = video.duration;
       var t = video.currentTime || 0;
       var progress;
@@ -4013,6 +4155,89 @@
       }
       trackWatch(body);
     }
+
+    function wireVideo(v) {
+      v.addEventListener('timeupdate', syncBar);
+      v.addEventListener('seeked', syncBar);
+      v.addEventListener('pause', function () {
+        showCue('Pausa');
+        showBar();
+        sendProgress(false);
+      });
+      v.addEventListener('play', function () {
+        if (cue.textContent === 'Pausa') cue.className = 'cue cue-hide';
+        showBar();
+      });
+      v.addEventListener('ended', function () {
+        sendProgress(true);
+        if (type === 'tv' && document.querySelector('[data-fid="player-next"]')) showHud();
+      });
+      v.addEventListener('timeupdate', function () {
+        var now = new Date().getTime();
+        if (now - lastTrack < 8000) return;
+        lastTrack = now;
+        sendProgress(false);
+      });
+      function performDeferredSeek() {
+        if (deferredSeekDone || pendingResumeSec <= 5) return;
+        deferredSeekDone = true;
+        var target = pendingResumeSec;
+        pendingResumeSec = 0;
+        try {
+          v.currentTime = target;
+          showCue('Ripresa da ' + fmtTime(target));
+        } catch (err) {
+          console.warn('Deferred seek failed:', err);
+        }
+      }
+      v.addEventListener('canplay', performDeferredSeek);
+      v.addEventListener('playing', performDeferredSeek);
+      v.addEventListener('loadeddata', hideStatus);
+      v.addEventListener('playing', hideStatus);
+      v.addEventListener('error', function () {
+        if (!resumeRetried && (resumeAt > 0 || (qs('startAt') && parseInt(qs('startAt'), 10) > 0))) {
+          resumeRetried = true;
+          resumeAt = 0;
+          pendingResumeSec = 0;
+          showCue('Riavvio dall\'inizio...');
+          hardResetPlayback();
+          return;
+        }
+        showFail('Il film non parte. Torna indietro e riprova.');
+      });
+    }
+
+    function createVideo() {
+      var node = document.createElement('video');
+      node.setAttribute('autoplay', 'autoplay');
+      node.setAttribute('playsinline', 'playsinline');
+      node.setAttribute('webkit-playsinline', 'true');
+      root.insertBefore(node, root.firstChild);
+      wireVideo(node);
+      return node;
+    }
+
+    video = createVideo();
+
+    function hardResetPlayback() {
+      if (video) {
+        if (video._tvHls && video._tvHls.destroy) {
+          try { video._tvHls.destroy(); } catch (e) {}
+          delete video._tvHls;
+        }
+        if (video.parentNode) {
+          try { video.pause(); } catch (e) {}
+          video.removeAttribute('src');
+          try { video.load(); } catch (e) {}
+          video.parentNode.removeChild(video);
+        }
+      }
+      video = createVideo();
+      if (liveSource) {
+        attachStream(video, liveSource.url, fallbackNative, activeLevelsCallback);
+      }
+    }
+
     playerHud = { hidden: false, show: showHud, touch: showHud, dispose: clearHud, handleKey: handlePlayerKey };
 
     var query = 'tmdbId=' + encodeURIComponent(id) + '&type=' + type;
@@ -4025,6 +4250,27 @@
       collect('player-back');
     }
 
+    var failed = false;
+    function fallbackNative() {
+      if (!resumeRetried && (resumeAt > 0 || pendingResumeSec > 0)) {
+        resumeRetried = true;
+        resumeAt = 0;
+        pendingResumeSec = 0;
+        showCue('Riavvio dall\'inizio...');
+        hardResetPlayback();
+        return;
+      }
+      if (failed) return;
+      failed = true;
+      if (video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
+      if (liveSource && liveSource.url) {
+        video.src = liveSource.url;
+        playWhenReady(video);
+      } else {
+        showFail('Il film non parte. Torna indietro e riprova.');
+      }
+    }
+
     function startWith(master, parts) {
       var source;
       if (master.indexOf('#EXTM3U') === 0 || (parts && typeof parts === 'object')) {
@@ -4032,15 +4278,8 @@
       } else {
         source = { url: master, created: [] };
       }
-      var failed = false;
-      function fallbackNative() {
-        if (failed) return;
-        failed = true;
-        if (video._tvHls && video._tvHls.destroy) video._tvHls.destroy();
-        video.src = source.url;
-        playWhenReady(video);
-      }
-      attachStream(video, source.url, fallbackNative, function (hls, levels, best, lockLevel) {
+      liveSource = source;
+      activeLevelsCallback = function (hls, levels, best, lockLevel) {
         if (!levels || !levels.length) return;
         var order = [];
         var i;
@@ -4067,34 +4306,9 @@
           if (playerHud) playerHud.show();
         };
         collect(currentFid() || 'player-back');
-      }, resumeAt);
-      function hideStatus() {
-        if (statusWrap && statusWrap.parentNode) statusWrap.parentNode.removeChild(statusWrap);
-        if (userHud) return;
-        zone = 'watch';
-        hideHud();
-        showBar();
-      }
-      video.addEventListener('loadeddata', hideStatus);
-      video.addEventListener('playing', hideStatus);
-      var resumeRetried = false;
-      video.addEventListener('error', function () {
-        if (!resumeRetried && (resumeAt > 0 || (qs('startAt') && parseInt(qs('startAt'), 10) > 0))) {
-          resumeRetried = true;
-          resumeAt = 0;
-          try {
-            video.currentTime = 0;
-            if (video._tvHls && video._tvHls.startLoad) {
-              video._tvHls.startLoad(0);
-              playWhenReady(video);
-              return;
-            }
-          } catch (e) {}
-        }
-        showFail('Il film non parte. Torna indietro e riprova.');
-      });
+      };
+      attachStream(video, source.url, fallbackNative, activeLevelsCallback);
     }
-
     resolvePlayback(query, function (json) {
       var master = json && json.data && json.data.master;
       var parts = json && json.data && json.data.parts;
