@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
-const SPLASH_MS = 400
+const SPLASH_MS = 3000
 
 export default function RootPage() {
     const router = useRouter()
@@ -17,9 +17,10 @@ export default function RootPage() {
     }, [isFadingOut, router])
 
     useEffect(() => {
+        router.prefetch('/home')
         const timer = setTimeout(goHome, SPLASH_MS)
         return () => clearTimeout(timer)
-    }, [goHome])
+    }, [goHome, router])
 
     return (
         <motion.div
@@ -30,7 +31,7 @@ export default function RootPage() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col items-center"
             >
                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-lg shadow-white/10">
@@ -54,7 +55,7 @@ export default function RootPage() {
                     className="h-full bg-white/80 rounded-full"
                     initial={{ width: '0%' }}
                     animate={{ width: '100%' }}
-                    transition={{ duration: SPLASH_MS / 1000, ease: 'linear' }}
+                    transition={{ duration: (SPLASH_MS - 200) / 1000, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                 />
             </motion.div>
 
