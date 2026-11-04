@@ -16,7 +16,7 @@ export function SplashScreen({
     maxDuration = 7000,
     onDismissed,
 }: SplashScreenProps) {
-    const [progress, setProgress] = useState(14)
+    const [progress, setProgress] = useState(26)
     const [isFadingOut, setIsFadingOut] = useState(false)
     const [isFinished, setIsFinished] = useState(false)
 
@@ -51,7 +51,7 @@ export function SplashScreen({
             const elapsed = Date.now() - startTimeRef.current
             const ratio = Math.min(elapsed / minDuration, 1)
             // Sale fluidamente fino all'80% massimo, lasciando il completamento solo all'OK
-            const target = Math.min(Math.round(ratio * 76) + 14, 82)
+            const target = Math.min(Math.round(ratio * 64) + 26, 82)
 
             setProgress((prev) => (target > prev ? target : prev))
         }, 40)
@@ -91,18 +91,13 @@ export function SplashScreen({
         <AnimatePresence>
             <motion.div
                 key="splash-overlay"
-                className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center select-none"
+                className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center select-none pointer-events-auto"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: isFadingOut ? 0 : 1 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 style={{ pointerEvents: isFadingOut ? 'none' : 'auto' }}
             >
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex flex-col items-center"
-                >
+                <div className="flex flex-col items-center">
                     <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-lg shadow-white/10">
                         <span className="text-black font-bold text-2xl">H</span>
                     </div>
@@ -112,19 +107,14 @@ export function SplashScreen({
                     <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-10">
                         Streaming
                     </p>
-                </motion.div>
+                </div>
 
-                <motion.div
-                    className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.15 }}
-                >
+                <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-white/80 rounded-full transition-all duration-200 ease-out"
                         style={{ width: `${progress}%` }}
                     />
-                </motion.div>
+                </div>
             </motion.div>
         </AnimatePresence>
     )
