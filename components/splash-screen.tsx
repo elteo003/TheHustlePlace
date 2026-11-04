@@ -3,84 +3,87 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-let hasAnimatedThisSession = false
-
 interface SplashScreenProps {
     isReady: boolean
     minDuration?: number
     maxDuration?: number
-    onFinished?: () => void
+    onDismissed?: () => void
 }
 
 export function SplashScreen({
     isReady,
-    minDuration = 3000,
+    minDuration = 2800,
     maxDuration = 7000,
-    onFinished,
+    onDismissed,
 }: SplashScreenProps) {
-    const [shouldRender, setShouldRender] = useState(!hasAnimatedThisSession)
+    const [progress, setProgress] = useState(14)
     const [isFadingOut, setIsFadingOut] = useState(false)
-    const [progress, setProgress] = useState(0)
+    const [isFinished, setIsFinished] = useState(false)
 
     const startTimeRef = useRef<number>(Date.now())
-    const dismissTriggeredRef = useRef(false)
+    const completingRef = useRef(false)
 
-    const dismiss = useCallback(() => {
-        if (dismissTriggeredRef.current) return
-        dismissTriggeredRef.current = true
-        hasAnimatedThisSession = true
+    const completeAndDismiss = useCallback(() => {
+        if (completingRef.current) return
+        completingRef.current = true
+
+        // Fa terminare il caricamento della barra rapidamente verso il 100%
         setProgress(100)
-        setIsFadingOut(true)
 
+        // Non appena tocca il 100%, svanisce immediatamente senza fermarsi
         setTimeout(() => {
-            setShouldRender(false)
-            onFinished?.()
-        }, 340)
-    }, [onFinished])
+            setIsFadingOut(true)
+            onDismissed?.()
 
-    // Progressione armoniosa della barra
+            setTimeout(() => {
+                setIsFinished(true)
+            }, 300)
+        }, 200)
+    }, [onDismissed])
+
+    // Avanzamento fluido della barra durante il caricamento (si arresta prima del 100%)
     useEffect(() => {
-        if (!shouldRender) return
-
         startTimeRef.current = Date.now()
 
-        const progressInterval = setInterval(() => {
-            if (dismissTriggeredRef.current) return
+        const interval = setInterval(() => {
+            if (completingRef.current) return
+
             const elapsed = Date.now() - startTimeRef.current
-            const targetRatio = Math.min(elapsed / minDuration, 1)
-            // Sale fluidamente fino all'88% in attesa che il contenuto sia pronto
-            const calculatedProgress = isReady ? 100 : Math.min(Math.round(targetRatio * 88), 88)
-            setProgress((prev) => Math.max(prev, calculatedProgress))
+            const ratio = Math.min(elapsed / minDuration, 1)
+            // Sale fluidamente fino all'80% massimo, lasciando il completamento solo all'OK
+            const target = Math.min(Math.round(ratio * 76) + 14, 82)
+
+            setProgress((prev) => (target > prev ? target : prev))
         }, 40)
 
+        // Safety timeout per reti lente
         const safetyTimer = setTimeout(() => {
-            dismiss()
+            completeAndDismiss()
         }, maxDuration)
 
         return () => {
-            clearInterval(progressInterval)
+            clearInterval(interval)
             clearTimeout(safetyTimer)
         }
-    }, [shouldRender, minDuration, maxDuration, isReady, dismiss])
+    }, [minDuration, maxDuration, completeAndDismiss])
 
-    // Sincronizzazione: sblocca solo quando isReady è true E minDuration è trascorsa
+    // Sincronizzazione: non appena arriva l'OK e il tempo minimo è trascorso, completa la barra e svanisce
     useEffect(() => {
-        if (!shouldRender || dismissTriggeredRef.current) return
+        if (completingRef.current) return
 
         if (isReady) {
             const elapsed = Date.now() - startTimeRef.current
             const remaining = Math.max(0, minDuration - elapsed)
 
             const timer = setTimeout(() => {
-                setProgress(100)
-                setTimeout(dismiss, 140)
+                completeAndDismiss()
             }, remaining)
 
             return () => clearTimeout(timer)
         }
-    }, [shouldRender, isReady, minDuration, dismiss])
+    }, [isReady, minDuration, completeAndDismiss])
 
-    if (!shouldRender) {
+    if (isFinished) {
         return null
     }
 
@@ -91,13 +94,13 @@ export function SplashScreen({
                 className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center select-none"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: isFadingOut ? 0 : 1 }}
-                transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 style={{ pointerEvents: isFadingOut ? 'none' : 'auto' }}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.96, y: 8 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="flex flex-col items-center"
                 >
                     <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-lg shadow-white/10">
@@ -115,21 +118,13 @@ export function SplashScreen({
                     className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
+                    transition={{ delay: 0.15 }}
                 >
                     <div
-                        className="h-full bg-white/80 rounded-full transition-all duration-150 ease-out"
+                        className="h-full bg-white/80 rounded-full transition-all duration-200 ease-out"
                         style={{ width: `${progress}%` }}
                     />
                 </motion.div>
-
-                <button
-                    type="button"
-                    onClick={dismiss}
-                    className="mt-8 text-sm text-white/50 hover:text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded px-3 py-1 cursor-pointer"
-                >
-                    Salta
-                </button>
             </motion.div>
         </AnimatePresence>
     )

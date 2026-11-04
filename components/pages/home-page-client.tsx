@@ -77,6 +77,10 @@ export function HomePageClient({
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
     const [isHeroReady, setIsHeroReady] = useState(false)
+    const [splashDismissed, setSplashDismissed] = useState(false)
+    const handleSplashDismissed = useCallback(() => {
+        setSplashDismissed(true)
+    }, [])
     const handleHeroLoaded = useCallback(() => {
         setIsHeroReady(true)
     }, [])
@@ -372,8 +376,11 @@ export function HomePageClient({
 
     return (
         <MovieProvider>
-            <main className="min-h-screen bg-black">
-                <SplashScreen isReady={isHeroReady} minDuration={3000} />
+            <SplashScreen isReady={isHeroReady} minDuration={2800} onDismissed={handleSplashDismissed} />
+            <main
+                className="min-h-screen bg-black transition-opacity duration-300"
+                style={{ opacity: splashDismissed ? 1 : 0 }}
+            >
                 <HeroSection
                     onTrailerEnded={() => setShowUpcomingTrailers(true)}
                     onMovieChange={setCurrentHeroMovieIndex}
