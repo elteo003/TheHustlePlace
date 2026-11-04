@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { HeroSection } from '@/components/hero-section'
-import { SplashScreen } from '@/components/splash-screen'
 import MovieGridIntegrated from '@/components/movie-grid-integrated'
 import { ApiKeyError } from '@/components/api-key-error'
 import { MovieProvider } from '@/contexts/MovieContext'
@@ -76,14 +75,7 @@ export function HomePageClient({
     const [isCheckingApi, setIsCheckingApi] = useState(false)
     const [showUpcomingTrailers, setShowUpcomingTrailers] = useState(false)
     const [currentHeroMovieIndex, setCurrentHeroMovieIndex] = useState(0)
-    const [isHeroReady, setIsHeroReady] = useState(false)
-    const [splashDismissed, setSplashDismissed] = useState(false)
-    const handleSplashDismissed = useCallback(() => {
-        setSplashDismissed(true)
-    }, [])
-    const handleHeroLoaded = useCallback(() => {
-        setIsHeroReady(true)
-    }, [])
+
 
     const isFree = platformTop10.isFreeDay || !platformTop10.platform
     const [activePlatformTop10, setActivePlatformTop10] = useState<PlatformTop10>(platformTop10)
@@ -376,16 +368,12 @@ export function HomePageClient({
 
     return (
         <MovieProvider>
-            <SplashScreen isReady={isHeroReady} minDuration={2800} onDismissed={handleSplashDismissed} />
-            <main
-                className="min-h-screen bg-black transition-opacity duration-300"
-                style={{ opacity: splashDismissed ? 1 : 0 }}
-            >
+            <main className="min-h-screen bg-black">
                 <HeroSection
                     onTrailerEnded={() => setShowUpcomingTrailers(true)}
                     onMovieChange={setCurrentHeroMovieIndex}
                     showUpcomingTrailers={showUpcomingTrailers}
-                    onLoaded={handleHeroLoaded}
+                    onLoaded={() => undefined}
                     currentHeroMovieIndex={currentHeroMovieIndex}
                     onUpcomingMovieSelect={() => setShowUpcomingTrailers(false)}
                 />

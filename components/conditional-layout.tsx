@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Navbar } from './navbar'
 import { PageTransition } from './page-transition'
+import { SplashScreen } from './splash-screen'
 import { TrailerPeekProvider } from '@/contexts/trailer-peek-context'
 import { rememberBrowsePath } from '@/lib/player-exit'
 import { TvEntryRedirect } from '@/tv/components/TvEntryRedirect'
@@ -32,15 +33,12 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     const isSplash = pathname === '/'
     const isHome = pathname === '/home'
     const isLiving = isLivingPath(pathname)
-    const showNavbar = !isPlayerPage && !isSplash && !isLiving && !isDevPreview && !isAdmin
+    const showNavbar = isClient && !isPlayerPage && !isSplash && !isLiving && !isDevPreview && !isAdmin
     const needsTopPadding = showNavbar && !isHome
-
-    if (!isClient && !isLiving) {
-        return <div className="min-h-screen bg-black text-white">{children}</div>
-    }
 
     return (
         <TrailerPeekProvider>
+            {!isLiving && <SplashScreen />}
             <Suspense fallback={null}>
                 <TvEntryRedirect />
             </Suspense>

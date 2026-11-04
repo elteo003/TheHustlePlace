@@ -1,5 +1,7 @@
 'use client'
 
+import { notifyAppReady } from '@/components/splash-screen'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Play, Info, Volume2, VolumeX, SkipForward } from 'lucide-react'
 import { TMDBMovie, getTMDBImageUrl, findMainTrailer, getMediaTitle } from '@/lib/tmdb'
@@ -117,21 +119,26 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     // Notifica quando la Hero Section è caricata (incluso precaricamento immagine)
     useEffect(() => {
-        if (!featuredMovie || !onLoaded) return
+        if (!featuredMovie) return
+        const handleReady = () => {
+            onLoaded?.()
+            notifyAppReady()
+        }
         const imgPath = featuredMovie.backdrop_path || featuredMovie.poster_path
         if (imgPath && typeof window !== 'undefined') {
             const img = new window.Image()
             img.src = getTMDBImageUrl(imgPath, 'original')
-            img.onload = () => onLoaded()
-            img.onerror = () => onLoaded()
+            img.onload = handleReady
+            img.onerror = handleReady
         } else {
-            onLoaded()
+            handleReady()
         }
     }, [featuredMovie, onLoaded])
 
     useEffect(() => {
-        if (error && onLoaded) {
-            onLoaded()
+        if (error) {
+            onLoaded?.()
+            notifyAppReady()
         }
     }, [error, onLoaded])
 
