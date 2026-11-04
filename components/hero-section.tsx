@@ -115,12 +115,25 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         onEnded: finishTrailer,
     })
 
-    // Notifica quando la Hero Section è caricata
+    // Notifica quando la Hero Section è caricata (incluso precaricamento immagine)
     useEffect(() => {
-        if (featuredMovie && onLoaded) {
+        if (!featuredMovie || !onLoaded) return
+        const imgPath = featuredMovie.backdrop_path || featuredMovie.poster_path
+        if (imgPath && typeof window !== 'undefined') {
+            const img = new window.Image()
+            img.src = getTMDBImageUrl(imgPath, 'original')
+            img.onload = () => onLoaded()
+            img.onerror = () => onLoaded()
+        } else {
             onLoaded()
         }
     }, [featuredMovie, onLoaded])
+
+    useEffect(() => {
+        if (error && onLoaded) {
+            onLoaded()
+        }
+    }, [error, onLoaded])
 
     // Reset trailerEnded quando cambia il film per far riapparire la sezione prossimi
     useEffect(() => {
