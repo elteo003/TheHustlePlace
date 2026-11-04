@@ -34,6 +34,9 @@ function mockFetch(handlers: { relay?: string | null; resolve: (url: string) => 
 describe('player-resolve', () => {
     beforeEach(() => {
         resetRelayCircuit()
+        if (typeof localStorage !== 'undefined') {
+            localStorage.clear()
+        }
     })
     it('riconosce i 502 transitori e gli errori di titolo assente', () => {
         expect(isRetryablePlayerResolveStatus(502)).toBe(true)
@@ -235,5 +238,39 @@ describe('player-resolve', () => {
         })
         expect(result2.data?.videoId).toBe(629782)
         expect(relayCalls).toBe(1)
+    })
+
+    it("usa l'ultimo relay noto in localStorage se la configurazione su Vercel e null", async () => {
+        const store: Record<string, string> = { vixsrc_last_relay_url: RELAY }
+        vi.stubGlobal('localStorage', {
+            getItem: (k: string) => store[k] ?? null,
+            setItem: (k: string, v: string) => { store[k] = String(v) },
+            removeItem: (k: string) => { delete store[k] },
+            clear: () => { Object.keys(store).forEach((k) => delete store[k]) },
+        })
+        try {
+            let relayCalled = false
+            const fetchImpl = mockFetch({
+                relay: null,
+                resolve: async (url) => {
+                    if (url.startsWith(RELAY)) {
+                        relayCalled = true
+                        return new Response(JSON.stringify(STREAM), { status: 200 })
+                    }
+                    return new Response(JSON.stringify({ success: false, error: 'origin fail' }), { status: 502 })
+                },
+            })
+
+            const result = await fetchResolvedPlayback(new URLSearchParams({ tmdbId: '550', type: 'movie' }), {
+                fetch: fetchImpl,
+                wait: async () => undefined,
+                bypassCircuit: true,
+            })
+
+            expect(relayCalled).toBe(true)
+            expect(result.data?.videoId).toBe(629782)
+        } finally {
+            vi.unstubAllGlobals()
+        }
     })
 })

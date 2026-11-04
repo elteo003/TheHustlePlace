@@ -3,7 +3,6 @@ import json
 import os
 import re
 import subprocess
-import threading
 import time
 import urllib.error
 import urllib.request
@@ -20,90 +19,75 @@ ANNOUNCE_URLS = [
 ]
 CONTAINER = os.environ.get("TUNNEL_CONTAINER", "hustle-vixsrc-tunnel")
 HEARTBEAT_INTERVAL = 60
-LAST_ANNOUNCED_AT = 0.0
-CURRENT_URL: str | None = None
-URL_LOCK = threading.Lock()
 
 
 def announce(url: str) -> bool:
-    global LAST_ANNOUNCED_AT
     success = False
     for target in ANNOUNCE_URLS:
         request = urllib.request.Request(
             target,
-            data=json.dumps({"url": url}).encode(),
+            data=json.dumps({"url": url}).encode("utf-8"),
             headers={"Content-Type": "application/json", "x-relay-token": TOKEN},
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=20) as response:
-                print(f"announced {url} -> {target} : {response.status}", flush=True)
+            with urllib.request.urlopen(request, timeout=15) as response:
+                print(f"[ANNOUNCE] {url} -> {target} : {response.status}", flush=True)
                 success = True
         except Exception as error:
-            print(f"announce fail -> {target} : {error}", flush=True)
-    if success:
-        LAST_ANNOUNCED_AT = time.time()
+            print(f"[ANNOUNCE FAIL] -> {target} : {error}", flush=True)
     return success
 
 
-def heartbeat_worker() -> None:
-    while True:
-        try:
-            with URL_LOCK:
-                url = CURRENT_URL
-            if url:
-                now = time.time()
-                if now - LAST_ANNOUNCED_AT >= HEARTBEAT_INTERVAL:
-                    announce(url)
-        except Exception as error:
-            print("heartbeat worker error:", error, flush=True)
-        time.sleep(5)
-
-
-def scan(text: str, last: str | None) -> str | None:
-    global CURRENT_URL
-    match = URL_RE.search(text)
-    if not match:
-        return last
-    url = match.group(0)
-    with URL_LOCK:
-        CURRENT_URL = url
-    if url != last:
-        announce(url)
-        return url
-    return last if last else url
-
-
-def logs(follow: bool, since: str | None = None) -> subprocess.Popen:
-    command = ["docker", "logs", CONTAINER]
-    if follow:
-        command.append("-f")
-    if since:
-        command.extend(["--since", since])
-    return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+def fetch_tunnel_url() -> str | None:
+    try:
+        # Legge gli ultimi log del container tunnel (non bloccante)
+        res = subprocess.run(
+            ["docker", "logs", "--tail", "200", CONTAINER],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        combined = (res.stdout or "") + "\n" + (res.stderr or "")
+        matches = URL_RE.findall(combined)
+        if matches:
+            return matches[-1]
+    except Exception as error:
+        print(f"[TUNNEL URL READ ERROR] {error}", flush=True)
+    return None
 
 
 def main() -> None:
     if not TOKEN:
         raise SystemExit("RELAY_TOKEN mancante")
-    
-    # Avvia il worker heartbeat asincrono disaccoppiato dai log
-    thread = threading.Thread(target=heartbeat_worker, daemon=True)
-    thread.start()
 
-    last = None
-    bootstrap = logs(False)
-    out, _ = bootstrap.communicate(timeout=20)
-    last = scan(out, last)
+    current_url: str | None = None
+    last_announced_at = 0.0
+
+    print(f"Avvio Announcer per tunnel '{CONTAINER}'...", flush=True)
+    print(f"Target: {ANNOUNCE_URLS}", flush=True)
+
     while True:
         try:
-            proc = logs(True, "2m")
-            assert proc.stdout
-            for line in proc.stdout:
-                last = scan(line, last)
+            detected = fetch_tunnel_url()
+            now = time.time()
+            if detected:
+                # Annuncia se l'URL è nuovo o se è trascorso il periodo di heartbeat (60s)
+                if detected != current_url or (now - last_announced_at >= HEARTBEAT_INTERVAL):
+                    if announce(detected):
+                        current_url = detected
+                        last_announced_at = now
+            else:
+                if not current_url:
+                    print("In attesa dell'URL del tunnel Cloudflare dai log del container...", flush=True)
+                elif now - last_announced_at >= HEARTBEAT_INTERVAL:
+                    # Se non è presente negli ultimi 200 log ma lo avevamo già identificato, mantieni vivo l'heartbeat
+                    if announce(current_url):
+                        last_announced_at = now
         except Exception as error:
-            print("watch error", error, flush=True)
-        time.sleep(4)
+            print(f"[MAIN LOOP ERROR] {error}", flush=True)
+
+        time.sleep(15)
 
 
 if __name__ == "__main__":

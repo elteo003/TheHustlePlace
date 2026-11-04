@@ -23,6 +23,7 @@ Ogni documento segue lo standard rigoroso:
 | [07-unit-tests-regression-vitest.md](file:///c:/Users/matti/Documents/TheHustlePlace/doc/errore/07-unit-tests-regression-vitest.md) | Regressioni Unit Test Vitest su `tv-os.html` e `hls-config.ts` | Test Suite / TypeScript | Risolto |
 | [08-saturazione-rete-vs-decoder-e-kit-diagnosi.md](file:///c:/Users/matti/Documents/TheHustlePlace/doc/errore/08-saturazione-rete-vs-decoder-e-kit-diagnosi.md) | Diagnosi Saturazione di Rete vs Stallo Decoder e Kit Intelligente di Rilevamento | Network Telemetry / Error Handling | Risolto |
 | [09-cdn-vix-content-tls-timeout-e-decoder-loop.md](file:///c:/Users/matti/Documents/TheHustlePlace/doc/errore/09-cdn-vix-content-tls-timeout-e-decoder-loop.md) | Timeout TLS su `vix-content.net`, Token Relay Diretto e Nudge Decoder | Network / Hardware Decoder | Risolto |
+| [10-relay-heartbeat-ttl-403-forbidden.md](file:///c:/Users/matti/Documents/TheHustlePlace/doc/errore/10-relay-heartbeat-ttl-403-forbidden.md) | Scadenza TTL Relay Domestico e Cascata Errore 403 Forbidden su TV e PC | Network / Relay Telemetry | In Diagnosi / Da Applicare su Zima |
 
 ---
 
@@ -38,6 +39,7 @@ flowchart TD
     E07 --> E04[04. Conflitto Credenziali Git 403 Push]
     E08 --> E09[09. Timeout TLS vix-content.net & Loop Decoder]
     E01 --> E09
+    E02 --> E10[10. Scadenza TTL Relay & 403 Fallback]
     
     E05[05. Sfasamento Profilo PAPI vs RICH] --> E06[06. Violazione Check Constraint pair_code]
 ```

@@ -30,33 +30,59 @@ async function ensureTable(sql: ReturnType<typeof postgres>) {
     `
 }
 
-export async function getAnnouncedRelayUrl(): Promise<string | null> {
-    const sql = relaySql()
-    if (sql) {
-        await ensureTable(sql)
-        const rows = await sql<{ url: string }[]>`
-            select url from vixsrc_home_relay where id = 1 and updated_at > (now() - interval '4 hours')
-        `
-        const url = rows[0]?.url?.replace(/\/$/, '') ?? ''
-        if (isAllowedRelayPublicUrl(url)) return url
+async function probeAndRenewRelay(
+    sql: ReturnType<typeof postgres>,
+    url: string,
+    token: string
+): Promise<boolean> {
+    try {
+        const response = await fetch(`${url}/health`, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(1200),
+        })
+        if (!response.ok) return false
+        const json = (await response.json().catch(() => null)) as { ok?: boolean } | null
+        if (json && json.ok) {
+            await sql`
+                update vixsrc_home_relay
+                set updated_at = now()
+                where id = 1 and token = ${token}
+            `
+            return true
+        }
+        return false
+    } catch {
+        return false
     }
-    const fromEnv = process.env.VIXSRC_RELAY_URL?.replace(/\/$/, '') ?? ''
-    if (fromEnv.includes('trycloudflare.com')) return null
-    return isAllowedRelayPublicUrl(fromEnv) ? fromEnv : null
 }
 
 export async function getHomeRelayConfig(): Promise<HomeRelayConfig | null> {
     const sql = relaySql()
     if (sql) {
         await ensureTable(sql)
-        const rows = await sql<{ url: string; token: string }[]>`
+        // 1. Cerca un record recente (< 4 ore)
+        const freshRows = await sql<{ url: string; token: string }[]>`
             select url, token from vixsrc_home_relay where id = 1 and updated_at > (now() - interval '4 hours')
         `
-        const row = rows[0]
-        if (row?.url && row?.token && isAllowedRelayPublicUrl(row.url.replace(/\/$/, ''))) {
-            return { url: row.url.replace(/\/$/, ''), token: row.token }
+        const fresh = freshRows[0]
+        if (fresh?.url && fresh?.token && isAllowedRelayPublicUrl(fresh.url.replace(/\/$/, ''))) {
+            return { url: fresh.url.replace(/\/$/, ''), token: fresh.token }
+        }
+
+        // 2. Se scaduto (> 4 ore ma entro 7 giorni), esegui un Active Probe di auto-guarigione
+        const candidateRows = await sql<{ url: string; token: string }[]>`
+            select url, token from vixsrc_home_relay where id = 1 and updated_at > (now() - interval '7 days')
+        `
+        const candidate = candidateRows[0]
+        if (candidate?.url && candidate?.token && isAllowedRelayPublicUrl(candidate.url.replace(/\/$/, ''))) {
+            const normalizedUrl = candidate.url.replace(/\/$/, '')
+            const isAlive = await probeAndRenewRelay(sql, normalizedUrl, candidate.token)
+            if (isAlive) {
+                return { url: normalizedUrl, token: candidate.token }
+            }
         }
     }
+
     if (process.env.VIXSRC_RELAY_URL && process.env.VIXSRC_RELAY_TOKEN) {
         const url = process.env.VIXSRC_RELAY_URL.replace(/\/$/, '')
         if (url.includes('trycloudflare.com')) return null
@@ -65,6 +91,11 @@ export async function getHomeRelayConfig(): Promise<HomeRelayConfig | null> {
         }
     }
     return null
+}
+
+export async function getAnnouncedRelayUrl(): Promise<string | null> {
+    const config = await getHomeRelayConfig()
+    return config?.url ?? null
 }
 
 export async function saveHomeRelayUrl(url: string, token: string): Promise<boolean> {

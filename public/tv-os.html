@@ -1162,11 +1162,17 @@
       return;
     }
     getJson('/api/player/relay', function (cfg) {
-      var direct = relayResolveUrl(
-        cfg && cfg.url ? String(cfg.url) : '',
-        query,
-        cfg && cfg.token ? String(cfg.token) : ''
-      );
+      var rUrl = cfg && cfg.url ? String(cfg.url) : '';
+      var rToken = cfg && cfg.token ? String(cfg.token) : '';
+      if (rUrl && rToken) {
+        try { localStorage.setItem('vixsrc_last_relay', JSON.stringify({ url: rUrl, token: rToken })); } catch (e) {}
+      } else if (!rUrl) {
+        try {
+          var saved = JSON.parse(localStorage.getItem('vixsrc_last_relay') || '{}');
+          if (saved && saved.url) { rUrl = String(saved.url); rToken = String(saved.token || ''); }
+        } catch (e) {}
+      }
+      var direct = relayResolveUrl(rUrl, query, rToken);
       if (!direct) { fromOrigin(1); return; }
       getJsonPlain(direct, function (json) {
         if (json && json.data && json.data.master) { done(json); return; }
@@ -4288,7 +4294,13 @@
       if (statusWrap) statusWrap.className = 'spin-screen';
       status.className = 'play-fail';
       status.innerHTML = '';
-      status.appendChild(document.createTextNode(msg || 'Il film non parte.'));
+      var clean = String(msg || 'Il film non parte.');
+      if (clean.indexOf('403') >= 0 || clean.toLowerCase().indexOf('unauthorized') >= 0) {
+        clean = 'Relay domestico non raggiungibile (403). Verifica che ZimaBoard sia accesa.';
+      } else if (clean.indexOf('404') >= 0 || clean.toLowerCase().indexOf('senza embed') >= 0 || clean.toLowerCase().indexOf('non trovata') >= 0) {
+        clean = 'Titolo non disponibile sul catalogo VixSrc.';
+      }
+      status.appendChild(document.createTextNode(clean));
       collect('player-back');
     }
 

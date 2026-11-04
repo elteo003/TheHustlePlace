@@ -65,6 +65,7 @@ export function VixsrcEmbedPlayer({
     onPlaybackRef.current = onPlayback
     onEndedRef.current = onEnded
     const [error, setError] = useState(false)
+    const [errorDetail, setErrorDetail] = useState<string | null>(null)
     const [streamMissing, setStreamMissing] = useState(false)
     const [ready, setReady] = useState(false)
     const [buffering, setBuffering] = useState(false)
@@ -131,6 +132,7 @@ export function VixsrcEmbedPlayer({
             window.clearTimeout(timeout)
             setStreamMissing(missing)
             setError(true)
+            setErrorDetail(message)
             toast.error(message)
         }
 
@@ -421,7 +423,9 @@ export function VixsrcEmbedPlayer({
                         <p className="text-lg text-gray-400 mb-8">
                             {streamMissing
                                 ? unavailableDescription
-                                : 'Lo stream risulta presente su VixSrc, ma il player non è riuscito a ottenerlo. Riprova.'}
+                                : errorDetail?.includes('403')
+                                ? 'Relay domestico non raggiungibile (403). Verifica che ZimaBoard sia accesa.'
+                                : errorDetail || 'Lo stream risulta presente su VixSrc, ma il player non è riuscito a ottenerlo. Riprova.'}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button

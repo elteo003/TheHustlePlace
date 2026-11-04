@@ -19,6 +19,7 @@ Un blueprint descrive contratto, vincoli, architettura, diagrammi e piano di lav
 | [Interazioni telefono](phone-interactions.md) | implementato | catalogo, trailer dock, player VixSrc |
 | [Splash catalogo e camera a 3 scaffali](tv-splash-cache-camera.md) | implementato | TV living, `public/tv-os.html` |
 | [Audio hero al cambio visibilità](hero-trailer-audio-visibility.md) | proposto | `HeroSection`, trailer YouTube |
+| [Architettura Resilienza Relay & Custom Error Handling](relay-resilience-and-error-architecture.md) | in corso | Relay, Player TV/Web, Backend Next.js, Errori |
 
 ## Collegamenti
 

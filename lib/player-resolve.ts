@@ -90,6 +90,7 @@ export function isMissingVixsrcStreamError(error?: string): boolean {
     if (!error) return false
     const text = error.toLowerCase()
     if (text.includes('api vixsrc non disponibile')) return false
+    if (text.includes('403') || text.includes('unauthorized') || text.includes('forbidden')) return false
     return (
         text.includes('senza embed') ||
         text.includes('playlist non trovata') ||
@@ -114,13 +115,34 @@ export function directRelayResolveUrl(relayBase: string, query: URLSearchParams)
 async function readRelayBase(fetchImpl: typeof fetch): Promise<string | null> {
     try {
         const response = await fetchImpl(RELAY_CONFIG_PATH, { cache: 'no-store' })
-        if (!response.ok) return null
-        const json = (await response.json()) as { url?: unknown }
-        const url = typeof json.url === 'string' ? json.url.replace(/\/$/, '') : ''
-        return url && isAllowedRelayPublicUrl(url) ? url : null
+        if (response.ok) {
+            const json = (await response.json()) as { url?: unknown }
+            const url = typeof json.url === 'string' ? json.url.replace(/\/$/, '') : ''
+            if (url && isAllowedRelayPublicUrl(url)) {
+                if (typeof localStorage !== 'undefined') {
+                    try {
+                        localStorage.setItem('vixsrc_last_relay_url', url)
+                    } catch {}
+                }
+                return url
+            }
+        }
     } catch {
-        return null
+        // Errore di rete verso l'endpoint di configurazione Vercel
     }
+
+    // Fallback su cache locale se Vercel non risponde o restituisce null
+    if (typeof localStorage !== 'undefined') {
+        try {
+            const cached = localStorage.getItem('vixsrc_last_relay_url')
+            const url = typeof cached === 'string' ? cached.replace(/\/$/, '') : ''
+            if (url && isAllowedRelayPublicUrl(url)) {
+                return url
+            }
+        } catch {}
+    }
+
+    return null
 }
 
 async function fetchWithTimeout(
