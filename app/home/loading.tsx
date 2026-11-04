@@ -14,8 +14,20 @@ export default function HomeLoading() {
             </div>
 
             <div className="w-48 h-0.5 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-white/80 rounded-full w-1/4 animate-pulse" />
+                <div
+                    className="h-full bg-white/80 rounded-full"
+                    style={{
+                        width: '0%',
+                        animation: 'splashLoading 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    }}
+                />
             </div>
+            <style>{`
+                @keyframes splashLoading {
+                    0% { width: 0%; }
+                    100% { width: 80%; }
+                }
+            `}</style>
         </div>
     )
 }

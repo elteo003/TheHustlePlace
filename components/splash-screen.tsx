@@ -16,7 +16,7 @@ export function SplashScreen({
     maxDuration = 7000,
     onDismissed,
 }: SplashScreenProps) {
-    const [progress, setProgress] = useState(26)
+    const [progress, setProgress] = useState(0)
     const [isFadingOut, setIsFadingOut] = useState(false)
     const [isFinished, setIsFinished] = useState(false)
 
@@ -41,7 +41,7 @@ export function SplashScreen({
         }, 200)
     }, [onDismissed])
 
-    // Avanzamento fluido della barra durante il caricamento (si arresta prima del 100%)
+    // Avanzamento fluido della barra partendo da 0% (si arresta all'80% in attesa dell'OK)
     useEffect(() => {
         startTimeRef.current = Date.now()
 
@@ -50,8 +50,8 @@ export function SplashScreen({
 
             const elapsed = Date.now() - startTimeRef.current
             const ratio = Math.min(elapsed / minDuration, 1)
-            // Sale fluidamente fino all'80% massimo, lasciando il completamento solo all'OK
-            const target = Math.min(Math.round(ratio * 64) + 26, 82)
+            // Sale con progressione fluida da 0% fino all'80% massimo
+            const target = Math.min(Math.round(ratio * 80), 80)
 
             setProgress((prev) => (target > prev ? target : prev))
         }, 40)
