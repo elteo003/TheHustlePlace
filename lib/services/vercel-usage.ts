@@ -21,6 +21,21 @@ export interface UsageCheckResult {
     error?: string
 }
 
+interface VercelDailyData {
+    bandwidth_outgoing_bytes?: number
+    bandwidth_incoming_bytes?: number
+    function_execution_successful_gb_hours?: number
+    function_execution_failed_gb_hours?: number
+    request_hit_count?: number
+    request_miss_count?: number
+}
+
+interface VercelRequestsUsageResponse {
+    granularity?: string
+    lastUpdate?: string
+    data?: VercelDailyData[]
+}
+
 export const PRIMARY_DOMAIN = 'the-fplace.vercel.app'
 export const SECONDARY_DOMAIN = 'the-hustle-place.vercel.app'
 export const DEFAULT_THRESHOLD_PERCENT = 75.0
@@ -61,11 +76,11 @@ export async function fetchVercelUsage(options?: {
     teamId?: string
 }): Promise<VercelUsageMetrics> {
     const token = options?.token || process.env.VERCEL_API_TOKEN
-    const projectId = options?.projectId || process.env.VERCEL_FPLACE_PROJECT_ID
+    const projectId = options?.projectId || process.env.VERCEL_PROJECT_ID || process.env.VERCEL_FPLACE_PROJECT_ID
     const teamId = options?.teamId || process.env.VERCEL_TEAM_ID
 
     if (!token || !projectId) {
-        throw new Error('Credenziali Vercel non configurate (VERCEL_API_TOKEN o VERCEL_FPLACE_PROJECT_ID assente)')
+        throw new Error('Credenziali Vercel non configurate (VERCEL_API_TOKEN o VERCEL_PROJECT_ID assente)')
     }
 
     const now = new Date()
@@ -76,6 +91,7 @@ export async function fetchVercelUsage(options?: {
     url.searchParams.set('projectId', projectId)
     url.searchParams.set('from', from)
     url.searchParams.set('to', to)
+    url.searchParams.set('type', 'requests')
     if (teamId) {
         url.searchParams.set('teamId', teamId)
     }
@@ -92,8 +108,32 @@ export async function fetchVercelUsage(options?: {
         throw new Error(`Errore API Vercel HTTP ${response.status}: ${errText}`)
     }
 
-    const json = await response.json()
-    return json as VercelUsageMetrics
+    const json = (await response.json()) as VercelRequestsUsageResponse
+
+    let totalBytes = 0
+    let totalGbHours = 0
+    let totalRequests = 0
+
+    if (Array.isArray(json.data)) {
+        for (const day of json.data) {
+            totalBytes += (day.bandwidth_outgoing_bytes || 0) + (day.bandwidth_incoming_bytes || 0)
+            totalGbHours +=
+                (day.function_execution_successful_gb_hours || 0) +
+                (day.function_execution_failed_gb_hours || 0)
+            totalRequests += (day.request_hit_count || 0) + (day.request_miss_count || 0)
+        }
+    }
+
+    // Limiti standard piano Hobby Vercel: 100 GB Bandwidth, 100 GB-Hours Function Execution, 1M Edge Invocations
+    const BANDWIDTH_LIMIT_BYTES = 100 * 1024 * 1024 * 1024 // 100 GB
+    const FUNCTION_LIMIT_GB_HOURS = 100 // 100 GB-Hrs
+    const REQUESTS_LIMIT = 1_000_000 // 1M Requests
+
+    return {
+        bandwidth: { value: totalBytes, limit: BANDWIDTH_LIMIT_BYTES },
+        serverlessFunctionExecution: { value: totalGbHours, limit: FUNCTION_LIMIT_GB_HOURS },
+        edgeMiddlewareInvocations: { value: totalRequests, limit: REQUESTS_LIMIT },
+    }
 }
 
 export async function getActiveDomain(): Promise<string> {
