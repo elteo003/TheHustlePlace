@@ -232,7 +232,7 @@ html {
 }
 
 .horizontal-scroll {
-    touch-action: pan-x;
+    touch-action: pan-x pan-y;
 }
 
 .premium-scrollbar {
