@@ -1,4 +1,4 @@
-import { bigint, boolean, index, integer, jsonb, pgTable, smallint, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, integer, jsonb, numeric, pgTable, smallint, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 export const households = pgTable('households', {
     id: uuid().defaultRandom().primaryKey(),
@@ -97,3 +97,15 @@ export const rankerWeights = pgTable('ranker_weights', {
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 })
 
+
+export const systemDomainRouting = pgTable('system_domain_routing', {
+    id: text().primaryKey().default('production'),
+    primaryDomain: text('primary_domain').notNull().default('the-fplace.vercel.app'),
+    secondaryDomain: text('secondary_domain').notNull().default('the-hustle-place.vercel.app'),
+    activeDomain: text('active_domain').notNull().default('the-fplace.vercel.app'),
+    fplaceUsagePercent: numeric('fplace_usage_percent', { precision: 5, scale: 2 }).notNull().default('0.00'),
+    thresholdPercent: numeric('threshold_percent', { precision: 5, scale: 2 }).notNull().default('75.00'),
+    autoFailoverEnabled: boolean('auto_failover_enabled').notNull().default(true),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+})

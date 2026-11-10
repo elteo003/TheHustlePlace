@@ -1,11 +1,73 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
+// Cache in memoria edge per azzerare la latenza e proteggere le quote Vercel (TTL 60s)
+let cachedActiveDomain = 'the-fplace.vercel.app'
+let lastActiveDomainCheck = 0
+const CACHE_TTL_MS = 60_000
+
+export async function resolveActiveDomain(request: NextRequest): Promise<string> {
+    const now = Date.now()
+    if (now - lastActiveDomainCheck < CACHE_TTL_MS) {
+        return cachedActiveDomain
+    }
+
+    try {
+        const protocol = request.nextUrl.protocol
+        const host = request.headers.get('host') || 'the-fplace.vercel.app'
+        const lookupUrl = `${protocol}//${host}/api/cron/check-usage`
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 1200)
+
+        const res = await fetch(lookupUrl, {
+            signal: controller.signal,
+            headers: { 'x-middleware-lookup': '1' },
+        })
+        clearTimeout(timeout)
+
+        if (res.ok) {
+            const data = await res.json()
+            if (data && data.activeDomain) {
+                cachedActiveDomain = data.activeDomain
+                lastActiveDomainCheck = now
+                return cachedActiveDomain
+            }
+        }
+    } catch {
+        // Fallback silenzioso: mantieni l'ultimo stato valido conosciuto
+    }
+
+    return cachedActiveDomain
+}
+
+export async function middleware(request: NextRequest) {
+    const host = request.headers.get('host') || ''
     const path = request.nextUrl.pathname
+
+    // Se la richiesta arriva su the-fplace ma il target attivo è the-hustle-place (soglia 75% superata)
+    if (host.includes('the-fplace.vercel.app')) {
+        const activeDomain = await resolveActiveDomain(request)
+        if (activeDomain.includes('the-hustle-place.vercel.app')) {
+            const redirectUrl = new URL(request.url)
+            redirectUrl.host = 'the-hustle-place.vercel.app'
+            redirectUrl.protocol = 'https'
+
+            // Preservazione identità e profilo TV tramite handoff device_id
+            const cookieId = request.cookies.get('thp_device_id')?.value
+            const headerId = request.headers.get('x-thp-device-id')
+            const deviceId = cookieId || headerId
+            if (deviceId && !redirectUrl.searchParams.has('device_id')) {
+                redirectUrl.searchParams.set('device_id', deviceId)
+            }
+
+            return NextResponse.redirect(redirectUrl, 307)
+        }
+    }
+
     if (path === '/living' || path.startsWith('/living/')) {
         return NextResponse.rewrite(new URL('/tv-os.html', request.url))
     }
+
     return NextResponse.next()
 }
 

@@ -858,6 +858,11 @@
 
   function deviceId() {
     var id = '';
+    var qId = qs('device_id');
+    if (qId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(qId)) {
+      rememberDeviceId(qId);
+      return qId;
+    }
     try { id = window.localStorage.getItem('thp_device_id') || ''; } catch (e) {}
     if (!id) {
       id = makeDeviceId();

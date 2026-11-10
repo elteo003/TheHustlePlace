@@ -40,23 +40,71 @@
       var frame = document.getElementById('thp');
       var splash = document.getElementById('splash');
       var shown = false;
+      var DOMAINS = [
+        'https://the-fplace.vercel.app',
+        'https://the-hustle-place.vercel.app'
+      ];
+
+      var activeIdx = 0;
+      try {
+        var saved = window.localStorage.getItem('thp_domain_idx');
+        if (saved !== null && saved !== undefined) {
+          var parsed = parseInt(saved, 10);
+          if (!isNaN(parsed) && parsed >= 0 && parsed < DOMAINS.length) {
+            activeIdx = parsed;
+          }
+        }
+      } catch (e) {}
+
       function ready() {
         if (shown) return;
         shown = true;
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        try {
+          window.localStorage.setItem('thp_domain_idx', String(activeIdx));
+        } catch (e) {}
         if (frame) frame.className = 'is-ready';
         if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
         try { frame.focus(); } catch (e) {}
       }
+
       window.addEventListener('message', function (event) {
         if (event.data && event.data.type === 'thp-ready') ready();
       });
+
+      var fallbackTimer = null;
+
+      function loadCurrentDomain() {
+        if (!frame) return;
+        var currentHost = DOMAINS[activeIdx] || DOMAINS[0];
+        frame.src = currentHost + '/living?boot=' + new Date().getTime();
+
+        // Se entro 7 secondi il dominio non risponde (quota Vercel esaurita o errore 503),
+        // attiva il fallback sull'altro host
+        fallbackTimer = setTimeout(function () {
+          if (!shown) {
+            activeIdx = (activeIdx === 0) ? 1 : 0;
+            try {
+              window.localStorage.setItem('thp_domain_idx', String(activeIdx));
+            } catch (e) {}
+            var altHost = DOMAINS[activeIdx];
+            frame.src = altHost + '/living?boot=' + new Date().getTime();
+          }
+        }, 7000);
+      }
+
       if (frame) {
-        frame.src = 'https://the-fplace.vercel.app/living?boot=' + new Date().getTime();
+        loadCurrentDomain();
         document.addEventListener('keydown', function () {
           try { frame.focus(); } catch (e) {}
         });
       }
-      setTimeout(ready, 12000);
+
+      // Safeguard definitivo per nascondere comunque lo splash dopo 14 secondi
+      setTimeout(ready, 14000);
     </script>
   </body>
 </html>

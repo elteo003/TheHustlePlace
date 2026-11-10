@@ -41,7 +41,7 @@ cd tv/webos
 node generate-icons.mjs
 ```
 
-In `index.html` l’URL di produzione è `https://the-fplace.vercel.app/living`. Per testare in LAN, cambialo con l’IP del PC.
+In `index.html` l’app include il failover automatico a doppio dominio tra `https://the-fplace.vercel.app` e `https://the-hustle-place.vercel.app` (con switch al 75% dello usage Vercel e fallback su timeout a 7s). Per testare in LAN, aggiungi l'IP del PC nell'array `DOMAINS`.
 
 Poi, TV in Developer Mode (stessa rete):
 

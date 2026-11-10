@@ -93,3 +93,7 @@ jspm_packages/
 # TernJS port file
 .tern-port
 .env*
+
+# Scratch and temporary artifacts
+scratch/
+.archify/
