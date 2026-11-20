@@ -294,7 +294,7 @@ export function ContentHoverCard({
                                 {(upcomingInfo || year || rating) && (
                                     <p className="mt-1 flex items-center gap-2 text-sm text-white/60">
                                         {isUpcomingSection && upcomingInfo ? (
-                                            <span className="text-amber-400 font-medium">
+                                            <span className="text-white font-medium">
                                                 In arrivo il {upcomingInfo.day} {upcomingInfo.monthName}{!upcomingInfo.isCurrentYear ? ` ${upcomingInfo.year}` : ''}
                                             </span>
                                         ) : (
@@ -394,7 +394,7 @@ export function ContentHoverCard({
                                         : 'translate-y-2 scale-95'
                                 }`}
                             >
-                                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-amber-400 uppercase">
+                                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-white uppercase">
                                     In arrivo il
                                 </span>
                                 <span className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-none drop-shadow-md">
