@@ -46,3 +46,37 @@ export function getContentPosterUrl(path?: string | null, size: 'w500' | 'w780' 
     }
     return getTMDBImageUrl(path, size)
 }
+
+export interface UpcomingReleaseInfo {
+    day: number
+    monthName: string
+    year: number
+    isCurrentYear: boolean
+}
+
+export function formatUpcomingReleaseDate(
+    rawDate?: string | null,
+    currentYear: number = new Date().getFullYear()
+): UpcomingReleaseInfo | null {
+    if (!rawDate) return null
+    const cleanDate = rawDate.slice(0, 10)
+    const parts = cleanDate.split('-')
+    if (parts.length < 3) return null
+    const year = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10)
+    const day = parseInt(parts[2], 10)
+    if (isNaN(year) || isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) return null
+
+    const months = [
+        'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ]
+    const monthName = months[month - 1] || ''
+
+    return {
+        day,
+        monthName,
+        year,
+        isCurrentYear: year === currentYear,
+    }
+}

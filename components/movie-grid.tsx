@@ -8,19 +8,30 @@ import { CustomScrollbar } from '@/components/custom-scrollbar'
 import { TrailerDock } from '@/components/trailer-dock'
 import { useRowPeek } from '@/contexts/trailer-peek-context'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
+import { CatalogSection } from '@/lib/catalog-types'
 
 interface MovieGridProps {
     movies: ContentItem[]
     type?: ContentType
+    section?: CatalogSection
+    isUpcomingSection?: boolean
     onPlay?: (id: number, type?: ContentType) => void
     onDetails?: (id: number, type?: ContentType) => void
 }
 
-export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }: MovieGridProps) {
+export default function MovieGrid({
+    movies,
+    type = 'movie',
+    section,
+    isUpcomingSection,
+    onPlay,
+    onDetails,
+}: MovieGridProps) {
     const isTouch = useIsCoarsePointer()
     const [expandedId, setExpandedId] = useState<number | null>(null)
     const { peekId, isPosterHidden, onPeek, onClose, onExited } = useRowPeek()
     const peekItem = movies.find((movie) => getContentId(movie) === peekId) ?? null
+    const isUpcoming = isUpcomingSection ?? (section === 'coming-to-cinema' || section === 'upcoming')
 
     return (
         <div className="w-full">
@@ -38,6 +49,7 @@ export default function MovieGrid({ movies, type = 'movie', onPlay, onDetails }:
                                 type={itemType}
                                 variant="carousel"
                                 isExpanded={!isTouch && expandedId === id}
+                                isUpcomingSection={isUpcoming}
                                 onExpand={() => setExpandedId(id)}
                                 onCollapse={() => setExpandedId(null)}
                                 onPeek={() => onPeek(id)}

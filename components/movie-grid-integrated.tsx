@@ -179,6 +179,12 @@ export default function MovieGridIntegrated({
     }
 
     return (
-        <MovieGrid movies={movies} type={type} onPlay={onPlay} onDetails={onDetails} />
+        <MovieGrid
+            movies={movies}
+            type={type}
+            section={section}
+            onPlay={onPlay}
+            onDetails={onDetails}
+        />
     )
 }

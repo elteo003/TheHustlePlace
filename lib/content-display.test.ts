@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getContentTitle, resolveContentType } from '@/lib/content-display'
+import { getContentTitle, resolveContentType, formatUpcomingReleaseDate } from '@/lib/content-display'
 import { Movie, TVShow } from '@/types'
 
 describe('content-display', () => {
@@ -45,5 +45,38 @@ describe('content-display', () => {
         expect(resolveContentType({ media_type: 'tv' }, 'movie')).toBe('tv')
         expect(resolveContentType({ first_air_date: '2023-04-20', name: 'The Diplomat' }, 'movie')).toBe('tv')
         expect(resolveContentType({}, 'movie')).toBe('movie')
+    })
+
+    it('formatta correttamente le date di uscita per sezioni in arrivo', () => {
+        const thisYear = formatUpcomingReleaseDate('2026-11-28', 2026)
+        expect(thisYear).toEqual({
+            day: 28,
+            monthName: 'Novembre',
+            year: 2026,
+            isCurrentYear: true,
+        })
+
+        const nextYear = formatUpcomingReleaseDate('2027-05-04', 2026)
+        expect(nextYear).toEqual({
+            day: 4,
+            monthName: 'Maggio',
+            year: 2027,
+            isCurrentYear: false,
+        })
+
+        const withTimestamp = formatUpcomingReleaseDate('2026-08-15T00:00:00.000Z', 2026)
+        expect(withTimestamp).toEqual({
+            day: 15,
+            monthName: 'Agosto',
+            year: 2026,
+            isCurrentYear: true,
+        })
+
+        expect(formatUpcomingReleaseDate(null)).toBeNull()
+        expect(formatUpcomingReleaseDate(undefined)).toBeNull()
+        expect(formatUpcomingReleaseDate('invalid-date')).toBeNull()
+        expect(formatUpcomingReleaseDate('2026-13-01')).toBeNull()
+        expect(formatUpcomingReleaseDate('2026-00-10')).toBeNull()
+        expect(formatUpcomingReleaseDate('2026-05-35')).toBeNull()
     })
 })

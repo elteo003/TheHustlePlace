@@ -7,7 +7,7 @@ import { PlayMark } from '@/components/ui/play-mark'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ContentType, getContentId } from '@/lib/content-navigation'
-import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType } from '@/lib/content-display'
+import { ContentItem, getContentPosterUrl, getContentTitle, resolveContentType, formatUpcomingReleaseDate } from '@/lib/content-display'
 import { buildTrailerEmbedUrl, prefetchTrailerKey, useTrailerPreview } from '@/hooks/useTrailerPreview'
 import { useYouTubeCurtain, YOUTUBE_DISSOLVE_EASE, YOUTUBE_DISSOLVE_MS } from '@/hooks/useYouTubeCurtain'
 import { postYouTubeCommand } from '@/lib/youtube-command'
@@ -20,6 +20,9 @@ import { Movie, TVShow } from '@/types'
 
 const EXPAND_DELAY_MS = 1000
 const CLOSE_ARM_MS = 400
+const UPCOMING_TEXT_ENTER_MS = 300
+const UPCOMING_TRAILER_DELAY_MS = 1500
+const UPCOMING_TOTAL_DELAY_MS = UPCOMING_TEXT_ENTER_MS + UPCOMING_TRAILER_DELAY_MS
 
 interface ContentHoverCardProps {
     item: ContentItem
@@ -33,6 +36,7 @@ interface ContentHoverCardProps {
     onDetails?: (id: number, type?: ContentType) => void
     variant?: 'carousel' | 'grid' | 'top10'
     watchable?: boolean
+    isUpcomingSection?: boolean
 }
 
 function getYear(item: ContentItem, type: ContentType): number | null {
@@ -54,12 +58,14 @@ export function ContentHoverCard({
     onDetails,
     variant = 'carousel',
     watchable = true,
+    isUpcomingSection = false,
 }: ContentHoverCardProps) {
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const expandedRef = useRef(false)
     const closeArmed = useRef(false)
+    const [isHovered, setIsHovered] = useState(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
     const [trailerMuted, setTrailerMuted] = useState(true)
@@ -72,6 +78,9 @@ export function ContentHoverCard({
     const rating = item.vote_average > 0 ? item.vote_average.toFixed(1) : null
     const previewImage = getContentPosterUrl(item.backdrop_path || item.poster_path, 'original')
     const canWatch = watchable && Boolean(onPlay)
+
+    const rawReleaseDate = itemType === 'tv' ? (item as TVShow).first_air_date : (item as Movie).release_date
+    const upcomingInfo = isUpcomingSection ? formatUpcomingReleaseDate(rawReleaseDate) : null
 
     const { trailerKey, isLoading, scheduleTrailerLoad, resetPreview } = useTrailerPreview(
         itemId,
@@ -102,6 +111,7 @@ export function ContentHoverCard({
             expandTimer.current = null
         }
         closeArmed.current = false
+        setIsHovered(false)
         onCollapse()
     }
 
@@ -145,6 +155,7 @@ export function ContentHoverCard({
 
     const handleMouseLeave = () => {
         if (isTouch) return
+        setIsHovered(false)
         if (expandTimer.current) {
             clearTimeout(expandTimer.current)
             expandTimer.current = null
@@ -158,11 +169,13 @@ export function ContentHoverCard({
 
     const handleMouseEnter = () => {
         if (isTouch) return
+        setIsHovered(true)
         if (expandTimer.current) clearTimeout(expandTimer.current)
+        const delay = isUpcomingSection && upcomingInfo ? UPCOMING_TOTAL_DELAY_MS : EXPAND_DELAY_MS
         expandTimer.current = setTimeout(() => {
             onExpand()
             scheduleTrailerLoad()
-        }, EXPAND_DELAY_MS)
+        }, delay)
     }
 
     const handleTap = () => {
@@ -278,10 +291,16 @@ export function ContentHoverCard({
                                 <h3 className="text-white font-semibold text-xl leading-snug line-clamp-1">
                                     {title}
                                 </h3>
-                                {(year || rating) && (
+                                {(upcomingInfo || year || rating) && (
                                     <p className="mt-1 flex items-center gap-2 text-sm text-white/60">
-                                        {year && <span>{year}</span>}
-                                        {year && rating && <span className="text-white/25">·</span>}
+                                        {isUpcomingSection && upcomingInfo ? (
+                                            <span className="text-amber-400 font-medium">
+                                                In arrivo il {upcomingInfo.day} {upcomingInfo.monthName}{!upcomingInfo.isCurrentYear ? ` ${upcomingInfo.year}` : ''}
+                                            </span>
+                                        ) : (
+                                            year && <span>{year}</span>
+                                        )}
+                                        {((isUpcomingSection && upcomingInfo) || year) && rating && <span className="text-white/25">·</span>}
                                         {rating && (
                                             <span className="inline-flex items-center gap-1.5">
                                                 <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
@@ -359,6 +378,39 @@ export function ContentHoverCard({
                             sizes="(max-width: 768px) 40vw, (max-width: 1536px) 200px, 280px"
                         />
                     </PosterTransition>
+
+                    {isUpcomingSection && upcomingInfo && (
+                        <div
+                            className={`pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center p-3 text-center transition-all duration-300 ease-out select-none ${
+                                isHovered && !isExpanded
+                                    ? 'opacity-100 bg-black/75 backdrop-blur-[2px]'
+                                    : 'opacity-0 bg-black/0'
+                            }`}
+                        >
+                            <div
+                                className={`flex flex-col items-center transition-transform duration-300 ease-out ${
+                                    isHovered && !isExpanded
+                                        ? 'translate-y-0 scale-100'
+                                        : 'translate-y-2 scale-95'
+                                }`}
+                            >
+                                <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-amber-400 uppercase">
+                                    In arrivo il
+                                </span>
+                                <span className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-none drop-shadow-md">
+                                    {upcomingInfo.day}
+                                </span>
+                                <span className="mt-1 text-xs sm:text-sm font-bold tracking-wider uppercase text-white/90">
+                                    {upcomingInfo.monthName}
+                                </span>
+                                {!upcomingInfo.isCurrentYear && (
+                                    <span className="mt-1 text-[11px] font-semibold tracking-widest text-white/60">
+                                        {upcomingInfo.year}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {!isTouch && canWatch && (
                         <button
