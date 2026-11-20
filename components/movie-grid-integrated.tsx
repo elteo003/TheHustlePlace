@@ -62,16 +62,20 @@ function normalizeResults(
             const payload = data as { series?: Top10Content[]; movies?: Top10Content[] }
             results = section === 'platform-top10-tv' ? payload.series || [] : payload.movies || []
         }
-        return (results as Top10Content[]).map((item) => ({
-            ...item,
-            title: item.title || item.name,
-            name: item.name || item.title,
-            contentType: item.type ?? type,
-            tmdb_id: item.tmdb_id ?? item.id,
-        })) as Movie[]
+        return (results as Top10Content[])
+            .filter((item) => Boolean(item.poster_path) && item.poster_path !== '/placeholder-movie.svg')
+            .map((item) => ({
+                ...item,
+                title: item.title || item.name,
+                name: item.name || item.title,
+                contentType: item.type ?? type,
+                tmdb_id: item.tmdb_id ?? item.id,
+            })) as Movie[]
     }
 
-    return results as (Movie | TVShow)[]
+    return (results as (Movie | TVShow)[]).filter(
+        (item) => Boolean(item.poster_path) && item.poster_path !== '/placeholder-movie.svg'
+    )
 }
 
 export default function MovieGridIntegrated({

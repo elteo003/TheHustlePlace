@@ -47,21 +47,31 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
     useEffect(() => {
         let rafId: number | null = null
+        let heroHeight = heroRef.current?.offsetHeight ?? 600
+
+        const updateHeroHeight = () => {
+            if (heroRef.current) {
+                heroHeight = heroRef.current.offsetHeight
+            }
+        }
+
         const sync = () => {
             if (rafId !== null) return
             rafId = requestAnimationFrame(() => {
                 rafId = null
-                const node = heroRef.current
-                if (!node) return
-                const scrolled = window.scrollY > 20
-                const isPast = node.getBoundingClientRect().bottom <= 72
+                const scrollY = window.scrollY || document.documentElement.scrollTop || 0
+                const scrolled = scrollY > 20
+                const isPast = scrollY >= (heroHeight - 72)
                 setIsScrolled((prev) => (prev === scrolled ? prev : scrolled))
                 setPastHero((prev) => (prev === isPast ? prev : isPast))
             })
         }
         sync()
         window.addEventListener('scroll', sync, { passive: true })
-        window.addEventListener('resize', sync, { passive: true })
+        window.addEventListener('resize', () => {
+            updateHeroHeight()
+            sync()
+        }, { passive: true })
         return () => {
             if (rafId !== null) cancelAnimationFrame(rafId)
             window.removeEventListener('scroll', sync)

@@ -1566,7 +1566,7 @@ export class CatalogService {
 
     async getMovies(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<Movie>> {
         try {
-            const cacheKey = this.generateCacheKey('movies_v3', filters)
+            const cacheKey = this.generateCacheKey('movies_v4', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<Movie>>(cacheKey)
@@ -1598,6 +1598,10 @@ export class CatalogService {
                         break
                     case 'release_date':
                         params.sort_by = `primary_release_date.${order}`
+                        if (order === 'desc' && !filters.year) {
+                            params['primary_release_date.lte'] = new Date().toISOString().slice(0, 10)
+                            params['vote_count.gte'] = 2
+                        }
                         break
                     case 'title':
                         params.sort_by = `original_title.${order}`
@@ -1612,7 +1616,9 @@ export class CatalogService {
             const response = await tmdbWrapperService.discoverMovies(params)
 
             if (response && Array.isArray(response.results) && response.results.length > 0) {
-                const movies = response.results.map((tmdbMovie) => this.convertTMDBMovieToMovie(tmdbMovie))
+                const movies = response.results
+                    .filter((tmdbMovie) => Boolean(tmdbMovie.poster_path))
+                    .map((tmdbMovie) => this.convertTMDBMovieToMovie(tmdbMovie))
                 const result: PaginatedResponse<Movie> = {
                     page: response.page || filters.page || 1,
                     results: movies,
@@ -1647,7 +1653,7 @@ export class CatalogService {
 
     async getTVShows(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<TVShow>> {
         try {
-            const cacheKey = this.generateCacheKey('tv_v3', filters)
+            const cacheKey = this.generateCacheKey('tv_v4', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<TVShow>>(cacheKey)
@@ -1679,6 +1685,10 @@ export class CatalogService {
                         break
                     case 'release_date':
                         params.sort_by = `first_air_date.${order}`
+                        if (order === 'desc' && !filters.year) {
+                            params['first_air_date.lte'] = new Date().toISOString().slice(0, 10)
+                            params['vote_count.gte'] = 2
+                        }
                         break
                     case 'title':
                         params.sort_by = `name.${order}`
@@ -1693,7 +1703,9 @@ export class CatalogService {
             const response = await tmdbWrapperService.discoverTVShows(params)
 
             if (response && Array.isArray(response.results) && response.results.length > 0) {
-                const tvShows = response.results.map((tmdbTVShow: any) => this.convertTMDBTVShowToTVShow(tmdbTVShow))
+                const tvShows = response.results
+                    .filter((tmdbTVShow: any) => Boolean(tmdbTVShow.poster_path))
+                    .map((tmdbTVShow: any) => this.convertTMDBTVShowToTVShow(tmdbTVShow))
                 const result: PaginatedResponse<TVShow> = {
                     page: response.page || filters.page || 1,
                     results: tvShows,

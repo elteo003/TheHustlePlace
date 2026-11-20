@@ -38,10 +38,21 @@ vi.mock('@/services/catalog.service', () => ({
         getComingToCinema() {
             return []
         }
+        getLatestTVShows() {
+            return {
+                page: 1,
+                total_pages: 1,
+                total_results: 2,
+                results: [
+                    { id: 1, name: 'Con poster', poster_path: '/p1.jpg' },
+                    { id: 2, name: 'Senza poster', poster_path: null },
+                ],
+            }
+        }
     },
 }))
 
-import { fetchServerWatchHistory } from './catalog'
+import { fetchServerWatchHistory, fetchCatalogSection } from './catalog'
 import { DEVICE_COOKIE, DEVICE_HEADER } from '@/lib/supabase/device'
 
 const DEVICE = '11111111-1111-4111-8111-111111111111'
@@ -75,5 +86,17 @@ describe('fetchServerWatchHistory', () => {
 
         await fetchServerWatchHistory()
         expect(listWatchHistory).toHaveBeenCalledWith(OTHER)
+    })
+})
+
+describe('fetchCatalogSection', () => {
+    it('filtra rigorosamente gli elementi privi di poster_path', async () => {
+        const items = await fetchCatalogSection('tv', 'recent', 10)
+        expect(items).toHaveLength(1)
+        expect(items[0]).toMatchObject({
+            id: 1,
+            name: 'Con poster',
+            poster_path: '/p1.jpg',
+        })
     })
 })

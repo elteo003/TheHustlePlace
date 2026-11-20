@@ -200,7 +200,7 @@ export async function fetchCatalogSection(
             break
     }
 
-    return results.slice(0, limit)
+    return results.filter((item) => Boolean(item.poster_path)).slice(0, limit)
 }
 
 export async function fetchCatalogMoviesPage(page = 1) {

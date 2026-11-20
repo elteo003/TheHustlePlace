@@ -47,6 +47,7 @@ export function MovieDetailView({ movie, onPlay }: MovieDetailViewProps) {
                         <PosterTransition
                             type="movie"
                             id={movie.tmdb_id ?? movie.id}
+                            alwaysActive
                             className="relative flex-shrink-0 w-40 sm:w-48 aspect-[2/3]"
                         >
                             <Image

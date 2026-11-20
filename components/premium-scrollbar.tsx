@@ -82,35 +82,21 @@ export function PremiumScrollbar() {
     useEffect(() => {
         updateMetrics()
 
-        let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
-
         const onScroll = () => {
             scheduleThumbPosition()
             show()
-            if (typeof document !== 'undefined') {
-                if (!document.body.classList.contains('is-scrolling')) {
-                    document.body.classList.add('is-scrolling')
-                }
-                if (scrollEndTimer) clearTimeout(scrollEndTimer)
-                scrollEndTimer = setTimeout(() => {
-                    document.body.classList.remove('is-scrolling')
-                }, 120)
-            }
         }
 
         window.addEventListener('scroll', onScroll, { passive: true })
         window.addEventListener('touchmove', onScroll, { passive: true })
         window.addEventListener('resize', updateMetrics, { passive: true })
 
-        const ro = new ResizeObserver(updateMetrics)
+        const ro = new ResizeObserver(() => {
+            requestAnimationFrame(updateMetrics)
+        })
         ro.observe(document.documentElement)
-        if (document.body) ro.observe(document.body)
 
         return () => {
-            if (scrollEndTimer) clearTimeout(scrollEndTimer)
-            if (typeof document !== 'undefined') {
-                document.body.classList.remove('is-scrolling')
-            }
             window.removeEventListener('scroll', onScroll)
             window.removeEventListener('touchmove', onScroll)
             window.removeEventListener('resize', updateMetrics)

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useScrollInputDevice } from '@/hooks/useScrollInputDevice'
 
 interface CustomScrollbarProps {
     children: React.ReactNode
@@ -26,7 +25,6 @@ export function CustomScrollbar({
     const rafId = useRef<number | null>(null)
     const [canScrollLeft, setCanScrollLeft] = useState(false)
     const [canScrollRight, setCanScrollRight] = useState(false)
-    const { hasMouseWheel } = useScrollInputDevice()
 
     const updateBounds = useCallback(() => {
         if (rafId.current !== null) return
@@ -80,14 +78,12 @@ export function CustomScrollbar({
         })
     }
 
-    const showArrows = hasMouseWheel
-
     return (
         <div className={`relative group/shelf ${className}`}>
             {/* Freccia sinistra */}
-            {showArrows && canScrollLeft && (
+            {canScrollLeft && (
                 <div
-                    className="absolute left-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 flex w-12 sm:w-16 md:w-20 items-center justify-start pl-1 sm:pl-2 bg-gradient-to-r from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    className="hidden md:flex absolute left-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 w-12 sm:w-16 md:w-20 items-center justify-start pl-1 sm:pl-2 bg-gradient-to-r from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
                     aria-hidden={!canScrollLeft}
                 >
                     <button
@@ -117,9 +113,9 @@ export function CustomScrollbar({
             </div>
 
             {/* Freccia destra */}
-            {showArrows && canScrollRight && (
+            {canScrollRight && (
                 <div
-                    className="absolute right-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 flex w-12 sm:w-16 md:w-20 items-center justify-end pr-1 sm:pr-2 bg-gradient-to-l from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    className="hidden md:flex absolute right-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 w-12 sm:w-16 md:w-20 items-center justify-end pr-1 sm:pr-2 bg-gradient-to-l from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
                     aria-hidden={!canScrollRight}
                 >
                     <button

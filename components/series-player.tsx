@@ -86,6 +86,7 @@ export function SeriesPlayer({
                             <PosterTransition
                                 type="tv"
                                 id={tvShow.tmdb_id ?? tvShow.id}
+                                alwaysActive
                                 className="relative flex-shrink-0 w-40 sm:w-48 aspect-[2/3]"
                             >
                                 <Image

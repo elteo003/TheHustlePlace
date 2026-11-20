@@ -12,21 +12,37 @@ interface PosterTransitionProps {
     children: ReactNode
     className?: string
     style?: CSSProperties
+    alwaysActive?: boolean
 }
 
-/** Applica view-transition-name al poster per morph verso /movie o /series */
-export function PosterTransition({ type, id, children, className, style }: PosterTransitionProps) {
+/** Applica view-transition-name al poster in modo ottimizzato */
+export function PosterTransition({
+    type,
+    id,
+    children,
+    className,
+    style,
+    alwaysActive = false,
+}: PosterTransitionProps) {
     const reduceMotion = useReducedMotion()
 
     const vtStyle: CSSProperties = reduceMotion
         ? style ?? {}
-        : {
-              ...style,
-              viewTransitionName: getPosterTransitionName(type, id),
-          }
+        : alwaysActive
+          ? {
+                ...style,
+                viewTransitionName: getPosterTransitionName(type, id),
+            }
+          : {
+                ...style,
+                ['--vt-poster-name' as string]: getPosterTransitionName(type, id),
+            }
 
     return (
-        <div className={cn(className)} style={vtStyle}>
+        <div
+            className={cn(!alwaysActive && 'poster-vt-target', className)}
+            style={vtStyle}
+        >
             {children}
         </div>
     )
