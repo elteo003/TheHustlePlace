@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState, startTransition } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@/hooks/useMediaQuery'
 import { Check, ChevronDown, Globe } from 'lucide-react'
 import { LanguageCode, useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
