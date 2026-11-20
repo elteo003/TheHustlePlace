@@ -162,16 +162,7 @@ export function UpcomingTrailersSection({ movies, currentMovieIndex, onMovieSele
                                     <h4 className="truncate text-xs font-semibold text-white">
                                         {title}
                                     </h4>
-                                    {isMovieHovered && (
-                                        <p className="mt-1 line-clamp-2 text-xs text-gray-300">
-                                            {movie.overview || 'Descrizione non disponibile'}
-                                        </p>
-                                    )}
                                 </div>
-
-                                {isMovieHovered && (
-                                    <div className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-white" />
-                                )}
                             </button>
                         )
                     })}

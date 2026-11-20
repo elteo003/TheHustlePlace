@@ -79,7 +79,7 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
     }
 
     return (
-        <div ref={containerRef} className={cn('relative inline-flex items-center', className)}>
+        <div ref={containerRef} className={cn('relative inline-flex items-center flex-shrink-0', className)}>
             <motion.button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
@@ -88,18 +88,18 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                 aria-expanded={isOpen}
                 aria-label={`Lingua attuale: ${currentOption.fullName}. Clicca per cambiare lingua.`}
                 className={cn(
-                    'group h-8 flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors duration-200 select-none outline-none',
+                    'group h-8 w-[74px] flex-shrink-0 inline-flex items-center justify-center gap-1 rounded-md px-1.5 text-[13px] font-medium transition-colors duration-200 select-none outline-none',
                     isOpen
                         ? 'bg-white/10 text-white'
                         : 'text-white/60 hover:bg-white/[0.08] hover:text-white'
                 )}
             >
-                <Globe className="h-3.5 w-3.5 text-white/50 group-hover:text-white/80 transition-colors" />
-                <span className="font-semibold tracking-wide">{currentOption.label}</span>
+                <Globe className="h-3.5 w-3.5 flex-shrink-0 text-white/50 group-hover:text-white/80 transition-colors" />
+                <span className="w-7 flex-shrink-0 text-center font-semibold tracking-wide">{currentOption.label}</span>
                 <motion.span
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ type: 'spring', stiffness: 450, damping: 28 }}
-                    className="inline-flex items-center justify-center"
+                    className="inline-flex items-center justify-center flex-shrink-0"
                 >
                     <ChevronDown className="h-3 w-3 text-white/40 group-hover:text-white/70" />
                 </motion.span>
@@ -114,10 +114,10 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                         exit={{ opacity: 0, scale: 0.94, y: -6 }}
                         transition={{ type: 'spring', stiffness: 500, damping: 32 }}
                         style={{ transformOrigin: 'top center' }}
-                        className="absolute right-0 top-full z-50 mt-1.5 min-w-[140px] overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-1 backdrop-blur-2xl shadow-2xl shadow-black/80"
+                        className="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-1 backdrop-blur-2xl shadow-2xl shadow-black/80"
                     >
                         <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
-                            Lingua audio/sub
+                            Lingua audio
                         </div>
                         <LayoutGroup id="lang-menu-hover">
                             <div className="flex flex-col gap-0.5">
