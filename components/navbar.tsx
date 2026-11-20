@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import { SearchBar } from '@/components/search-bar'
+import { LanguageSelector } from '@/components/language-selector'
 import { DeviceCodeButton } from '@/components/device-code-button'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { NavIndicatorLink, NAV_LINKS } from '@/components/ui/nav-indicator-link'
@@ -136,6 +137,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                 </div>
 
                 <div className="flex items-center gap-1 flex-shrink-0">
+                    <LanguageSelector />
                     <DeviceCodeButton />
                     <motion.button
                         type="button"
@@ -179,6 +181,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     >
                         <div className="px-4 py-4 space-y-4">
                             <SearchBar onFocusChange={setSearchFocused} />
+                            <LanguageSelector variant="drawer" />
                             <LayoutGroup id="mobile-nav">
                                 <div className="space-y-0.5">
                                     {NAV_LINKS.map(({ href, label }) => (

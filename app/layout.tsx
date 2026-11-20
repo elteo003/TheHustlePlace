@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { HLSConfigProvider } from '@/components/hls-config-provider'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 import { ConditionalLayout } from '@/components/conditional-layout'
 import { NavbarProvider } from '@/contexts/NavbarContext'
 import { PremiumScrollbar } from '@/components/premium-scrollbar'
@@ -52,15 +53,17 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning={true}>
         <HLSConfigProvider>
-          <NavbarProvider>
-            <div className="min-h-screen bg-black text-white">
-              <ConditionalLayout>
-                {children}
-              </ConditionalLayout>
-            </div>
-            <Toaster theme="dark" position="bottom-right" closeButton richColors />
-            <PremiumScrollbar />
-          </NavbarProvider>
+          <LanguageProvider>
+            <NavbarProvider>
+              <div className="min-h-screen bg-black text-white">
+                <ConditionalLayout>
+                  {children}
+                </ConditionalLayout>
+              </div>
+              <Toaster theme="dark" position="bottom-right" closeButton richColors />
+              <PremiumScrollbar />
+            </NavbarProvider>
+          </LanguageProvider>
         </HLSConfigProvider>
       </body>
     </html>

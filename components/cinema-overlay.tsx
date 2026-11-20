@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Maximize, Minimize2, Pause, Play, SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import { ArrowLeft, Check, Maximize, Minimize2, Pause, Play, SkipForward, Subtitles, Volume2, VolumeX } from 'lucide-react'
 import { useIsCoarsePointer } from '@/hooks/useMediaQuery'
 import {
     isPlayerFullscreen,
@@ -9,6 +10,7 @@ import {
     togglePlayerFullscreen,
 } from '@/lib/player-fullscreen'
 import { cn } from '@/lib/utils'
+import { SUPPORTED_LANGUAGES, findMatchingSubtitleIndex } from '@/contexts/LanguageContext'
 
 const INTRO_MS = 1800
 const CURSOR_HIDE_MS = 2000
@@ -139,6 +141,12 @@ function IconHit({
     )
 }
 
+export interface SubtitleTrackOption {
+    id: number
+    name: string
+    lang?: string
+}
+
 interface CinemaOverlayProps {
     videoRef: React.RefObject<HTMLVideoElement | null>
     stageRef: React.RefObject<HTMLElement | null>
@@ -149,6 +157,10 @@ interface CinemaOverlayProps {
     pinNext?: boolean
     chromePaused?: boolean
     resetKey: string
+    subtitleTracks?: SubtitleTrackOption[]
+    activeSubtitleTrack?: number
+    onSelectSubtitleTrack?: (trackId: number) => void
+    onTriggerFallback?: (targetLang: string, fallbackDesc: string) => void
 }
 
 export function CinemaOverlay({
@@ -161,6 +173,10 @@ export function CinemaOverlay({
     pinNext = false,
     chromePaused = false,
     resetKey,
+    subtitleTracks = [],
+    activeSubtitleTrack = -1,
+    onSelectSubtitleTrack,
+    onTriggerFallback,
 }: CinemaOverlayProps) {
     const isTouch = useIsCoarsePointer()
     const [intro, setIntro] = useState(true)
@@ -172,6 +188,10 @@ export function CinemaOverlay({
     const [muted, setMuted] = useState(false)
     const [fullscreen, setFullscreen] = useState(false)
     const [seekCue, setSeekCue] = useState<{ text: string; dir: 'back' | 'fwd' } | null>(null)
+    const [subtitleMenuOpen, setSubtitleMenuOpen] = useState(false)
+    const [hoveredSub, setHoveredSub] = useState<string | number | null>(null)
+    const [shakingSub, setShakingSub] = useState<string | null>(null)
+    const subMenuRef = useRef<HTMLDivElement | null>(null)
     const fillRef = useRef<HTMLSpanElement>(null)
     const timeRef = useRef<HTMLSpanElement>(null)
     const durationRef = useRef<HTMLSpanElement>(null)
@@ -181,6 +201,24 @@ export function CinemaOverlay({
     const cueTimerRef = useRef(0)
     const pendingSeekTimeRef = useRef<number | null>(null)
     const seekDebounceTimerRef = useRef<number>(0)
+
+    useEffect(() => {
+        if (!subtitleMenuOpen) return
+        const onPointerDown = (e: MouseEvent | TouchEvent) => {
+            if (subMenuRef.current && !subMenuRef.current.contains(e.target as Node)) {
+                setSubtitleMenuOpen(false)
+            }
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setSubtitleMenuOpen(false)
+        }
+        document.addEventListener('pointerdown', onPointerDown)
+        document.addEventListener('keydown', onKeyDown)
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown)
+            document.removeEventListener('keydown', onKeyDown)
+        }
+    }, [subtitleMenuOpen])
 
     const hideChrome = useCallback(() => {
         window.clearTimeout(hideTimerRef.current)
@@ -217,7 +255,7 @@ export function CinemaOverlay({
         hoverTop,
         hoverBottom,
         tapped,
-    })
+    }) || subtitleMenuOpen
     const nextShown = shouldShowNextButton({
         chromePaused,
         pinNext,
@@ -589,7 +627,222 @@ export function CinemaOverlay({
                                     <SkipTen dir="fwd" />
                                 </IconHit>
                             </div>
-                            <div className="flex items-center justify-end">
+                            <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                                <div ref={subMenuRef} className="relative">
+                                    <IconHit
+                                        label={activeSubtitleTrack !== -1 ? 'Sottotitoli attivi' : 'Sottotitoli'}
+                                        onClick={() => {
+                                            setSubtitleMenuOpen((prev) => !prev)
+                                            if (isTouch) revealChrome()
+                                        }}
+                                        className={cn(
+                                            'relative',
+                                            (subtitleMenuOpen || activeSubtitleTrack !== -1) && 'text-white'
+                                        )}
+                                    >
+                                        <Subtitles className="h-5 w-5" strokeWidth={1.75} />
+                                        {activeSubtitleTrack !== -1 && (
+                                            <span className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.9)]" />
+                                        )}
+                                    </IconHit>
+
+                                    <AnimatePresence>
+                                        {subtitleMenuOpen && (
+                                            <motion.div
+                                                key="subtitle-popover"
+                                                initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.94, y: 8 }}
+                                                transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                                                style={{ transformOrigin: 'bottom right' }}
+                                                className="absolute bottom-full right-0 mb-3 z-50 w-72 max-h-80 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950/95 p-1.5 backdrop-blur-2xl shadow-2xl shadow-black/90 text-white scrollbar-none"
+                                            >
+                                                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <Subtitles className="h-4 w-4 text-white/50" />
+                                                        <span className="text-[12px] font-semibold uppercase tracking-wider text-white/70">
+                                                            Sottotitoli
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[11px] font-medium text-white/40 truncate max-w-[120px]">
+                                                        {activeSubtitleTrack === -1
+                                                            ? 'Disattivati'
+                                                            : (subtitleTracks.find((t) => t.id === activeSubtitleTrack)?.name || 'Attivi')}
+                                                    </span>
+                                                </div>
+
+                                                <LayoutGroup id="sub-hover-group">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <motion.button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                onSelectSubtitleTrack?.(-1)
+                                                                setSubtitleMenuOpen(false)
+                                                            }}
+                                                            onMouseEnter={() => setHoveredSub('off')}
+                                                            onMouseLeave={() => setHoveredSub(null)}
+                                                            whileTap={{ scale: 0.97 }}
+                                                            className={cn(
+                                                                'relative flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] font-medium outline-none transition-colors duration-150',
+                                                                activeSubtitleTrack === -1 ? 'text-white' : 'text-white/60 hover:text-white'
+                                                            )}
+                                                        >
+                                                            {hoveredSub === 'off' && (
+                                                                <motion.span
+                                                                    layoutId="sub-hover-highlight"
+                                                                    className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                                                                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                                                                />
+                                                            )}
+                                                            <span className="relative z-10">Disattivati</span>
+                                                            {activeSubtitleTrack === -1 && (
+                                                                <motion.span
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: 1 }}
+                                                                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                                    className="relative z-10 text-white"
+                                                                >
+                                                                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                                                                </motion.span>
+                                                            )}
+                                                        </motion.button>
+
+                                                        <div className="my-1 border-t border-white/5" />
+                                                        <div className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                                                            Lingue principali
+                                                        </div>
+
+                                                        {SUPPORTED_LANGUAGES.map((opt) => {
+                                                            const matchingIdx = findMatchingSubtitleIndex(subtitleTracks, opt.code)
+                                                            const isAvailable = matchingIdx !== -1
+                                                            const isSelected = isAvailable && activeSubtitleTrack === matchingIdx
+                                                            const isShaking = shakingSub === opt.code
+
+                                                            return (
+                                                                <motion.button
+                                                                    key={opt.code}
+                                                                    type="button"
+                                                                    animate={isShaking ? { x: [0, -4, 4, -3, 3, 0] } : { x: 0 }}
+                                                                    transition={{ duration: 0.3 }}
+                                                                    onClick={() => {
+                                                                        if (isAvailable) {
+                                                                            onSelectSubtitleTrack?.(matchingIdx)
+                                                                            setSubtitleMenuOpen(false)
+                                                                        } else {
+                                                                            setShakingSub(opt.code)
+                                                                            setTimeout(() => setShakingSub(null), 400)
+                                                                            const fallbackDesc =
+                                                                                activeSubtitleTrack !== -1
+                                                                                    ? subtitleTracks.find((t) => t.id === activeSubtitleTrack)?.name || 'Lingua corrente'
+                                                                                    : 'Audio originale'
+                                                                            onTriggerFallback?.(opt.fullName, fallbackDesc)
+                                                                        }
+                                                                    }}
+                                                                    onMouseEnter={() => setHoveredSub(opt.code)}
+                                                                    onMouseLeave={() => setHoveredSub(null)}
+                                                                    whileTap={{ scale: 0.97 }}
+                                                                    className={cn(
+                                                                        'relative flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium outline-none transition-colors duration-150',
+                                                                        isSelected ? 'text-white' : 'text-white/60 hover:text-white',
+                                                                        !isAvailable && 'opacity-70'
+                                                                    )}
+                                                                >
+                                                                    {hoveredSub === opt.code && (
+                                                                        <motion.span
+                                                                            layoutId="sub-hover-highlight"
+                                                                            className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                                                                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                                                                        />
+                                                                    )}
+                                                                    <div className="relative z-10 flex items-center gap-2">
+                                                                        <span
+                                                                            className={cn(
+                                                                                'inline-block w-8 rounded px-1 text-center font-mono text-[11px] font-bold uppercase tracking-tight',
+                                                                                isSelected
+                                                                                    ? 'bg-white/20 text-white'
+                                                                                    : isAvailable
+                                                                                    ? 'bg-white/5 text-white/50'
+                                                                                    : 'bg-amber-500/10 text-amber-400/80'
+                                                                            )}
+                                                                        >
+                                                                            {opt.label}
+                                                                        </span>
+                                                                        <span className="truncate">{opt.fullName}</span>
+                                                                    </div>
+
+                                                                    <div className="relative z-10 flex items-center gap-1.5">
+                                                                        {!isAvailable ? (
+                                                                            <span className="text-[10px] uppercase font-semibold text-amber-400/80 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                                                                Fallback
+                                                                            </span>
+                                                                        ) : isSelected ? (
+                                                                            <motion.span
+                                                                                initial={{ scale: 0 }}
+                                                                                animate={{ scale: 1 }}
+                                                                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                                                className="text-white"
+                                                                            >
+                                                                                <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                                                                            </motion.span>
+                                                                        ) : null}
+                                                                    </div>
+                                                                </motion.button>
+                                                            )
+                                                        })}
+
+                                                        {/* Additional stream tracks if any */}
+                                                        {subtitleTracks
+                                                            .filter((t) => {
+                                                                return !SUPPORTED_LANGUAGES.some((opt) =>
+                                                                    findMatchingSubtitleIndex([t], opt.code) !== -1
+                                                                )
+                                                            })
+                                                            .map((t) => {
+                                                                const isSelected = activeSubtitleTrack === t.id
+                                                                return (
+                                                                    <motion.button
+                                                                        key={`extra-${t.id}`}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            onSelectSubtitleTrack?.(t.id)
+                                                                            setSubtitleMenuOpen(false)
+                                                                        }}
+                                                                        onMouseEnter={() => setHoveredSub(`extra-${t.id}`)}
+                                                                        onMouseLeave={() => setHoveredSub(null)}
+                                                                        whileTap={{ scale: 0.97 }}
+                                                                        className={cn(
+                                                                            'relative flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium outline-none transition-colors duration-150',
+                                                                            isSelected ? 'text-white' : 'text-white/60 hover:text-white'
+                                                                        )}
+                                                                    >
+                                                                        {hoveredSub === `extra-${t.id}` && (
+                                                                            <motion.span
+                                                                                layoutId="sub-hover-highlight"
+                                                                                className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                                                                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                                                                            />
+                                                                        )}
+                                                                        <span className="relative z-10 truncate">{t.name}</span>
+                                                                        {isSelected && (
+                                                                            <motion.span
+                                                                                initial={{ scale: 0 }}
+                                                                                animate={{ scale: 1 }}
+                                                                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                                                className="relative z-10 text-white"
+                                                                            >
+                                                                                <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                                                                            </motion.span>
+                                                                        )}
+                                                                    </motion.button>
+                                                                )
+                                                            })}
+                                                    </div>
+                                                </LayoutGroup>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
                                 <IconHit label={muted ? 'Audio' : 'Muto'} onClick={toggleMute}>
                                     {muted ? (
                                         <VolumeX className="h-5 w-5" strokeWidth={1.75} />

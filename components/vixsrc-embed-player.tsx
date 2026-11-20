@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Hls from 'hls.js'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Play } from 'lucide-react'
+import { AlertCircle, Play, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import { CinemaOverlay } from '@/components/cinema-overlay'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { usePlayerChrome } from '@/components/player-chrome-context'
 import { ContentType } from '@/lib/content-navigation'
 import { pickHighestHlsLevel } from '@/lib/hls-quality'
@@ -72,6 +74,40 @@ export function VixsrcEmbedPlayer({
     const [reloadKey, setReloadKey] = useState(0)
     const hardReloadsRef = useRef(0)
     const isSeekingRef = useRef(false)
+    const { language, currentOption, findMatchingSubtitleIndex, matchesLanguage } = useLanguage()
+    const [subtitleTracks, setSubtitleTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([])
+    const [activeSubtitleTrack, setActiveSubtitleTrack] = useState<number>(-1)
+    const [fallbackNotice, setFallbackNotice] = useState<{
+        requested: string
+        requestedLabel: string
+        fallback: string
+    } | null>(null)
+    const fallbackTimerRef = useRef<number>(0)
+
+    const triggerFallbackNotification = useCallback((requested: string, requestedLabel: string, fallback: string) => {
+        window.clearTimeout(fallbackTimerRef.current)
+        setFallbackNotice({ requested, requestedLabel, fallback })
+        fallbackTimerRef.current = window.setTimeout(() => {
+            setFallbackNotice(null)
+        }, 5500)
+    }, [])
+
+    const handleSelectSubtitleTrack = useCallback((trackId: number) => {
+        const hls = hlsRef.current
+        if (hls) {
+            hls.subtitleTrack = trackId
+            hls.subtitleDisplay = trackId !== -1
+            setActiveSubtitleTrack(trackId)
+        } else {
+            const video = videoRef.current
+            if (video && video.textTracks) {
+                for (let i = 0; i < video.textTracks.length; i++) {
+                    video.textTracks[i].mode = i === trackId ? 'showing' : 'disabled'
+                }
+                setActiveSubtitleTrack(trackId)
+            }
+        }
+    }, [])
 
     const emit = useCallback((event: VixsrcPlayerEvent['event'], video: HTMLVideoElement, videoId?: number) => {
         const playback: VixsrcPlayerEvent = {
@@ -327,6 +363,22 @@ export function VixsrcEmbedPlayer({
                     }
                     setupAudioOptimization(hls)
 
+                    hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_event, data) => {
+                        if (cancelled) return
+                        const raw = (data.subtitleTracks || hls.subtitleTracks || []) as Array<{ name?: string; lang?: string }>
+                        const tracks = raw.map((t, idx) => ({
+                            id: idx,
+                            name: t.name || `Traccia ${idx + 1}`,
+                            lang: t.lang || '',
+                        }))
+                        setSubtitleTracks(tracks)
+                    })
+
+                    hls.on(Hls.Events.SUBTITLE_TRACK_SWITCH, (_event, data) => {
+                        if (cancelled) return
+                        setActiveSubtitleTrack(data.id)
+                    })
+
                     hls.on(Hls.Events.FRAG_LOADED, () => {
                         recoveries = 0
                     })
@@ -408,6 +460,29 @@ export function VixsrcEmbedPlayer({
         hardReloadsRef.current = 0
     }, [episode, season, startAt, tmdbId, type])
 
+    useEffect(() => {
+        const hls = hlsRef.current
+        if (!hls || subtitleTracks.length === 0) return
+
+        const matchIdx = findMatchingSubtitleIndex(subtitleTracks, language)
+        if (matchIdx !== -1) {
+            hls.subtitleTrack = matchIdx
+            hls.subtitleDisplay = true
+            setActiveSubtitleTrack(matchIdx)
+            setFallbackNotice(null)
+        } else {
+            const fallbackIdx = subtitleTracks.findIndex((t) => matchesLanguage(t.lang || t.name, 'en')) !== -1
+                ? subtitleTracks.findIndex((t) => matchesLanguage(t.lang || t.name, 'en'))
+                : subtitleTracks.findIndex((t) => matchesLanguage(t.lang || t.name, 'it')) !== -1
+                ? subtitleTracks.findIndex((t) => matchesLanguage(t.lang || t.name, 'it'))
+                : 0
+
+            const fallbackTrack = subtitleTracks[fallbackIdx]
+            const fallbackName = fallbackTrack ? fallbackTrack.name : 'Audio originale (sottotitoli disattivati)'
+            triggerFallbackNotification(currentOption.fullName, currentOption.label, fallbackName)
+        }
+    }, [language, subtitleTracks, currentOption, findMatchingSubtitleIndex, matchesLanguage, triggerFallbackNotification])
+
     const overlayBack = shell?.onBack ?? onBack
     const overlayTitle = shell?.title ?? title
 
@@ -474,6 +549,38 @@ export function VixsrcEmbedPlayer({
                     else video.pause()
                 }}
             />
+            <AnimatePresence>
+                {fallbackNotice && (
+                    <motion.div
+                        key="subtitle-fallback-banner"
+                        initial={{ opacity: 0, y: -24, scale: 0.94 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.94 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                        className="pointer-events-auto absolute top-5 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 flex max-w-md items-center gap-3 rounded-2xl border border-amber-500/25 bg-zinc-950/90 px-4 py-2.5 backdrop-blur-2xl shadow-2xl shadow-black/90"
+                    >
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+                            <AlertCircle className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1 text-left text-xs leading-snug">
+                            <p className="font-semibold text-white">
+                                Sottotitoli in {fallbackNotice.requested} non disponibili
+                            </p>
+                            <p className="text-white/60 truncate">
+                                Fallback attivo: <span className="text-amber-300/90 font-medium">{fallbackNotice.fallback}</span>
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setFallbackNotice(null)}
+                            aria-label="Chiudi avviso"
+                            className="flex-shrink-0 text-white/40 hover:text-white p-1 rounded-md transition-colors"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {!nativeControls && !error && (
                 <CinemaOverlay
                     videoRef={videoRef}
@@ -485,6 +592,12 @@ export function VixsrcEmbedPlayer({
                     pinNext={shell?.pinNext}
                     chromePaused={shell?.chromePaused}
                     resetKey={`${tmdbId}-${season ?? 0}-${episode ?? 0}-${reloadKey}`}
+                    subtitleTracks={subtitleTracks}
+                    activeSubtitleTrack={activeSubtitleTrack}
+                    onSelectSubtitleTrack={handleSelectSubtitleTrack}
+                    onTriggerFallback={(requested, fallback) =>
+                        triggerFallbackNotification(requested, requested.slice(0, 3).toUpperCase(), fallback)
+                    }
                 />
             )}
         </div>
