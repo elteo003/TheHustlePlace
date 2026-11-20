@@ -19,7 +19,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Movie, TVShow } from '@/types'
 
 const EXPAND_DELAY_MS = 1000
-const CLOSE_ARM_MS = 400
+const CLOSE_ARM_MS = 500
 const UPCOMING_TEXT_ENTER_MS = 300
 const UPCOMING_TRAILER_DELAY_MS = 1500
 const UPCOMING_TOTAL_DELAY_MS = UPCOMING_TEXT_ENTER_MS + UPCOMING_TRAILER_DELAY_MS
@@ -63,6 +63,12 @@ export function ContentHoverCard({
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
     const cardRef = useRef<HTMLDivElement>(null)
+    const originRectRef = useRef<{
+        x: number
+        y: number
+        width: number
+        height: number
+    } | null>(null)
     const [originRect, setOriginRect] = useState<{
         x: number
         y: number
@@ -177,12 +183,14 @@ export function ContentHoverCard({
     const captureOriginRect = () => {
         if (cardRef.current) {
             const rect = cardRef.current.getBoundingClientRect()
-            setOriginRect({
+            const data = {
                 x: rect.left,
                 y: rect.top,
                 width: rect.width,
                 height: rect.height,
-            })
+            }
+            originRectRef.current = data
+            setOriginRect(data)
         }
     }
 
@@ -219,7 +227,8 @@ export function ContentHoverCard({
     }
 
     const getMorphParams = () => {
-        if (!originRect || typeof window === 'undefined') {
+        const rect = originRectRef.current || originRect
+        if (!rect || typeof window === 'undefined') {
             return { deltaX: 0, deltaY: 0, scale: 0.96 }
         }
         const vw = window.innerWidth
@@ -227,11 +236,11 @@ export function ContentHoverCard({
         const maxWFromVw = vw * 0.96
         const maxWFromVh = (vh - 64) * (16 / 9)
         const targetWidth = Math.min(maxWFromVw, maxWFromVh)
-        const posterCenterX = originRect.x + originRect.width / 2
-        const posterCenterY = originRect.y + originRect.height / 2
+        const posterCenterX = rect.x + rect.width / 2
+        const posterCenterY = rect.y + rect.height / 2
         const deltaX = Math.round(posterCenterX - vw / 2)
         const deltaY = Math.round(posterCenterY - vh / 2)
-        const scale = targetWidth > 0 ? Math.max(0.08, originRect.width / targetWidth) : 0.96
+        const scale = targetWidth > 0 ? Math.max(0.08, rect.width / targetWidth) : 0.96
         return { deltaX, deltaY, scale }
     }
 
@@ -240,19 +249,8 @@ export function ContentHoverCard({
     const cardTransition = reduceMotion
         ? { duration: 0 }
         : {
-              x: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
-              y: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
-              scale: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
-              opacity: { duration: 0.22, ease: 'easeOut' },
-          }
-
-    const cardExit = reduceMotion
-        ? { duration: 0 }
-        : {
-              x: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
-              y: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
-              scale: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
-              opacity: { duration: 0.22, ease: 'easeIn' },
+              duration: 0.46,
+              ease: [0.16, 1, 0.3, 1],
           }
 
     const dimTransition = reduceMotion
@@ -287,7 +285,7 @@ export function ContentHoverCard({
                         role="dialog"
                         aria-label={title}
                         initial={{
-                            opacity: 0,
+                            opacity: 1,
                             x: morph.deltaX,
                             y: morph.deltaY,
                             scale: morph.scale,
@@ -297,15 +295,21 @@ export function ContentHoverCard({
                             x: 0,
                             y: 0,
                             scale: 1,
-                            transition: cardTransition,
                         }}
                         exit={{
                             opacity: 0,
                             x: morph.deltaX,
                             y: morph.deltaY,
                             scale: morph.scale,
-                            transition: cardExit,
+                            transition: reduceMotion
+                                ? { duration: 0 }
+                                : {
+                                      duration: 0.3,
+                                      ease: [0.25, 1, 0.5, 1],
+                                  },
                         }}
+                        transition={cardTransition}
+                        style={{ transformOrigin: 'center center' }}
                         className="pointer-events-auto relative w-[min(96vw,calc((100vh-4rem)*16/9))] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10 will-change-transform"
                         onMouseLeave={handlePreviewMouseLeave}
                         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
@@ -369,7 +373,16 @@ export function ContentHoverCard({
 
                             <div className="pointer-events-none absolute inset-0 z-[4] bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                            <div className="absolute bottom-0 left-0 right-0 z-10 p-5">
+                            <motion.div
+                                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={
+                                    reduceMotion
+                                        ? { duration: 0 }
+                                        : { delay: 0.16, duration: 0.28, ease: 'easeOut' }
+                                }
+                                className="absolute bottom-0 left-0 right-0 z-10 p-5"
+                            >
                                 <h3 className="text-white font-semibold text-xl leading-snug line-clamp-1">
                                     {title}
                                 </h3>
@@ -415,7 +428,7 @@ export function ContentHoverCard({
                                         </DetailLink>
                                     )}
                                 </div>
-                            </div>
+                            </motion.div>
                         </div>
                     </motion.div>
                 </motion.div>
