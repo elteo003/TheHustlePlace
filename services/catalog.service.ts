@@ -6,7 +6,7 @@ import { VixsrcScraperService } from './vixsrc-scraper.service'
 import { tmdbWrapperService } from './tmdb-wrapper.service'
 import { TMDBMovie } from './tmdb-movies.service'
 import { getVixsrcIdSet } from './vixsrc-ids.service'
-import { filterByVixsrcIds, collectVixsrcTmdbIds, contentTmdbId } from '@/lib/vixsrc-ids'
+import { filterByVixsrcIds, contentTmdbId } from '@/lib/vixsrc-ids'
 import {
     cinemaYearWindow,
     comingSoonWindow,
@@ -1566,7 +1566,7 @@ export class CatalogService {
 
     async getMovies(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<Movie>> {
         try {
-            const cacheKey = this.generateCacheKey('movies_v2', filters)
+            const cacheKey = this.generateCacheKey('movies_v3', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<Movie>>(cacheKey)
@@ -1574,196 +1574,80 @@ export class CatalogService {
                 return cached
             }
 
-            // Prova prima con l'API di vixsrc.to
-            try {
-                const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/movie?lang=it`)
-
-                if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = collectVixsrcTmdbIds(response.data, 40)
-
-                    // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
-                    const batchSize = 5 // Processa 5 film alla volta per evitare rate limiting
-                    const movies: Movie[] = []
-
-                    for (let i = 0; i < Math.min(tmdbIds.length, 40); i += batchSize) {
-                        const batch = tmdbIds.slice(i, i + batchSize)
-
-                        const batchResults = await Promise.allSettled(
-                            batch.map(async (tmdbId: number) => {
-                                try {
-                                    // Usa TMDB API per ottenere i dettagli reali
-                                    const tmdbDetails = await tmdbWrapperService.getMovieDetails(tmdbId)
-                                    if (tmdbDetails) {
-                                        logger.info('Dettagli film ottenuti da TMDB', { tmdbId, title: tmdbDetails.title })
-                                        return tmdbDetails
-                                    }
-                                } catch (error) {
-                                    logger.warn('Errore nel recupero dettagli TMDB per film', { tmdbId, error })
-                                }
-
-                                // Fallback: usa dati minimi ma con ID reale per la riproduzione
-                                return {
-                                    id: tmdbId,
-                                    title: `Film ${tmdbId}`,
-                                    overview: `Film disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
-                                    release_date: '',
-                                    vote_average: 0,
-                                    vote_count: 0,
-                                    genre_ids: [],
-                                    adult: false,
-                                    original_language: 'en',
-                                    original_title: `Film ${tmdbId}`,
-                                    popularity: 0,
-                                    video: false,
-                                    tmdb_id: tmdbId,
-                                    poster_path: '/placeholder-movie.svg',
-                                    backdrop_path: '/placeholder-movie.svg'
-                                }
-                            })
-                        )
-
-                        // Aggiungi solo i risultati riusciti
-                        batchResults.forEach(result => {
-                            if (result.status === 'fulfilled') {
-                                movies.push(this.convertTMDBMovieToMovie(result.value))
-                            }
-                        })
-
-                        // Piccola pausa tra i batch per evitare rate limiting
-                        if (i + batchSize < Math.min(tmdbIds.length, 20)) {
-                            await new Promise(resolve => setTimeout(resolve, 100))
-                        }
-                    }
-
-                    // Ordina i film secondo i filtri specificati
-                    if (filters.sortBy && movies.length > 0) {
-                        movies.sort((a, b) => {
-                            let aValue: any
-                            let bValue: any
-
-                            switch (filters.sortBy) {
-                                case 'popularity':
-                                    aValue = a.popularity || 0
-                                    bValue = b.popularity || 0
-                                    break
-                                case 'vote_average':
-                                    aValue = a.vote_average || 0
-                                    bValue = b.vote_average || 0
-                                    break
-                                case 'release_date':
-                                    aValue = a.release_date ? new Date(a.release_date).getTime() : 0
-                                    bValue = b.release_date ? new Date(b.release_date).getTime() : 0
-                                    break
-                                case 'title':
-                                    aValue = a.title?.toLowerCase() || ''
-                                    bValue = b.title?.toLowerCase() || ''
-                                    break
-                                default:
-                                    return 0
-                            }
-
-                            if (filters.sortOrder === 'asc') {
-                                return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
-                            } else {
-                                return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
-                            }
-                        })
-                    }
-
-                    const result: PaginatedResponse<Movie> = {
-                        page: filters.page || 1,
-                        results: movies,
-                        total_pages: Math.ceil(tmdbIds.length / 20),
-                        total_results: tmdbIds.length
-                    }
-
-                    // Salva in cache
-                    await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
-
-                    logger.info('Film recuperati con successo da vixsrc.to', { count: movies.length, filters })
-                    return result
-                }
-            } catch (apiError) {
-                logger.warn('Errore API vixsrc.to, usando dati mock', { error: apiError, filters })
-            }
-
-            // Fallback a dati mock se l'API non funziona
-            logger.info('Usando dati mock per i film', { filters })
-            const mockData: PaginatedResponse<Movie> = {
+            const params: Record<string, string | number | boolean> = {
                 page: filters.page || 1,
-                results: this.getMockMovies(),
-                total_pages: 1,
-                total_results: this.getMockMovies().length
+                language: filters.language || 'it-IT',
+                include_adult: false,
             }
 
-            // Salva in cache
-            await cache.set(cacheKey, mockData, { ttl: this.CACHE_TTL })
-
-            logger.info('Film mock recuperati con successo', { count: mockData.results.length, filters })
-            return mockData
-
-            /* Commentiamo temporaneamente l'integrazione con vixsrc.to
-            // Costruisce i parametri per l'API
-            const params = new URLSearchParams()
-            params.append('lang', filters.language || 'it')
-            if (filters.genre) params.append('genre', filters.genre.toString())
-            if (filters.year) params.append('year', filters.year.toString())
-            if (filters.sortBy) params.append('sort_by', filters.sortBy)
-            if (filters.sortOrder) params.append('sort_order', filters.sortOrder)
-            if (filters.page) params.append('page', filters.page.toString())
-
-            const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/movie?${params}`)
-
-            if (response.status !== 200) {
-                throw new Error(`Errore API: ${response.status}`)
+            if (filters.genre) {
+                params.with_genres = filters.genre
+            }
+            if (filters.year) {
+                params.primary_release_year = filters.year
+            }
+            if (filters.sortBy) {
+                const order = filters.sortOrder === 'asc' ? 'asc' : 'desc'
+                switch (filters.sortBy) {
+                    case 'popularity':
+                        params.sort_by = `popularity.${order}`
+                        break
+                    case 'vote_average':
+                        params.sort_by = `vote_average.${order}`
+                        params['vote_count.gte'] = 50
+                        break
+                    case 'release_date':
+                        params.sort_by = `primary_release_date.${order}`
+                        break
+                    case 'title':
+                        params.sort_by = `original_title.${order}`
+                        break
+                    default:
+                        params.sort_by = 'popularity.desc'
+                }
+            } else {
+                params.sort_by = 'popularity.desc'
             }
 
-            const data = response.data
+            const response = await tmdbWrapperService.discoverMovies(params)
 
-            // vixsrc.to restituisce un array diretto di tmdb_id
-            if (Array.isArray(data) && data.length > 0) {
-                // Converti i tmdb_id in oggetti Movie mock
-                const movies = data.slice(0, 20).map((item: any, index: number) => {
-                    const mockMovies = this.getMockMovies()
-                    return {
-                        ...mockMovies[index % mockMovies.length],
-                        id: item.tmdb_id || (index + 1),
-                        tmdb_id: item.tmdb_id
-                    }
-                })
-
+            if (response && Array.isArray(response.results) && response.results.length > 0) {
+                const movies = response.results.map((tmdbMovie) => this.convertTMDBMovieToMovie(tmdbMovie))
                 const result: PaginatedResponse<Movie> = {
-                    page: filters.page || 1,
+                    page: response.page || filters.page || 1,
                     results: movies,
-                    total_pages: Math.ceil(data.length / 20),
-                    total_results: data.length
+                    total_pages: Math.min(response.total_pages || 1, 500),
+                    total_results: response.total_results || movies.length,
                 }
 
-                // Salva in cache
                 await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
-
-                logger.info('Film recuperati con successo da vixsrc.to', { count: movies.length, filters })
+                logger.info('Film recuperati con successo da TMDB', { count: movies.length, filters })
                 return result
             }
-            */
-        } catch (error) {
-            logger.error('Errore nel recupero film, usando dati mock', { error, filters })
 
-            // Ritorna dati mock quando l'API esterna fallisce
+            // Fallback a dati mock se l'API non restituisce risultati
+            logger.warn('Nessun risultato da TMDB per film, usando dati mock', { filters })
             const mockData: PaginatedResponse<Movie> = {
                 page: filters.page || 1,
                 results: this.getMockMovies(),
                 total_pages: 1,
-                total_results: this.getMockMovies().length
+                total_results: this.getMockMovies().length,
             }
-
             return mockData
+        } catch (error) {
+            logger.error('Errore nel recupero film da TMDB, usando dati mock', { error, filters })
+            return {
+                page: filters.page || 1,
+                results: this.getMockMovies(),
+                total_pages: 1,
+                total_results: this.getMockMovies().length,
+            }
         }
     }
 
     async getTVShows(filters: CatalogFilters = { page: 1 }): Promise<PaginatedResponse<TVShow>> {
         try {
-            const cacheKey = this.generateCacheKey('tv_v2', filters)
+            const cacheKey = this.generateCacheKey('tv_v3', filters)
 
             // Controlla la cache
             const cached = await cache.get<PaginatedResponse<TVShow>>(cacheKey)
@@ -1771,146 +1655,74 @@ export class CatalogService {
                 return cached
             }
 
-            // Prova prima con l'API di vixsrc.to
-            try {
-                const response = await axios.get(`${this.VIXSRC_BASE_URL}/api/list/tv?lang=it`)
-
-                if (response.status === 200 && Array.isArray(response.data)) {
-                    const tmdbIds = collectVixsrcTmdbIds(response.data, 40)
-
-                    // Ottimizzazione: parallelizzazione delle chiamate TMDB con batch processing
-                    const batchSize = 5 // Processa 5 serie TV alla volta per evitare rate limiting
-                    const tvShows: TVShow[] = []
-
-                    for (let i = 0; i < Math.min(tmdbIds.length, 40); i += batchSize) {
-                        const batch = tmdbIds.slice(i, i + batchSize)
-
-                        const batchResults = await Promise.allSettled(
-                            batch.map(async (tmdbId: number) => {
-                                try {
-                                    // Usa TMDB API per ottenere i dettagli reali
-                                    const tmdbDetails = await tmdbWrapperService.getTVShowDetails(tmdbId)
-                                    if (tmdbDetails) {
-                                        logger.info('Dettagli serie TV ottenuti da TMDB', { tmdbId, name: tmdbDetails.name })
-                                        return tmdbDetails
-                                    }
-                                } catch (error) {
-                                    logger.warn('Errore nel recupero dettagli TMDB per serie TV', { tmdbId, error })
-                                }
-
-                                // Fallback: usa dati minimi ma con ID reale per la riproduzione
-                                return {
-                                    id: tmdbId,
-                                    name: `Serie TV ${tmdbId}`,
-                                    overview: `Serie TV disponibile su vixsrc.to con ID ${tmdbId}. Per ottenere i dettagli completi, configura una chiave TMDB API valida.`,
-                                    first_air_date: '',
-                                    vote_average: 0,
-                                    vote_count: 0,
-                                    genre_ids: [],
-                                    adult: false,
-                                    origin_country: [],
-                                    original_language: 'en',
-                                    original_name: `Serie TV ${tmdbId}`,
-                                    popularity: 0,
-                                    tmdb_id: tmdbId,
-                                    poster_path: '/placeholder-movie.svg',
-                                    backdrop_path: '/placeholder-movie.svg'
-                                }
-                            })
-                        )
-
-                        // Aggiungi solo i risultati riusciti
-                        batchResults.forEach(result => {
-                            if (result.status === 'fulfilled') {
-                                tvShows.push(this.convertTMDBTVShowToTVShow(result.value))
-                            }
-                        })
-
-                        // Piccola pausa tra i batch per evitare rate limiting
-                        if (i + batchSize < Math.min(tmdbIds.length, 20)) {
-                            await new Promise(resolve => setTimeout(resolve, 100))
-                        }
-                    }
-
-                    // Ordina le serie TV secondo i filtri specificati
-                    if (filters.sortBy && tvShows.length > 0) {
-                        tvShows.sort((a, b) => {
-                            let aValue: any
-                            let bValue: any
-
-                            switch (filters.sortBy) {
-                                case 'popularity':
-                                    aValue = a.popularity || 0
-                                    bValue = b.popularity || 0
-                                    break
-                                case 'vote_average':
-                                    aValue = a.vote_average || 0
-                                    bValue = b.vote_average || 0
-                                    break
-                                case 'release_date':
-                                    // Per serie TV usa first_air_date invece di release_date
-                                    aValue = a.first_air_date ? new Date(a.first_air_date).getTime() : 0
-                                    bValue = b.first_air_date ? new Date(b.first_air_date).getTime() : 0
-                                    break
-                                case 'title':
-                                    aValue = a.name?.toLowerCase() || ''
-                                    bValue = b.name?.toLowerCase() || ''
-                                    break
-                                default:
-                                    return 0
-                            }
-
-                            if (filters.sortOrder === 'asc') {
-                                return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
-                            } else {
-                                return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
-                            }
-                        })
-                    }
-
-                    const result: PaginatedResponse<TVShow> = {
-                        page: filters.page || 1,
-                        results: tvShows,
-                        total_pages: Math.ceil(tmdbIds.length / 20),
-                        total_results: tmdbIds.length
-                    }
-
-                    // Salva in cache
-                    await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
-
-                    logger.info('Serie TV recuperate con successo da vixsrc.to', { count: tvShows.length, filters })
-                    return result
-                }
-            } catch (apiError) {
-                logger.warn('Errore API vixsrc.to per serie TV, usando dati mock', { error: apiError, filters })
+            const params: Record<string, string | number | boolean> = {
+                page: filters.page || 1,
+                language: filters.language || 'it-IT',
+                include_adult: false,
             }
 
-            // Fallback a dati mock se l'API non funziona
-            logger.info('Usando dati mock per le serie TV', { filters })
+            if (filters.genre) {
+                params.with_genres = filters.genre
+            }
+            if (filters.year) {
+                params.first_air_date_year = filters.year
+            }
+            if (filters.sortBy) {
+                const order = filters.sortOrder === 'asc' ? 'asc' : 'desc'
+                switch (filters.sortBy) {
+                    case 'popularity':
+                        params.sort_by = `popularity.${order}`
+                        break
+                    case 'vote_average':
+                        params.sort_by = `vote_average.${order}`
+                        params['vote_count.gte'] = 30
+                        break
+                    case 'release_date':
+                        params.sort_by = `first_air_date.${order}`
+                        break
+                    case 'title':
+                        params.sort_by = `name.${order}`
+                        break
+                    default:
+                        params.sort_by = 'popularity.desc'
+                }
+            } else {
+                params.sort_by = 'popularity.desc'
+            }
+
+            const response = await tmdbWrapperService.discoverTVShows(params)
+
+            if (response && Array.isArray(response.results) && response.results.length > 0) {
+                const tvShows = response.results.map((tmdbTVShow: any) => this.convertTMDBTVShowToTVShow(tmdbTVShow))
+                const result: PaginatedResponse<TVShow> = {
+                    page: response.page || filters.page || 1,
+                    results: tvShows,
+                    total_pages: Math.min(response.total_pages || 1, 500),
+                    total_results: response.total_results || tvShows.length,
+                }
+
+                await cache.set(cacheKey, result, { ttl: this.CACHE_TTL })
+                logger.info('Serie TV recuperate con successo da TMDB', { count: tvShows.length, filters })
+                return result
+            }
+
+            // Fallback a dati mock se l'API non restituisce risultati
+            logger.warn('Nessun risultato da TMDB per serie TV, usando dati mock', { filters })
             const mockData: PaginatedResponse<TVShow> = {
                 page: filters.page || 1,
                 results: this.getMockTVShows(),
                 total_pages: 1,
-                total_results: this.getMockTVShows().length
+                total_results: this.getMockTVShows().length,
             }
-
-            // Salva in cache
-            await cache.set(cacheKey, mockData, { ttl: this.CACHE_TTL })
-
-            logger.info('Serie TV mock recuperate con successo', { count: mockData.results.length, filters })
             return mockData
         } catch (error) {
-            logger.error('Errore nel recupero serie TV, usando dati mock', { error, filters })
-
-            // Ritorna dati mock quando l'API esterna fallisce
-            const mockData: PaginatedResponse<TVShow> = {
+            logger.error('Errore nel recupero serie TV da TMDB, usando dati mock', { error, filters })
+            return {
                 page: filters.page || 1,
                 results: this.getMockTVShows(),
                 total_pages: 1,
-                total_results: this.getMockTVShows().length
+                total_results: this.getMockTVShows().length,
             }
-
-            return mockData
         }
     }
 

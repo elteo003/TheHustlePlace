@@ -9,7 +9,7 @@ import { SearchBar } from '@/components/search-bar'
 import { LanguageSelector } from '@/components/language-selector'
 import { DeviceCodeButton } from '@/components/device-code-button'
 import { useNavbarContext } from '@/contexts/NavbarContext'
-import { NavIndicatorLink, NAV_LINKS } from '@/components/ui/nav-indicator-link'
+import { NavIndicatorLink, NAV_LINKS, isNavLinkActive } from '@/components/ui/nav-indicator-link'
 import { springTransition } from '@/lib/motion'
 import { NAV_VIEW_TRANSITION_NAME } from '@/lib/view-transitions'
 import { cn } from '@/lib/utils'
@@ -24,11 +24,16 @@ interface NavbarProps {
 export function Navbar({ immersive = false }: NavbarProps) {
     const { isVisible: contextVisible, isHovered, setIsHovered } = useNavbarContext()
     const pathname = usePathname()
+    const [optimisticHref, setOptimisticHref] = useState<string | null>(null)
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [searchFocused, setSearchFocused] = useState(false)
     const isPhoneLandscape = useIsPhoneLandscape()
     const onSearchPage = pathname === '/search'
     const peekLeave = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    useEffect(() => {
+        setOptimisticHref(null)
+    }, [pathname])
 
     useEffect(() => {
         if (onSearchPage) setIsMenuOpen(false)
@@ -41,6 +46,8 @@ export function Navbar({ immersive = false }: NavbarProps) {
             setIsHovered(false)
         }
     }, [pathname, setIsHovered])
+
+    const activePath = optimisticHref ?? pathname
 
     const holdPeek = () => {
         if (peekLeave.current) {
@@ -122,6 +129,8 @@ export function Navbar({ immersive = false }: NavbarProps) {
                                 href={href}
                                 label={label}
                                 layoutId="nav-active-pill"
+                                active={isNavLinkActive(activePath, href)}
+                                onClick={() => setOptimisticHref(href)}
                             />
                         ))}
                     </div>
@@ -191,7 +200,11 @@ export function Navbar({ immersive = false }: NavbarProps) {
                                             label={label}
                                             layoutId="nav-active-pill-mobile"
                                             className="block w-full"
-                                            onClick={() => setIsMenuOpen(false)}
+                                            active={isNavLinkActive(activePath, href)}
+                                            onClick={() => {
+                                                setOptimisticHref(href)
+                                                setIsMenuOpen(false)
+                                            }}
                                         />
                                     ))}
                                 </div>

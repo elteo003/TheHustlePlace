@@ -27,6 +27,7 @@ interface NavIndicatorLinkProps {
     layoutId: string
     className?: string
     onClick?: () => void
+    active?: boolean
 }
 
 export function NavIndicatorLink({
@@ -35,9 +36,10 @@ export function NavIndicatorLink({
     layoutId,
     className,
     onClick,
+    active: activeProp,
 }: NavIndicatorLinkProps) {
     const pathname = usePathname()
-    const active = isNavLinkActive(pathname, href)
+    const active = activeProp !== undefined ? activeProp : isNavLinkActive(pathname, href)
 
     return (
         <Link

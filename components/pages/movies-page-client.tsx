@@ -14,12 +14,12 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
     const { play, openDetails } = useContentNavigation()
 
     return (
-        <div className="min-h-screen bg-black">
-            <main className="pt-8 pb-16">
-                <div className="content-gutter">
-                    <h1 className="text-3xl font-bold text-white mb-8">Film</h1>
+        <div className="w-full bg-black">
+            <main className="pt-8 pb-10">
+                <div className="content-gutter space-y-12">
+                    <h1 className="text-3xl font-bold text-white">Film</h1>
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Film Popolari</h2>
                         <MovieGridIntegrated
                             type="movie"
@@ -31,7 +31,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
                         />
                     </div>
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Film Recenti</h2>
                         <MovieGridIntegrated
                             type="movie"
@@ -43,7 +43,7 @@ export function MoviesPageClient({ popular, recent, topRated }: MoviesPageClient
                         />
                     </div>
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Film Migliori</h2>
                         <MovieGridIntegrated
                             type="movie"

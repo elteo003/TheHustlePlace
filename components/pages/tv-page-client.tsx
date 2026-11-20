@@ -17,13 +17,13 @@ export function TVPageClient({ popular, recent, topRated, upcoming }: TVPageClie
     const { play, openDetails } = useContentNavigation()
 
     return (
-        <div className="min-h-screen bg-black">
-            <main className="pt-8 pb-16">
-                <div className="content-gutter">
-                    <h1 className="text-3xl font-bold text-white mb-8">Serie TV</h1>
+        <div className="w-full bg-black">
+            <main className="pt-8 pb-10">
+                <div className="content-gutter space-y-12">
+                    <h1 className="text-3xl font-bold text-white">Serie TV</h1>
 
                     {upcoming && upcoming.length > 0 && (
-                        <div className="mb-12">
+                        <div>
                             <UpcomingTVSection
                                 items={upcoming}
                                 onPlay={play}
@@ -32,7 +32,7 @@ export function TVPageClient({ popular, recent, topRated, upcoming }: TVPageClie
                         </div>
                     )}
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Serie TV Popolari</h2>
                         <MovieGridIntegrated
                             type="tv"
@@ -44,7 +44,7 @@ export function TVPageClient({ popular, recent, topRated, upcoming }: TVPageClie
                         />
                     </div>
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Serie TV Recenti</h2>
                         <MovieGridIntegrated
                             type="tv"
@@ -56,7 +56,7 @@ export function TVPageClient({ popular, recent, topRated, upcoming }: TVPageClie
                         />
                     </div>
 
-                    <div className="mb-12">
+                    <div>
                         <h2 className="text-2xl font-bold text-white mb-6">Serie TV Migliori</h2>
                         <MovieGridIntegrated
                             type="tv"

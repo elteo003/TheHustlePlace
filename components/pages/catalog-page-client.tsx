@@ -71,8 +71,8 @@ export function CatalogPageClient({
     const totalPages = activeTab === 'movies' ? moviesTotalPages : tvTotalPages
 
     return (
-        <div className="min-h-screen bg-black">
-            <main className="pt-8 pb-16">
+        <div className="w-full bg-black">
+            <main className="pt-8 pb-12">
                 <div className="max-w-7xl mx-auto px-4">
                     <h1 className="text-3xl font-bold text-white tracking-tight mb-8">Catalogo</h1>
 
@@ -86,6 +86,16 @@ export function CatalogPageClient({
                             { id: 'tv', label: 'Serie TV' },
                         ]}
                     />
+
+                    {((activeTab === 'movies' && movies.length === 0) || (activeTab === 'tv' && tvShows.length === 0)) && !loading && (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <p className="text-white/60 text-base">
+                                {activeTab === 'movies'
+                                    ? 'Nessun film disponibile nel catalogo al momento.'
+                                    : 'Nessuna serie TV disponibile nel catalogo al momento.'}
+                            </p>
+                        </div>
+                    )}
 
                     <div
                         className={cn(
