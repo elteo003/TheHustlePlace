@@ -62,6 +62,13 @@ export function ContentHoverCard({
 }: ContentHoverCardProps) {
     const isTouch = useIsCoarsePointer()
     const reduceMotion = useReducedMotion()
+    const cardRef = useRef<HTMLDivElement>(null)
+    const [originRect, setOriginRect] = useState<{
+        x: number
+        y: number
+        width: number
+        height: number
+    } | null>(null)
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const expandedRef = useRef(false)
     const closeArmed = useRef(false)
@@ -167,12 +174,26 @@ export function ContentHoverCard({
         closeNow()
     }
 
+    const captureOriginRect = () => {
+        if (cardRef.current) {
+            const rect = cardRef.current.getBoundingClientRect()
+            setOriginRect({
+                x: rect.left,
+                y: rect.top,
+                width: rect.width,
+                height: rect.height,
+            })
+        }
+    }
+
     const handleMouseEnter = () => {
         if (isTouch) return
+        captureOriginRect()
         setIsHovered(true)
         if (expandTimer.current) clearTimeout(expandTimer.current)
         const delay = isUpcomingSection && upcomingInfo ? UPCOMING_TOTAL_DELAY_MS : EXPAND_DELAY_MS
         expandTimer.current = setTimeout(() => {
+            captureOriginRect()
             onExpand()
             scheduleTrailerLoad()
         }, delay)
@@ -192,13 +213,51 @@ export function ContentHoverCard({
             setSheetOpen(true)
             return
         }
+        captureOriginRect()
         onExpand()
         scheduleTrailerLoad()
     }
 
-    const motionTransition = reduceMotion
+    const getMorphParams = () => {
+        if (!originRect || typeof window === 'undefined') {
+            return { deltaX: 0, deltaY: 0, scale: 0.96 }
+        }
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        const maxWFromVw = vw * 0.96
+        const maxWFromVh = (vh - 64) * (16 / 9)
+        const targetWidth = Math.min(maxWFromVw, maxWFromVh)
+        const posterCenterX = originRect.x + originRect.width / 2
+        const posterCenterY = originRect.y + originRect.height / 2
+        const deltaX = Math.round(posterCenterX - vw / 2)
+        const deltaY = Math.round(posterCenterY - vh / 2)
+        const scale = targetWidth > 0 ? Math.max(0.08, originRect.width / targetWidth) : 0.96
+        return { deltaX, deltaY, scale }
+    }
+
+    const morph = getMorphParams()
+
+    const cardTransition = reduceMotion
         ? { duration: 0 }
-        : { duration: 0.34, ease: [0.22, 1, 0.36, 1] }
+        : {
+              x: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+              y: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+              scale: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+              opacity: { duration: 0.22, ease: 'easeOut' },
+          }
+
+    const cardExit = reduceMotion
+        ? { duration: 0 }
+        : {
+              x: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
+              y: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
+              scale: { duration: 0.28, ease: [0.25, 1, 0.5, 1] },
+              opacity: { duration: 0.22, ease: 'easeIn' },
+          }
+
+    const dimTransition = reduceMotion
+        ? { duration: 0 }
+        : { duration: 0.35, ease: 'easeOut' }
 
     const preview = (
         <AnimatePresence onExitComplete={handlePreviewExit}>
@@ -210,24 +269,47 @@ export function ContentHoverCard({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={motionTransition}
+                    transition={dimTransition}
                     className="fixed inset-0 z-[90] bg-black/70"
                     onClick={closeNow}
                 />
             )}
             {isExpanded && !isTouch && (
                 <motion.div
-                    key="preview-card"
-                    role="dialog"
-                    aria-label={title}
-                    initial={{ opacity: 0, scale: 0.96, x: '-50%', y: '-50%' }}
-                    animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-                    exit={{ opacity: 0, scale: 0.98, x: '-50%', y: '-50%' }}
-                    transition={motionTransition}
-                    className="fixed left-1/2 top-1/2 z-[91] w-[min(96vw,calc((100vh-4rem)*16/9))] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10"
-                    onMouseLeave={handlePreviewMouseLeave}
-                    onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+                    key="preview-wrapper"
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 1 }}
+                    className="fixed inset-0 z-[91] pointer-events-none flex items-center justify-center p-4"
                 >
+                    <motion.div
+                        key="preview-card"
+                        role="dialog"
+                        aria-label={title}
+                        initial={{
+                            opacity: 0,
+                            x: morph.deltaX,
+                            y: morph.deltaY,
+                            scale: morph.scale,
+                        }}
+                        animate={{
+                            opacity: 1,
+                            x: 0,
+                            y: 0,
+                            scale: 1,
+                            transition: cardTransition,
+                        }}
+                        exit={{
+                            opacity: 0,
+                            x: morph.deltaX,
+                            y: morph.deltaY,
+                            scale: morph.scale,
+                            transition: cardExit,
+                        }}
+                        className="pointer-events-auto relative w-[min(96vw,calc((100vh-4rem)*16/9))] overflow-hidden rounded-2xl bg-black shadow-[0_32px_120px_rgba(0,0,0,0.75)] ring-1 ring-white/10 will-change-transform"
+                        onMouseLeave={handlePreviewMouseLeave}
+                        onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+                    >
                     <div className="relative aspect-video overflow-hidden bg-zinc-900">
                         <Image
                             src={previewImage}
@@ -336,6 +418,7 @@ export function ContentHoverCard({
                             </div>
                         </div>
                     </motion.div>
+                </motion.div>
             )}
         </AnimatePresence>
     )
@@ -343,6 +426,7 @@ export function ContentHoverCard({
     return (
         <>
             <div
+                ref={cardRef}
                 className={`group relative flex-shrink-0 hover:z-20 ${
                     variant === 'top10'
                         ? 'z-10 w-[clamp(7.5rem,8vw,12.5rem)] aspect-[2/3]'
