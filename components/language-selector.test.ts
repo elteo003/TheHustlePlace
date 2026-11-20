@@ -51,5 +51,24 @@ describe('Language Selector & Subtitle Fallback Unit Tests', () => {
             const idx = findMatchingSubtitleIndex(germanStreamTracks, 'de')
             expect(idx).toBe(0)
         })
+
+        it('respects user choice to disable subtitles and avoids auto-activation on new episode', () => {
+            let subtitlesEnabled = false
+            const streamTracksForNextEpisode = [
+                { id: 0, name: 'English', lang: 'eng' },
+                { id: 1, name: 'Italian', lang: 'ita' },
+            ]
+
+            const resolveActiveTrack = (enabled: boolean, tracks: typeof streamTracksForNextEpisode, lang: 'it' | 'en' | 'de') => {
+                if (!enabled) return -1
+                return findMatchingSubtitleIndex(tracks, lang)
+            }
+
+            expect(resolveActiveTrack(subtitlesEnabled, streamTracksForNextEpisode, 'it')).toBe(-1)
+
+            // When user re-enables subtitles
+            subtitlesEnabled = true
+            expect(resolveActiveTrack(subtitlesEnabled, streamTracksForNextEpisode, 'it')).toBe(1)
+        })
     })
 })

@@ -3,12 +3,17 @@ import {
     matchesLanguage,
     findMatchingSubtitleIndex,
     SUPPORTED_LANGUAGES,
+    STORAGE_KEY_SUBTITLES_ENABLED,
 } from './LanguageContext'
 
 describe('LanguageContext Helpers', () => {
     it('defines the three required languages: IT, ING, DE', () => {
         const labels = SUPPORTED_LANGUAGES.map((l) => l.label)
         expect(labels).toEqual(['IT', 'ING', 'DE'])
+    })
+
+    it('exports the subtitle storage key', () => {
+        expect(STORAGE_KEY_SUBTITLES_ENABLED).toBe('thehustleplace_subtitles_enabled')
     })
 
     describe('matchesLanguage', () => {

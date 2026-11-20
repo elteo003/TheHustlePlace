@@ -73,11 +73,17 @@ export function VixsrcEmbedPlayer({
     const [reloadKey, setReloadKey] = useState(0)
     const hardReloadsRef = useRef(0)
     const isSeekingRef = useRef(false)
-    const { language, findMatchingSubtitleIndex, matchesLanguage } = useLanguage()
+    const { language, findMatchingSubtitleIndex, matchesLanguage, subtitlesEnabled, setSubtitlesEnabled } = useLanguage()
     const [subtitleTracks, setSubtitleTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([])
     const [activeSubtitleTrack, setActiveSubtitleTrack] = useState<number>(-1)
 
     const handleSelectSubtitleTrack = useCallback((trackId: number) => {
+        if (trackId === -1) {
+            setSubtitlesEnabled(false)
+        } else {
+            setSubtitlesEnabled(true)
+        }
+
         const hls = hlsRef.current
         if (hls) {
             hls.subtitleTrack = trackId
@@ -92,7 +98,7 @@ export function VixsrcEmbedPlayer({
                 setActiveSubtitleTrack(trackId)
             }
         }
-    }, [])
+    }, [setSubtitlesEnabled])
 
     const emit = useCallback((event: VixsrcPlayerEvent['event'], video: HTMLVideoElement, videoId?: number) => {
         const playback: VixsrcPlayerEvent = {
@@ -449,6 +455,13 @@ export function VixsrcEmbedPlayer({
         const hls = hlsRef.current
         if (!hls || subtitleTracks.length === 0) return
 
+        if (!subtitlesEnabled) {
+            hls.subtitleTrack = -1
+            hls.subtitleDisplay = false
+            setActiveSubtitleTrack(-1)
+            return
+        }
+
         const matchIdx = findMatchingSubtitleIndex(subtitleTracks, language)
         if (matchIdx !== -1) {
             hls.subtitleTrack = matchIdx
@@ -465,9 +478,13 @@ export function VixsrcEmbedPlayer({
                 hls.subtitleTrack = fallbackIdx
                 hls.subtitleDisplay = true
                 setActiveSubtitleTrack(fallbackIdx)
+            } else {
+                hls.subtitleTrack = -1
+                hls.subtitleDisplay = false
+                setActiveSubtitleTrack(-1)
             }
         }
-    }, [language, subtitleTracks, findMatchingSubtitleIndex, matchesLanguage])
+    }, [language, subtitleTracks, findMatchingSubtitleIndex, matchesLanguage, subtitlesEnabled])
 
     const overlayBack = shell?.onBack ?? onBack
     const overlayTitle = shell?.title ?? title

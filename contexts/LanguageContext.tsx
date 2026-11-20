@@ -33,6 +33,7 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
 ]
 
 export const STORAGE_KEY_LANGUAGE = 'thehustleplace_preferred_lang'
+export const STORAGE_KEY_SUBTITLES_ENABLED = 'thehustleplace_subtitles_enabled'
 
 export interface SubtitleTrackInfo {
     id: number
@@ -58,6 +59,8 @@ interface LanguageContextType {
         tracks: Array<{ lang?: string; name?: string }>,
         lang: LanguageCode
     ) => number
+    subtitlesEnabled: boolean
+    setSubtitlesEnabled: (enabled: boolean) => void
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -83,12 +86,17 @@ export function findMatchingSubtitleIndex(
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const [language, setLanguageState] = useState<LanguageCode>('it')
+    const [subtitlesEnabled, setSubtitlesEnabledState] = useState<boolean>(true)
 
     useEffect(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY_LANGUAGE)
             if (stored === 'it' || stored === 'en' || stored === 'de') {
                 setLanguageState(stored)
+            }
+            const storedSubs = localStorage.getItem(STORAGE_KEY_SUBTITLES_ENABLED)
+            if (storedSubs !== null) {
+                setSubtitlesEnabledState(storedSubs === 'true')
             }
         } catch {
             // ignore localStorage errors (e.g. iframe / private mode)
@@ -99,6 +107,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setLanguageState(newLang)
         try {
             localStorage.setItem(STORAGE_KEY_LANGUAGE, newLang)
+        } catch {
+            // ignore
+        }
+    }
+
+    const setSubtitlesEnabled = (enabled: boolean) => {
+        setSubtitlesEnabledState(enabled)
+        try {
+            localStorage.setItem(STORAGE_KEY_SUBTITLES_ENABLED, String(enabled))
         } catch {
             // ignore
         }
@@ -117,8 +134,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
             options: SUPPORTED_LANGUAGES,
             matchesLanguage,
             findMatchingSubtitleIndex,
+            subtitlesEnabled,
+            setSubtitlesEnabled,
         }),
-        [language, currentOption]
+        [language, currentOption, subtitlesEnabled]
     )
 
     return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
@@ -135,6 +154,8 @@ export function useLanguage() {
             options: SUPPORTED_LANGUAGES,
             matchesLanguage,
             findMatchingSubtitleIndex,
+            subtitlesEnabled: true,
+            setSubtitlesEnabled: () => undefined,
         }
     }
     return context
