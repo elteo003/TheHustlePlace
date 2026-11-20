@@ -25,7 +25,7 @@ export function Top10Row({ items, type = 'movie', onPlay, onDetails }: Top10RowP
 
     return (
         <div>
-            <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2 pl-4 sm:pl-5">
+            <CustomScrollbar className="pb-6" containerClassName="items-end gap-1 sm:gap-2">
                 {items.map((item, index) => {
                 const rank = index + 1
                 const itemType = resolveContentType(item, type)

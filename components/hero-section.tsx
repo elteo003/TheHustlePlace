@@ -127,9 +127,11 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         onEnded: finishTrailer,
     })
 
-    const wasPlayingBeforeScrollRef = useRef(false)
+    const userAudioPreferenceRef = useRef(!isMuted)
+    userAudioPreferenceRef.current = !isMuted
 
-    // Gestione pausa fuori schermo e ripresa automatica del trailer da dove si era interrotto
+    // Gestione audio fuori schermo secondo blueprint: il trailer NON si pausa mai (evita freeze del video, de-sync timer e ricaricamento a tasselli GPU)
+    // Quando la hero esce dallo schermo l'audio viene mutato; quando rientra, se l'utente lo aveva attivato, viene ripristinato.
     useEffect(() => {
         const node = heroRef.current
         if (!node) return
@@ -141,14 +143,10 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 if (!win || !trailer || trailerEnded || showUpcomingTrailers) return
 
                 if (!inView) {
-                    if (revealed) {
-                        wasPlayingBeforeScrollRef.current = true
-                        postYouTubeCommand(win, 'pauseVideo')
-                    }
+                    postYouTubeCommand(win, 'mute')
                 } else {
-                    if (wasPlayingBeforeScrollRef.current) {
-                        wasPlayingBeforeScrollRef.current = false
-                        postYouTubeCommand(win, 'playVideo')
+                    if (userAudioPreferenceRef.current) {
+                        postYouTubeCommand(win, 'unMute')
                     }
                 }
             },
@@ -160,7 +158,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
 
         observer.observe(node)
         return () => observer.disconnect()
-    }, [trailer, trailerEnded, showUpcomingTrailers, revealed])
+    }, [trailer, trailerEnded, showUpcomingTrailers])
 
     // Notifica quando la Hero Section è caricata (incluso precaricamento immagine ottimizzata a w1280)
     useEffect(() => {
@@ -190,7 +188,6 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Reset trailerEnded quando cambia il film per far riapparire la sezione prossimi
     useEffect(() => {
         if (featuredMovie) {
-            wasPlayingBeforeScrollRef.current = false
             setTrailerEnded(false)
             setIsMuted(true)
         }
@@ -329,14 +326,16 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                     <div
-                        className="h-full w-full bg-cover bg-center transition-opacity duration-700 ease-out pointer-events-none"
+                        className={cn(
+                            'h-full w-full bg-cover bg-center pointer-events-none transition-opacity duration-700 ease-out',
+                            revealed && !showUpcoming && 'opacity-0 invisible'
+                        )}
                         style={{
                             backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'w1280')})`,
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center 45%',
                             filter: 'brightness(0.7) saturate(1.05)',
-                            opacity: revealed && !showUpcoming ? 0 : 1,
                         }}
                     />
                     {trailer && !showUpcoming && (

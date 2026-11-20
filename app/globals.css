@@ -235,10 +235,9 @@ html {
     touch-action: pan-x pan-y;
 }
 
-/* Attiva view-transition-name on-demand solo su interazione diretta per non creare centinaia di layer GPU */
-.poster-vt-target:hover,
-.poster-vt-target:focus-within,
-.poster-vt-target:active {
+/* Attiva view-transition-name on-demand solo su click/interazione diretta per non creare centinaia di layer GPU durante lo scroll */
+.poster-vt-target:active,
+.poster-vt-target:focus-within {
     view-transition-name: var(--vt-poster-name);
 }
 

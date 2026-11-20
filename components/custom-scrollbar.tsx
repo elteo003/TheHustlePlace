@@ -8,6 +8,12 @@ interface CustomScrollbarProps {
     className?: string
     /** Classi sul contenitore flex interno (es. `gap-4 items-end`) */
     containerClassName?: string
+    /**
+     * Se true (default), estende lo scaffale a filo schermo (-mx dei gutter)
+     * e applica il padding interno (px) in modo che le card allineino con i titoli
+     * e scorrano fino al bordo destro dello schermo senza gap o tagli bruschi.
+     */
+    bleed?: boolean
 }
 
 /**
@@ -19,6 +25,7 @@ export function CustomScrollbar({
     children,
     className = '',
     containerClassName = '',
+    bleed = true,
 }: CustomScrollbarProps) {
     const scrollRef = useRef<HTMLDivElement>(null)
     const contentRef = useRef<HTMLDivElement>(null)
@@ -79,17 +86,25 @@ export function CustomScrollbar({
     }
 
     return (
-        <div className={`relative group/shelf ${className}`}>
-            {/* Freccia sinistra */}
+        <div
+            className={`relative group/shelf ${
+                bleed ? '-mx-4 sm:-mx-6 lg:-mx-8 xl:-mx-10' : ''
+            } ${className}`}
+        >
+            {/* Freccia sinistra con sfumatura precisa e profonda */}
             {canScrollLeft && (
                 <div
-                    className="hidden md:flex absolute left-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 w-12 sm:w-16 md:w-20 items-center justify-start pl-1 sm:pl-2 bg-gradient-to-r from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    className="hidden md:flex absolute left-0 inset-y-0 z-30 w-16 sm:w-24 md:w-32 lg:w-40 items-center justify-start pl-2 sm:pl-3 md:pl-4 pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    style={{
+                        background:
+                            'linear-gradient(to right, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.2) 75%, transparent 100%)',
+                    }}
                     aria-hidden={!canScrollLeft}
                 >
                     <button
                         type="button"
                         onClick={() => scroll('left')}
-                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-md transition-all duration-150 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:shadow-black/70 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-180 hover:scale-110 hover:border-white/50 hover:bg-black/90 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         aria-label="Scorri indietro"
                     >
                         <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
@@ -97,31 +112,37 @@ export function CustomScrollbar({
                 </div>
             )}
 
-            {/* Contenitore di scorrimento orizzontale */}
+            {/* Contenitore di scorrimento orizzontale a tutta larghezza */}
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="horizontal-scroll overflow-x-auto overflow-y-hidden -mx-1 px-1 pb-0 scroll-smooth"
+                className="horizontal-scroll overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ WebkitOverflowScrolling: 'touch' }}
             >
                 <div
                     ref={contentRef}
-                    className={`flex w-max min-w-full ${containerClassName}`}
+                    className={`flex w-max min-w-full ${
+                        bleed ? 'px-4 sm:px-6 lg:px-8 xl:px-10' : ''
+                    } ${containerClassName}`}
                 >
                     {children}
                 </div>
             </div>
 
-            {/* Freccia destra */}
+            {/* Freccia destra con sfumatura precisa e profonda */}
             {canScrollRight && (
                 <div
-                    className="hidden md:flex absolute right-0 top-0 bottom-4 sm:bottom-6 md:bottom-8 z-30 w-12 sm:w-16 md:w-20 items-center justify-end pr-1 sm:pr-2 bg-gradient-to-l from-black/90 via-black/40 to-transparent pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    className="hidden md:flex absolute right-0 inset-y-0 z-30 w-16 sm:w-24 md:w-32 lg:w-40 items-center justify-end pr-2 sm:pr-3 md:pr-4 pointer-events-none opacity-0 group-hover/shelf:opacity-100 focus-within:opacity-100 transition-opacity duration-200"
+                    style={{
+                        background:
+                            'linear-gradient(to left, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.2) 75%, transparent 100%)',
+                    }}
                     aria-hidden={!canScrollRight}
                 >
                     <button
                         type="button"
                         onClick={() => scroll('right')}
-                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-md transition-all duration-150 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:shadow-black/70 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-180 hover:scale-110 hover:border-white/50 hover:bg-black/90 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         aria-label="Scorri avanti"
                     >
                         <ChevronRight className="h-6 w-6" strokeWidth={2.5} />
