@@ -80,6 +80,7 @@ export function ContentHoverCard({
     const closeArmed = useRef(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
+    const [portalActive, setPortalActive] = useState(false)
     const [trailerMuted, setTrailerMuted] = useState(true)
     const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -134,10 +135,12 @@ export function ContentHoverCard({
         if (expandedRef.current) return
         setTrailerMuted(true)
         resetPreview()
+        setPortalActive(false)
     }
 
     useEffect(() => {
         if (!isExpanded) return
+        setPortalActive(true)
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') closeNow()
         }
@@ -541,7 +544,7 @@ export function ContentHoverCard({
                 </div>
             </div>
 
-            {portalReady ? createPortal(preview, document.body) : null}
+            {portalActive && portalReady ? createPortal(preview, document.body) : null}
 
             <ContentActionSheet
                 open={sheetOpen}

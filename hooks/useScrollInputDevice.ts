@@ -117,6 +117,16 @@ function initGlobalDeviceListener() {
         })
 
         if (detected !== cachedDevice) {
+            // Se siamo già in modalità mouse e arrivano scatti di rotella rapidi (deltaX = 0, deltaY intero),
+            // non rimbalziamo a touchpad a metà scorrimento solo perché la rotella gira veloce
+            if (
+                cachedDevice === 'mouse' &&
+                event.deltaX === 0 &&
+                event.deltaY % 1 === 0 &&
+                Math.abs(event.deltaY) >= 40
+            ) {
+                return
+            }
             cachedDevice = detected
             try {
                 sessionStorage.setItem(STORAGE_KEY, detected)

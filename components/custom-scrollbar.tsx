@@ -23,16 +23,23 @@ export function CustomScrollbar({
 }: CustomScrollbarProps) {
     const scrollRef = useRef<HTMLDivElement>(null)
     const contentRef = useRef<HTMLDivElement>(null)
+    const rafId = useRef<number | null>(null)
     const [canScrollLeft, setCanScrollLeft] = useState(false)
     const [canScrollRight, setCanScrollRight] = useState(false)
     const { hasMouseWheel } = useScrollInputDevice()
 
     const updateBounds = useCallback(() => {
-        const el = scrollRef.current
-        if (!el) return
-        const maxScroll = el.scrollWidth - el.clientWidth
-        setCanScrollLeft(el.scrollLeft > 10)
-        setCanScrollRight(maxScroll > 10 && el.scrollLeft < maxScroll - 10)
+        if (rafId.current !== null) return
+        rafId.current = requestAnimationFrame(() => {
+            rafId.current = null
+            const el = scrollRef.current
+            if (!el) return
+            const maxScroll = el.scrollWidth - el.clientWidth
+            const left = el.scrollLeft > 10
+            const right = maxScroll > 10 && el.scrollLeft < maxScroll - 10
+            setCanScrollLeft((prev) => (prev !== left ? left : prev))
+            setCanScrollRight((prev) => (prev !== right ? right : prev))
+        })
     }, [])
 
     useEffect(() => {
@@ -52,11 +59,12 @@ export function CustomScrollbar({
         window.addEventListener('resize', updateBounds, { passive: true })
 
         return () => {
+            if (rafId.current !== null) cancelAnimationFrame(rafId.current)
             ro.disconnect()
             mo.disconnect()
             window.removeEventListener('resize', updateBounds)
         }
-    }, [updateBounds, children])
+    }, [updateBounds])
 
     const handleScroll = () => {
         updateBounds()

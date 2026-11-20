@@ -231,6 +231,12 @@ html {
     background: transparent;
 }
 
+/* Disattiva pointer-events durante lo scroll per garantire 60/120fps stabili senza hover lag */
+body.is-scrolling,
+body.is-scrolling * {
+    pointer-events: none !important;
+}
+
 .horizontal-scroll {
     touch-action: pan-x pan-y;
 }
