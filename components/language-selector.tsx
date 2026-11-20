@@ -152,19 +152,7 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                                                     }}
                                                 />
                                             )}
-                                            <div className="relative z-10 flex items-center gap-2">
-                                                <span
-                                                    className={cn(
-                                                        'inline-block w-7 rounded px-1 text-center font-mono text-[11px] font-bold uppercase tracking-tight',
-                                                        isSelected
-                                                            ? 'bg-white/20 text-white'
-                                                            : 'bg-white/5 text-white/50'
-                                                    )}
-                                                >
-                                                    {opt.label}
-                                                </span>
-                                                <span className="truncate">{opt.fullName}</span>
-                                            </div>
+                                            <span className="relative z-10 truncate text-[13px]">{opt.fullName}</span>
 
                                             {isSelected && (
                                                 <motion.span
