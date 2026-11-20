@@ -78,7 +78,6 @@ export function ContentHoverCard({
     const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const expandedRef = useRef(false)
     const closeArmed = useRef(false)
-    const [isHovered, setIsHovered] = useState(false)
     const [sheetOpen, setSheetOpen] = useState(false)
     const [portalReady, setPortalReady] = useState(false)
     const [trailerMuted, setTrailerMuted] = useState(true)
@@ -124,7 +123,10 @@ export function ContentHoverCard({
             expandTimer.current = null
         }
         closeArmed.current = false
-        setIsHovered(false)
+        if (iframeRef.current?.contentWindow) {
+            postYouTubeCommand(iframeRef.current.contentWindow, 'pauseVideo')
+            postYouTubeCommand(iframeRef.current.contentWindow, 'mute')
+        }
         onCollapse()
     }
 
@@ -168,7 +170,6 @@ export function ContentHoverCard({
 
     const handleMouseLeave = () => {
         if (isTouch) return
-        setIsHovered(false)
         if (expandTimer.current) {
             clearTimeout(expandTimer.current)
             expandTimer.current = null
@@ -196,8 +197,6 @@ export function ContentHoverCard({
 
     const handleMouseEnter = () => {
         if (isTouch) return
-        captureOriginRect()
-        setIsHovered(true)
         if (expandTimer.current) clearTimeout(expandTimer.current)
         const delay = isUpcomingSection && upcomingInfo ? UPCOMING_TOTAL_DELAY_MS : EXPAND_DELAY_MS
         expandTimer.current = setTimeout(() => {
@@ -304,7 +303,7 @@ export function ContentHoverCard({
                             transition: reduceMotion
                                 ? { duration: 0 }
                                 : {
-                                      duration: 0.3,
+                                      duration: 0.22,
                                       ease: [0.25, 1, 0.5, 1],
                                   },
                         }}
@@ -322,14 +321,14 @@ export function ContentHoverCard({
                             className="z-[3] object-cover"
                             sizes="96vw"
                             style={{
-                                opacity: revealed ? 0 : 1,
+                                opacity: isExpanded && revealed ? 0 : 1,
                                 transition:
-                                    revealed && !reduceMotion
+                                    isExpanded && revealed && !reduceMotion
                                         ? `opacity ${YOUTUBE_DISSOLVE_MS}ms ${YOUTUBE_DISSOLVE_EASE}`
                                         : 'none',
                             }}
                         />
-                        {trailerUrl && (
+                        {isExpanded && trailerUrl && (
                             <iframe
                                 ref={iframeRef}
                                 key={trailerKey}
@@ -376,6 +375,7 @@ export function ContentHoverCard({
                             <motion.div
                                 initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, transition: { duration: 0.1 } }}
                                 transition={
                                     reduceMotion
                                         ? { duration: 0 }
@@ -479,18 +479,12 @@ export function ContentHoverCard({
                     {isUpcomingSection && upcomingInfo && (
                         <div
                             className={`pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center p-3 text-center transition-all duration-300 ease-out select-none ${
-                                isHovered && !isExpanded
-                                    ? 'opacity-100 bg-black/75 backdrop-blur-[2px]'
-                                    : 'opacity-0 bg-black/0'
+                                isExpanded
+                                    ? 'opacity-0 pointer-events-none'
+                                    : 'opacity-0 group-hover:opacity-100 bg-black/75'
                             }`}
                         >
-                            <div
-                                className={`flex flex-col items-center transition-transform duration-300 ease-out ${
-                                    isHovered && !isExpanded
-                                        ? 'translate-y-0 scale-100'
-                                        : 'translate-y-2 scale-95'
-                                }`}
-                            >
+                            <div className="flex flex-col items-center transition-transform duration-300 ease-out translate-y-2 scale-95 group-hover:translate-y-0 group-hover:scale-100">
                                 <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-white uppercase">
                                     In arrivo il
                                 </span>
