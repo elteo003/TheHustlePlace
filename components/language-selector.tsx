@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import { useEffect, useRef, useState, startTransition } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Check, ChevronDown, Globe } from 'lucide-react'
 import { LanguageCode, useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
     const [isOpen, setIsOpen] = useState(false)
     const [hovered, setHovered] = useState<LanguageCode | null>(null)
     const containerRef = useRef<HTMLDivElement | null>(null)
+    const shouldReduceMotion = useReducedMotion()
 
     useEffect(() => {
         if (!isOpen) return
@@ -98,7 +99,7 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                 <span className="w-7 flex-shrink-0 text-center font-semibold tracking-wide">{currentOption.label}</span>
                 <motion.span
                     animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+                    transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
                     className="inline-flex items-center justify-center flex-shrink-0"
                 >
                     <ChevronDown className="h-3 w-3 text-white/40 group-hover:text-white/70" />
@@ -109,71 +110,82 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                 {isOpen && (
                     <motion.div
                         key="language-dropdown"
-                        initial={{ opacity: 0, scale: 0.94, y: -6 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.94, y: -6 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 32 }}
-                        style={{ transformOrigin: 'top center' }}
-                        className="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-1 backdrop-blur-2xl shadow-2xl shadow-black/80"
+                        initial={{
+                            opacity: 0,
+                            scale: shouldReduceMotion ? 1 : 0.96,
+                            y: shouldReduceMotion ? 0 : -4,
+                        }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            y: 0,
+                            transition: shouldReduceMotion
+                                ? { duration: 0.15 }
+                                : { duration: 0.16, ease: [0.16, 1, 0.3, 1] },
+                        }}
+                        exit={{
+                            opacity: 0,
+                            scale: shouldReduceMotion ? 1 : 0.97,
+                            y: shouldReduceMotion ? 0 : -3,
+                            transition: { duration: 0.12, ease: [0.23, 1, 0.32, 1] },
+                        }}
+                        style={{ transformOrigin: 'top right', willChange: 'transform, opacity' }}
+                        className="absolute right-0 top-full z-50 mt-1.5 w-36 rounded-xl border border-white/10 bg-zinc-950/92 p-1 backdrop-blur-md shadow-xl shadow-black/60"
                     >
                         <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
                             Lingua audio
                         </div>
-                        <LayoutGroup id="lang-menu-hover">
-                            <div className="flex flex-col gap-0.5">
-                                {options.map((opt) => {
-                                    const isSelected = opt.code === language
-                                    const isHovered = hovered === opt.code
-                                    return (
-                                        <motion.button
-                                            key={opt.code}
-                                            type="button"
-                                            onClick={() => {
+                        <div className="flex flex-col gap-0.5">
+                            {options.map((opt) => {
+                                const isSelected = opt.code === language
+                                const isHovered = hovered === opt.code
+                                return (
+                                    <motion.button
+                                        key={opt.code}
+                                        type="button"
+                                        onClick={() => {
+                                            setIsOpen(false)
+                                            startTransition(() => {
                                                 setLanguage(opt.code)
-                                                setIsOpen(false)
-                                            }}
-                                            onMouseEnter={() => setHovered(opt.code)}
-                                            onMouseLeave={() => setHovered(null)}
-                                            whileTap={{ scale: 0.97 }}
-                                            transition={{ type: 'spring', stiffness: 500, damping: 32 }}
-                                            className={cn(
-                                                'relative flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium outline-none transition-colors duration-150',
-                                                isSelected ? 'text-white' : 'text-white/60 hover:text-white'
-                                            )}
-                                        >
-                                            {isHovered && (
-                                                <motion.span
-                                                    layoutId="lang-hover-highlight"
-                                                    className="absolute inset-0 rounded-lg bg-white/[0.08]"
-                                                    transition={{
-                                                        type: 'spring',
-                                                        stiffness: 500,
-                                                        damping: 35,
-                                                    }}
-                                                />
-                                            )}
-                                            <span className="relative z-10 truncate text-[13px]">{opt.fullName}</span>
+                                            })
+                                        }}
+                                        onMouseEnter={() => setHovered(opt.code)}
+                                        onMouseLeave={() => setHovered(null)}
+                                        whileTap={{ scale: 0.97 }}
+                                        transition={{ duration: 0.1 }}
+                                        className={cn(
+                                            'relative flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium outline-none transition-colors duration-150',
+                                            isSelected ? 'text-white' : 'text-white/60 hover:text-white'
+                                        )}
+                                    >
+                                        {isHovered && (
+                                            <motion.span
+                                                layoutId="lang-hover-highlight"
+                                                className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                                                initial={false}
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 550,
+                                                    damping: 35,
+                                                    mass: 0.5,
+                                                }}
+                                            />
+                                        )}
+                                        <span className="relative z-10 truncate text-[13px]">{opt.fullName}</span>
 
-                                            {isSelected && (
-                                                <motion.span
-                                                    initial={{ scale: 0, opacity: 0 }}
-                                                    animate={{ scale: 1, opacity: 1 }}
-                                                    exit={{ scale: 0, opacity: 0 }}
-                                                    transition={{
-                                                        type: 'spring',
-                                                        stiffness: 500,
-                                                        damping: 30,
-                                                    }}
-                                                    className="relative z-10 ml-2 text-white"
-                                                >
-                                                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                                                </motion.span>
-                                            )}
-                                        </motion.button>
-                                    )
-                                })}
-                            </div>
-                        </LayoutGroup>
+                                        {isSelected && (
+                                            <motion.span
+                                                initial={false}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                className="relative z-10 ml-2 text-white"
+                                            >
+                                                <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                                            </motion.span>
+                                        )}
+                                    </motion.button>
+                                )
+                            })}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
