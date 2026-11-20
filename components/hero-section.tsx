@@ -345,84 +345,98 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 <div className={`relative z-10 h-full ${showUpcomingTrailers ? 'pointer-events-none' : ''}`}>
                     <div
                         className={cn(
-                            'hero-meta-hit absolute inset-x-0 bottom-0 transition-[opacity,transform] duration-200 ease-out-expo',
+                            'hero-meta-hit absolute inset-x-0 bottom-0 pointer-events-auto',
                             isPhoneLandscape
                                 ? 'pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-6 pb-[max(0.6rem,env(safe-area-inset-bottom))]'
-                                : 'px-4 pt-16 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0',
-                            metaVisible
-                                ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
+                                : 'px-4 pt-20 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-16 md:left-4 md:max-w-2xl md:px-4 md:pb-0'
                         )}
-                        onMouseEnter={() => setMetaHovered(true)}
-                        onMouseLeave={() => setMetaHovered(false)}
+                        onMouseEnter={() => {
+                            setMetaHovered(true)
+                            setNavbarVisible(true)
+                        }}
+                        onMouseLeave={() => {
+                            setMetaHovered(false)
+                            if (!isScrolled && !pastHero) {
+                                setNavbarVisible(false)
+                            }
+                        }}
                     >
-                        <h1
-                            className={cn(
-                                'font-bold leading-[1.1] tracking-tight text-white',
-                                isPhoneLandscape
-                                    ? 'line-clamp-1 text-2xl'
-                                    : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
-                            )}
-                        >
-                            {featuredTitle}
-                        </h1>
-
-                        {(releaseYear || rating) && (
-                            <p className={cn('flex items-center gap-2 text-white/70', isPhoneLandscape ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
-                                {releaseYear && <span>{releaseYear}</span>}
-                                {releaseYear && rating && <span className="text-white/25">·</span>}
-                                {rating && (
-                                    <span className="inline-flex items-center gap-1">
-                                        <span className="text-amber-400">★</span>
-                                        {rating}
-                                    </span>
-                                )}
-                            </p>
-                        )}
-
-                        {featuredMovie.overview && !isPhoneLandscape && (
-                            <p className="mt-3 hidden text-base leading-relaxed text-white/75 line-clamp-2 md:block lg:mt-4 lg:text-xl lg:line-clamp-3">
-                                {featuredMovie.overview}
-                            </p>
-                        )}
-
                         <div
                             className={cn(
-                                'flex items-center',
-                                isPhoneLandscape
-                                    ? 'mt-2 flex-row gap-2'
-                                    : 'mt-4 flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3'
+                                'transition-[opacity,transform] duration-200 ease-out',
+                                metaVisible
+                                    ? 'opacity-100 translate-y-0 pointer-events-auto'
+                                    : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
                             )}
                         >
-                            <button
-                                type="button"
-                                onClick={handleWatchNow}
+                            <h1
                                 className={cn(
-                                    'btn-play inline-flex items-center justify-center gap-2',
-                                    isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
+                                    'font-bold leading-[1.1] tracking-tight text-white',
+                                    isPhoneLandscape
+                                        ? 'line-clamp-1 text-2xl'
+                                        : 'line-clamp-2 text-3xl sm:text-5xl lg:text-7xl'
                                 )}
                             >
-                                <Play className="w-5 h-5 fill-current play-mark-pulse" />
-                                Guarda
-                            </button>
+                                {featuredTitle}
+                            </h1>
 
-                            <button
-                                type="button"
-                                onClick={handleMoreInfo}
-                                className={cn(
-                                    'btn-ghost-outline inline-flex items-center justify-center gap-2',
-                                    isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
-                                )}
-                            >
-                                <Info className="w-5 h-5" />
-                                Dettagli
-                            </button>
-
-                            {!isTouch && (
-                                <div className="hidden items-center gap-1 sm:flex">
-                                    {renderIconControls()}
-                                </div>
+                            {(releaseYear || rating) && (
+                                <p className={cn('flex items-center gap-2 text-white/70', isPhoneLandscape ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
+                                    {releaseYear && <span>{releaseYear}</span>}
+                                    {releaseYear && rating && <span className="text-white/25">·</span>}
+                                    {rating && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <span className="text-amber-400">★</span>
+                                            {rating}
+                                        </span>
+                                    )}
+                                </p>
                             )}
+
+                            {featuredMovie.overview && !isPhoneLandscape && (
+                                <p className="mt-3 hidden text-base leading-relaxed text-white/75 line-clamp-2 md:block lg:mt-4 lg:text-xl lg:line-clamp-3">
+                                    {featuredMovie.overview}
+                                </p>
+                            )}
+
+                            <div
+                                className={cn(
+                                    'flex items-center',
+                                    isPhoneLandscape
+                                        ? 'mt-2 flex-row gap-2'
+                                        : 'mt-4 flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3'
+                                )}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={handleWatchNow}
+                                    className={cn(
+                                        'btn-play inline-flex items-center justify-center gap-2',
+                                        isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
+                                    )}
+                                >
+                                    <Play className="w-5 h-5 fill-current play-mark-pulse" />
+                                    Guarda
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleMoreInfo}
+                                    className={cn(
+                                        'btn-ghost-outline inline-flex items-center justify-center gap-2',
+                                        isPhoneLandscape ? 'h-10 w-auto px-4 text-sm' : 'h-12 w-full px-6 sm:w-auto'
+                                    )}
+                                >
+                                    <Info className="w-5 h-5" />
+                                    Dettagli
+                                </button>
+
+                                {!isTouch && (
+                                    <div className="hidden items-center gap-1 sm:flex">
+                                        {renderIconControls()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
