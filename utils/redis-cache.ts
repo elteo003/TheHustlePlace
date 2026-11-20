@@ -263,7 +263,7 @@ export const redisCache = new RedisCacheService()
 
 // Cleanup expired cache entries every hour (for fallback cache)
 if (typeof window === 'undefined') {
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
         const now = Date.now()
         const keysToDelete: string[] = []
         
@@ -277,4 +277,5 @@ if (typeof window === 'undefined') {
             redisCache['fallbackCache'].delete(key)
         })
     }, 3600000) // 1 hour
+    cleanupTimer.unref?.()
 }
