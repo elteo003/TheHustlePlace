@@ -160,6 +160,23 @@ describe('watch-history', () => {
         expect(syncWatchHistoryFromRemote([])).toEqual([])
         expect(getWatchHistory()).toEqual([])
     })
+
+    it('invia la richiesta di tracciamento con keepalive: true per garantire la sincronizzazione a chiusura pagina', () => {
+        const fetchSpy = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchSpy)
+        try {
+            trackWatchEntry({ id: 99, type: 'movie', title: 'Film Test', currentTime: 120, duration: 600 })
+            expect(fetchSpy).toHaveBeenCalledWith(
+                '/api/watch-history',
+                expect.objectContaining({
+                    method: 'POST',
+                    keepalive: true,
+                })
+            )
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
 })
 
 describe('watch-progress', () => {

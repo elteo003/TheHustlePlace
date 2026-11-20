@@ -214,6 +214,35 @@ describe('AD-HOC REVERSE ENGINEERING & VALIDATION SUITE: TV App Playback Issues'
             expect(seekContext).toContain('seekDebounceTimer')
             expect(seekContext).toContain('clearTimeout')
         })
+
+        it('proves tv-os.html findLastWatched correctly matches movies as well as series for cross-device resume', async () => {
+            const fs = await import('fs')
+            const html = fs.readFileSync('public/tv-os.html', 'utf8')
+            const findIdx = html.indexOf('function findLastWatched')
+            const findCode = html.substring(findIdx, findIdx + 900)
+
+            // Must accept wantedType parameter and return movie type with currentTime
+            expect(findCode).toContain('wantedType')
+            expect(findCode).toContain("type: 'movie'")
+            expect(findCode).toContain('currentTime: e.currentTime')
+
+            // renderDetail must query for movie and use threshold 5s
+            expect(html).toContain("findLastWatched(hist, id, 'movie')")
+            expect(html).toContain('movieStart > 5')
+        })
+
+        it('proves tv-os.html resolvePlayback uses Happy Eyeballs parallel racing and 8000ms relay timeout', async () => {
+            const fs = await import('fs')
+            const html = fs.readFileSync('public/tv-os.html', 'utf8')
+            const resolveIdx = html.indexOf('function resolvePlayback')
+            const resolveCode = html.substring(resolveIdx, resolveIdx + 1800)
+
+            // Must use parallel origin backup timer after 3.5s and 8000ms relay timeout
+            expect(resolveCode).toContain('backupTimer = setTimeout')
+            expect(resolveCode).toContain('3500')
+            expect(resolveCode).toContain('8000')
+            expect(resolveCode).toContain('tryRelay')
+        })
     })
 
     describe('Verification of Correct Mathematical Solution', () => {

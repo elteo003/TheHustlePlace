@@ -1157,37 +1157,73 @@
 
   var relayCircuitBrokenUntil = 0;
   function resolvePlayback(query, done) {
+    var finished = false;
+    function finish(payload) {
+      if (finished) return;
+      if (payload && payload.data && payload.data.master) {
+        finished = true;
+        done(payload);
+      }
+    }
+
     function fromOrigin(attempt) {
       getJson('/api/player/resolve?' + query, function (json) {
-        if (json && json.data && json.data.master) { done(json); return; }
-        if (attempt >= 3) { done(json); return; }
+        if (json && json.data && json.data.master) { finish(json); return; }
+        if (attempt >= 3) { if (!finished) done(json); return; }
         setTimeout(function () { fromOrigin(attempt + 1); }, 600 * attempt);
       }, 45000);
     }
+
     if (Date.now() < relayCircuitBrokenUntil) {
       fromOrigin(1);
       return;
     }
-    getJson('/api/player/relay', function (cfg) {
-      var rUrl = cfg && cfg.url ? String(cfg.url) : '';
-      var rToken = cfg && cfg.token ? String(cfg.token) : '';
-      if (rUrl && rToken) {
-        try { localStorage.setItem('vixsrc_last_relay', JSON.stringify({ url: rUrl, token: rToken })); } catch (e) {}
-      } else if (!rUrl) {
-        try {
-          var saved = JSON.parse(localStorage.getItem('vixsrc_last_relay') || '{}');
-          if (saved && saved.url) { rUrl = String(saved.url); rToken = String(saved.token || ''); }
-        } catch (e) {}
-      }
+
+    var savedRelay = null;
+    try { savedRelay = JSON.parse(localStorage.getItem('vixsrc_last_relay') || '{}'); } catch (e) {}
+
+    function tryRelay(rUrl, rToken) {
       var direct = relayResolveUrl(rUrl, query, rToken);
-      if (!direct) { fromOrigin(1); return; }
+      if (!direct) return false;
+      var backupTimer = setTimeout(function () {
+        if (!finished) fromOrigin(1);
+      }, 3500);
+
       getJsonPlain(direct, function (json) {
-        if (json && json.data && json.data.master) { done(json); return; }
-        if (json && streamIsMissing(json.error)) { done(json); return; }
+        clearTimeout(backupTimer);
+        if (json && json.data && json.data.master) {
+          finish(json);
+          return;
+        }
+        if (json && streamIsMissing(json.error)) {
+          if (!finished) done(json);
+          return;
+        }
         relayCircuitBrokenUntil = Date.now() + 30000;
-        fromOrigin(1);
-      }, 4500);
-    }, 4000);
+        if (!finished) fromOrigin(1);
+      }, 8000);
+      return true;
+    }
+
+    if (savedRelay && savedRelay.url) {
+      tryRelay(String(savedRelay.url), String(savedRelay.token || ''));
+      getJson('/api/player/relay', function (cfg) {
+        if (cfg && cfg.url && cfg.token) {
+          try { localStorage.setItem('vixsrc_last_relay', JSON.stringify({ url: String(cfg.url), token: String(cfg.token) })); } catch (e) {}
+        }
+      }, 4000);
+    } else {
+      getJson('/api/player/relay', function (cfg) {
+        var rUrl = cfg && cfg.url ? String(cfg.url) : '';
+        var rToken = cfg && cfg.token ? String(cfg.token) : '';
+        if (rUrl && rToken) {
+          try { localStorage.setItem('vixsrc_last_relay', JSON.stringify({ url: rUrl, token: rToken })); } catch (e) {}
+        }
+        if (!tryRelay(rUrl, rToken)) {
+          fromOrigin(1);
+        }
+      }, 4000);
+    }
   }
 
   function sendJson(method, url, body, done, waitMs) {
@@ -1201,6 +1237,7 @@
     fetch(url, {
       method: method,
       credentials: 'same-origin',
+      keepalive: true,
       headers: deviceHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body)
     }).then(function (res) { return res.json(); }).then(finish).catch(function () { finish(null); });
@@ -3407,15 +3444,28 @@
     return m + ':' + z(s);
   }
 
-  function findLastWatched(history, id) {
-    var i, e;
+  function findLastWatched(history, id, wantedType) {
+    var i, e, kind;
     id = Number(id);
     for (i = 0; i < (history || []).length; i++) {
       e = history[i];
-      if (itemType(e, 'movie') === 'tv' && Number(itemId(e)) === id && e.season && e.episode) {
+      if (Number(itemId(e)) !== id) continue;
+      kind = itemType(e, 'movie');
+      if (wantedType && kind !== wantedType) continue;
+      if (kind === 'tv') {
+        if (e.season && e.episode) {
+          return {
+            type: 'tv',
+            season: Number(e.season),
+            episode: Number(e.episode),
+            progress: e.progress || 0,
+            currentTime: e.currentTime,
+            duration: e.duration
+          };
+        }
+      } else {
         return {
-          season: Number(e.season),
-          episode: Number(e.episode),
+          type: 'movie',
           progress: e.progress || 0,
           currentTime: e.currentTime,
           duration: e.duration
@@ -3463,7 +3513,7 @@
       }
       getJson('/api/watch-history', function (histJson) {
         var hist = mergeHistory(histJson);
-        var lw = findLastWatched(hist, id);
+        var lw = findLastWatched(hist, id, 'movie');
         var movieStart = (lw && lw.currentTime) ? lw.currentTime : 0;
         rememberPlay(item, 'movie', id);
         root.innerHTML = '';
@@ -3475,7 +3525,7 @@
         copy.appendChild(el('h1', '', itemTitle(item)));
         copy.appendChild(el('p', 'overview', item.overview || ''));
         if (!noWatch) {
-          var playLabel = (movieStart > 30) ? ('Continua (' + fmtTime(movieStart) + ')') : 'Riproduci';
+          var playLabel = (movieStart > 5) ? ('Continua (' + fmtTime(movieStart) + ')') : 'Riproduci';
           copy.appendChild(focusBtn('action main', playLabel, 'detail-play', function () {
             rememberPlay(item, 'movie', id);
             openPlay('movie', id, null, null, movieStart);

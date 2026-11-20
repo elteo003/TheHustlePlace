@@ -288,6 +288,7 @@ export function trackWatchEntry(input: TrackWatchInput): void {
         void fetch('/api/watch-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
             body: JSON.stringify({
                 id: input.id,
                 type: input.type,

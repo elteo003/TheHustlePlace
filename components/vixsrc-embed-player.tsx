@@ -61,6 +61,7 @@ export function VixsrcEmbedPlayer({
     const shell = usePlayerChrome()
     const hlsRef = useRef<Hls | null>(null)
     const resumeAtRef = useRef(startAt ?? 0)
+    const videoIdRef = useRef<number | undefined>(undefined)
     const onPlaybackRef = useRef(onPlayback)
     const onEndedRef = useRef(onEnded)
     onPlaybackRef.current = onPlayback
@@ -152,8 +153,14 @@ export function VixsrcEmbedPlayer({
         const onVisible = () => {
             if (nativeControls && document.visibilityState === 'visible') tryPlay()
         }
+        const onPageHide = () => {
+            if (video && video.currentTime > 5 && !video.ended) {
+                emit('pause', video, videoIdRef.current)
+            }
+        }
         document.addEventListener('keydown', onKeyDown)
         document.addEventListener('visibilitychange', onVisible)
+        window.addEventListener('pagehide', onPageHide)
         const fail = (missing: boolean, message: string) => {
             if (cancelled) return
             window.clearTimeout(timeout)
@@ -195,6 +202,7 @@ export function VixsrcEmbedPlayer({
                 revokeSource = source.revoke
                 const playlist = source.url
                 const videoId = payload.data.videoId
+                videoIdRef.current = videoId
                 let readyTriggered = false
                 const onReady = () => {
                     if (cancelled || readyTriggered) return
@@ -423,6 +431,10 @@ export function VixsrcEmbedPlayer({
 
         return () => {
             cancelled = true
+            window.removeEventListener('pagehide', onPageHide)
+            if (video && video.currentTime > 5 && !video.ended) {
+                emit('pause', video, videoIdRef.current)
+            }
             window.clearTimeout(timeout)
             window.clearTimeout(stallTimer)
             window.clearTimeout(refreshTimer)
