@@ -40,7 +40,7 @@ export function resolveContentType(
     return fallback
 }
 
-export function getContentPosterUrl(path?: string | null, size: 'w500' | 'w780' | 'original' = 'w500') {
+export function getContentPosterUrl(path?: string | null, size: 'w500' | 'w780' | 'w1280' | 'original' = 'w500') {
     if (!path || path === '/placeholder-movie.svg') {
         return '/placeholder-movie.svg'
     }

@@ -190,7 +190,7 @@ export function findMainTrailer(videos: TMDBVideo[]): TMDBVideo | null {
 /**
  * Genera URL immagine TMDB
  */
-export function getTMDBImageUrl(path: string | null, size: 'w500' | 'w780' | 'original' = 'w500'): string {
+export function getTMDBImageUrl(path: string | null, size: 'w500' | 'w780' | 'w1280' | 'original' = 'w500'): string {
     if (!path) return '/placeholder-movie.svg'
     return `https://image.tmdb.org/t/p/${size}${path}`
 }

@@ -117,7 +117,42 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         onEnded: finishTrailer,
     })
 
-    // Notifica quando la Hero Section è caricata (incluso precaricamento immagine)
+    const wasPlayingBeforeScrollRef = useRef(false)
+
+    // Gestione pausa fuori schermo e ripresa automatica del trailer da dove si era interrotto
+    useEffect(() => {
+        const node = heroRef.current
+        if (!node) return
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                const inView = entry.isIntersecting
+                const win = iframeRef.current?.contentWindow
+                if (!win || !trailer || trailerEnded || showUpcomingTrailers) return
+
+                if (!inView) {
+                    if (revealed) {
+                        wasPlayingBeforeScrollRef.current = true
+                        postYouTubeCommand(win, 'pauseVideo')
+                    }
+                } else {
+                    if (wasPlayingBeforeScrollRef.current) {
+                        wasPlayingBeforeScrollRef.current = false
+                        postYouTubeCommand(win, 'playVideo')
+                    }
+                }
+            },
+            {
+                rootMargin: '100px 0px 0px 0px',
+                threshold: 0.05,
+            }
+        )
+
+        observer.observe(node)
+        return () => observer.disconnect()
+    }, [trailer, trailerEnded, showUpcomingTrailers, revealed])
+
+    // Notifica quando la Hero Section è caricata (incluso precaricamento immagine ottimizzata a w1280)
     useEffect(() => {
         if (!featuredMovie) return
         const handleReady = () => {
@@ -127,7 +162,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
         const imgPath = featuredMovie.backdrop_path || featuredMovie.poster_path
         if (imgPath && typeof window !== 'undefined') {
             const img = new window.Image()
-            img.src = getTMDBImageUrl(imgPath, 'original')
+            img.src = getTMDBImageUrl(imgPath, 'w1280')
             img.onload = handleReady
             img.onerror = handleReady
         } else {
@@ -145,6 +180,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     // Reset trailerEnded quando cambia il film per far riapparire la sezione prossimi
     useEffect(() => {
         if (featuredMovie) {
+            wasPlayingBeforeScrollRef.current = false
             setTrailerEnded(false)
             setIsMuted(true)
         }
@@ -283,13 +319,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                 {/* Background Video/Image */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden">
                     <div
-                        className="h-full w-full bg-cover bg-center"
+                        className="h-full w-full bg-cover bg-center transition-opacity duration-700 ease-out pointer-events-none"
                         style={{
-                            backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'original')})`,
+                            backgroundImage: `url(${getTMDBImageUrl(featuredMovie.backdrop_path, 'w1280')})`,
                             backgroundRepeat: 'no-repeat',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center 45%',
                             filter: 'brightness(0.7) saturate(1.05)',
+                            opacity: revealed && !showUpcoming ? 0 : 1,
                         }}
                     />
                     {trailer && !showUpcoming && (
