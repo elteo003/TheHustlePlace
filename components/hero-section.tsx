@@ -39,50 +39,14 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     const isPhoneLandscape = useIsPhoneLandscape()
     const reduceMotion = useReducedMotion()
     const heroRef = useRef<HTMLDivElement>(null)
-    const [pastHero, setPastHero] = useState(false)
-    const [isScrolled, setIsScrolled] = useState(false)
     const [metaHovered, setMetaHovered] = useState(false)
     const [introVisible, setIntroVisible] = useState(true)
     const showMeta = isTouch || metaHovered || introVisible
 
     useEffect(() => {
-        let rafId: number | null = null
-        let heroHeight = heroRef.current?.offsetHeight ?? 600
-
-        const updateHeroHeight = () => {
-            if (heroRef.current) {
-                heroHeight = heroRef.current.offsetHeight
-            }
-        }
-
-        const sync = () => {
-            if (rafId !== null) return
-            rafId = requestAnimationFrame(() => {
-                rafId = null
-                const scrollY = window.scrollY || document.documentElement.scrollTop || 0
-                const scrolled = scrollY > 20
-                const isPast = scrollY >= (heroHeight - 72)
-                setIsScrolled((prev) => (prev === scrolled ? prev : scrolled))
-                setPastHero((prev) => (prev === isPast ? prev : isPast))
-            })
-        }
-        sync()
-        window.addEventListener('scroll', sync, { passive: true })
-        window.addEventListener('resize', () => {
-            updateHeroHeight()
-            sync()
-        }, { passive: true })
-        return () => {
-            if (rafId !== null) cancelAnimationFrame(rafId)
-            window.removeEventListener('scroll', sync)
-            window.removeEventListener('resize', sync)
-        }
-    }, [])
-
-    useEffect(() => {
-        setNavbarVisible(isScrolled || pastHero || showMeta)
+        setNavbarVisible(showMeta)
         return () => setNavbarVisible(true)
-    }, [isScrolled, pastHero, setNavbarVisible, showMeta])
+    }, [setNavbarVisible, showMeta])
 
     useEffect(() => {
         setIntroVisible(true)
@@ -140,6 +104,9 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
             ([entry]) => {
                 const inView = entry.isIntersecting
                 const win = iframeRef.current?.contentWindow
+                if (iframeRef.current) {
+                    iframeRef.current.style.visibility = inView ? 'visible' : 'hidden'
+                }
                 if (!win || !trailer || trailerEnded || showUpcomingTrailers) return
 
                 if (!inView) {
@@ -318,7 +285,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
     }
 
     const showUpcoming = trailerEnded || showUpcomingTrailers
-    const metaVisible = (showMeta || isScrolled) && !showUpcoming
+    const metaVisible = showMeta && !showUpcoming
 
     return (
         <>
@@ -402,9 +369,7 @@ export function HeroSection({ onTrailerEnded, onMovieChange, showUpcomingTrailer
                         }}
                         onMouseLeave={() => {
                             setMetaHovered(false)
-                            if (!isScrolled && !pastHero) {
-                                setNavbarVisible(false)
-                            }
+                            setNavbarVisible(false)
                         }}
                     >
                         <div

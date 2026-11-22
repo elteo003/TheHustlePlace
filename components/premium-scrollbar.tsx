@@ -53,7 +53,7 @@ export function PremiumScrollbar() {
     }, [])
 
     const show = useCallback(() => {
-        if (containerRef.current) {
+        if (containerRef.current && !containerRef.current.classList.contains('is-active')) {
             containerRef.current.classList.add('is-active')
         }
         if (hideTimer.current) clearTimeout(hideTimer.current)

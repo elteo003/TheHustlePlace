@@ -11,11 +11,8 @@ import { DeviceCodeButton } from '@/components/device-code-button'
 import { useNavbarContext } from '@/contexts/NavbarContext'
 import { NavIndicatorLink, NAV_LINKS, isNavLinkActive } from '@/components/ui/nav-indicator-link'
 import { springTransition } from '@/lib/motion'
-import { NAV_VIEW_TRANSITION_NAME } from '@/lib/view-transitions'
 import { cn } from '@/lib/utils'
 import { useIsPhoneLandscape } from '@/hooks/useMediaQuery'
-
-const navRevealTransition = { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
 
 interface NavbarProps {
     immersive?: boolean
@@ -30,6 +27,24 @@ export function Navbar({ immersive = false }: NavbarProps) {
     const isPhoneLandscape = useIsPhoneLandscape()
     const onSearchPage = pathname === '/search'
     const peekLeave = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const [scrolled, setScrolled] = useState(false)
+
+    useEffect(() => {
+        if (!immersive) return
+        let ticking = false
+        const onScroll = () => {
+            if (ticking) return
+            ticking = true
+            requestAnimationFrame(() => {
+                ticking = false
+                const isScrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 20
+                setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev))
+            })
+        }
+        onScroll()
+        window.addEventListener('scroll', onScroll, { passive: true })
+        return () => window.removeEventListener('scroll', onScroll)
+    }, [immersive])
 
     useEffect(() => {
         setOptimisticHref(null)
@@ -62,7 +77,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
         peekLeave.current = setTimeout(() => setIsHovered(false), 80)
     }
 
-    const shouldShow = !immersive || contextVisible || searchFocused || isMenuOpen || isHovered
+    const shouldShow = !immersive || scrolled || contextVisible || searchFocused || isMenuOpen || isHovered
 
     return (
         <>
@@ -74,26 +89,20 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     onMouseLeave={releasePeek}
                 />
             )}
-            <motion.nav
-            aria-label="Navigazione principale"
-            initial={false}
-            animate={{
-                y: shouldShow ? 0 : -8,
-                opacity: shouldShow ? 1 : 0,
-            }}
-            transition={navRevealTransition}
-            onMouseEnter={immersive ? holdPeek : undefined}
-            onMouseLeave={immersive ? releasePeek : undefined}
-            style={{ viewTransitionName: NAV_VIEW_TRANSITION_NAME }}
-            className={cn(
-                'fixed top-0 left-0 right-0 z-50 border-b border-white/5',
-                'bg-black/70 backdrop-blur-xl',
-                isPhoneLandscape
-                    ? 'py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]'
-                    : 'content-gutter py-4',
-                !shouldShow && 'pointer-events-none'
-            )}
-        >
+            <nav
+                aria-label="Navigazione principale"
+                onMouseEnter={immersive ? holdPeek : undefined}
+                onMouseLeave={immersive ? releasePeek : undefined}
+                className={cn(
+                    'fixed top-0 left-0 right-0 z-50 border-b border-white/5',
+                    'bg-black/70 backdrop-blur-xl',
+                    'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[transform,opacity]',
+                    shouldShow ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0 pointer-events-none',
+                    isPhoneLandscape
+                        ? 'py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]'
+                        : 'content-gutter py-4'
+                )}
+            >
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-6 lg:gap-8 min-w-0">
                     <Link
@@ -210,7 +219,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.nav>
+        </nav>
         </>
     )
 }

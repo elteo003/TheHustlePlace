@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, ReactNode, useState } from 'react'
+import React, { createContext, useContext, ReactNode, useState, useMemo } from 'react'
 
 interface NavbarContextType {
     isVisible: boolean
@@ -19,12 +19,15 @@ export const NavbarProvider: React.FC<NavbarProviderProps> = ({ children }) => {
     const [isVisible, setIsVisible] = useState(true)
     const [isHovered, setIsHovered] = useState(false)
 
-    const value: NavbarContextType = {
-        isVisible,
-        setIsVisible,
-        isHovered,
-        setIsHovered
-    }
+    const value: NavbarContextType = useMemo(
+        () => ({
+            isVisible,
+            setIsVisible,
+            isHovered,
+            setIsHovered,
+        }),
+        [isVisible, isHovered]
+    )
 
     return (
         <NavbarContext.Provider value={value}>

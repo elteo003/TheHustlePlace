@@ -104,7 +104,7 @@ export function CustomScrollbar({
                     <button
                         type="button"
                         onClick={() => scroll('left')}
-                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-180 hover:scale-110 hover:border-white/50 hover:bg-black/90 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-zinc-900/90 text-white shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-[transform,background-color,border-color,box-shadow] duration-180 hover:scale-110 hover:border-white/50 hover:bg-zinc-800/95 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         aria-label="Scorri indietro"
                     >
                         <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
@@ -142,7 +142,7 @@ export function CustomScrollbar({
                     <button
                         type="button"
                         onClick={() => scroll('right')}
-                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-180 hover:scale-110 hover:border-white/50 hover:bg-black/90 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="pointer-events-auto flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center rounded-full border border-white/25 bg-zinc-900/90 text-white shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-[transform,background-color,border-color,box-shadow] duration-180 hover:scale-110 hover:border-white/50 hover:bg-zinc-800/95 hover:shadow-[0_6px_28px_rgba(0,0,0,0.85)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         aria-label="Scorri avanti"
                     >
                         <ChevronRight className="h-6 w-6" strokeWidth={2.5} />
