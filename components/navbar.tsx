@@ -95,54 +95,51 @@ export function Navbar({ immersive = false }: NavbarProps) {
             )}
         >
             <div className="flex items-center justify-between gap-4">
-                <Link
-                    href="/home"
-                    className="flex items-center gap-2.5 group flex-shrink-0"
-                    aria-label="TheHustlePlace — Home"
-                >
-                    <motion.div
-                        className={cn(
-                            'bg-white rounded-lg flex items-center justify-center',
-                            isPhoneLandscape ? 'h-7 w-7' : 'h-8 w-8'
-                        )}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
-                        transition={springTransition}
+                <div className="flex items-center gap-6 lg:gap-8 min-w-0">
+                    <Link
+                        href="/home"
+                        className="flex items-center gap-2.5 group flex-shrink-0"
+                        aria-label="TheHustlePlace — Home"
                     >
-                        <span className="text-black font-bold text-sm">H</span>
-                    </motion.div>
-                    <span
-                        className={cn(
-                            'text-lg font-semibold text-white tracking-tight',
-                            isPhoneLandscape ? 'hidden' : 'hidden sm:block'
-                        )}
-                    >
-                        TheHustlePlace
-                    </span>
-                </Link>
+                        <motion.div
+                            className={cn(
+                                'bg-white rounded-lg flex items-center justify-center',
+                                isPhoneLandscape ? 'h-7 w-7' : 'h-8 w-8'
+                            )}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={springTransition}
+                        >
+                            <span className="text-black font-bold text-sm">H</span>
+                        </motion.div>
+                        <span
+                            className={cn(
+                                'text-lg font-semibold text-white tracking-tight',
+                                isPhoneLandscape ? 'hidden' : 'hidden sm:block'
+                            )}
+                        >
+                            TheHustlePlace
+                        </span>
+                    </Link>
 
-                <LayoutGroup id="main-nav">
-                    <div className={cn('items-center gap-0.5', isPhoneLandscape ? 'hidden' : 'hidden md:flex')}>
-                        {NAV_LINKS.map(({ href, label }) => (
-                            <NavIndicatorLink
-                                key={href}
-                                href={href}
-                                label={label}
-                                layoutId="nav-active-pill"
-                                active={isNavLinkActive(activePath, href)}
-                                onClick={() => setOptimisticHref(href)}
-                            />
-                        ))}
+                    <div className={cn('items-center gap-2', isPhoneLandscape ? 'hidden' : 'hidden md:flex')}>
+                        <LayoutGroup id="main-nav">
+                            <div className="flex items-center gap-0.5">
+                                {NAV_LINKS.map(({ href, label }) => (
+                                    <NavIndicatorLink
+                                        key={href}
+                                        href={href}
+                                        label={label}
+                                        layoutId="nav-active-pill"
+                                        active={isNavLinkActive(activePath, href)}
+                                        onClick={() => setOptimisticHref(href)}
+                                    />
+                                ))}
+                            </div>
+                        </LayoutGroup>
+
+                        <SearchBar onFocusChange={setSearchFocused} />
                     </div>
-                </LayoutGroup>
-
-                <div
-                    className={cn(
-                        'mx-4 min-w-0 flex-1 max-w-sm',
-                        isPhoneLandscape ? 'hidden' : onSearchPage ? 'block' : 'hidden lg:block'
-                    )}
-                >
-                    <SearchBar onFocusChange={setSearchFocused} />
                 </div>
 
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -189,7 +186,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                         )}
                     >
                         <div className="px-4 py-4 space-y-4">
-                            <SearchBar onFocusChange={setSearchFocused} />
+                            <SearchBar onFocusChange={setSearchFocused} variant="drawer" />
                             <LanguageSelector variant="drawer" />
                             <LayoutGroup id="mobile-nav">
                                 <div className="space-y-0.5">
