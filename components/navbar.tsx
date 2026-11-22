@@ -69,7 +69,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
             {immersive && (
                 <div
                     aria-hidden
-                    className="fixed inset-x-0 top-0 z-[49] h-18"
+                    className="fixed inset-x-0 top-0 z-[49] h-[72px]"
                     onMouseEnter={holdPeek}
                     onMouseLeave={releasePeek}
                 />
