@@ -274,13 +274,11 @@ export function SearchPageClient() {
                                 <h1 className="flex items-baseline gap-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
                                     <span className="truncate">Risultati per &ldquo;{query}&rdquo;</span>
                                     {loading && <Spinner size="sm" />}
-                                    <span className="text-sm font-normal text-white/50">
-                                        {loading && isFreshSearch
-                                            ? 'Cerco i titoli…'
-                                            : totalResults > 0
-                                              ? `${totalResults} risultati`
-                                              : 'Nessun risultato'}
-                                    </span>
+                                    {loading && isFreshSearch && (
+                                        <span className="text-sm font-normal text-white/50">
+                                            Cerco i titoli…
+                                        </span>
+                                    )}
                                 </h1>
                             </div>
 
@@ -290,9 +288,9 @@ export function SearchPageClient() {
                                 value={activeTab}
                                 onChange={setActiveTab}
                                 items={[
-                                    { id: 'all', label: `Tutto (${totalResults})` },
-                                    { id: 'movies', label: `Film (${results.totalMovies})` },
-                                    { id: 'tv', label: `Serie TV (${results.totalTVShows})` },
+                                    { id: 'all', label: 'Tutto' },
+                                    { id: 'movies', label: 'Film' },
+                                    { id: 'tv', label: 'Serie TV' },
                                 ]}
                             />
 
@@ -350,7 +348,7 @@ export function SearchPageClient() {
                                 {filteredResults.movies.length > 0 && (
                                     <section>
                                         <h2 className="section-title !mb-4">
-                                            Film ({filteredResults.movies.length})
+                                            Film
                                         </h2>
                                         {viewMode === 'grid' ? (
                                             <SearchPosterGrid
@@ -384,7 +382,7 @@ export function SearchPageClient() {
                                 {filteredResults.tvShows.length > 0 && (
                                     <section>
                                         <h2 className="section-title !mb-4">
-                                            Serie TV ({filteredResults.tvShows.length})
+                                            Serie TV
                                         </h2>
                                         {viewMode === 'grid' ? (
                                             <SearchPosterGrid
