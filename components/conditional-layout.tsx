@@ -43,7 +43,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
                 <TvEntryRedirect />
             </Suspense>
             {showNavbar && <Navbar immersive={isHome} />}
-            <div className={needsTopPadding ? 'pt-16' : ''}>
+            <div className={needsTopPadding ? 'pt-20' : ''}>
                 <PageTransition>{children}</PageTransition>
             </div>
         </TrailerPeekProvider>

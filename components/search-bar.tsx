@@ -113,7 +113,7 @@ function SearchBarInput({
         <motion.div
             initial={false}
             animate={{
-                width: isExpanded ? 240 : 32,
+                width: isExpanded ? 260 : 36,
             }}
             transition={{
                 duration: shouldReduceMotion ? 0 : 0.28,
@@ -122,7 +122,7 @@ function SearchBarInput({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={cn(
-                'relative flex items-center h-8 flex-shrink-0 overflow-hidden select-none transition-colors duration-200',
+                'relative flex items-center h-9 flex-shrink-0 overflow-hidden select-none transition-colors duration-200',
                 isExpanded
                     ? 'rounded-lg bg-white/10 border border-white/15 backdrop-blur-md shadow-sm ring-1 ring-white/5 focus-within:border-white/30 focus-within:bg-white/[0.12] focus-within:ring-white/20'
                     : 'rounded-md bg-transparent hover:bg-white/[0.08] text-white/60 hover:text-white border border-transparent',
@@ -135,7 +135,7 @@ function SearchBarInput({
                 className={cn(
                     'flex items-center justify-center flex-shrink-0 transition-colors duration-200',
                     isExpanded
-                        ? 'absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/50'
+                        ? 'absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50'
                         : 'w-full h-full text-white/60 hover:text-white cursor-pointer'
                 )}
                 aria-label={isExpanded ? undefined : 'Cerca film e serie TV'}
@@ -176,7 +176,7 @@ function SearchBarInput({
                     delay: isExpanded ? 0.06 : 0,
                 }}
                 className={cn(
-                    'h-full w-full bg-transparent pl-[30px] pr-7 text-[13px] text-white placeholder-white/40 focus:outline-none whitespace-nowrap',
+                    'h-full w-full bg-transparent pl-[34px] pr-8 text-sm text-white placeholder-white/40 focus:outline-none whitespace-nowrap',
                     !isExpanded && 'pointer-events-none'
                 )}
                 aria-label="Cerca film e serie TV"

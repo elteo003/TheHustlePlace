@@ -90,7 +90,7 @@ export function LanguageSelector({ className, variant = 'navbar' }: LanguageSele
                 aria-expanded={isOpen}
                 aria-label={`Lingua attuale: ${currentOption.fullName}. Clicca per cambiare lingua.`}
                 className={cn(
-                    'group h-8 w-[74px] flex-shrink-0 inline-flex items-center justify-center gap-1 rounded-md px-1.5 text-[13px] font-medium transition-colors duration-200 select-none outline-none',
+                    'group h-9 w-[78px] flex-shrink-0 inline-flex items-center justify-center gap-1 rounded-md px-2 text-[13px] font-medium transition-colors duration-200 select-none outline-none',
                     isOpen
                         ? 'bg-white/10 text-white'
                         : 'text-white/60 hover:bg-white/[0.08] hover:text-white'

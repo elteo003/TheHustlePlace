@@ -69,7 +69,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
             {immersive && (
                 <div
                     aria-hidden
-                    className="fixed inset-x-0 top-0 z-[49] h-14"
+                    className="fixed inset-x-0 top-0 z-[49] h-18"
                     onMouseEnter={holdPeek}
                     onMouseLeave={releasePeek}
                 />
@@ -90,7 +90,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                 'bg-black/70 backdrop-blur-xl',
                 isPhoneLandscape
                     ? 'py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]'
-                    : 'content-gutter py-3',
+                    : 'content-gutter py-4',
                 !shouldShow && 'pointer-events-none'
             )}
         >
@@ -104,7 +104,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                         <motion.div
                             className={cn(
                                 'bg-white rounded-lg flex items-center justify-center',
-                                isPhoneLandscape ? 'h-7 w-7' : 'h-8 w-8'
+                                isPhoneLandscape ? 'h-7 w-7' : 'h-9 w-9'
                             )}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.97 }}
@@ -196,7 +196,7 @@ export function Navbar({ immersive = false }: NavbarProps) {
                                             href={href}
                                             label={label}
                                             layoutId="nav-active-pill-mobile"
-                                            className="block w-full"
+                                            className="block w-full py-2.5 px-3.5 rounded-lg text-base"
                                             active={isNavLinkActive(activePath, href)}
                                             onClick={() => {
                                                 setOptimisticHref(href)
